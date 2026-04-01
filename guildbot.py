@@ -25,3 +25,16 @@ async def main():
     finally:
         await bot.close()
 
+def run():
+    loop = asyncio.get_event_loop()
+    try:
+        loop.run_until_complete(main())
+    except KeyboardInterrupt:
+        logger.info("Keyboard Interrupt received. Shutting down the bot.")
+    finally:
+        loop.run_until_complete(bot.close())
+        loop.close()
+        logger.info("The bot has been shut down successfully.")
+
+if __name__ == "__main__":
+    run()
