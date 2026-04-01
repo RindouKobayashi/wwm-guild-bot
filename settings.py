@@ -12,6 +12,11 @@ DISCORD_API_TOKEN = os.getenv("DISCORD_API_TOKEN")
 BASE_DIR = pathlib.Path(__file__).parent
 COGS_DIR = BASE_DIR / "cogs"
 
+SPECIAL_ROLES = {
+    "PvP Sage": 1488795172480356473,
+}
+BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
+
 class ColoredFormatter(logging.Formatter):
     COLORS = {
         'DEBUG': '\033[94m',    # Blue

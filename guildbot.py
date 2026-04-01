@@ -17,6 +17,21 @@ bot = commands.Bot(
 async def on_ready():
     logger.info(f"User: {bot.user} (ID: {bot.user.id})")
 
+    # Loading cogs
+    for cog_file in settings.COGS_DIR.glob("*cog.py"):
+        if cog_file.name != "__init__.py":
+            ext_name = f"cogs.{cog_file.name[:-3]}"
+            if ext_name not in bot.extensions: # Check if extension is already loaded
+                try:
+                    await bot.load_extension(ext_name)
+                    logger.info(f"Loaded cog: {cog_file.name}")
+                except Exception as e:
+                    logger.error(f"Failed to load cog {cog_file.name}: {e}")
+            else:
+                logger.debug(f"Cog {cog_file.name} already loaded.") # Optional: Log if already loaded
+
+    await bot.tree.sync() # Sync commands after loading cogs
+
 async def main():
     try:
         await bot.start(settings.DISCORD_API_TOKEN)
