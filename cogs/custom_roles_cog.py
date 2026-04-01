@@ -26,6 +26,13 @@ class CustomRolesCog(commands.Cog):
         special_role_ids = list(settings.SPECIAL_ROLES.values())
         user_special_role = next((role for role in interaction.user.roles if role.id in special_role_ids), None)
 
+        # Also allow activity leader role to change color
+        if not user_special_role:
+            activity_leader_role = interaction.guild.get_role(settings.ACTIVITY_LEADER_ROLE_ID)
+            if activity_leader_role in interaction.user.roles:
+                # Activity leader can change their activity leader role color
+                user_special_role = activity_leader_role
+
         if not user_special_role:
             await interaction.response.send_message("You don't have permission to change your role color.", delete_after=10)
             return

@@ -20,6 +20,23 @@ SPECIAL_ROLES = {
 }
 BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
 
+# Activity Tracking Settings
+ACTIVITY_LEADER_ROLE_ID = 1488837755189461132  # The role ID for "Most Active" member
+ACTIVITY_BLACKLIST_CHANNELS = [
+    # Add channel IDs here where messages should NOT earn points
+    # Example: 123456789012345678
+    1443104374837608529,
+    1459164230832885803,
+    1458536899692990494,
+    1470865841779249329,
+    1443079705866797217,
+    1442857104250634363,
+    1442857208462311524,
+    1482369748015513630,
+    1482760154414842120,
+    1463479585567150194,
+]
+
 class ColoredFormatter(logging.Formatter):
     COLORS = {
         'DEBUG': '\033[94m',    # Blue
