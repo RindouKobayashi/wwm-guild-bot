@@ -18,17 +18,22 @@ GMT8 = timezone(timedelta(hours=8))
 RESET_HOUR = 5
 
 def get_today_session_id() -> str:
-    """Get today's session ID based on GMT+8."""
+    """Get today's session ID based on GMT+8 with 5am as day boundary."""
     now = datetime.now(GMT8)
-    return f"{now.year}-{now.month:02d}-{now.day:02d}"
+    # Shift the "day" so RESET_HOUR (5am) is the start of the day
+    # At 4:59am on April 2nd, this gives April 1st's date
+    # At 5:00am on April 2nd, this gives April 2nd's date
+    shifted = now - timedelta(hours=RESET_HOUR)
+    return f"{shifted.year}-{shifted.month:02d}-{shifted.day:02d}"
 
 def get_next_reset_time() -> datetime:
-    """Get the next 5am GMT+8 reset time."""
+    """Get the next 5am GMT+8 reset time, accounting for 5am day boundary."""
     now = datetime.now(GMT8)
-    reset_time = now.replace(hour=RESET_HOUR, minute=0, second=0, microsecond=0)
-    if now >= reset_time:
-        reset_time = reset_time.replace(day=now.day + 1)
-    return reset_time
+    # Calculate the "shifted" date to determine the current session day
+    shifted = now - timedelta(hours=RESET_HOUR)
+    # The next reset is at 5am on the next shifted day
+    next_shifted_day = shifted.replace(hour=RESET_HOUR, minute=0, second=0, microsecond=0) + timedelta(days=1)
+    return next_shifted_day
 
 
 class ActivityCog(commands.Cog):
