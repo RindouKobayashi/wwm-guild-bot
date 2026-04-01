@@ -244,7 +244,7 @@ class ActivityCog(commands.Cog):
         new_points = self._update_points(message.author.id, message.guild.id)
         
         if new_points is not None:
-            logger.info(f"User {message.author} earned a point! Session: {new_points}, All-time: {self._get_user_alltime_points(message.author.id, message.guild.id)}")
+            logger.info(f"User {message.author} earned a point! Session: {new_points}, All-time: {self._get_user_alltime_points(message.author.id, message.guild.id)}, Session ID: {get_today_session_id()}")
             
             # Check if they're now the leader (must strictly exceed current leader)
             leader_id = await self._get_leader_before_update(message.guild, message.author.id, new_points)
