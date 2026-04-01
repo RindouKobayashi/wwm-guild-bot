@@ -55,5 +55,31 @@ class CustomRolesCog(commands.Cog):
         await user_special_role.edit(color=color_value)
         await interaction.followup.send(f"`{user_special_role.name}` color changed to `{color_hex}`.")
 
+    @app_commands.command(name="change_role_name", description="Change the name of your role")
+    @app_commands.describe(new_name="The new name for your role (max 100 characters)")
+    async def change_role_name(self, interaction: discord.Interaction, new_name: str):
+        logger.info(f"User {interaction.user} requested to change role name to '{new_name}'")
+
+        # Validate role name length (Discord limit is 100 characters)
+        if len(new_name) > 100:
+            await interaction.response.send_message("Role name is too long. Maximum 100 characters allowed.", ephemeral=True)
+            return
+
+        if not new_name.strip():
+            await interaction.response.send_message("Role name cannot be empty or only whitespace.", ephemeral=True)
+            return
+
+        # Check if user has a special role that allows them to change their role name
+        special_role_ids = list(settings.SPECIAL_ROLES.values())
+        user_special_role = next((role for role in interaction.user.roles if role.id in special_role_ids), None)
+
+        if not user_special_role:
+            await interaction.response.send_message("You don't have permission to change your role name.", delete_after=10)
+            return
+
+        old_name = user_special_role.name
+        await user_special_role.edit(name=new_name)
+        await interaction.response.send_message(f"Role name changed from `{old_name}` to `{new_name}`.")
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(CustomRolesCog(bot))

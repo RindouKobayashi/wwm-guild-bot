@@ -13,7 +13,10 @@ BASE_DIR = pathlib.Path(__file__).parent
 COGS_DIR = BASE_DIR / "cogs"
 
 SPECIAL_ROLES = {
-    "PvP Sage": 1488795172480356473,
+    "Showdown 1": 1488795172480356473,
+    "Showdown 2": 1488830429686665246,
+    "BA1": 1488835134101655652,
+    "BA2": 1488835215949434891,
 }
 BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
 
