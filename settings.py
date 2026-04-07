@@ -7,7 +7,12 @@ from logging.config import dictConfig
 
 load_dotenv()
 
-DISCORD_API_TOKEN = os.getenv("DISCORD_API_TOKEN")
+branch = os.getenv("GITHUB_BRANCH", "main")
+
+if branch == "main":
+    DISCORD_API_TOKEN = os.getenv("DISCORD_API_TOKEN")
+else:
+    DISCORD_API_TOKEN = os.getenv("DISCORD_API_TOKEN_DEV")
 
 BASE_DIR = pathlib.Path(__file__).parent
 COGS_DIR = BASE_DIR / "cogs"
