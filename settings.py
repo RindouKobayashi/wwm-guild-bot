@@ -23,6 +23,12 @@ SPECIAL_ROLES = {
     "BA1": 1488835134101655652,
     "BA2": 1488835215949434891,
 }
+
+AUTO_TRANSLATE_CHANNELS = {
+    "english": 1442853064053756028,
+    "chinese": 1491044995036086332,
+}
+
 BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
 
 # Activity Tracking Settings
