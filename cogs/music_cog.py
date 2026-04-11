@@ -407,26 +407,6 @@ class MusicCog(commands.Cog):
         if guild_id in self.queues:
             del self.queues[guild_id]
         await interaction.response.send_message("🗑️ Queue cleared")
-
-    @app_commands.command(name="nowplaying", description="Show what is currently playing")
-    async def nowplaying(self, interaction: discord.Interaction):
-        if not self._is_allowed_channel(interaction.channel_id):
-            await interaction.response.send_message("❌ Music commands can only be used in bot channels!", ephemeral=True)
-            return
-            
-        guild_id = interaction.guild.id
-        current = self.now_playing.get(guild_id)
-        
-        if not current:
-            await interaction.response.send_message("❌ Nothing is playing right now", ephemeral=True)
-            return
-            
-        message = "🎶 **NOW PLAYING**\n\n"
-        message += f"**{current['title']}**\n"
-        message += f"⏱️ Duration: {self._format_duration(current['duration'])}\n"
-        message += f"🙋 Requested by: **{current['requester']}**"
-        
-        await interaction.response.send_message(message)
     
 async def setup(bot: commands.Bot):
     await bot.add_cog(MusicCog(bot))
