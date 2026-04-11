@@ -109,7 +109,7 @@ class MusicCog(commands.Cog):
 
         # Check if input is a URL or search query
         if self.url_regex.match(query):
-            # Direct URL mode
+            # Direct URL mode 
             download_url = query
         else:
             # Search mode - get top 5 results
