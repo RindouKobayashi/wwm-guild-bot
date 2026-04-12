@@ -264,10 +264,10 @@ class CustomRolesCog(commands.Cog):
                 return
 
             # Validate image format
-            valid_extensions = ["png", "jpeg", "jpg"]
+            valid_extensions = ["png", "jpeg", "jpg", "webp", "gif"]
             file_ext = image.filename.split(".")[-1].lower()
             if file_ext not in valid_extensions:
-                await interaction.followup.send("Invalid image format. Please use PNG or JPEG.", ephemeral=True)
+                await interaction.followup.send("Invalid image format. Please use PNG, JPEG, WebP, or GIF.", ephemeral=True)
                 return
 
             # Check file size (Discord limit is 256KB for role icons)
@@ -278,15 +278,34 @@ class CustomRolesCog(commands.Cog):
             # Download and convert the image
             try:
                 image_data = await image.read()
-                # Create a file-like object for discord
-                from io import BytesIO
-                image_file = discord.File(BytesIO(image_data), filename=f"role_icon.{file_ext}")
                 
-                # Upload to Discord as an attachment to get a URL
-                # We need to use the attachment URL for the role icon
+                # For GIF, extract only the first frame
+                if file_ext == "gif":
+                    try:
+                        from PIL import Image
+                        from io import BytesIO
+                        
+                        # Open the GIF and extract the first frame
+                        with Image.open(BytesIO(image_data)) as gif:
+                            # Convert to RGBA if necessary for compatibility
+                            first_frame = gif.convert("RGBA")
+                            
+                            # Save the first frame as PNG
+                            output = BytesIO()
+                            first_frame.save(output, format="PNG")
+                            image_data = output.getvalue()
+                            file_ext = "png"
+                    except ImportError:
+                        # PIL not available, try using image size as hint that it's valid
+                        logger.warning("PIL not available, attempting to use GIF as-is")
+                    except Exception as e:
+                        logger.error(f"Failed to extract first frame from GIF: {e}")
+                        await interaction.followup.send("Failed to process GIF image. Please try a different format.", ephemeral=True)
+                        return
+                
                 await interaction.followup.send("Processing image...", ephemeral=True)
                 
-                # Set the role icon using the image URL
+                # Set the role icon using the image data
                 # Discord will automatically resize and convert the image
                 await user_special_role.edit(display_icon=image_data)
                 await interaction.followup.send(f"Role icon set for `{user_special_role.name}`!", ephemeral=True)
