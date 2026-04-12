@@ -216,10 +216,136 @@ class CustomRolesCog(commands.Cog):
             preset_list = "\n".join([f"**{name}**: {hex_code}" for name, hex_code in presets])
             await interaction.response.send_message(f"Your color presets:\n{preset_list}", ephemeral=True)
 
+    @app_commands.command(name="set_role_icon", description="Set an icon for your role (requires server boost level 2)")
+    @app_commands.describe(
+        source="Choose to upload an image or use an emoji",
+        image="Upload an image for your role icon (PNG/JPEG, max 128KB)",
+        emoji="Select a server emoji to use as your role icon"
+    )
+    @app_commands.choices(source=[
+        app_commands.Choice(name="Image", value="image"),
+        app_commands.Choice(name="Emoji", value="emoji"),
+    ])
+    async def set_role_icon(self, interaction: discord.Interaction, source: str, image: discord.Attachment = None, emoji: str = None):
+        logger.info(f"User {interaction.user} requested to set role icon with source: {source}")
+
+        # Check if the server has boost level 2
+        if interaction.guild.premium_tier < 2:
+            await interaction.response.send_message(
+                "This server needs **Boost Level 2** to have custom role icons. Please boost the server first!",
+                ephemeral=True
+            )
+            return
+
+        # Check if user has a special role that allows them to change their role icon
+        special_role_ids = list(settings.SPECIAL_ROLES.values())
+        user_special_role = next((role for role in interaction.user.roles if role.id in special_role_ids), None)
+
+        # Also allow activity leader role to change icon
+        if not user_special_role:
+            activity_leader_role = interaction.guild.get_role(settings.ACTIVITY_LEADER_ROLE_ID)
+            if activity_leader_role in interaction.user.roles:
+                user_special_role = activity_leader_role
+
+        if not user_special_role:
+            await interaction.response.send_message("You don't have permission to set your role icon.", delete_after=10)
+            return
+
+        # Check if the role is managed by a bot/integration (can't edit icons for managed roles)
+        if user_special_role.managed:
+            await interaction.response.send_message("Cannot change the icon for a managed role.", ephemeral=True)
+            return
+
+        await interaction.response.defer()
+
+        if source == "image":
+            if not image:
+                await interaction.followup.send("Please upload an image for your role icon.", ephemeral=True)
+                return
+
+            # Validate image format
+            valid_extensions = ["png", "jpeg", "jpg"]
+            file_ext = image.filename.split(".")[-1].lower()
+            if file_ext not in valid_extensions:
+                await interaction.followup.send("Invalid image format. Please use PNG or JPEG.", ephemeral=True)
+                return
+
+            # Check file size (Discord limit is 128KB for role icons)
+            if image.size > 128 * 1024:
+                await interaction.followup.send("Image is too large. Maximum size is 128KB.", ephemeral=True)
+                return
+
+            # Download and convert the image
+            try:
+                image_data = await image.read()
+                # Create a file-like object for discord
+                from io import BytesIO
+                image_file = discord.File(BytesIO(image_data), filename=f"role_icon.{file_ext}")
+                
+                # Upload to Discord as an attachment to get a URL
+                # We need to use the attachment URL for the role icon
+                await interaction.followup.send("Processing image...", ephemeral=True)
+                
+                # Set the role icon using the image URL
+                # Discord will automatically resize and convert the image
+                await user_special_role.edit(icon=image_data)
+                await interaction.followup.send(f"Role icon set for `{user_special_role.name}`!", ephemeral=True)
+                
+            except discord.HTTPException as e:
+                logger.error(f"Failed to set role icon: {e}")
+                await interaction.followup.send("Failed to set role icon. The image may be invalid or too large.", ephemeral=True)
+            except Exception as e:
+                logger.error(f"Error setting role icon: {e}")
+                await interaction.followup.send("An error occurred while setting the role icon.", ephemeral=True)
+
+        elif source == "emoji":
+            if not emoji:
+                await interaction.followup.send("Please provide an emoji to use as your role icon.", ephemeral=True)
+                return
+
+            # Parse the emoji (can be a custom emoji or unicode emoji)
+            # For custom emoji: <:name:id>
+            # For unicode emoji: just the character
+            
+            try:
+                # Try to find the emoji in the guild
+                found_emoji = None
+                
+                # Check if it's a custom emoji
+                if emoji.startswith('<') and ':' in emoji:
+                    # Extract emoji ID from <:name:id> or <a:name:id> format
+                    match = re.search(r'<a?:\w+:(\d+)>', emoji)
+                    if match:
+                        emoji_id = int(match.group(1))
+                        found_emoji = discord.utils.get(interaction.guild.emojis, id=emoji_id)
+                else:
+                    # It's a unicode emoji - Discord doesn't support unicode emoji for role icons
+                    await interaction.followup.send(
+                        "Custom server emojis are supported, but unicode emojis are not. Please use a server emoji like `:emoji_name:`.",
+                        ephemeral=True
+                    )
+                    return
+
+                if not found_emoji:
+                    await interaction.followup.send("Could not find that emoji in this server. Please use a custom emoji from this server.", ephemeral=True)
+                    return
+
+                # Get the emoji image
+                emoji_image = await found_emoji.read()
+                await user_special_role.edit(icon=emoji_image)
+                await interaction.followup.send(f"Role icon set to {found_emoji} for `{user_special_role.name}`!", ephemeral=True)
+
+            except discord.HTTPException as e:
+                logger.error(f"Failed to set role icon from emoji: {e}")
+                await interaction.followup.send("Failed to set role icon. The emoji may be invalid.", ephemeral=True)
+            except Exception as e:
+                logger.error(f"Error setting role icon from emoji: {e}")
+                await interaction.followup.send("An error occurred while setting the role icon.", ephemeral=True)
+
     @app_commands.command(name="change_role_name", description="Change the name of your role")
     @app_commands.describe(new_name="The new name for your role (max 100 characters)")
     async def change_role_name(self, interaction: discord.Interaction, new_name: str):
-        logger.info(f"User {interaction.user} requested to change role name to '{new_name}'")
+        logger.info(f"User{interaction.user} requested to change role name to '{new_name}'")
 
         # Validate role name length (Discord limit is 100 characters)
         if len(new_name) > 100:
@@ -254,6 +380,10 @@ class CustomRolesCog(commands.Cog):
             "  Example: `/preset save name:black hex_code:#010B13`\n\n"
             "**/preset delete**: Delete a saved preset.\n\n"
             "**/preset list**: List all your saved presets.\n\n"
+            "**/set_role_icon**: Set an icon for your role.\n"
+            "  - Image: Upload a PNG/JPEG image (max 128KB)\n"
+            "  - Emoji: Use a server emoji\n"
+            "  - Requires server Boost Level 2\n\n"
             "**/change_role_name**: Change the name of your special role.\n\n"
             "**/help**: Show this help message."
         )
