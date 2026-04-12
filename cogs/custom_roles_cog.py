@@ -270,9 +270,9 @@ class CustomRolesCog(commands.Cog):
                 await interaction.followup.send("Invalid image format. Please use PNG or JPEG.", ephemeral=True)
                 return
 
-            # Check file size (Discord limit is 128KB for role icons)
-            if image.size > 128 * 1024:
-                await interaction.followup.send("Image is too large. Maximum size is 128KB.", ephemeral=True)
+            # Check file size (Discord limit is 256KB for role icons)
+            if image.size > 256 * 1024:
+                await interaction.followup.send("Image is too large. Maximum size is 256KB.", ephemeral=True)
                 return
 
             # Download and convert the image
@@ -288,7 +288,7 @@ class CustomRolesCog(commands.Cog):
                 
                 # Set the role icon using the image URL
                 # Discord will automatically resize and convert the image
-                await user_special_role.edit(icon=image_data)
+                await user_special_role.edit(display_icon=image_data)
                 await interaction.followup.send(f"Role icon set for `{user_special_role.name}`!", ephemeral=True)
                 
             except discord.HTTPException as e:
@@ -332,7 +332,7 @@ class CustomRolesCog(commands.Cog):
 
                 # Get the emoji image
                 emoji_image = await found_emoji.read()
-                await user_special_role.edit(icon=emoji_image)
+                await user_special_role.edit(display_icon=emoji_image)
                 await interaction.followup.send(f"Role icon set to {found_emoji} for `{user_special_role.name}`!", ephemeral=True)
 
             except discord.HTTPException as e:
