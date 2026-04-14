@@ -54,12 +54,14 @@ class ScheduleCog(commands.Cog):
                 except discord.NotFound:
                     pass
         
-        # Start background refresh task
+        # Start background tasks
         self.refresh_schedule_task.start()
+        self.weekly_shift_task.start()
         logger.info("Schedule cog loaded successfully")
 
     async def cog_unload(self):
         self.refresh_schedule_task.cancel()
+        self.weekly_shift_task.cancel()
         logger.info("Schedule cog unloaded")
 
     def get_day_number(self, timestamp: int) -> int:
@@ -85,53 +87,11 @@ class ScheduleCog(commands.Cog):
         return self.get_day_number(now)
 
     async def get_all_events(self):
-        """Get all events with automatically calculated current week timestamps"""
-        now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
-        
-        # Get day number and time
-        current_day = self.get_current_schedule_day()
-        gmt8_now = now + GMT8_OFFSET
-        current_hour = (gmt8_now % 86400) // 3600
-        current_minute = ((gmt8_now % 86400) % 3600) // 60
-        
-        # Check if it's Sunday (Day 7) after 5:00 PM - show next week
-        show_next_week = False
-        if current_day == 7 and (current_hour >= 17):
-            show_next_week = True
-        
-        # Get base monday timestamp (5 AM GMT+8 of this week)
-        adjusted_now = now + GMT8_OFFSET - (5 * 3600)  # Subtract 5 hours for day boundary
-        monday_dt = datetime.datetime.fromtimestamp(adjusted_now, datetime.timezone.utc)
-        monday_dt = monday_dt.replace(hour=0, minute=0, second=0, microsecond=0)
-        monday_dt = monday_dt - datetime.timedelta(days=monday_dt.weekday())
-        
-        if show_next_week:
-            monday_dt += datetime.timedelta(days=7)
-        
-        base_monday_timestamp = int(monday_dt.timestamp()) + (5 * 3600)  # Add back 5 hours
-        
-        events = []
-        
+        """Get all events sorted by timestamp"""
         with sqlite3.connect(self.db_path) as db:
             db.row_factory = sqlite3.Row
             cursor = db.execute("SELECT * FROM schedule_events ORDER BY timestamp ASC")
-            raw_events = cursor.fetchall()
-            
-            for raw_event in raw_events:
-                event = dict(raw_event)
-                
-                # Calculate which day and offset this event is
-                event_day = self.get_day_number(event['timestamp'])
-                gmt8_event_time = event['timestamp'] + GMT8_OFFSET
-                seconds_since_5am = gmt8_event_time % 86400
-                
-                # Calculate actual timestamp for current/next week
-                actual_timestamp = base_monday_timestamp + ((event_day - 1) * 86400) + seconds_since_5am
-                
-                event['timestamp'] = actual_timestamp
-                events.append(event)
-        
-        return sorted(events, key=lambda x: x['timestamp'])
+            return cursor.fetchall()
 
     async def build_schedule_message(self):
         """Build the full schedule message content"""
@@ -207,8 +167,28 @@ class ScheduleCog(commands.Cog):
         except Exception as e:
             logger.error(f"Failed to update schedule message: {e}")
 
+    @tasks.loop(minutes=1)
+    async def weekly_shift_task(self):
+        """Auto shift all events forward one week on Sunday at 5:00 PM GMT+8"""
+        now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        current_day = self.get_current_schedule_day()
+        gmt8_now = now + GMT8_OFFSET
+        current_hour = (gmt8_now % 86400) // 3600
+        current_minute = ((gmt8_now % 86400) % 3600) // 60
+        
+        # Run once exactly at Sunday 17:00
+        if current_day == 7 and current_hour == 17 and current_minute == 0:
+            with sqlite3.connect(self.db_path) as db:
+                db.execute("UPDATE schedule_events SET timestamp = timestamp + 604800")
+                db.commit()
+            logger.info("All events automatically shifted forward one week")
+
     @refresh_schedule_task.before_loop
     async def before_refresh_task(self):
+        await self.bot.wait_until_ready()
+
+    @weekly_shift_task.before_loop
+    async def before_weekly_shift_task(self):
         await self.bot.wait_until_ready()
 
     schedule = app_commands.Group(name="schedule", description="Manage guild event schedule")
