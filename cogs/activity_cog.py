@@ -353,6 +353,9 @@ class ActivityCog(commands.Cog):
         session_rank = self._get_session_rank(target.id, interaction.guild.id)
         alltime_rank = self._get_alltime_rank(target.id, interaction.guild.id)
         
+        wasted_today = self._format_wasted_time(session_points)
+        wasted_alltime = self._format_wasted_time(alltime_points)
+        
         embed = discord.Embed(
             title="📊 Activity Stats",
             color=target.color
@@ -360,10 +363,11 @@ class ActivityCog(commands.Cog):
         embed.set_author(name=target.display_name, icon_url=target.display_avatar.url)
         embed.add_field(name="🌟 Today's Points", value=str(session_points), inline=True)
         embed.add_field(name="🏅 Today's Rank", value=f"#{session_rank}", inline=True)
-        embed.add_field(name="\u200b", value="\u200b", inline=False)
+        embed.add_field(name="⏱️ Wasted Today", value=wasted_today, inline=True)
         embed.add_field(name="⭐ All-Time Points", value=str(alltime_points), inline=True)
         embed.add_field(name="🏆 All-Time Rank", value=f"#{alltime_rank}", inline=True)
-        embed.set_footer(text="Session resets daily at 5:00 AM (GMT+8)")
+        embed.add_field(name="💀 Lifetime Wasted", value=wasted_alltime, inline=True)
+        embed.set_footer(text="Session resets daily at 5:00 AM (GMT+8) | 1 point = 15 seconds active chatting")
         
         await interaction.response.send_message(embed=embed)
     
@@ -443,6 +447,25 @@ class ActivityCog(commands.Cog):
             )
             result = cursor.fetchone()
             return result[0] if result[0] > 0 else 1 if self._get_user_alltime_points(user_id, guild_id) > 0 else "-"
+    
+    def _format_wasted_time(self, points: int) -> str:
+        """Convert activity points to human readable wasted time.
+        Each point = 15 seconds of active chatting time.
+        """
+        total_seconds = points * 15
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+        seconds = total_seconds % 60
+        
+        parts = []
+        if hours > 0:
+            parts.append(f"{hours}h")
+        if minutes > 0:
+            parts.append(f"{minutes}m")
+        if seconds > 0:
+            parts.append(f"{seconds}s")
+            
+        return ' '.join(parts) if parts else "0s"
 
 
 async def setup(bot: commands.Bot):
