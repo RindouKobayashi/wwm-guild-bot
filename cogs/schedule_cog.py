@@ -404,7 +404,7 @@ class ScheduleCog(commands.Cog):
             
             # Day 6 (Saturday)
             ("Guild Party", 1776481200, None),
-            ("Breaking Army (***Pocketrupt Circus***)", 1776486600, None),
+            ("Breaking Army (***Pocketrupt Circus***)", 1776483000, None),
             
             # Day 7 (Sunday)
             ("Guild Party", 1776560400, None),
