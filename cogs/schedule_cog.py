@@ -114,6 +114,16 @@ class ScheduleCog(commands.Cog):
         
         lines = []
         current_day = self.get_current_schedule_day()
+
+        # Check if we are previewing next week (already shifted but still on old week real time)
+        showing_next_week = False
+        with sqlite3.connect(self.db_path) as db:
+            cursor = db.execute("SELECT MIN(timestamp) FROM schedule_events")
+            first_event_ts = cursor.fetchone()[0]
+            if first_event_ts:
+                first_event_day = self.get_day_number(first_event_ts)
+                if first_event_day == 1 and current_day == 7:
+                    showing_next_week = True
         
         for day in range(1, 8):
             day_events = days[day]
@@ -125,7 +135,8 @@ class ScheduleCog(commands.Cog):
             else:
                 day_title = f"**Day {day}:**"
             
-            if day == current_day:
+            # Only show Today indicator when not in preview mode
+            if day == current_day and not showing_next_week:
                 day_title = f"> {day_title} 👈 Today"
             
             lines.append(day_title)
@@ -187,17 +198,17 @@ class ScheduleCog(commands.Cog):
 
         # Condition 1: Last event has finished
         if now <= last_event_ts:
-            logger.info("Last event has not finished yet, no week shift needed")
+            logger.debug("Last event has not finished yet, no week shift needed")
             return False
         
-        logger.info("Last event has finished, checking if week shift is needed...")
+        logger.debug("Last event has finished, checking if week shift is needed...")
 
         # Condition 2: At least 1 hour (3600 seconds) grace period after last event
         if now - last_event_ts < 3600:
-            logger.info("Last event has not finished yet, no week shift needed")
+            logger.debug("Not enough time passed since last event, no week shift needed")
             return False
         
-        logger.info("Last event has finished with 1 hour grace period, checking if week shift is needed...")
+        logger.debug("Last event has finished with 1 hour grace period, checking if week shift is needed...")
 
         # Condition 3: Verify we haven't already shifted forward this week
         with sqlite3.connect(self.db_path) as db:
@@ -212,10 +223,10 @@ class ScheduleCog(commands.Cog):
         # If we've already shifted, first event will already be on Day 1 of next week
         # Only allow shift when we are still on the original full week
         if first_event_day != 1:
-            logger.info(f"Schedule already shifted (first event is on Day {first_event_day}), no week shift needed")
+            logger.debug(f"Schedule already shifted (first event is on Day {first_event_day}), no week shift needed")
             return False
 
-        logger.info("✅ All shift conditions satisfied: will shift schedule to next week")
+        logger.debug("✅ All shift conditions satisfied: will shift schedule to next week")
         return True
 
     def shift_all_events_forward_week(self):
@@ -227,15 +238,8 @@ class ScheduleCog(commands.Cog):
 
     @tasks.loop(minutes=1)
     async def weekly_shift_task(self):
-        """Auto shift all events forward one week on Sunday at 5:00 PM GMT+8"""
-        now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
-        current_day = self.get_current_schedule_day()
-        gmt8_now = now + GMT8_OFFSET
-        current_hour = (gmt8_now % 86400) // 3600
-        current_minute = ((gmt8_now % 86400) % 3600) // 60
-        
-        # Run once exactly at Sunday 17:00
-        if current_day == 7 and current_hour == 17 and current_minute == 0:
+        """Auto shift all events forward one week when conditions are met"""
+        if self.should_shift_week():
             self.shift_all_events_forward_week()
             logger.info("All events automatically shifted forward one week")
 
