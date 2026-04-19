@@ -167,6 +167,64 @@ class ScheduleCog(commands.Cog):
         except Exception as e:
             logger.error(f"Failed to update schedule message: {e}")
 
+    def should_shift_week(self) -> bool:
+        """
+        Check if we should shift to next week:
+        1. The final (last) event in schedule has completed
+        2. At least 1 full hour has passed since that last event ended
+        3. Last event still belongs to the current schedule week
+        4. Events haven't already been shifted forward
+        """
+        now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+
+        # Get last event in schedule
+        with sqlite3.connect(self.db_path) as db:
+            cursor = db.execute("SELECT MAX(timestamp) FROM schedule_events")
+            last_event_ts = cursor.fetchone()[0]
+            if not last_event_ts:
+                logger.info("No events found in schedule, no week shift needed")
+                return False
+
+        # Condition 1: Last event has finished
+        if now <= last_event_ts:
+            logger.info("Last event has not finished yet, no week shift needed")
+            return False
+        
+        logger.info("Last event has finished, checking if week shift is needed...")
+
+        # Condition 2: At least 1 hour (3600 seconds) grace period after last event
+        if now - last_event_ts < 3600:
+            logger.info("Last event has not finished yet, no week shift needed")
+            return False
+        
+        logger.info("Last event has finished with 1 hour grace period, checking if week shift is needed...")
+
+        # Condition 3: Verify we haven't already shifted forward this week
+        with sqlite3.connect(self.db_path) as db:
+            cursor = db.execute("SELECT MIN(timestamp) FROM schedule_events")
+            first_event_ts = cursor.fetchone()[0]
+            if not first_event_ts:
+                logger.info("No events found in schedule, no week shift needed")
+                return False
+        
+        first_event_day = self.get_day_number(first_event_ts)
+        
+        # If we've already shifted, first event will already be on Day 1 of next week
+        # Only allow shift when we are still on the original full week
+        if first_event_day != 1:
+            logger.info(f"Schedule already shifted (first event is on Day {first_event_day}), no week shift needed")
+            return False
+
+        logger.info("✅ All shift conditions satisfied: will shift schedule to next week")
+        return True
+
+    def shift_all_events_forward_week(self):
+        """Shift all events forward by one week (604800 seconds)"""
+        with sqlite3.connect(self.db_path) as db:
+            db.execute("UPDATE schedule_events SET timestamp = timestamp + 604800")
+            db.commit()
+        logger.info("All events shifted forward one week")
+
     @tasks.loop(minutes=1)
     async def weekly_shift_task(self):
         """Auto shift all events forward one week on Sunday at 5:00 PM GMT+8"""
@@ -178,9 +236,7 @@ class ScheduleCog(commands.Cog):
         
         # Run once exactly at Sunday 17:00
         if current_day == 7 and current_hour == 17 and current_minute == 0:
-            with sqlite3.connect(self.db_path) as db:
-                db.execute("UPDATE schedule_events SET timestamp = timestamp + 604800")
-                db.commit()
+            self.shift_all_events_forward_week()
             logger.info("All events automatically shifted forward one week")
 
     @refresh_schedule_task.before_loop
@@ -358,7 +414,7 @@ class ScheduleCog(commands.Cog):
         await interaction.followup.send(f"✅ Schedule channel set to {channel.mention}. Schedule will auto-update every minute.", ephemeral=True)
         logger.info(f"Schedule channel set to {channel.id} by {interaction.user}")
 
-    @schedule.command(name="refresh", description="Force immediate schedule refresh")
+    @schedule.command(name="refresh", description="Force immediate schedule refresh (auto-checks for week shift)")
     async def schedule_refresh(self, interaction: discord.Interaction):
         if not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message("You are not authorized to use this command.", ephemeral=True)
@@ -367,9 +423,20 @@ class ScheduleCog(commands.Cog):
             return await interaction.response.send_message("No schedule message configured. Use /schedule set-channel first.", ephemeral=True)
         
         await interaction.response.defer()
+        
+        shift_performed = False
+        if self.should_shift_week():
+            self.shift_all_events_forward_week()
+            shift_performed = True
+        
         content = await self.build_schedule_message()
         await self.schedule_message.edit(content=content)
-        await interaction.followup.send("✅ Schedule refreshed manually.", ephemeral=True)
+        
+        if shift_performed:
+            await interaction.followup.send("✅ Schedule refreshed and events have been shifted to next week automatically.", ephemeral=True)
+        else:
+            await interaction.followup.send("✅ Schedule refreshed manually.", ephemeral=True)
+
 
     @schedule.command(name="import-example", description="Import the example template schedule")
     async def schedule_import_example(self, interaction: discord.Interaction):
