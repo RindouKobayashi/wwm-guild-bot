@@ -25,8 +25,8 @@ SPECIAL_ROLES = {
 }
 
 AUTO_TRANSLATE_CHANNELS = {
-    "english": 1442853064053756028,
-    "chinese": 1491044995036086332,
+    "english": 409959440616390670,
+    "chinese": 1491025602986246295,
 }
 
 BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
