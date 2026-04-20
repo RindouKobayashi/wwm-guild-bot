@@ -190,8 +190,16 @@ class AutoTranslateCog(commands.Cog):
                 # Check if this message is replying to another message
                 if message.reference and message.reference.message_id:
                     try:
-                        # Get original message that was replied to
-                        replied_message = await message.channel.fetch_message(message.reference.message_id)
+                        original_replied_id = message.reference.message_id
+                        target_replied_id = self._get_mapped_message(original_replied_id)
+                        
+                        # If we have a mapped translated version, use that one instead for correct language
+                        if target_replied_id:
+                            # Fetch the translated version that exists in our target channel
+                            replied_message = await target_channel.fetch_message(target_replied_id)
+                        else:
+                            # Fallback: no mapping found, use original message (for older messages)
+                            replied_message = await message.channel.fetch_message(original_replied_id)
                         
                         # Clean and truncate replied message content for quote
                         quoted_content = replied_message.content.replace('\n', ' ').strip()
