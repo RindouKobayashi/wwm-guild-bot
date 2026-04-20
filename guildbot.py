@@ -3,6 +3,7 @@ import settings
 import asyncio
 from discord.ext import commands
 from settings import logger
+from context_menus import translate_context_menu
 
 # Discord Bot Permission
 intents = discord.Intents.default()
@@ -29,6 +30,9 @@ async def on_ready():
                     logger.error(f"Failed to load cog {cog_file.name}: {e}")
             else:
                 logger.debug(f"Cog {cog_file.name} already loaded.") # Optional: Log if already loaded
+
+    # Loading context menus
+    translate_context_menu.setup_contextmenu(bot)
 
     await bot.tree.sync() # Sync commands after loading cogs
 
