@@ -166,12 +166,25 @@ class AutoTranslateCog(commands.Cog):
                 # Strip mentions from content before translation to prevent duplicate pings
                 content_to_translate, extracted_entities, has_mentions = self.strip_mentions(message.content)
                 
-                # Translate the message (without mentions)
-                translation = await self.translator.translate(content_to_translate, dest=target_language)
-                translated_text = translation.text
+                # Check if there is actually any translatable text left (not just placeholders)
+                # Strip ALL placeholders, whitespace and invisible characters
+                cleaned_check = re.sub(r'__ENTITY_\d+__|[\s\u200b\u200c\u200d\ufeff]+', '', content_to_translate)
                 
-                # Restore original emotes and mentions back into translated text
-                translated_text = self.restore_entities(translated_text, extracted_entities)
+                logger.debug(f"AutoTranslate DEBUG: message='{message.content}', content_to_translate='{repr(content_to_translate)}', cleaned_check='{repr(cleaned_check)}', entities={len(extracted_entities)}")
+                
+                if not cleaned_check:
+                    # No real text to translate - only emotes/mentions/entities
+                    # Skip translation entirely, just use original content directly
+                    logger.debug(f"AutoTranslate DEBUG: Skipping translation, using original content")
+                    translated_text = message.content
+                else:
+                    # Translate the message (without mentions)
+                    logger.debug(f"AutoTranslate DEBUG: Running translation")
+                    translation = await self.translator.translate(content_to_translate, dest=target_language)
+                    translated_text = translation.text
+                    
+                    # Restore original emotes and mentions back into translated text
+                    translated_text = self.restore_entities(translated_text, extracted_entities)
 
                 # Get the target channel
                 target_channel = self.bot.get_channel(target_channel_id)

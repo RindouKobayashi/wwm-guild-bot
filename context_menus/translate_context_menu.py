@@ -104,12 +104,20 @@ class TranslateSelect(discord.ui.Select):
             # Process content safely before translation
             content_to_translate, extracted_entities, has_mentions = strip_mentions(self.message_content)
             
-            # Perform translation
-            translation = await translator.translate(content_to_translate, dest=target_lang)
-            translated_text = translation.text
-            
-            # Restore all original entities
-            translated_text = restore_entities(translated_text, extracted_entities)
+            # Check if there is actually any translatable text left (not just placeholders)
+            # Strip ALL placeholders, whitespace and invisible characters
+            import re
+            cleaned_check = re.sub(r'__ENTITY_\d+__|[\s\u200b\u200c\u200d\ufeff]+', '', content_to_translate)
+            if not cleaned_check:
+                # No real text to translate - only emotes/mentions/entities
+                translated_text = self.message_content
+            else:
+                # Perform translation
+                translation = await translator.translate(content_to_translate, dest=target_lang)
+                translated_text = translation.text
+                
+                # Restore all original entities
+                translated_text = restore_entities(translated_text, extracted_entities)
             
             embed = discord.Embed(
                 title=f"✅ Translation",
