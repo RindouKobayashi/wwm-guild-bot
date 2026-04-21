@@ -11,8 +11,16 @@ branch = os.getenv("GITHUB_BRANCH", "main")
 
 if branch == "main":
     DISCORD_API_TOKEN = os.getenv("DISCORD_API_TOKEN")
+    AUTO_TRANSLATE_CHANNELS = {
+        "english": 1442853064053756028,
+        "chinese": 1491044995036086332,
+    }
 else:
     DISCORD_API_TOKEN = os.getenv("DISCORD_API_TOKEN_DEV")
+    AUTO_TRANSLATE_CHANNELS = {
+        "english": 409959440616390670,
+        "chinese": 1491025602986246295,
+    }
 
 BASE_DIR = pathlib.Path(__file__).parent
 COGS_DIR = BASE_DIR / "cogs"
@@ -22,11 +30,6 @@ SPECIAL_ROLES = {
     "Showdown 2": 1488830429686665246,
     "BA1": 1488835134101655652,
     "BA2": 1488835215949434891,
-}
-
-AUTO_TRANSLATE_CHANNELS = {
-    "english": 1442853064053756028,
-    "chinese": 1491044995036086332,
 }
 
 BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
