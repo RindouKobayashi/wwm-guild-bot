@@ -348,6 +348,123 @@ class AutoTranslateCog(commands.Cog):
                 logger.error(f"Translation failed: {e}")
 
 
+    @commands.Cog.listener()
+    async def on_message_delete(self, message: discord.Message):
+        """Delete matching translated message when original is deleted"""
+        try:
+            mapped_id = self._get_mapped_message(message.id)
+            if not mapped_id:
+                return
+
+            # Determine which channel and webhook to use
+            if message.channel.id == settings.AUTO_TRANSLATE_CHANNELS["english"]:
+                target_channel_id = settings.AUTO_TRANSLATE_CHANNELS["chinese"]
+                target_webhook_name = "chinese"
+            elif message.channel.id == settings.AUTO_TRANSLATE_CHANNELS["chinese"]:
+                target_channel_id = settings.AUTO_TRANSLATE_CHANNELS["english"]
+                target_webhook_name = "english"
+            else:
+                return
+
+            # Get webhook
+            webhook = self.webhooks.get(target_webhook_name)
+            if not webhook:
+                return
+
+            # Delete the mapped message
+            await webhook.delete_message(mapped_id)
+            logger.debug(f"Deleted translated message {mapped_id} matching original {message.id}")
+
+            # Clean up entries from map
+            if str(message.id) in self.message_map:
+                del self.message_map[str(message.id)]
+            if str(mapped_id) in self.message_map:
+                del self.message_map[str(mapped_id)]
+            self._save_message_map()
+
+        except discord.NotFound:
+            # Message was already deleted, just clean up the map
+            if str(message.id) in self.message_map:
+                mapped_id = self.message_map[str(message.id)]
+                del self.message_map[str(message.id)]
+                if str(mapped_id) in self.message_map:
+                    del self.message_map[str(mapped_id)]
+                self._save_message_map()
+        except Exception as e:
+            logger.debug(f"Could not delete translated message: {e}")
+
+
+    @commands.Cog.listener()
+    async def on_message_edit(self, before: discord.Message, after: discord.Message):
+        """Update translated message when original is edited"""
+        # Ignore bot messages
+        if after.author.bot:
+            return
+
+        # Only process if message is in translate channels
+        if after.channel.id not in settings.AUTO_TRANSLATE_CHANNELS.values():
+            return
+
+        # Only process if we have a mapped message
+        mapped_id = self._get_mapped_message(after.id)
+        if not mapped_id:
+            return
+
+        try:
+            # Determine target language and channel
+            if after.channel.id == settings.AUTO_TRANSLATE_CHANNELS["english"]:
+                target_language = "zh-cn"
+                target_webhook_name = "chinese"
+            elif after.channel.id == settings.AUTO_TRANSLATE_CHANNELS["chinese"]:
+                target_language = "en"
+                target_webhook_name = "english"
+            else:
+                return
+
+            # Strip mentions from updated content
+            content_to_translate, extracted_entities, has_mentions = self.strip_mentions(after.content)
+            
+            # Check if there is actual text to translate
+            cleaned_check = re.sub(r'__ENTITY_\d+__|[\s\u200b\u200c\u200d\ufeff]+', '', content_to_translate)
+            
+            if not cleaned_check:
+                translated_text = after.content
+            else:
+                translation = await self.translator.translate(content_to_translate, dest=target_language)
+                translated_text = translation.text
+                translated_text = self.restore_entities(translated_text, extracted_entities)
+
+            # Get webhook
+            webhook = self.webhooks.get(target_webhook_name)
+            if not webhook:
+                return
+
+            # Edit the translated message
+            edit_kwargs = {
+                "message_id": mapped_id,
+                "allowed_mentions": discord.AllowedMentions.none()
+            }
+
+            if translated_text.strip():
+                edit_kwargs["content"] = translated_text
+            else:
+                edit_kwargs["content"] = ""
+
+            await webhook.edit_message(**edit_kwargs)
+            logger.debug(f"Updated translated message {mapped_id} after original {after.id} was edited")
+
+        except discord.NotFound:
+            # Translated message no longer exists, clean up map
+            if str(after.id) in self.message_map:
+                mapped_id = self.message_map[str(after.id)]
+                del self.message_map[str(after.id)]
+                if str(mapped_id) in self.message_map:
+                    del self.message_map[str(mapped_id)]
+                self._save_message_map()
+        except Exception as e:
+            logger.error(f"Failed to update edited translated message: {e}")
+
+
 async def setup(bot: commands.Bot):
     cog = AutoTranslateCog(bot)
     await cog.create_persistent_webhooks()
