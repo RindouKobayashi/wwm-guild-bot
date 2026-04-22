@@ -1,4 +1,6 @@
+from PIL import Image, ImageSequence
 import discord
+import aiohttp
 import settings
 import asyncio
 import os
@@ -227,13 +229,116 @@ class AutoTranslateCog(commands.Cog):
                         logger.debug(f"Could not fetch replied message: {e}")
 
                 # Send translated message
-                sent_message = await webhook.send(
-                    content=translated_text,
-                    username=message.author.display_name,
-                    avatar_url=message.author.avatar.url if message.author.avatar else None,
-                    allowed_mentions=discord.AllowedMentions.none(),
-                    wait=True
-                )
+                send_kwargs = {
+                    "username": message.author.display_name,
+                    "avatar_url": message.author.avatar.url if message.author.avatar else None,
+                    "allowed_mentions": discord.AllowedMentions.none(),
+                    "wait": True
+                }
+                
+                has_content = False
+                files = []
+                
+                # Handle empty text correctly (stickers, images, attachments only messages)
+                if translated_text.strip():
+                    send_kwargs["content"] = translated_text
+                    has_content = True
+                
+                # Pass through all original attachments
+                if message.attachments:
+                    files.extend([await attachment.to_file() for attachment in message.attachments])
+                    has_content = True
+
+                    
+                # Add stickers as image attachments (webhooks don't support native stickers)
+                if message.stickers:
+                    async with aiohttp.ClientSession() as session:
+                        for sticker in message.stickers:
+                            logger.debug(f"AutoTranslate DEBUG: Sticker '{sticker.name}' format={sticker.format} url={sticker.url}")
+                            
+                            async with session.get(sticker.url) as resp:
+                                if resp.status == 200:
+                                    raw_data = await resp.read()
+                                    input_bytes = io.BytesIO(raw_data)
+
+                                    try:
+                                        with Image.open(input_bytes) as img:
+                                            # Standard Discord sticker size (always displayed at this size in chat)
+                                            STANDARD_SIZE = (160, 160)
+                                            
+                                            if getattr(img, "is_animated", False):
+                                                # --- RE-ENCODE ANIMATED AS GIF ---
+                                                output_bytes = io.BytesIO()
+
+                                                # Extract frames and durations
+                                                frames = []
+                                                durations = []
+
+                                                for frame in ImageSequence.Iterator(img):
+                                                    # Convert frame to RGBA
+                                                    frame_rgba = frame.convert("RGBA")
+                                                    # Resize frame
+                                                    frame_rgba.thumbnail(STANDARD_SIZE, Image.Resampling.LANCZOS)
+                                                    # Create new canvas for this frame
+                                                    frame_canvas = Image.new("RGBA", STANDARD_SIZE, (0, 0, 0, 0))
+                                                    # Center frame on canvas
+                                                    frame_x = (STANDARD_SIZE[0] - frame_rgba.size[0]) // 2
+                                                    frame_y = (STANDARD_SIZE[1] - frame_rgba.size[1]) // 2
+                                                    frame_canvas.paste(frame_rgba, (frame_x, frame_y))
+                                                    
+                                                    frames.append(frame_canvas)
+                                                    # APNG frame durations are in ms; default to 100ms if not provided
+                                                    durations.append(frame.info.get("duration", 100))
+
+                                                # Save frames as GIF with durations
+                                                frames[0].save(output_bytes, format="GIF", save_all=True, append_images=frames[1:], loop=0, duration=durations, disposal=2)
+
+                                                output_bytes.seek(0)
+                                                filename = f"{sticker.id}.gif"
+                                                files.append(File(fp=output_bytes, filename=filename))
+                                                logger.debug(f"AutoTranslate DEBUG: Re-encoded and resized APNG sticker as GIF for '{sticker.name}' (128x128)")
+                                            else:
+                                                # Static sticker - resize and save
+                                                img_rgba = img.convert("RGBA")
+                                                # Resize maintaining aspect ratio
+                                                img_rgba.thumbnail(STANDARD_SIZE, Image.Resampling.LANCZOS)
+                                                # Create new transparent canvas with standard size
+                                                canvas = Image.new("RGBA", STANDARD_SIZE, (0, 0, 0, 0))
+                                                # Center the resized sticker on the canvas
+                                                paste_x = (STANDARD_SIZE[0] - img_rgba.size[0]) // 2
+                                                paste_y = (STANDARD_SIZE[1] - img_rgba.size[1]) // 2
+                                                # Paste centered on transparent canvas
+                                                canvas.paste(img_rgba, (paste_x, paste_y))
+                                                
+                                                # Save the standardized sticker
+                                                output_bytes = io.BytesIO()
+                                                canvas.save(output_bytes, format="PNG")
+                                                output_bytes.seek(0)
+                                                
+                                                filename = f"{sticker.id}.png"
+                                                files.append(File(fp=output_bytes, filename=filename))
+                                                logger.debug(f"AutoTranslate DEBUG: Resized static sticker '{sticker.name}' to 128x128")
+                                    except Exception as e:
+                                        logger.error(f"Failed to process sticker '{sticker.name}': {e}")
+                                        continue
+
+                                    
+                    has_content = True
+                    
+                if files:
+                    send_kwargs["files"] = files
+                    
+                # Pass through embeds for content only messages
+                if message.embeds and not translated_text.strip():
+                    send_kwargs["embeds"] = message.embeds
+                    has_content = True
+
+                # Only send if we actually have something to send
+                if has_content:
+                    sent_message = await webhook.send(**send_kwargs)
+                else:
+                    logger.debug(f"AutoTranslate DEBUG: No content to send, skipping")
+                    return
 
                 # Store message mapping for future reply lookups
                 if sent_message:
