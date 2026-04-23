@@ -36,6 +36,17 @@ class ScheduleCog(commands.Cog):
                     value TEXT
                 )
             """)
+            db.execute("""
+                CREATE TABLE IF NOT EXISTS breaking_army_bosses (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    week_number INTEGER NOT NULL,
+                    boss_name TEXT NOT NULL,
+                    locked BOOLEAN DEFAULT 0,
+                    rolled_at INTEGER NOT NULL,
+                    rolled_by_user_id INTEGER NOT NULL,
+                    UNIQUE(week_number, boss_name)
+                )
+            """)
             db.commit()
         
         # Load saved config
@@ -250,6 +261,319 @@ class ScheduleCog(commands.Cog):
     @weekly_shift_task.before_loop
     async def before_weekly_shift_task(self):
         await self.bot.wait_until_ready()
+
+    def load_boss_list(self):
+        """Load all available bosses from text file"""
+        boss_file = BASE_DIR / "data" / "breaking_army_bosses.txt"
+        with open(boss_file, 'r', encoding='utf-8') as f:
+            bosses = [line.strip() for line in f if line.strip()]
+        return bosses
+    
+    def get_current_week_info(self, offset=0):
+        """Get (year, week_number) tuple for current week with optional offset"""
+        now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        gmt8_time = now + GMT8_OFFSET
+        dt = datetime.datetime.fromtimestamp(gmt8_time, tz=datetime.timezone.utc)
+        adjusted_dt = dt - datetime.timedelta(hours=5) + datetime.timedelta(weeks=offset)
+        iso = adjusted_dt.isocalendar()
+        return (iso[0], iso[1])
+    
+    def get_current_week_number(self):
+        """Get current week number (Monday reset)"""
+        return self.get_current_week_info()[1]
+    
+    def get_recent_bosses(self, weeks_back=2):
+        """Get bosses that were used in the last N weeks"""
+        current_week = self.get_current_week_number()
+        with sqlite3.connect(self.db_path) as db:
+            cursor = db.execute(
+                "SELECT boss_name FROM breaking_army_bosses WHERE week_number >= ? AND locked = 1",
+                (current_week - weeks_back,)
+            )
+            return [row[0] for row in cursor.fetchall()]
+    
+    def roll_new_bosses(self):
+        """Roll 2 unique new bosses that haven't been used in past 2 weeks"""
+        all_bosses = self.load_boss_list()
+        recent_bosses = self.get_recent_bosses(2)
+        available = [boss for boss in all_bosses if boss not in recent_bosses]
+        
+        if len(available) < 2:
+            return None
+        
+        import random
+        return random.sample(available, 2)
+
+    breaking_army = app_commands.Group(name="breaking_army", description="Breaking Army boss management")
+
+    @breaking_army.command(name="roll", description="Roll new Breaking Army bosses for this week")
+    async def breaking_army_roll(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message("You are not authorized to use this command.", ephemeral=True)
+        
+        target_week = self.get_current_week_number()
+        year, week_num = self.get_current_week_info()
+        week_display = f"{year} Week {week_num}"
+        
+        # Check if week is already locked
+        with sqlite3.connect(self.db_path) as db:
+            cursor = db.execute("SELECT boss_name FROM breaking_army_bosses WHERE week_number = ? AND locked = 1", (target_week,))
+            existing = cursor.fetchall()
+            
+            if existing:
+                class RerollConfirmView(discord.ui.View):
+                    def __init__(self, cog, user_id):
+                        super().__init__(timeout=120)
+                        self.cog = cog
+                        self.user_id = user_id
+                        self.confirmed = False
+                    
+                    @discord.ui.button(label="✅ Yes, Reroll", style=discord.ButtonStyle.red)
+                    async def confirm_reroll(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                        if button_interaction.user.id != self.user_id:
+                            return await button_interaction.response.send_message("Only you can confirm this.")
+                        
+                        self.confirmed = True
+                        bosses = self.cog.roll_new_bosses()
+                        
+                        if not bosses:
+                            return await button_interaction.response.edit_message(content="❌ Not enough available bosses left!", view=None)
+                        
+                        boss1, boss2 = bosses
+                        
+                        class BossConfirmView(discord.ui.View):
+                            def __init__(self, cog, boss_list, week_num, year, user_id):
+                                super().__init__(timeout=300)
+                                self.cog = cog
+                                self.boss1, self.boss2 = boss_list
+                                self.week_number = week_num
+                                self.year = year
+                                self.user_id = user_id
+                            
+                            @discord.ui.button(label="✅ Confirm & Lock", style=discord.ButtonStyle.green)
+                            async def confirm(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                                if button_interaction.user.id != self.user_id:
+                                    return await button_interaction.response.send_message("Only you can confirm.")
+                                
+                                now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+                                
+                                with sqlite3.connect(self.cog.db_path) as db:
+                                    db.execute("DELETE FROM breaking_army_bosses WHERE week_number = ?", (self.week_number,))
+                                    db.execute("INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)", (self.week_number, self.boss1, now, self.user_id))
+                                    db.execute("INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)", (self.week_number, self.boss2, now, self.user_id))
+                                    db.commit()
+                                
+                                with sqlite3.connect(self.cog.db_path) as db:
+                                    cursor = db.execute("SELECT id FROM schedule_events WHERE event_name LIKE 'Breaking Army%' ORDER BY timestamp ASC")
+                                    event_ids = [row[0] for row in cursor.fetchall()]
+                                    if len(event_ids) >= 1: db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{self.boss1}***)", event_ids[0]))
+                                    if len(event_ids) >= 2: db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{self.boss2}***)", event_ids[1]))
+                                    db.commit()
+                                
+                                await button_interaction.response.edit_message(content=f"✅ Locked: **{self.boss1}** | **{self.boss2}**\nSchedule updated.", view=None)
+                                logger.info(f"Breaking Army bosses locked: {self.boss1}, {self.boss2} for {self.year} Week {self.week_number} by {button_interaction.user}")
+                            
+                            @discord.ui.button(label="🎲 Reroll", style=discord.ButtonStyle.gray)
+                            async def reroll(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                                if button_interaction.user.id != self.user_id:
+                                    return await button_interaction.response.send_message("Only you can reroll.")
+                                
+                                new_bosses = self.cog.roll_new_bosses()
+                                if not new_bosses:
+                                    return await button_interaction.response.send_message("❌ Not enough available bosses left!", ephemeral=True)
+                                
+                                self.boss1, self.boss2 = new_bosses
+                                await button_interaction.response.edit_message(content=f"🎲 {self.boss1} | {self.boss2}\nNeither used in past 2 weeks.", view=self)
+                            
+                            @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.red)
+                            async def cancel(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                                if button_interaction.user.id != self.user_id:
+                                    return await button_interaction.response.send_message("Only you can cancel.")
+                                await button_interaction.response.edit_message(content="Roll cancelled.", view=None)
+                        
+                        view = BossConfirmView(self.cog, bosses, week_num, year, self.user_id)
+                        await button_interaction.response.edit_message(content=f"🎲 {boss1} | {boss2}\nNeither used in past 2 weeks.", view=view)
+                    
+                    @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.gray)
+                    async def cancel(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                        if button_interaction.user.id != self.user_id:
+                            return await button_interaction.response.send_message("Only you can cancel.", ephemeral=True)
+                        await button_interaction.response.edit_message(content="Roll cancelled.", view=None)
+                
+                current_bosses = " | ".join([row[0] for row in existing])
+                view = RerollConfirmView(self, interaction.user.id)
+                return await interaction.response.send_message(f"⚠️ This week already has: {current_bosses}\nDo you want to reroll?", view=view)
+        
+        bosses = self.roll_new_bosses()
+        
+        if not bosses:
+            return await interaction.response.send_message("❌ Not enough available bosses left! Need at least 2 bosses not used in past 2 weeks.", ephemeral=True)
+        
+        boss1, boss2 = bosses
+        
+        class BossConfirmView(discord.ui.View):
+            def __init__(self, cog, boss_list, week_num, year, user_id):
+                super().__init__(timeout=300)
+                self.cog = cog
+                self.boss1, self.boss2 = boss_list
+                self.week_number = week_num
+                self.year = year
+                self.user_id = user_id
+            
+            @discord.ui.button(label="✅ Confirm & Lock", style=discord.ButtonStyle.green)
+            async def confirm(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                if button_interaction.user.id != self.user_id:
+                    return await button_interaction.response.send_message("Only you can confirm.", ephemeral=True)
+                
+                now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+                
+                with sqlite3.connect(self.cog.db_path) as db:
+                    db.execute("DELETE FROM breaking_army_bosses WHERE week_number = ?", (self.week_number,))
+                    db.execute("INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)", (self.week_number, self.boss1, now, self.user_id))
+                    db.execute("INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)", (self.week_number, self.boss2, now, self.user_id))
+                    db.commit()
+                
+                with sqlite3.connect(self.cog.db_path) as db:
+                    cursor = db.execute("SELECT id FROM schedule_events WHERE event_name LIKE 'Breaking Army%' ORDER BY timestamp ASC")
+                    event_ids = [row[0] for row in cursor.fetchall()]
+                    if len(event_ids) >= 1: db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{self.boss1}***)", event_ids[0]))
+                    if len(event_ids) >= 2: db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{self.boss2}***)", event_ids[1]))
+                    db.commit()
+                
+                await button_interaction.response.edit_message(content=f"✅ Locked: **{self.boss1}** | **{self.boss2}**\nSchedule updated.", view=None)
+                logger.info(f"Breaking Army bosses locked: {self.boss1}, {self.boss2} for {self.year} Week {self.week_number} by {button_interaction.user}")
+            
+            @discord.ui.button(label="🎲 Reroll", style=discord.ButtonStyle.gray)
+            async def reroll(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                if button_interaction.user.id != self.user_id:
+                    return await button_interaction.response.send_message("Only you can reroll.", ephemeral=True)
+                
+                new_bosses = self.cog.roll_new_bosses()
+                if not new_bosses:
+                    return await button_interaction.response.send_message("❌ Not enough available bosses left!", ephemeral=True)
+                
+                self.boss1, self.boss2 = new_bosses
+                await button_interaction.response.edit_message(content=f"🎲 {self.boss1} | {self.boss2}\nNeither used in past 2 weeks.", view=self)
+            
+            @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.red)
+            async def cancel(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                if button_interaction.user.id != self.user_id:
+                    return await button_interaction.response.send_message("Only you can cancel.", ephemeral=True)
+                await button_interaction.response.edit_message(content="Roll cancelled.", view=None)
+        
+        view = BossConfirmView(self, bosses, week_num, year, interaction.user.id)
+        
+        await interaction.response.send_message(
+            f"🎲 {boss1} | {boss2}\nNeither used in past 2 weeks.",
+            view=view
+        )
+
+    def save_boss_list(self, bosses):
+        """Save boss list back to text file"""
+        boss_file = BASE_DIR / "data" / "breaking_army_bosses.txt"
+        with open(boss_file, 'w', encoding='utf-8') as f:
+            f.write("\n".join(bosses) + "\n")
+
+    @breaking_army.command(name="list", description="List and manage Breaking Army bosses")
+    async def breaking_army_list(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            bosses = self.load_boss_list()
+            lines = ["**Available Breaking Army Bosses:**\n"]
+            for i, boss in enumerate(bosses, 1):
+                lines.append(f"{i}. {boss}")
+            return await interaction.response.send_message("\n".join(lines), ephemeral=True)
+        
+        class BossManagerView(discord.ui.View):
+            def __init__(self, cog):
+                super().__init__(timeout=300)
+                self.cog = cog
+            
+            def build_message(self):
+                bosses = self.cog.load_boss_list()
+                lines = ["**Breaking Army Boss Manager:**\n"]
+                for i, boss in enumerate(bosses, 1):
+                    lines.append(f"{i}. {boss}")
+                lines.append(f"\nTotal: {len(bosses)} bosses")
+                return "\n".join(lines)
+            
+            @discord.ui.button(label="➕ Add Boss", style=discord.ButtonStyle.green)
+            async def add_boss(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                if not button_interaction.user.guild_permissions.administrator:
+                    return await button_interaction.response.send_message("Not authorized.", ephemeral=True)
+                
+                class AddBossModal(discord.ui.Modal, title="Add New Boss"):
+                    name = discord.ui.TextInput(label="Boss Name", placeholder="Enter boss name")
+                    
+                    async def on_submit(self, modal_interaction: discord.Interaction):
+                        bosses = self.view.cog.load_boss_list()
+                        if self.name.value not in bosses:
+                            bosses.append(self.name.value)
+                            self.view.cog.save_boss_list(bosses)
+                            await modal_interaction.response.edit_message(content=self.view.build_message(), view=self.view)
+                        else:
+                            await modal_interaction.response.send_message("Boss already exists.", ephemeral=True)
+                
+                modal = AddBossModal()
+                modal.view = self
+                await button_interaction.response.send_modal(modal)
+            
+            @discord.ui.button(label="🗑️ Remove Boss", style=discord.ButtonStyle.red)
+            async def remove_boss(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                if not button_interaction.user.guild_permissions.administrator:
+                    return await button_interaction.response.send_message("Not authorized.", ephemeral=True)
+                
+                bosses = self.cog.load_boss_list()
+                if not bosses:
+                    return await button_interaction.response.send_message("No bosses to remove.", ephemeral=True)
+                
+                options = [discord.SelectOption(label=boss, value=boss) for boss in bosses]
+                select = discord.ui.Select(placeholder="Select boss to remove", options=options)
+                
+                async def select_callback(select_interaction: discord.Interaction):
+                    boss_to_remove = select_interaction.data['values'][0]
+                    bosses = self.cog.load_boss_list()
+                    if boss_to_remove in bosses:
+                        bosses.remove(boss_to_remove)
+                        self.cog.save_boss_list(bosses)
+                    await select_interaction.response.edit_message(content=self.build_message(), view=self)
+                
+                select.callback = select_callback
+                view = discord.ui.View()
+                view.add_item(select)
+                await button_interaction.response.send_message("Select boss to remove:", view=view, ephemeral=True)
+        
+        view = BossManagerView(self)
+        await interaction.response.send_message(view.build_message(), view=view, ephemeral=True)
+
+    @breaking_army.command(name="history", description="View Breaking Army boss roll history")
+    async def breaking_army_history(self, interaction: discord.Interaction):
+        with sqlite3.connect(self.db_path) as db:
+            db.row_factory = sqlite3.Row
+            cursor = db.execute("""
+                SELECT week_number, boss_name, locked, rolled_at
+                FROM breaking_army_bosses 
+                ORDER BY week_number DESC 
+                LIMIT 15
+            """)
+            history = cursor.fetchall()
+        
+        lines = ["**Breaking Army Boss History:**\n"]
+        
+        last_week = None
+        for entry in history:
+            if entry['week_number'] != last_week:
+                year = datetime.datetime.fromtimestamp(entry['rolled_at']).isocalendar()[0]
+                lines.append(f"\n**{year} Week {entry['week_number']}:**")
+                last_week = entry['week_number']
+            
+            status = "🔒" if entry['locked'] else "⏳"
+            lines.append(f"- {entry['boss_name']} {status}")
+        
+        if not history:
+            lines.append("No boss history found.")
+        
+        await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
 
     schedule = app_commands.Group(name="schedule", description="Manage guild event schedule")
 
