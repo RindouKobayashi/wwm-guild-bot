@@ -244,7 +244,7 @@ class ActivityCog(commands.Cog):
         new_points = self._update_points(message.author.id, message.guild.id)
         
         if new_points is not None:
-            logger.info(f"User {message.author} earned a point! Session: {new_points}, All-time: {self._get_user_alltime_points(message.author.id, message.guild.id)}, Session ID: {get_today_session_id()}")
+            logger.debug(f"User {message.author} earned a point! Session: {new_points}, All-time: {self._get_user_alltime_points(message.author.id, message.guild.id)}, Session ID: {get_today_session_id()}")
             
             # Check if they're now the leader (must strictly exceed current leader)
             leader_id = await self._get_leader_before_update(message.guild, message.author.id, new_points)
@@ -265,7 +265,7 @@ class ActivityCog(commands.Cog):
             if member.id != new_leader.id:
                 try:
                     await member.remove_roles(leader_role, reason="Activity leader updated")
-                    logger.info(f"Removed leader role from {member}")
+                    logger.debug(f"Removed leader role from {member}")
                 except discord.Forbidden:
                     logger.error(f"Cannot remove role from {member} - insufficient permissions")
         
@@ -273,25 +273,25 @@ class ActivityCog(commands.Cog):
         if new_leader:
             try:
                 await new_leader.add_roles(leader_role, reason="New activity leader")
-                logger.info(f"Gave leader role to {new_leader}")
+                logger.debug(f"Gave leader role to {new_leader}")
             except discord.Forbidden:
                 logger.error(f"Cannot give role to {new_leader} - insufficient permissions")
     
     @tasks.loop(hours=1)
     async def activity_check(self):
         """Periodically check and update the activity leader."""
-        logger.info("Running periodic activity leader check...")
+        logger.debug("Running periodic activity leader check...")
         for guild in self.bot.guilds:
             leader = await self._get_eligible_leader(guild)
             if leader:
                 member = guild.get_member(leader[0])
                 if member:
                     await self._assign_leader_role(guild, member)
-                    logger.info(f"Updated leader for {guild.name}: {member.name} with {leader[1]} session points")
+                    logger.debug(f"Updated leader for {guild.name}: {member.name} with {leader[1]} session points")
                 else:
                     logger.warning(f"Eligible leader (user ID: {leader[0]}) not found in guild {guild.name}")
             else:
-                logger.info(f"No eligible leader found for {guild.name}")
+                logger.debug(f"No eligible leader found for {guild.name}")
     
     @tasks.loop(minutes=5)
     async def reset_check(self):
