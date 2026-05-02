@@ -574,6 +574,84 @@ class ScheduleCog(commands.Cog):
         
         await interaction.response.send_message("\n".join(lines), ephemeral=True)
 
+    @breaking_army.command(name="force", description="Force set a specific boss for Breaking Army")
+    @app_commands.describe(
+        breaking_army_slot="Which Breaking Army slot to change (1 = Thursday, 2 = Saturday)",
+        boss_name="Name of the boss to set"
+    )
+    @app_commands.choices(breaking_army_slot=[
+        app_commands.Choice(name="Breaking Army #1 (Thursday)", value=1),
+        app_commands.Choice(name="Breaking Army #2 (Saturday)", value=2)
+    ])
+    async def breaking_army_force(self, interaction: discord.Interaction, breaking_army_slot: int, boss_name: str):
+        if not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message("You are not authorized to use this command.", ephemeral=True)
+        
+        all_bosses = self.load_boss_list()
+        if boss_name not in all_bosses:
+            boss_list = "\n".join([f"- {boss}" for boss in all_bosses])
+            return await interaction.response.send_message(f"❌ Boss '{boss_name}' not found in available bosses.\n\nAvailable bosses:\n{boss_list}", ephemeral=True)
+        
+        target_week = self.get_current_week_number()
+        year, week_num = self.get_current_week_info()
+        
+        # Get existing bosses for this week
+        with sqlite3.connect(self.db_path) as db:
+            cursor = db.execute("SELECT boss_name FROM breaking_army_bosses WHERE week_number = ? AND locked = 1 ORDER BY id ASC", (target_week,))
+            existing = [row[0] for row in cursor.fetchall()]
+        
+        # Ensure we have exactly 2 slots
+        while len(existing) < 2:
+            existing.append(None)
+        
+        # Check if boss is already in use in other slot
+        other_slot = 2 if breaking_army_slot == 1 else 1
+        if existing[other_slot - 1] == boss_name:
+            return await interaction.response.send_message(f"❌ Boss '{boss_name}' is already being used in Breaking Army #{other_slot}", ephemeral=True)
+        
+        # Update the selected slot
+        existing[breaking_army_slot - 1] = boss_name
+        
+        now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        
+        # Save to database
+        with sqlite3.connect(self.db_path) as db:
+            # Clear existing entries for this week
+            db.execute("DELETE FROM breaking_army_bosses WHERE week_number = ?", (target_week,))
+            
+            # Insert both bosses
+            for i, boss in enumerate(existing, 1):
+                if boss:
+                    db.execute(
+                        "INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)",
+                        (target_week, boss, now, interaction.user.id)
+                    )
+            
+            db.commit()
+        
+        # Update schedule events
+        with sqlite3.connect(self.db_path) as db:
+            cursor = db.execute("SELECT id FROM schedule_events WHERE event_name LIKE 'Breaking Army%' ORDER BY timestamp ASC")
+            event_ids = [row[0] for row in cursor.fetchall()]
+            
+            if len(event_ids) >= 1 and existing[0]:
+                db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{existing[0]}***)", event_ids[0]))
+            if len(event_ids) >= 2 and existing[1]:
+                db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{existing[1]}***)", event_ids[1]))
+            
+            db.commit()
+        
+        logger.info(f"Breaking Army #{breaking_army_slot} force set to {boss_name} for {year} Week {week_num} by {interaction.user}")
+        await interaction.response.send_message(f"✅ Breaking Army #{breaking_army_slot} has been force set to **{boss_name}**\n\nCurrent bosses this week:\n1. {existing[0] or 'Not set'}\n2. {existing[1] or 'Not set'}\n\nSchedule has been updated.", ephemeral=False)
+    
+    @breaking_army_force.autocomplete('boss_name')
+    async def boss_autocomplete(self, interaction: discord.Interaction, current: str):
+        bosses = self.load_boss_list()
+        return [
+            app_commands.Choice(name=boss, value=boss)
+            for boss in bosses if current.lower() in boss.lower()
+        ][:25]
+
 
     schedule = app_commands.Group(name="schedule", description="Manage guild event schedule")
 
