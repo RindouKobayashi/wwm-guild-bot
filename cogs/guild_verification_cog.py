@@ -211,7 +211,7 @@ class GuildVerificationCog(commands.Cog):
             await interaction.response.send_message(
                 embed=embed,
                 view=ExistingConfigCheckView(),
-                ephemeral=True
+                ephemeral=False
             )
         else:
             embed = discord.Embed(
@@ -223,7 +223,7 @@ class GuildVerificationCog(commands.Cog):
             await interaction.response.send_message(
                 embed=embed,
                 view=SetupWizardView(),
-                ephemeral=True
+                ephemeral=False
             )
 
 class ExistingConfigCheckView(discord.ui.View):
@@ -343,12 +343,18 @@ class Step1_ChannelSelect(discord.ui.View):
         )
 
 class Step2_AdminChannelSelect(discord.ui.View):
-    def __init__(self, config, guild):
+    def __init__(self, config, guild, page=0):
         super().__init__(timeout=600)
         self.config = config
+        self.guild = guild
+        self.page = page
+        
+        all_channels = guild.text_channels
+        start = page * 25
+        end = start + 25
         
         options = []
-        for channel in guild.text_channels[:25]:
+        for channel in all_channels[start:end]:
             options.append(discord.SelectOption(
                 label=f"#{channel.name}",
                 value=str(channel.id),
@@ -356,12 +362,29 @@ class Step2_AdminChannelSelect(discord.ui.View):
             ))
         
         channel_select = discord.ui.Select(
-            placeholder="Select admin review channel...",
+            placeholder=f"Select admin review channel... (Page {page+1}/{(len(all_channels)-1)//25 +1})",
             options=options,
             custom_id="select_admin_channel"
         )
         channel_select.callback = self.channel_selected
         self.add_item(channel_select)
+        
+        # Pagination buttons
+        if page > 0:
+            prev_btn = discord.ui.Button(style=ButtonStyle.secondary, label="← Previous", custom_id="prev_page")
+            prev_btn.callback = self.prev_page
+            self.add_item(prev_btn)
+        
+        if end < len(all_channels):
+            next_btn = discord.ui.Button(style=ButtonStyle.secondary, label="Next →", custom_id="next_page")
+            next_btn.callback = self.next_page
+            self.add_item(next_btn)
+    
+    async def prev_page(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(view=Step2_AdminChannelSelect(self.config, self.guild, self.page -1))
+    
+    async def next_page(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(view=Step2_AdminChannelSelect(self.config, self.guild, self.page +1))
     
     async def channel_selected(self, interaction: discord.Interaction):
         self.config['GUILD_ADMIN_CHANNEL_ID'] = int(interaction.data['values'][0])
@@ -378,26 +401,48 @@ class Step2_AdminChannelSelect(discord.ui.View):
         )
 
 class Step3_MemberRoleSelect(discord.ui.View):
-    def __init__(self, config, guild):
+    def __init__(self, config, guild, page=0):
         super().__init__(timeout=600)
         self.config = config
+        self.guild = guild
+        self.page = page
+        
+        all_roles = [r for r in guild.roles if not r.is_bot_managed() and not r.is_default()]
+        start = page * 25
+        end = start + 25
         
         options = []
-        for role in guild.roles[:25]:
-            if not role.is_bot_managed() and not role.is_default():
-                options.append(discord.SelectOption(
-                    label=f"{role.name}",
-                    value=str(role.id),
-                    description=f"ID: {role.id}"
-                ))
+        for role in all_roles[start:end]:
+            options.append(discord.SelectOption(
+                label=f"{role.name}",
+                value=str(role.id),
+                description=f"ID: {role.id}"
+            ))
         
         role_select = discord.ui.Select(
-            placeholder="Select member role to assign...",
+            placeholder=f"Select guild member role... (Page {page+1}/{(len(all_roles)-1)//25 +1})",
             options=options,
             custom_id="select_member_role"
         )
         role_select.callback = self.role_selected
         self.add_item(role_select)
+        
+        # Pagination buttons
+        if page > 0:
+            prev_btn = discord.ui.Button(style=ButtonStyle.secondary, label="← Previous", custom_id="prev_page")
+            prev_btn.callback = self.prev_page
+            self.add_item(prev_btn)
+        
+        if end < len(all_roles):
+            next_btn = discord.ui.Button(style=ButtonStyle.secondary, label="Next →", custom_id="next_page")
+            next_btn.callback = self.next_page
+            self.add_item(next_btn)
+    
+    async def prev_page(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(view=Step3_MemberRoleSelect(self.config, self.guild, self.page -1))
+    
+    async def next_page(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(view=Step3_MemberRoleSelect(self.config, self.guild, self.page +1))
     
     async def role_selected(self, interaction: discord.Interaction):
         self.config['GUILD_MEMBER_ROLE_ID'] = int(interaction.data['values'][0])
@@ -415,26 +460,48 @@ class Step3_MemberRoleSelect(discord.ui.View):
 
 
 class Step4_CommunityRoleSelect(discord.ui.View):
-    def __init__(self, config, guild):
+    def __init__(self, config, guild, page=0):
         super().__init__(timeout=600)
         self.config = config
+        self.guild = guild
+        self.page = page
+        
+        all_roles = [r for r in guild.roles if not r.is_bot_managed() and not r.is_default()]
+        start = page * 25
+        end = start + 25
         
         options = []
-        for role in guild.roles[:25]:
-            if not role.is_bot_managed() and not role.is_default():
-                options.append(discord.SelectOption(
-                    label=f"{role.name}",
-                    value=str(role.id),
-                    description=f"ID: {role.id}"
-                ))
+        for role in all_roles[start:end]:
+            options.append(discord.SelectOption(
+                label=f"{role.name}",
+                value=str(role.id),
+                description=f"ID: {role.id}"
+            ))
         
         role_select = discord.ui.Select(
-            placeholder="Select community member role...",
+            placeholder=f"Select community member role... (Page {page+1}/{(len(all_roles)-1)//25 +1})",
             options=options,
             custom_id="select_community_role"
         )
         role_select.callback = self.role_selected
         self.add_item(role_select)
+        
+        # Pagination buttons
+        if page > 0:
+            prev_btn = discord.ui.Button(style=ButtonStyle.secondary, label="← Previous", custom_id="prev_page")
+            prev_btn.callback = self.prev_page
+            self.add_item(prev_btn)
+        
+        if end < len(all_roles):
+            next_btn = discord.ui.Button(style=ButtonStyle.secondary, label="Next →", custom_id="next_page")
+            next_btn.callback = self.next_page
+            self.add_item(next_btn)
+    
+    async def prev_page(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(view=Step4_CommunityRoleSelect(self.config, self.guild, self.page -1))
+    
+    async def next_page(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(view=Step4_CommunityRoleSelect(self.config, self.guild, self.page +1))
     
     async def role_selected(self, interaction: discord.Interaction):
         self.config['COMMUNITY_MEMBER_ROLE_ID'] = int(interaction.data['values'][0])
@@ -451,26 +518,48 @@ class Step4_CommunityRoleSelect(discord.ui.View):
         )
 
 class Step5_AdminRoleSelect(discord.ui.View):
-    def __init__(self, config, guild):
+    def __init__(self, config, guild, page=0):
         super().__init__(timeout=600)
         self.config = config
+        self.guild = guild
+        self.page = page
+        
+        all_roles = [r for r in guild.roles if not r.is_bot_managed() and not r.is_default()]
+        start = page * 25
+        end = start + 25
         
         options = []
-        for role in guild.roles[:25]:
-            if not role.is_bot_managed() and not role.is_default():
-                options.append(discord.SelectOption(
-                    label=f"{role.name}",
-                    value=str(role.id),
-                    description=f"ID: {role.id}"
-                ))
+        for role in all_roles[start:end]:
+            options.append(discord.SelectOption(
+                label=f"{role.name}",
+                value=str(role.id),
+                description=f"ID: {role.id}"
+            ))
         
         role_select = discord.ui.Select(
-            placeholder="Select admin approver role...",
+            placeholder=f"Select admin approver role... (Page {page+1}/{(len(all_roles)-1)//25 +1})",
             options=options,
             custom_id="select_admin_role"
         )
         role_select.callback = self.role_selected
         self.add_item(role_select)
+        
+        # Pagination buttons
+        if page > 0:
+            prev_btn = discord.ui.Button(style=ButtonStyle.secondary, label="← Previous", custom_id="prev_page")
+            prev_btn.callback = self.prev_page
+            self.add_item(prev_btn)
+        
+        if end < len(all_roles):
+            next_btn = discord.ui.Button(style=ButtonStyle.secondary, label="Next →", custom_id="next_page")
+            next_btn.callback = self.next_page
+            self.add_item(next_btn)
+    
+    async def prev_page(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(view=Step5_AdminRoleSelect(self.config, self.guild, self.page -1))
+    
+    async def next_page(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(view=Step5_AdminRoleSelect(self.config, self.guild, self.page +1))
     
     async def role_selected(self, interaction: discord.Interaction):
         self.config['GUILD_ADMIN_ROLE_ID'] = int(interaction.data['values'][0])
@@ -762,10 +851,23 @@ class VerificationAdminView(discord.ui.View):
             )
             return
         
-        guild_role = interaction.guild.get_role(settings.GUILD_MEMBER_ROLE_ID)
-        if guild_role:
-            await target_user.add_roles(guild_role)
-            logger.info(f"Guild role assigned to {target_user} by {interaction.user}")
+        # Get is_member status from embed
+        is_member = False
+        for field in interaction.message.embeds[0].fields:
+            if field.name == "Guild Member":
+                is_member = ("✅" in field.value)
+        
+        # Assign correct role based on guild membership
+        if is_member and hasattr(settings, 'GUILD_MEMBER_ROLE_ID'):
+            guild_role = interaction.guild.get_role(settings.GUILD_MEMBER_ROLE_ID)
+            if guild_role:
+                await target_user.add_roles(guild_role)
+                logger.info(f"Guild member role assigned to {target_user} by {interaction.user}")
+        elif hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID'):
+            community_role = interaction.guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
+            if community_role:
+                await target_user.add_roles(community_role)
+                logger.info(f"Community member role assigned to {target_user} by {interaction.user}")
         
         # Update database
         conn = sqlite3.connect(DB_PATH)
