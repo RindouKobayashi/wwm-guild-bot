@@ -285,12 +285,18 @@ class SetupWizardView(discord.ui.View):
         )
 
 class Step1_ChannelSelect(discord.ui.View):
-    def __init__(self, config, guild):
+    def __init__(self, config, guild, page=0):
         super().__init__(timeout=600)
         self.config = config
+        self.guild = guild
+        self.page = page
+        
+        all_channels = guild.text_channels
+        start = page * 25
+        end = start + 25
         
         options = []
-        for channel in guild.text_channels[:25]:
+        for channel in all_channels[start:end]:
             options.append(discord.SelectOption(
                 label=f"#{channel.name}",
                 value=str(channel.id),
@@ -298,12 +304,29 @@ class Step1_ChannelSelect(discord.ui.View):
             ))
         
         channel_select = discord.ui.Select(
-            placeholder="Select verification channel...",
+            placeholder=f"Select verification channel... (Page {page+1}/{(len(all_channels)-1)//25 +1})",
             options=options,
             custom_id="select_verification_channel"
         )
         channel_select.callback = self.channel_selected
         self.add_item(channel_select)
+        
+        # Pagination buttons
+        if page > 0:
+            prev_btn = discord.ui.Button(style=ButtonStyle.secondary, label="← Previous", custom_id="prev_page")
+            prev_btn.callback = self.prev_page
+            self.add_item(prev_btn)
+        
+        if end < len(all_channels):
+            next_btn = discord.ui.Button(style=ButtonStyle.secondary, label="Next →", custom_id="next_page")
+            next_btn.callback = self.next_page
+            self.add_item(next_btn)
+    
+    async def prev_page(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(view=Step1_ChannelSelect(self.config, self.guild, self.page -1))
+    
+    async def next_page(self, interaction: discord.Interaction):
+        await interaction.response.edit_message(view=Step1_ChannelSelect(self.config, self.guild, self.page +1))
     
     async def channel_selected(self, interaction: discord.Interaction):
         self.config['GUILD_VERIFICATION_CHANNEL_ID'] = int(interaction.data['values'][0])
