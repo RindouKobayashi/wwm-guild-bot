@@ -4,3 +4,4 @@ logs/
 __pycache__/
 *.db
 data/
+.env-backup
