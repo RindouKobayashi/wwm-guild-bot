@@ -601,13 +601,13 @@ class FinalSetupView(discord.ui.View):
         verification_channel = interaction.guild.get_channel(self.config['GUILD_VERIFICATION_CHANNEL_ID'])
         
         embed = discord.Embed(
-            title="✅ Guild Membership Verification",
-            description="Are you a member of our guild?\n\nClick the button below to verify your membership and receive the guild member role.",
+            title="✅ Bind Your Account",
+            description="Link your WWM game account to your Discord account.\n\nClick the button below to verify and bind your character.",
             color=discord.Color.blue(),
             timestamp=datetime.utcnow()
         )
         
-        embed.set_footer(text="WWM Guild Verification System")
+        embed.set_footer(text="WWM Account Verification System")
         
         message = await verification_channel.send(
             embed=embed,
@@ -636,18 +636,18 @@ class VerificationStartView(discord.ui.View):
         super().__init__(timeout=None)
     
     @discord.ui.button(
-        label="Yes, I am a Guild Member",
+        label="Bind My Game Account",
         style=ButtonStyle.green,
         custom_id="guild_verify:start",
-        emoji="✅"
+        emoji="🔗"
     )
     async def start_verification(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_modal(CharacterUIDModal())
 
-class CharacterUIDModal(discord.ui.Modal, title="Guild Membership Verification"):
+class CharacterUIDModal(discord.ui.Modal, title="Bind Game Account"):
     character_uid = discord.ui.TextInput(
-        label="Enter your Character UID",
-        placeholder="Paste your in-game Character UID here...",
+        label="Enter your Character Number ID",
+        placeholder="Paste your 10 digit Character Number ID here...",
         min_length=3,
         max_length=50,
         required=True,
