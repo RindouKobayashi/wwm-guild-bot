@@ -15,6 +15,15 @@ bot = commands.Bot(
 )
 
 @bot.event
+async def setup_hook():
+    # ✅ CORRECT PLACE TO REGISTER PERSISTENT VIEWS - BEFORE BOT STARTS
+    # This is the official documented way from discord.py examples
+    from cogs.guild_verification_cog import VerificationStartView, VerificationAdminView
+    bot.add_view(VerificationStartView())
+    bot.add_view(VerificationAdminView())
+    logger.info("✅ Registered persistent views in setup_hook")
+
+@bot.event
 async def on_ready():
     logger.info(f"User: {bot.user} (ID: {bot.user.id})")
 

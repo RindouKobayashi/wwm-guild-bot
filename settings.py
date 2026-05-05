@@ -32,7 +32,17 @@ SPECIAL_ROLES = {
     "BA2": 1488835215949434891,
 }
 
+CLUB_ID = os.getenv("CLUB_ID")
+
 BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
+
+# WWM API Settings
+WWM_UID = os.getenv("WWM_UID")
+WWM_TOKEN = os.getenv("WWM_TOKEN")
+WWM_API_URL = os.getenv("WWM_API_URL")
+WWM_CLUB_HOSTNUMS_URL = os.getenv("WWM_CLUB_HOSTNUMS_URL")
+WWM_FULL_GUILD_URL = os.getenv("WWM_FULL_GUILD_URL")
+WWM_HOST = os.getenv("WWM_HOST")
 
 # Activity Tracking Settings
 ACTIVITY_LEADER_ROLE_ID = 1488837755189461132  # The role ID for "Most Active" member
