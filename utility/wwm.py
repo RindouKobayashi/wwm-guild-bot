@@ -9,13 +9,13 @@ from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL, WWM
 
 def get_player_info(number_id, uid=None, token=None, api_url=None):
     # ======================
-    # CONFIG (EDIT THESE)
+    # TWO STEP LOOKUP:
+    # 1. First use old endpoint to get player PID from Number ID
+    # 2. Then use new redis endpoint with PID to get FULL data including signatures
     # ======================
     UID = uid if uid else WWM_UID
     TOKEN = token if token else WWM_TOKEN
     NUMBER_ID = number_id
-
-    URL = api_url if api_url else WWM_API_URL
 
     HEADERS = {
         "Host": WWM_HOST,
@@ -26,9 +26,11 @@ def get_player_info(number_id, uid=None, token=None, api_url=None):
         "Content-Type": "application/octet-stream",
     }
 
-    # ======================
-    # BUILD MESSAGEPACK BODY
-    # ======================
+    # ==================================
+    # STEP 1: Get player PID using old endpoint
+    # ==================================
+    logger.info(f"Step 1: Resolving Number ID {NUMBER_ID} to PID")
+    
     payload = {
         "uid": UID,
         "number_id": NUMBER_ID,
@@ -38,32 +40,85 @@ def get_player_info(number_id, uid=None, token=None, api_url=None):
     packed = msgpack.packb(payload)
 
     try:
-        # ======================
-        # SEND REQUEST
-        # ======================
-        response = requests.post(URL, headers=HEADERS, data=packed, verify=True)
+        response = requests.post(WWM_API_URL, headers=HEADERS, data=packed, verify=True)
         
-        logger.info(f"Player info request status: {response.status_code}")
+        if response.status_code != 200:
+            logger.warning(f"PID lookup failed: {response.status_code}")
+            return None
+
+        data = msgpack.unpackb(response.content, raw=False, strict_map_key=False)
+        
+        if 'result' not in data or 'id' not in data['result']:
+            logger.warning("Could not get player PID")
+            return data
+            
+        player_pid = data['result']['id']
+        logger.info(f"✅ Resolved PID: {player_pid}")
+
+        # ==================================
+        # STEP 2: Get FULL player data using new redis endpoint
+        # ==================================
+        logger.info(f"Step 2: Getting full player data for PID {player_pid}")
+
+        REDIS_URL = "https://h72naxx2gb-ms-prod.easebar.com/flk/redis_player/get_players_info"
+        
+        payload = {
+            "fields": [
+                "base",
+                "team",
+                "head",
+                "friend",
+                "prison_prop",
+                "space_data",
+                "name_card",
+                "club",
+                "chat_room_sync",
+                "disease",
+                "kongfu",
+                "ride",
+                "mentor",
+                "jieyuan_info",
+                "jieyi",
+                "jieyi_misc",
+                "longmen",
+                "gameplay_trail",
+                "settings",
+                "pvp_battle",
+                "homeland"
+            ],
+            "hostnum2pids": {
+                10595: [player_pid]
+            },
+            "uid": UID
+        }
+
+        packed = msgpack.packb(payload)
+        
+        response = requests.post(REDIS_URL, headers=HEADERS, data=packed, verify=True)
+        
+        logger.info(f"Redis request status: {response.status_code}")
         
         if response.status_code == 200:
-            # ======================
-            # DECODE RESPONSE
-            # ======================
-            try:
-                data = msgpack.unpackb(response.content, raw=False, strict_map_key=False)
-                logger.info("Successfully decoded player data")
-                return data
-                
-            except Exception as e:
-                logger.error(f"Failed to decode msgpack: {str(e)}")
-                logger.debug(f"Raw content: {response.content}")
-                return response.content
-        else:
-            logger.warning(f"Error response: {response.text}")
-            return None
+            redis_data = msgpack.unpackb(response.content, raw=False, strict_map_key=False)
             
+            if 'result' in redis_data and redis_data['result']:
+                first_pid = next(iter(redis_data['result'].keys()))
+                full_player_data = redis_data['result'][first_pid]
+                
+                logger.info("✅ Got full player data with signatures")
+                
+                # Return in same format as before
+                return {
+                    'code': 0,
+                    'result': full_player_data
+                }
+        
+        # Fallback: return original data if redis fails
+        logger.info("Falling back to original data")
+        return data
+
     except Exception as e:
-        logger.error(f"Player info request failed: {str(e)}")
+        logger.error(f"Player lookup failed: {str(e)}")
         return None
 
 
@@ -145,6 +200,47 @@ def get_club_hostnums(player_pid):
             
     except Exception as e:
         logger.error(f"Club hostnum request failed: {str(e)}")
+        return None
+
+
+def get_fashion_plan(player_pid, hostnum=40, uid=None, token=None):
+    """Get player fashion plan including cover image"""
+    from settings import WWM_FASHION_PLAN_URL
+    
+    URL = WWM_FASHION_PLAN_URL
+    UID = uid if uid else WWM_UID
+    TOKEN = token if token else WWM_TOKEN
+    
+    HEADERS = {
+        "Host": WWM_HOST,
+        "Connection": "close",
+        "h72-ms-uid": UID,
+        "h72-ms-token": TOKEN,
+        "Accept-Encoding": "gzip, deflate",
+        "Content-Type": "application/octet-stream",
+    }
+
+    # EXACT payload including trailing \xa3 byte required by server
+    # Server rejects msgpack auto-packed data, must use exact byte sequence
+    packed = b'\x83\xa3uid\xb0' + UID.encode('utf-8') + b'\xa3pid\xb0' + player_pid.encode('utf-8') + b'\xa7hostnum\xcd(\xa3'
+    logger.debug(f"Fashion plan raw payload bytes: {packed.hex()}")
+
+    try:
+        response = requests.post(URL, headers=HEADERS, data=packed, verify=True)
+        
+        logger.info(f"Fashion plan request status: {response.status_code}")
+        
+        if response.status_code == 200:
+            data = msgpack.unpackb(response.content, raw=False, strict_map_key=False)
+            logger.info("Fashion plan data retrieved successfully")
+            logger.debug(f"Full fashion plan response: {json.dumps(data, indent=2, default=str)}")
+            return data
+        else:
+            logger.warning(f"Fashion plan error: {response.text}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"Fashion plan request failed: {str(e)}")
         return None
 
 
