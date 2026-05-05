@@ -903,6 +903,15 @@ class VerificationAdminView(discord.ui.View):
         
         await interaction.message.edit(embed=embed, view=None)
         await interaction.response.send_message("✅ Verification approved and role assigned!", ephemeral=True)
+        
+        # Send DM notification to user
+        try:
+            await target_user.send(
+                "✅ **Your account binding has been approved!**\n\n"
+                "You now have access to all member features."
+            )
+        except:
+            logger.warning(f"Could not send approval DM to user {target_user}")
 
     @discord.ui.button(
         label="Reject",
