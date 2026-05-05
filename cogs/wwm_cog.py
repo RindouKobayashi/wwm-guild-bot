@@ -2,9 +2,12 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import logging
+import sqlite3
 
 from utility.wwm import get_player_info, get_club_hostnums
-from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID
+from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
+
+DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 
 
 class WWMCog(commands.Cog):
@@ -26,6 +29,22 @@ class WWMCog(commands.Cog):
     )
     async def player_search(self, interaction: discord.Interaction, number_id: str):
         await interaction.response.defer(thinking=True)
+
+        # Check if user has bound their account
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT 1 FROM verified_members WHERE user_id = ?", (interaction.user.id,))
+        is_verified = c.fetchone() is not None
+        conn.close()
+
+        if not is_verified:
+            embed = discord.Embed(
+                title="❌ Account Not Bound",
+                description="You must bind your WWM game account before you can use this command.\n\nUse the account binding system first.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
 
         # Validate input
         if not number_id.isdigit() or len(number_id) != 10:
