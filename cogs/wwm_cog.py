@@ -231,17 +231,31 @@ class WWMCog(commands.Cog):
                             player_club_data = result_data.get(player_pid, {})
                             club_info = player_club_data.get('club', {})
                             player_club_id = club_info.get('club_id')
+                            club_hostnum = club_info.get('hostnum', 10103)
                             
-                            # Check if member of our guild
-                            if player_club_id == CLUB_ID:
-                                member_status = "✅ **Guild Member**"
-                                embed.color = discord.Color.green()
-                            else:
-                                member_status = "❌ Not Guild Member"
+                            guild_name = "No Guild"
+                            member_status = "❌ Not Guild Member"
+                            
+                            if player_club_id:
+                                # Fetch actual guild name using correct hostnum from club data
+                                guild_full_data = get_full_guild_info(player_club_id, hostnum=club_hostnum)
+                                if guild_full_data:
+                                    guild_base = guild_full_data.get('result', {}).get('base', {})
+                                    guild_name = guild_base.get('name', 'Unknown Guild')
+                                
+                                # Check if member of our guild
+                                if player_club_id == CLUB_ID:
+                                    member_status = f"✅ **Guild Member**"
+                                    embed.color = discord.Color.green()
+                                else:
+                                    member_status = "❌ Not In Our Guild"
+                            
+                            # Display both status and guild name
+                            status_text = f"{member_status}\n🏰 Guild: `{guild_name}`"
                             
                             embed.add_field(
                                 name="👥 Member Status",
-                                value=member_status,
+                                value=status_text,
                                 inline=False
                             )
                             

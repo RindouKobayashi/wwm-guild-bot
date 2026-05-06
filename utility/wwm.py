@@ -60,7 +60,7 @@ def get_player_info(number_id, uid=None, token=None, api_url=None):
         # ==================================
         logger.info(f"Step 2: Getting full player data for PID {player_pid}")
 
-        REDIS_URL = "https://h72naxx2gb-ms-prod.easebar.com/flk/redis_player/get_players_info"
+        REDIS_URL = WWM_CLUB_HOSTNUMS_URL
         
         payload = {
             "fields": [
@@ -122,7 +122,7 @@ def get_player_info(number_id, uid=None, token=None, api_url=None):
         return None
 
 
-def get_full_guild_info(club_id):
+def get_full_guild_info(club_id, hostnum=10103):
     URL = WWM_FULL_GUILD_URL
     
     headers = {
@@ -150,7 +150,7 @@ def get_full_guild_info(club_id):
             "base": [],
             "bonus": []
         },
-        "hostnum": 10103
+        "hostnum": hostnum
     }
     
     packed = msgpack.packb(payload)
@@ -226,7 +226,7 @@ def get_bulk_players_info(pid_list, fields=None, hostnum=10595):
     if fields is None:
         fields = ["base"]
     
-    URL = "https://h72naxx2gb-ms-prod.easebar.com/flk/redis_player/get_players_info"
+    URL = WWM_CLUB_HOSTNUMS_URL
     
     HEADERS = {
         "Host": WWM_HOST,
