@@ -19,19 +19,22 @@ class OnlinePlayersButton(discord.ui.View):
     
     @discord.ui.button(label="Check Online Players", style=discord.ButtonStyle.green, emoji="🟢", custom_id="online_players_button")
     async def check_online(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # ALWAYS DEFER FIRST - Discord only gives 3 seconds to respond
+        await interaction.response.defer(ephemeral=True)
+        
         # Check if user has the guild member role
         GUILD_MEMBER_ROLE_ID = 1501140557299318864
         
         member_role = discord.utils.get(interaction.user.roles, id=GUILD_MEMBER_ROLE_ID)
         if not member_role:
-            await interaction.response.send_message("❌ You are not guild member", ephemeral=True)
+            await interaction.followup.send("❌ You are not guild member", ephemeral=True)
             return
         
         # Fetch live online players list
         try:
             guild_data = get_full_guild_info(CLUB_ID)
             if not guild_data:
-                await interaction.response.send_message("❌ Failed to retrieve guild data", ephemeral=True)
+                await interaction.followup.send("❌ Failed to retrieve guild data", ephemeral=True)
                 return
             
             result = guild_data.get('result', {})
@@ -59,13 +62,13 @@ class OnlinePlayersButton(discord.ui.View):
                 for name in sorted(online_player_names):
                     lines.append(f"✅ {name}")
                 lines.append("```")
-                await interaction.response.send_message("\n".join(lines), ephemeral=True)
+                await interaction.followup.send("\n".join(lines), ephemeral=True)
             else:
-                await interaction.response.send_message("🔴 No players are currently online", ephemeral=True)
+                await interaction.followup.send("🔴 No players are currently online", ephemeral=True)
                 
         except Exception as e:
             logger.error(f"Failed to fetch online players: {str(e)}")
-            await interaction.response.send_message("❌ Failed to retrieve online players list", ephemeral=True)
+            await interaction.followup.send("❌ Failed to retrieve online players list", ephemeral=True)
 
 
 class WWMCog(commands.Cog):
@@ -399,7 +402,7 @@ class WWMCog(commands.Cog):
             guild_data = get_full_guild_info(CLUB_ID)
             
             if not guild_data:
-                logger.warning("Guild check returned no data")
+                await interaction.followup.send("❌ Failed to retrieve guild data", ephemeral=True)
                 return
             
             # Build and update status board
