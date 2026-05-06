@@ -114,15 +114,6 @@ class WWMCog(commands.Cog):
         is_verified = c.fetchone() is not None
         conn.close()
 
-        if not is_verified:
-            embed = discord.Embed(
-                title="❌ Account Not Bound",
-                description="You must bind your WWM game account before you can use this command.\n\nUse the account binding system first.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
-
         # Validate input
         if not number_id.isdigit() or len(number_id) != 10:
             embed = discord.Embed(
@@ -228,24 +219,6 @@ class WWMCog(commands.Cog):
                     value=f"`{base_data.get('number_id', number_id)}`",
                     inline=True
                 )
-                
-                embed.add_field(
-                    name="⚔️ Martial Mastery",
-                    value=f"`{round(base_data.get('max_xiuwei_kungfu', 0), 1)}`",
-                    inline=True
-                )
-                
-                embed.add_field(
-                    name="🌍 Region",
-                    value=f"`{base_data.get('oversea_tag', 'N/A')}`",
-                    inline=True
-                )
-                
-                embed.add_field(
-                    name="⌛ Total Online Time",
-                    value=f"`{round(base_data.get('online_time', 0) / 3600, 1)} hours`",
-                    inline=True
-                )
 
                 # Player signature / bio
                 name_card = data.get('name_card', {})
@@ -256,6 +229,79 @@ class WWMCog(commands.Cog):
                         value=f"`{player_signature}`",
                         inline=False
                     )
+
+                if is_verified:
+                    # Full stats only for verified bound users - All from attr object
+                    attr = data.get('attr', {})
+                    
+                    embed.add_field(
+                        name="⚔️ Martial Mastery",
+                        value=f"`{round(attr.get('XIUWEI_KUNGFU', 0), 1)}`",
+                        inline=True
+                    )
+                    
+                    embed.add_field(
+                        name="📚 Scholar Mastery",
+                        value=f"`{round(attr.get('XIUWEI_TRADE3', 0), 1)}`",
+                        inline=True
+                    )
+                    
+                    embed.add_field(
+                        name="💚 Healer Mastery",
+                        value=f"`{round(attr.get('XIUWEI_TRADE4', 0), 1)}`",
+                        inline=True
+                    )
+                    
+                    embed.add_field(
+                        name="🗺️ Exploration Mastery",
+                        value=f"`{round(attr.get('XIUWEI_EXPLORE', 0), 1)}`",
+                        inline=True
+                    )
+
+                    embed.add_field(
+                        name="🥊 Power",
+                        value=f"`{round(attr.get('STR', 0), 1)}`",
+                        inline=True
+                    )
+                    
+                    embed.add_field(
+                        name="🛡️ Body",
+                        value=f"`{round(attr.get('CON', 0), 1)}`",
+                        inline=True
+                    )
+                    
+                    embed.add_field(
+                        name="⚡ Momentum",
+                        value=f"`{round(attr.get('BAS', 0), 1)}`",
+                        inline=True
+                    )
+                    
+                    embed.add_field(
+                        name="💨 Agility",
+                        value=f"`{round(attr.get('CRI', 0), 1)}`",
+                        inline=True
+                    )
+                    
+                    embed.add_field(
+                        name="🔰 Defense",
+                        value=f"`{round(attr.get('AGI', 0), 1)}`",
+                        inline=True
+                    )
+                    
+                    embed.add_field(
+                        name="🌍 Region",
+                        value=f"`{base_data.get('oversea_tag', 'N/A')}`",
+                        inline=True
+                    )
+                    
+                    embed.add_field(
+                        name="⌛ Total Online Time",
+                        value=f"`{round(base_data.get('online_time', 0) / 3600, 1)} hours`",
+                        inline=True
+                    )
+                else:
+                    # Binding prompt footer for unbound users
+                    embed.set_footer(text="🔗 Bind your account to view full stats, combat power and details. Go to #1501139237594992780 to link your game account.")
 
                 # Extra interesting fields
                 status_lines = []
