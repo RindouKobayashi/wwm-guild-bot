@@ -5,339 +5,275 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import requests
 import msgpack
 import json
-from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL, WWM_FULL_GUILD_URL, WWM_HOST, logger
+from typing import Dict, Any, Optional, List
+from settings import (
+    WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL,
+    WWM_FULL_GUILD_URL, WWM_FASHION_PLAN_URL, WWM_HOST, logger
+)
 
-def get_player_info(number_id, uid=None, token=None, api_url=None):
-    # ======================
-    # TWO STEP LOOKUP:
-    # 1. First use old endpoint to get player PID from Number ID
-    # 2. Then use new redis endpoint with PID to get FULL data including signatures
-    # ======================
-    UID = uid if uid else WWM_UID
-    TOKEN = token if token else WWM_TOKEN
-    NUMBER_ID = number_id
+# -----------------------------------------------------------------------------
+# Shared Constants
+# -----------------------------------------------------------------------------
+DEFAULT_HEADERS = {
+    "Host": WWM_HOST,
+    "Connection": "close",
+    "h72-ms-uid": WWM_UID,
+    "h72-ms-token": WWM_TOKEN,
+    "Accept-Encoding": "gzip, deflate",
+    "Content-Type": "application/octet-stream",
+}
 
-    HEADERS = {
-        "Host": WWM_HOST,
-        "Connection": "close",
-        "h72-ms-uid": UID,
-        "h72-ms-token": TOKEN,
-        "Accept-Encoding": "gzip, deflate",
-        "Content-Type": "application/octet-stream",
-    }
+# Default requested fields (only useful fields - fast / minimal size)
+DEFAULT_FIELDS = [
+    "base", "team", "head", "name_card", "club",
+    "kongfu", "ride", "mentor", "jieyuan_info", "jieyi",
+    "jieyi_misc", "gameplay_trail", "pvp_battle", "attr"
+]
 
-    # ==================================
-    # STEP 1: Get player PID using old endpoint
-    # ==================================
-    logger.info(f"Step 1: Resolving Number ID {NUMBER_ID} to PID")
+# Complete list of ALL known fields (kept for reference / debugging)
+ALL_KNOWN_FIELDS = [
+    "base", "team", "head", "friend", "prison_prop", "space_data",
+    "name_card", "club", "chat_room_sync", "disease", "kongfu",
+    "ride", "mentor", "jieyuan_info", "jieyi", "jieyi_misc",
+    "longmen", "gameplay_trail", "settings", "pvp_battle", "homeland",
+    "attr"
+]
+
+# -----------------------------------------------------------------------------
+# Base API Request Handler (all common logic in one place)
+# -----------------------------------------------------------------------------
+def _wwm_api_post(
+    url: str,
+    payload: Dict[str, Any],
+    uid: Optional[str] = None,
+    token: Optional[str] = None,
+    timeout: int = 10,
+    raw_payload: Optional[bytes] = None
+) -> Optional[Dict[str, Any]]:
+    """
+    Internal base handler for all WWM MessagePack API requests
+    Handles packing, headers, request sending, unpacking and logging automatically
+    """
+    headers = DEFAULT_HEADERS.copy()
     
-    payload = {
-        "uid": UID,
-        "number_id": NUMBER_ID,
-        "force_search": False
-    }
-
-    packed = msgpack.packb(payload)
+    # Override credentials if provided
+    if uid:
+        headers["h72-ms-uid"] = uid
+    if token:
+        headers["h72-ms-token"] = token
 
     try:
-        response = requests.post(WWM_API_URL, headers=HEADERS, data=packed, verify=True)
+        # Pack payload unless raw bytes are explicitly provided
+        request_data = raw_payload if raw_payload is not None else msgpack.packb(payload)
         
-        if response.status_code != 200:
-            logger.warning(f"PID lookup failed: {response.status_code}")
-            return None
-
-        data = msgpack.unpackb(response.content, raw=False, strict_map_key=False)
-        
-        if 'result' not in data or 'id' not in data['result']:
-            logger.warning("Could not get player PID")
-            return data
-            
-        player_pid = data['result']['id']
-        logger.info(f"✅ Resolved PID: {player_pid}")
-
-        # ==================================
-        # STEP 2: Get FULL player data using new redis endpoint
-        # ==================================
-        logger.info(f"Step 2: Getting full player data for PID {player_pid}")
-
-        REDIS_URL = WWM_CLUB_HOSTNUMS_URL
-        
-        payload = {
-            "fields": [
-                "base",
-                "team",
-                "head",
-                "friend",
-                "prison_prop",
-                "space_data",
-                "name_card",
-                "club",
-                "chat_room_sync",
-                "disease",
-                "kongfu",
-                "ride",
-                "mentor",
-                "jieyuan_info",
-                "jieyi",
-                "jieyi_misc",
-                "longmen",
-                "gameplay_trail",
-                "settings",
-                "pvp_battle",
-                "homeland"
-            ],
-            "hostnum2pids": {
-                10595: [player_pid]
-            },
-            "uid": UID
-        }
-
-        packed = msgpack.packb(payload)
-        
-        response = requests.post(REDIS_URL, headers=HEADERS, data=packed, verify=True)
-        
-        logger.info(f"Redis request status: {response.status_code}")
-        
-        if response.status_code == 200:
-            redis_data = msgpack.unpackb(response.content, raw=False, strict_map_key=False)
-            
-            if 'result' in redis_data and redis_data['result']:
-                first_pid = next(iter(redis_data['result'].keys()))
-                full_player_data = redis_data['result'][first_pid]
-                
-                logger.info("✅ Got full player data with signatures")
-                
-                # Return in same format as before
-                return {
-                    'code': 0,
-                    'result': full_player_data
-                }
-        
-        # Fallback: return original data if redis fails
-        logger.info("Falling back to original data")
-        return data
-
-    except Exception as e:
-        logger.error(f"Player lookup failed: {str(e)}")
-        return None
-
-
-def get_full_guild_info(club_id, hostnum=10103):
-    URL = WWM_FULL_GUILD_URL
-    
-    headers = {
-        'Host': WWM_HOST,
-        'Connection': 'close',
-        'h72-ms-uid': WWM_UID,
-        'h72-ms-token': WWM_TOKEN,
-        'Accept-Encoding': 'gzip, deflate',
-        'Content-Type': 'application/octet-stream'
-    }
-    
-    # Correct full payload with all fields requested
-    payload = {
-        "club_id": club_id,
-        "uid": WWM_UID,
-        "field_info": {
-            "warehouse": [],
-            "applys": [],
-            "building": [],
-            "members": [],
-            "activity": [],
-            "custom_activity": [],
-            "targets": [],
-            "play": [],
-            "base": [],
-            "bonus": []
-        },
-        "hostnum": hostnum
-    }
-    
-    packed = msgpack.packb(payload)
-    
-    try:
         response = requests.post(
-            URL,
+            url,
             headers=headers,
-            data=packed,
+            data=request_data,
+            timeout=timeout,
             verify=True,
             allow_redirects=False
         )
-        
-        logger.debug(f"Full guild info request status: {response.status_code}")
-        
+
+        logger.debug(f"API Request {url} status: {response.status_code}")
+
         if response.status_code == 200:
-            data = msgpack.unpackb(response.content, raw=False, strict_map_key=False)
-            logger.debug("Full guild data retrieved successfully")
-            return data
-        else:
-            logger.warning(f"Guild info error: {response.text}")
-            return None
-            
-    except Exception as e:
-        logger.error(f"Full guild info request failed: {str(e)}")
+            return msgpack.unpackb(
+                response.content,
+                raw=False,
+                strict_map_key=False
+            )
+        
+        logger.warning(f"API Request failed {url}: HTTP {response.status_code}")
         return None
 
+    except Exception as e:
+        logger.error(f"API Request failed {url}: {str(e)}", exc_info=True)
+        return None
 
-def get_club_hostnums(player_pid):
-    # Correct API endpoint - redis_player not club_service
-    URL = WWM_CLUB_HOSTNUMS_URL
+# -----------------------------------------------------------------------------
+# Public API Functions
+# -----------------------------------------------------------------------------
+def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[str] = None, api_url: Optional[str] = None) -> Optional[Dict[str, Any]]:
+    """
+    Get full player info by Number ID (two step lookup)
+    1. Resolve Number ID to PID
+    2. Fetch full player data from Redis endpoint
+    """
+    logger.info(f"Resolving Number ID {number_id} to PID")
     
-    HEADERS = {
-        "Host": WWM_HOST,
-        "Connection": "close",
-        "h72-ms-uid": WWM_UID,
-        "h72-ms-token": WWM_TOKEN,
-        "Accept-Encoding": "gzip, deflate",
-        "Content-Type": "application/octet-stream",
-    }
-
-    # Dynamically build payload with actual player PID from first request
-    payload = {
-        "fields": ["club"],
-        "hostnum2pids": {
-            10595: [player_pid]
+    # Step 1: Resolve Number ID to PID
+    pid_result = _wwm_api_post(
+        api_url if api_url else WWM_API_URL,
+        {
+            "uid": uid if uid else WWM_UID,
+            "number_id": number_id,
+            "force_search": False
         },
-        "uid": "aflxRmCSslwu4HAo"
-    }
+        uid=uid,
+        token=token
+    )
+
+    if not pid_result or 'result' not in pid_result or 'id' not in pid_result['result']:
+        logger.warning("Could not resolve Number ID to PID")
+        return pid_result
+
+    player_pid = pid_result['result']['id']
+    logger.info(f"✅ Resolved PID: {player_pid}")
+
+    # Step 2: Get full player data
+    logger.info(f"Getting full player data for PID {player_pid}")
     
-    packed = msgpack.packb(payload)
+    redis_data = _wwm_api_post(
+        WWM_CLUB_HOSTNUMS_URL,
+        {
+            "fields": DEFAULT_FIELDS,
+            "hostnum2pids": {
+                10595: [player_pid]
+            },
+            "uid": uid if uid else WWM_UID
+        },
+        uid=uid,
+        token=token
+    )
 
-    try:
-        response = requests.post(URL, headers=HEADERS, data=packed, verify=True)
+    if redis_data and 'result' in redis_data and redis_data['result']:
+        first_pid = next(iter(redis_data['result'].keys()))
+        full_player_data = redis_data['result'][first_pid]
+        logger.info("✅ Got full player data with signatures")
         
-        logger.info(f"Club hostnum lookup status: {response.status_code}")
-        
-        if response.status_code == 200:
-            data = msgpack.unpackb(response.content, raw=False, strict_map_key=False)
-            logger.info("Club hostnum data retrieved successfully")
-            return data
-        else:
-            logger.warning(f"Club hostnum error: {response.text}")
-            return None
-            
-    except Exception as e:
-        logger.error(f"Club hostnum request failed: {str(e)}")
-        return None
+        return {
+            'code': 0,
+            'result': full_player_data
+        }
+
+    # Fallback to original data if redis request fails
+    logger.info("Falling back to original player data")
+    return pid_result
 
 
-def get_bulk_players_info(pid_list, fields=None, hostnum=10595):
+def get_full_guild_info(club_id: int, hostnum: int = 10103) -> Optional[Dict[str, Any]]:
+    """Get complete guild information including all fields"""
+    logger.info(f"Getting full guild info for club_id: {club_id}")
+    
+    return _wwm_api_post(
+        WWM_FULL_GUILD_URL,
+        {
+            "club_id": club_id,
+            "uid": WWM_UID,
+            "field_info": {
+                "warehouse": [],
+                "applys": [],
+                "building": [],
+                "members": [],
+                "activity": [],
+                "custom_activity": [],
+                "targets": [],
+                "play": [],
+                "base": [],
+                "bonus": []
+            },
+            "hostnum": hostnum
+        }
+    )
+
+
+def get_club_hostnums(player_pid: str) -> Optional[Dict[str, Any]]:
+    """Get club hostnum associations for a player"""
+    logger.info(f"Getting club hostnums for PID: {player_pid}")
+    
+    return _wwm_api_post(
+        WWM_CLUB_HOSTNUMS_URL,
+        {
+            "fields": ["club"],
+            "hostnum2pids": {
+                10595: [player_pid]
+            },
+            "uid": WWM_UID
+        }
+    )
+
+
+def get_bulk_players_info(pid_list: List[str], fields: Optional[List[str]] = None, hostnum: int = 10595) -> Optional[Dict[str, Any]]:
     """Bulk fetch multiple players info in one API call"""
     if fields is None:
         fields = ["base"]
     
-    URL = WWM_CLUB_HOSTNUMS_URL
+    logger.info(f"Bulk fetching {len(pid_list)} players")
     
-    HEADERS = {
-        "Host": WWM_HOST,
-        "Connection": "close",
-        "h72-ms-uid": WWM_UID,
-        "h72-ms-token": WWM_TOKEN,
-        "Accept-Encoding": "gzip, deflate",
-        "Content-Type": "application/octet-stream",
-    }
-    
-    payload = {
-        "fields": fields,
-        "hostnum2pids": {
-            hostnum: pid_list
-        },
-        "uid": WWM_UID
-    }
-    
-    try:
-        packed = msgpack.packb(payload)
-        response = requests.post(URL, headers=HEADERS, data=packed, timeout=10, verify=True)
-        
-        if response.status_code == 200:
-            return msgpack.unpackb(response.content, raw=False, strict_map_key=False)
-        
-        logger.warning(f"Bulk player info failed: {response.status_code}")
-        return None
-        
-    except Exception as e:
-        logger.error(f"Bulk player info request failed: {str(e)}")
-        return None
+    return _wwm_api_post(
+        WWM_CLUB_HOSTNUMS_URL,
+        {
+            "fields": fields,
+            "hostnum2pids": {
+                hostnum: pid_list
+            },
+            "uid": WWM_UID
+        }
+    )
 
 
-def get_fashion_plan(player_pid, hostnum=40, uid=None, token=None):
+def get_fashion_plan(player_pid: str, hostnum: int = 40, uid: Optional[str] = None, token: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Get player fashion plan including cover image"""
-    from settings import WWM_FASHION_PLAN_URL
+    logger.info(f"Getting fashion plan for PID: {player_pid}")
     
-    URL = WWM_FASHION_PLAN_URL
-    UID = uid if uid else WWM_UID
-    TOKEN = token if token else WWM_TOKEN
+    final_uid = uid if uid else WWM_UID
     
-    HEADERS = {
-        "Host": WWM_HOST,
-        "Connection": "close",
-        "h72-ms-uid": UID,
-        "h72-ms-token": TOKEN,
-        "Accept-Encoding": "gzip, deflate",
-        "Content-Type": "application/octet-stream",
-    }
+    # Special raw byte payload required for this specific endpoint
+    raw_payload = b'\x83\xa3uid\xb0' + final_uid.encode('utf-8') + b'\xa3pid\xb0' + player_pid.encode('utf-8') + b'\xa7hostnum\xcd(\xa3'
+    logger.debug(f"Fashion plan raw payload bytes: {raw_payload.hex()}")
 
-    # EXACT payload including trailing \xa3 byte required by server
-    # Server rejects msgpack auto-packed data, must use exact byte sequence
-    packed = b'\x83\xa3uid\xb0' + UID.encode('utf-8') + b'\xa3pid\xb0' + player_pid.encode('utf-8') + b'\xa7hostnum\xcd(\xa3'
-    logger.debug(f"Fashion plan raw payload bytes: {packed.hex()}")
-
-    try:
-        response = requests.post(URL, headers=HEADERS, data=packed, verify=True)
-        
-        logger.info(f"Fashion plan request status: {response.status_code}")
-        
-        if response.status_code == 200:
-            data = msgpack.unpackb(response.content, raw=False, strict_map_key=False)
-            logger.info("Fashion plan data retrieved successfully")
-            logger.debug(f"Full fashion plan response: {json.dumps(data, indent=2, default=str)}")
-            return data
-        else:
-            logger.warning(f"Fashion plan error: {response.text}")
-            return None
-            
-    except Exception as e:
-        logger.error(f"Fashion plan request failed: {str(e)}")
-        return None
+    return _wwm_api_post(
+        WWM_FASHION_PLAN_URL,
+        {},
+        uid=final_uid,
+        token=token,
+        raw_payload=raw_payload
+    )
 
 
-def get_full_player_and_club(number_id):
+def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
+    """Complete player + guild lookup workflow"""
     print(f"\n🔍 Looking up player with number_id: {number_id}")
     
-    # Step 1: Get player info first
+    # Step 1: Get player info
     player_data = get_player_info(number_id)
-    
-    player = player_data.get('result', {})
+    player = player_data.get('result', {}) if player_data else {}
     player_pid = player.get('id')
     
     print(f"\n✅ Found player: {player.get('name')}")
     print(f"✅ Player PID: {player_pid}")
-    
     print("\n" + "="*60)
-    
-    # Step 2: Use player PID to get club info
-    print(f"\n🏰 Getting club info for this player...")
-    club_data = get_club_hostnums(player_pid)
-    
-    print("\n" + "="*60)
-    
-    # Step 3: Extract club_id from club response - data is under 'result' key
-    result_data = club_data.get('result', {})
-    club_player_data = result_data.get(player_pid, {})
-    club_id = club_player_data.get('club', {}).get('club_id')
-    
-    print(f"\n🏯 Getting full guild data for club_id: {club_id}")
-    full_guild_data = get_full_guild_info(club_id) if club_id else None
-    
-    # Combine all data into single object
+
+    club_data = None
+    full_guild_data = None
+
+    if player_pid:
+        # Step 2: Get club info for player
+        print(f"\n🏰 Getting club info for this player...")
+        club_data = get_club_hostnums(player_pid)
+        
+        print("\n" + "="*60)
+
+        # Step 3: Get full guild data
+        if club_data:
+            result_data = club_data.get('result', {})
+            club_player_data = result_data.get(player_pid, {})
+            club_id = club_player_data.get('club', {}).get('club_id')
+            
+            if club_id:
+                print(f"\n🏯 Getting full guild data for club_id: {club_id}")
+                full_guild_data = get_full_guild_info(club_id)
+
+    # Combine all data
     combined_data = {
         "number_id": number_id,
         "player_data": player_data,
         "club_hostnum_data": club_data,
         "full_guild_data": full_guild_data
     }
-    
-    # Save single combined JSON file named after number_id
+
+    # Save to JSON file
     filename = f"{number_id}.json"
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(combined_data, f, indent=4, default=str, ensure_ascii=False)
