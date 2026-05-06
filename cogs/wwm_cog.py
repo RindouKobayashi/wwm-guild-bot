@@ -104,7 +104,8 @@ class WWMCog(commands.Cog):
         number_id="The player's 10-digit Number ID"
     )
     async def player_search(self, interaction: discord.Interaction, number_id: str):
-        await interaction.response.defer(thinking=True)
+        # Send initial message immediately - no defer
+        await interaction.response.send_message("🔍 Searching for player...")
 
         # Check if user has bound their account
         conn = sqlite3.connect(DB_PATH)
@@ -143,6 +144,8 @@ class WWMCog(commands.Cog):
             return
 
         try:
+            await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...")
+            
             # Get player info using utility function
             raw_data = get_player_info(number_id, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
             
@@ -279,52 +282,58 @@ class WWMCog(commands.Cog):
                         inline=False
                     )
                 
-                # Get club info using utility function
-                player_pid = data.get('id')
-                if player_pid:
-                    try:
-                        club_data = get_club_hostnums(player_pid)
+            # Get club info using utility function
+            player_pid = data.get('id')
+            if player_pid:
+                try:
+                    await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...\n🏰 Checking guild info...")
+                    club_data = get_club_hostnums(player_pid)
+                    
+                    guild_name = "No Guild"
+                    member_status = "❌ Not Guild Member"
+                    player_club_id = None
+                    club_hostnum = 10103
+                    
+                    if club_data:
+                        result_data = club_data.get('result', {})
+                        player_club_data = result_data.get(player_pid, {})
+                        club_info = player_club_data.get('club', {})
+                        player_club_id = club_info.get('club_id')
+                        club_hostnum = club_info.get('hostnum', 10103)
+                    
+                    if player_club_id:
+                        # Fetch actual guild name using correct hostnum from club data
+                        await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...\n🏰 Checking guild info...\n📋 Loading guild data...")
+                        guild_full_data = get_full_guild_info(player_club_id, hostnum=club_hostnum)
                         
-                        if club_data:
-                            result_data = club_data.get('result', {})
-                            player_club_data = result_data.get(player_pid, {})
-                            club_info = player_club_data.get('club', {})
-                            player_club_id = club_info.get('club_id')
-                            club_hostnum = club_info.get('hostnum', 10103)
-                            
-                            guild_name = "No Guild"
-                            member_status = "❌ Not Guild Member"
-                            
-                            if player_club_id:
-                                # Fetch actual guild name using correct hostnum from club data
-                                guild_full_data = get_full_guild_info(player_club_id, hostnum=club_hostnum)
-                                if guild_full_data:
-                                    guild_base = guild_full_data.get('result', {}).get('base', {})
-                                    guild_name = guild_base.get('name', 'Unknown Guild')
-                                
-                                # Check if member of our guild
-                                if player_club_id == CLUB_ID:
-                                    member_status = f"✅ **Guild Member**"
-                                    embed.color = discord.Color.green()
-                                else:
-                                    member_status = "❌ Not In Our Guild"
-                            
-                            # Display both status and guild name
-                            status_text = f"{member_status}\n🏰 Guild: `{guild_name}`"
-                            
-                            embed.add_field(
-                                name="👥 Member Status",
-                                value=status_text,
-                                inline=False
-                            )
-                            
-                    except Exception as club_err:
-                        logger.warning(f"Failed to get club info: {str(club_err)}")
+                        if guild_full_data:
+                            guild_base = guild_full_data.get('result', {}).get('base', {})
+                            guild_name = guild_base.get('name', 'Unknown Guild')
+                        
+                        # Check if member of our guild
+                        if player_club_id == CLUB_ID:
+                            member_status = f"✅ **Guild Member**"
+                            embed.color = discord.Color.green()
+                        else:
+                            member_status = "❌ Not In Our Guild"
+                    
+                    # Display both status and guild name
+                    status_text = f"{member_status}\n🏰 Guild: `{guild_name}`"
+                    
+                    embed.add_field(
+                        name="👥 Member Status",
+                        value=status_text,
+                        inline=False
+                    )
+                    
+                except Exception as club_err:
+                    logger.warning(f"Failed to get club info: {str(club_err)}")
                 
             else:
                 embed.description = f"```\n{str(raw_data)}\n```"
 
-            await interaction.followup.send(embed=embed)
+            # Send final result
+            await interaction.edit_original_response(content=None, embed=embed)
 
         except Exception as e:
             logger.error(f"API Request failed: {str(e)}")
@@ -333,7 +342,7 @@ class WWMCog(commands.Cog):
                 description=f"Failed to connect to WWM API: `{str(e)}`",
                 color=discord.Color.red()
             )
-            await interaction.followup.send(embed=embed)
+            await interaction.edit_original_response(content=None, embed=embed)
 
         except Exception as e:
             logger.error(f"Player search failed: {str(e)}", exc_info=True)
@@ -631,7 +640,8 @@ class WWMCog(commands.Cog):
         player_id="Search using a player's 10-digit Number ID (finds their guild)"
     )
     async def guild_search(self, interaction: discord.Interaction, player_id: str):
-        await interaction.response.defer(thinking=True)
+        # Send initial message immediately
+        await interaction.response.send_message("🔍 Searching for player...")
 
         # Check if user has bound their account
         conn = sqlite3.connect(DB_PATH)
@@ -673,6 +683,8 @@ class WWMCog(commands.Cog):
                 await interaction.followup.send(embed=embed)
                 return
 
+            await interaction.edit_original_response(content="✅ Found player\n🏰 Looking up guild info...")
+            
             # Get player info to find their guild
             player_data = get_player_info(player_id)
             
@@ -721,6 +733,8 @@ class WWMCog(commands.Cog):
                 await interaction.followup.send(embed=embed)
                 return
 
+            await interaction.edit_original_response(content="✅ Found player\n🏰 Looking up guild info...\n📋 Loading guild data...")
+            
             # Now fetch full guild information
             guild_data = get_full_guild_info(target_guild_id, hostnum=target_hostnum)
             
@@ -729,7 +743,7 @@ class WWMCog(commands.Cog):
                     title="❌ Guild not found",
                     color=discord.Color.red()
                 )
-                await interaction.followup.send(embed=embed)
+                await interaction.edit_original_response(content=None, embed=embed)
                 return
 
             result = guild_data['result']
@@ -874,7 +888,7 @@ class WWMCog(commands.Cog):
                     inline=False
                 )
 
-            await interaction.followup.send(embed=embed)
+            await interaction.edit_original_response(content=None, embed=embed)
 
         except Exception as e:
             logger.error(f"Guild search failed: {str(e)}", exc_info=True)
