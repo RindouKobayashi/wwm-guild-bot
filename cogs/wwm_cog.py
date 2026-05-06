@@ -379,10 +379,10 @@ class WWMCog(commands.Cog):
                 players = bulk_data.get('result', {})
                 
                 for pid, player_data in players.items():
-                    base = player_data.get('base', {})
-                    if base.get('is_online', 0) == 1:
+                    player_base = player_data.get('base', {})
+                    if player_base.get('is_online', 0) == 1:
                         online += 1
-                        online_player_names.append(base.get('nickname', 'Unknown'))
+                        online_player_names.append(player_base.get('nickname', 'Unknown'))
             
         except Exception as e:
             logger.warning(f"Failed to get real online status, falling back to estimate: {e}")
@@ -398,7 +398,7 @@ class WWMCog(commands.Cog):
         lines.append("```ansi")
         lines.append("╔═════════════════════════════════════════╗")
         lines.append(f"║ 📛 Name: {base.get('name', 'Unknown'):<40}")
-        lines.append(f"║ ⭐ Level: {base.get('level', 0):<40}")
+        lines.append(f"║ ⭐ Guild Level: {base.get('level', 0):<40}")
         lines.append(f"║ 👥 Members: {member_count}/100{' ':<32}")
         lines.append(f"║ 🎓 Apprentices: {members.get('apprentice_num', 0):<34}")
         lines.append(f"║ 💰 Guild Funds: {result.get('base', {}).get('fund', 0):,}{' ':<25}")
