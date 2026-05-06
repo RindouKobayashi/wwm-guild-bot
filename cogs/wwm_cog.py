@@ -30,14 +30,14 @@ class OnlinePlayersButton(discord.ui.View):
             await interaction.followup.send("❌ You are not guild member", ephemeral=True)
             return
         
-        # Send immediate loading feedback
-        await interaction.followup.send("🔄 Getting player list...", ephemeral=True)
+        # Send immediate loading feedback - CAPTURE MESSAGE REFERENCE
+        loading_msg = await interaction.followup.send("🔄 Getting player list...", ephemeral=True, wait=True)
         
         # Fetch live online players list
         try:
             # Use cached member list from guild monitor state (no extra API call)
             if not self.cog.last_guild_state:
-                await interaction.edit_original_response(content="❌ Guild data not initialized, please try again shortly")
+                await loading_msg.edit(content="❌ Guild data not initialized, please try again shortly")
                 return
             
             result = self.cog.last_guild_state.get('result', {})
@@ -57,7 +57,7 @@ class OnlinePlayersButton(discord.ui.View):
                     if player_base.get('is_online', 0) == 1:
                         online_player_names.append(player_base.get('nickname', 'Unknown'))
             
-            # Build response
+            # Build response - EDIT ONLY OUR PRIVATE MESSAGE
             if online_player_names:
                 lines = []
                 lines.append(f"### 🟢 ONLINE PLAYERS ({len(online_player_names)}):")
@@ -65,13 +65,13 @@ class OnlinePlayersButton(discord.ui.View):
                 for name in sorted(online_player_names):
                     lines.append(f"✅ {name}")
                 lines.append("```")
-                await interaction.edit_original_response(content="\n".join(lines))
+                await loading_msg.edit(content="\n".join(lines))
             else:
-                await interaction.edit_original_response(content="🔴 No players are currently online")
+                await loading_msg.edit(content="🔴 No players are currently online")
                 
         except Exception as e:
             logger.error(f"Failed to fetch online players: {str(e)}")
-            await interaction.edit_original_response(content="❌ Failed to retrieve online players list")
+            await loading_msg.edit(content="❌ Failed to retrieve online players list")
 
 
 class WWMCog(commands.Cog):
