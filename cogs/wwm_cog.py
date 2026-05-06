@@ -85,7 +85,6 @@ class WWMCog(commands.Cog):
         self.db_path = BASE_DIR / "data" / "guild_monitor.db"
         self._init_database()
         
-        logger.info("WWM Cog loaded")
 
     player_group = app_commands.Group(
         name="player",
@@ -178,11 +177,11 @@ class WWMCog(commands.Cog):
                             cover_img = fashion_data['result'].get('cover_img')
                             if cover_img:
                                 embed.set_image(url=cover_img)
-                                logger.info(f"Successfully added cover image: {cover_img}")
+                                logger.debug(f"Successfully added cover image: {cover_img}")
                         elif fashion_data.get('code') == 2:
-                            logger.info("Fashion plan API requires valid user session token (code 2)")
+                            logger.debug("Fashion plan API requires valid user session token (code 2)")
                         else:
-                            logger.info(f"Fashion plan returned code: {fashion_data.get('code')}")
+                            logger.debug(f"Fashion plan returned code: {fashion_data.get('code')}")
             except Exception as fashion_err:
                 logger.warning(f"Failed to get fashion cover image: {str(fashion_err)}")
                 # Continue without image - don't fail whole request
@@ -386,12 +385,10 @@ class WWMCog(commands.Cog):
         await self._load_config()
         if self.monitor_enabled and self.monitor_channel:
             self.guild_monitor_task.start()
-        logger.info("WWM Cog loaded successfully")
     
     async def cog_unload(self):
         if self.guild_monitor_task.is_running():
             self.guild_monitor_task.cancel()
-        logger.info("WWM Cog unloaded")
     
     @tasks.loop(minutes=1)
     async def guild_monitor_task(self):
@@ -416,7 +413,7 @@ class WWMCog(commands.Cog):
                 diff = DeepDiff(self.last_guild_state, guild_data, ignore_order=True, exclude_paths=["root['timestamp']"])
                 
                 if diff:
-                    logger.info(f"Guild changes detected: {list(diff.keys())}")
+                    logger.debug(f"Guild changes detected: {list(diff.keys())}")
                     await self._process_changes(diff, guild_data)
             
             self.last_guild_state = guild_data
