@@ -728,13 +728,14 @@ class CharacterUIDModal(discord.ui.Modal, title="Bind Game Account"):
 
 class ConfirmCharacterView(discord.ui.View):
     def __init__(self, user_id, username, character_uid, is_member, nickname, level):
-        super().__init__(timeout=300)
+        super().__init__(timeout=3600)
         self.user_id = user_id
         self.username = username
         self.character_uid = character_uid
         self.is_member = is_member
         self.nickname = nickname
         self.level = level
+        self.verify_code = ''.join([str(random.randint(0,9)) for _ in range(6)])
     
     @discord.ui.button(label="This is my character", style=ButtonStyle.green, emoji="✅")
     async def confirm_character(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -742,62 +743,21 @@ class ConfirmCharacterView(discord.ui.View):
             await interaction.response.send_message("This verification is not for you.", ephemeral=True)
             return
         
-        # Generate 6 digit verification code
-        verify_code = ''.join([str(random.randint(0,9)) for _ in range(6)])
-        
-        # Send code to user
-        await interaction.response.send_message(
-            f"✅ Confirmation received!\n\n"
-            f"Your verification code is: `{verify_code}`\n\n"
-            f"Please send this code to any guild administrator to complete verification.",
-            ephemeral=True
+        await interaction.response.edit_message(
+            content=f"✅ Confirmation received!\n\n"
+                    f"**Your verification code is:** `{self.verify_code}`\n\n"
+                    f"Please put this code **anywhere in your in-game profile signature**.\n"
+                    f"Once you have added the code, click the button below to verify automatically.\n\n"
+                    f"💡 Tip: The code can be placed anywhere, even at the end or hidden among other text.",
+            embed=None,
+            view=VerifySignatureView(
+                user_id=self.user_id,
+                username=self.username,
+                character_uid=self.character_uid,
+                is_member=self.is_member,
+                verify_code=self.verify_code
+            )
         )
-        
-        # Send request to admin channel
-        admin_channel = interaction.guild.get_channel(settings.GUILD_ADMIN_CHANNEL_ID)
-        
-        if admin_channel:
-            embed = discord.Embed(
-                title="🔔 New Guild Verification Request",
-                color=discord.Color.yellow(),
-                timestamp=datetime.utcnow()
-            )
-            
-            embed.add_field(name="User", value=f"<@{self.user_id}>\n`{self.username}`", inline=True)
-            embed.add_field(name="User ID", value=f"`{self.user_id}`", inline=True)
-            embed.add_field(name="Character UID", value=f"`{self.character_uid}`", inline=False)
-            embed.add_field(name="Character Name", value=f"`{self.nickname}`", inline=True)
-            embed.add_field(name="Level", value=f"`{self.level}`", inline=True)
-            embed.add_field(name="Guild Member", value="✅ Yes" if self.is_member else "❌ No", inline=True)
-            embed.add_field(name="Verification Code", value=f"`{verify_code}`", inline=False)
-            
-            admin_message = await admin_channel.send(
-                embed=embed,
-                view=VerificationAdminView(
-                    user_id=self.user_id,
-                    username=self.username,
-                    character_uid=self.character_uid
-                )
-            )
-            
-            # Save request to database
-            conn = sqlite3.connect(DB_PATH)
-            c = conn.cursor()
-            c.execute('''
-                INSERT INTO verification_requests 
-                (user_id, username, character_uid, status, message_id, created_at, verification_code)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-            ''', (
-                self.user_id,
-                self.username,
-                self.character_uid,
-                'pending',
-                admin_message.id,
-                datetime.utcnow(),
-                verify_code
-            ))
-            conn.commit()
-            conn.close()
     
     @discord.ui.button(label="Cancel", style=ButtonStyle.secondary, emoji="❌")
     async def cancel_verification(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -810,6 +770,106 @@ class ConfirmCharacterView(discord.ui.View):
             embed=None,
             view=None
         )
+
+
+class VerifySignatureView(discord.ui.View):
+    def __init__(self, user_id, username, character_uid, is_member, verify_code):
+        super().__init__(timeout=3600)
+        self.user_id = user_id
+        self.username = username
+        self.character_uid = character_uid
+        self.is_member = is_member
+        self.verify_code = verify_code
+    
+    @discord.ui.button(label="✓ I have added the code", style=ButtonStyle.green, emoji="🔍")
+    async def verify_signature(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("This verification is not for you.", ephemeral=True)
+            return
+        
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            # Re-fetch live player profile
+            player_data = get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+            
+            if not player_data or 'result' not in player_data:
+                await interaction.followup.send(
+                    "❌ Failed to retrieve character information. Please try again later.",
+                    ephemeral=True
+                )
+                return
+            
+            player = player_data.get('result', {})
+            # Signature is stored under name_card field NOT base
+            name_card = player.get('name_card', {})
+            signature = name_card.get('sign', '')
+            
+            # Check if verification code exists anywhere in signature
+            if self.verify_code in str(signature):
+                # ✅ Verification successful!
+                target_user = interaction.guild.get_member(self.user_id)
+                
+                if target_user:
+                    # Assign correct role
+                    if self.is_member and hasattr(settings, 'GUILD_MEMBER_ROLE_ID'):
+                        guild_role = interaction.guild.get_role(settings.GUILD_MEMBER_ROLE_ID)
+                        if guild_role:
+                            await target_user.add_roles(guild_role)
+                    elif hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID'):
+                        community_role = interaction.guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
+                        if community_role:
+                            await target_user.add_roles(community_role)
+                
+                # Add to verified members database
+                conn = sqlite3.connect(DB_PATH)
+                c = conn.cursor()
+                c.execute('''
+                    REPLACE INTO verified_members
+                    (user_id, username, character_uid, verified_at, verified_by)
+                    VALUES (?, ?, ?, ?, ?)
+                ''', (
+                    self.user_id,
+                    self.username,
+                    self.character_uid,
+                    datetime.utcnow(),
+                    self.user_id # Verified automatically by user themselves
+                ))
+                conn.commit()
+                conn.close()
+                
+                await interaction.followup.send(
+                    "✅ **Verification Successful!**\n\n"
+                    "Your account has been successfully bound and verified.\n"
+                    "You now have access to all member features.\n\n"
+                    "You may now remove the code from your signature if you wish.",
+                    ephemeral=True
+                )
+                
+                logger.info(f"Automatic verification completed for user {self.username} | Character UID: {self.character_uid}")
+            
+            else:
+                # ❌ Code not found
+                signature_preview = str(signature).strip() if signature else "(empty signature)"
+                if len(signature_preview) > 500:
+                    signature_preview = signature_preview[:500] + "... (truncated)"
+                
+                await interaction.followup.send(
+                    f"❌ **Verification Code Not Found**\n\n"
+                    f"I could not find the code `{self.verify_code}` in your profile signature.\n\n"
+                    f"**This is what I see in your signature right now:**\n"
+                    f"```\n{signature_preview}\n```\n\n"
+                    f"Please make sure you have entered the code correctly in your in-game signature, then try again.\n\n"
+                    f"💡 Note: It may take up to 1 minute for profile changes to update on the server.",
+                    ephemeral=True
+                )
+        
+        except Exception as e:
+            logger.error(f"Error verifying signature: {str(e)}")
+            await interaction.followup.send(
+                "❌ An error occurred while verifying your signature. Please try again later.",
+                ephemeral=True
+            )
 
 class VerificationAdminView(discord.ui.View):
     def __init__(self, user_id: int = None, username: str = None, character_uid: str = None):
