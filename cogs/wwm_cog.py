@@ -626,6 +626,268 @@ class WWMCog(commands.Cog):
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
+    @guild_group.command(
+        name="search",
+        description="Search for a guild by Player ID"
+    )
+    @app_commands.describe(
+        player_id="Search using a player's 10-digit Number ID (finds their guild)"
+    )
+    async def guild_search(self, interaction: discord.Interaction, player_id: str):
+        await interaction.response.defer(thinking=True)
+
+        # Check if user has bound their account
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT 1 FROM verified_members WHERE user_id = ?", (interaction.user.id,))
+        is_verified = c.fetchone() is not None
+        conn.close()
+
+        if not is_verified:
+            embed = discord.Embed(
+                title="❌ Account Not Bound",
+                description="You must bind your WWM game account before you can use this command.\n\nUse the account binding system first.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        # Check if API is configured
+        if not WWM_UID or not WWM_TOKEN:
+            embed = discord.Embed(
+                title="❌ API Not Configured",
+                description="WWM API credentials are not set up properly. Please contact bot owner.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
+
+        target_guild_id = None
+        target_hostnum = 10103
+
+        try:
+            # Validate player number id format
+            if not player_id.isdigit() or len(player_id) != 10:
+                embed = discord.Embed(
+                    title="❌ Invalid Player ID",
+                    description="Player ID must be exactly 10 digits long",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            # Get player info to find their guild
+            player_data = get_player_info(player_id)
+            
+            if not player_data or 'result' not in player_data:
+                embed = discord.Embed(
+                    title="❌ Player not found",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            player_result = player_data['result']
+            player_pid = player_result.get('id')
+
+            if not player_pid:
+                embed = discord.Embed(
+                    title="❌ Failed to get player data",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            # Get club info for this player
+            club_data = get_club_hostnums(player_pid)
+            
+            if not club_data or 'result' not in club_data:
+                embed = discord.Embed(
+                    title="❌ Player is not in any guild",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            result_data = club_data['result']
+            player_club_data = result_data.get(player_pid, {})
+            club_info = player_club_data.get('club', {})
+            
+            target_guild_id = club_info.get('club_id')
+            target_hostnum = club_info.get('hostnum', 10103)
+
+            if not target_guild_id:
+                embed = discord.Embed(
+                    title="❌ Player is not in any guild",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            # Now fetch full guild information
+            guild_data = get_full_guild_info(target_guild_id, hostnum=target_hostnum)
+            
+            if not guild_data or 'result' not in guild_data:
+                embed = discord.Embed(
+                    title="❌ Guild not found",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            result = guild_data['result']
+            base = result.get('base', {})
+            members = result.get('members', {})
+            play = result.get('play', {})
+
+            # Build response embed
+            embed = discord.Embed(
+                title="🏰 Guild Profile",
+                color=discord.Color.og_blurple()
+            )
+
+            embed.description = f"**{base.get('name', 'Unknown Guild')}**"
+
+            embed.add_field(
+                name="📛 Guild Name",
+                value=f"`{base.get('name', 'Unknown')}`",
+                inline=True
+            )
+
+            embed.add_field(
+                name="⭐ Level",
+                value=f"`{base.get('level', 0)}`",
+                inline=True
+            )
+
+            embed.add_field(
+                name="👥 Members",
+                value=f"`{members.get('member_num', 0)} / 100`",
+                inline=True
+            )
+
+            embed.add_field(
+                name="💰 Guild Funds",
+                value=f"`{base.get('fund', 0):,}`",
+                inline=True
+            )
+
+            embed.add_field(
+                name="📈 Total Fame",
+                value=f"`{base.get('fame', 0):,}`",
+                inline=True
+            )
+
+            embed.add_field(
+                name="🔥 Weekly Activity",
+                value=f"`{base.get('week_fame', 0):,}`",
+                inline=True
+            )
+
+            embed.add_field(
+                name="⚔️ GvG Points",
+                value=f"`{play.get('pk_match_info', {}).get('battle_score', 0)}`",
+                inline=True
+            )
+
+            # Find guild leadership
+            leader_name = "None"
+            vice_leader_name = "None"
+            leader_pid = "None"
+            vice_leader_pid = "None"
+            
+            member_list = members.get('members', {})
+            for pid, member in member_list.items():
+                post_list = member.get('post', [])
+                
+                # ACTUAL POST IDs FROM LIVE DATA:
+                # 1 = Guild Master / Leader
+                # 2 = Vice Leader / Deputy
+                if 1 in post_list:
+                    leader_pid = pid
+                if 2 in post_list:
+                    vice_leader_pid = pid
+
+            # Now fetch actual nicknames using bulk player API
+            pids_to_fetch = []
+            if leader_pid != "None":
+                pids_to_fetch.append(leader_pid)
+            if vice_leader_pid != "None":
+                pids_to_fetch.append(vice_leader_pid)
+
+            if pids_to_fetch:
+                from utility.wwm import get_bulk_players_info
+                bulk_data = get_bulk_players_info(pids_to_fetch, fields=["base"])
+                
+                if bulk_data and bulk_data.get('code') == 0:
+                    players = bulk_data.get('result', {})
+                    
+                    if leader_pid in players:
+                        leader_base = players[leader_pid].get('base', {})
+                        leader_name = leader_base.get('nickname', 'Unknown')
+                    
+                    if vice_leader_pid in players:
+                        vice_base = players[vice_leader_pid].get('base', {})
+                        vice_leader_name = vice_base.get('nickname', 'Unknown')
+
+            # Log leadership info for debug
+            logger.debug(f"=== GUILD LEADERSHIP FOUND ===")
+            logger.debug(f"Guild Leader: {leader_name} | PID: {leader_pid}")
+            logger.debug(f"Vice Leader: {vice_leader_name} | PID: {vice_leader_pid}")
+
+            # Calculate real online players count
+            online = 0
+            all_pids = list(member_list.keys())
+            
+            from utility.wwm import get_bulk_players_info
+            bulk_data = get_bulk_players_info(all_pids, fields=["base"])
+            
+            if bulk_data and bulk_data.get('code') == 0:
+                players = bulk_data.get('result', {})
+                
+                for pid, player_data in players.items():
+                    player_base = player_data.get('base', {})
+                    if player_base.get('is_online', 0) == 1:
+                        online += 1
+
+            embed.add_field(
+                name="👑 Guild Leader",
+                value=f"`{leader_name}`",
+                inline=True
+            )
+
+            embed.add_field(
+                name="⚔️ Vice Leader",
+                value=f"`{vice_leader_name}`",
+                inline=True
+            )
+
+            embed.add_field(
+                name="🟢 Online Now",
+                value=f"`{online} / {members.get('member_num', 0)}`",
+                inline=True
+            )
+
+            # Guild announcement
+            announcement = result.get('gonggao_info', {}).get('msg')
+            if announcement and announcement.strip():
+                embed.add_field(
+                    name="📢 Guild Announcement",
+                    value=f"`{announcement}`",
+                    inline=False
+                )
+
+            await interaction.followup.send(embed=embed)
+
+        except Exception as e:
+            logger.error(f"Guild search failed: {str(e)}", exc_info=True)
+            embed = discord.Embed(
+                title="❌ Search Failed",
+                description=f"An error occurred while searching: `{str(e)}`",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(WWMCog(bot))
