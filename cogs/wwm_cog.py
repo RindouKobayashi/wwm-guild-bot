@@ -402,7 +402,7 @@ class WWMCog(commands.Cog):
             guild_data = get_full_guild_info(CLUB_ID)
             
             if not guild_data:
-                await interaction.followup.send("❌ Failed to retrieve guild data", ephemeral=True)
+                logger.warning("Guild check returned no data")
                 return
             
             # Build and update status board
