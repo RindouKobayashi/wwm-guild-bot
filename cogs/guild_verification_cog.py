@@ -144,46 +144,29 @@ class GuildVerificationCog(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
         logger.info(f"Member lookup performed by {interaction.user}")
 
-    @app_commands.command(name="list-bound-accounts", description="List all verified and bound accounts in the database")
-    @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.describe(
-        show_values="Show live character values and stats (default: True)",
-        page="Page number to view (default: 1)"
-    )
-    async def list_bound_accounts(self, interaction: discord.Interaction, show_values: bool = True, page: int = 1):
-        """Admin command to list all bound/verified accounts"""
-        
-        await interaction.response.defer(ephemeral=True)
-        
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT COUNT(*) FROM verified_members")
-        total_count = c.fetchone()[0]
-        
-        c.execute("SELECT user_id, username, character_uid, verified_at FROM verified_members ORDER BY verified_at DESC")
-        all_members = c.fetchall()
-        conn.close()
-        
-        if total_count == 0:
-            embed = discord.Embed(
-                title="📋 Bound Accounts List",
-                description="No bound accounts found in the database.",
-                color=discord.Color.yellow()
-            )
-            await interaction.followup.send(embed=embed, ephemeral=True)
-            return
-        
-        items_per_page = 10
-        total_pages = (total_count + items_per_page - 1) // items_per_page
-        page = max(1, min(page, total_pages))
-        
-        start_idx = (page - 1) * items_per_page
-        end_idx = start_idx + items_per_page
-        page_members = all_members[start_idx:end_idx]
+class BoundAccountsPaginationView(discord.ui.View):
+    def __init__(self, all_members, show_values, user_id, current_page=1):
+        super().__init__(timeout=120)
+        self.all_members = all_members
+        self.show_values = show_values
+        self.user_id = user_id
+        self.current_page = current_page
+        self.items_per_page = 10
+        self.total_pages = (len(all_members) + self.items_per_page - 1) // self.items_per_page
+        self.update_button_states()
+    
+    def update_button_states(self):
+        self.prev_page_button.disabled = self.current_page <= 1
+        self.next_page_button.disabled = self.current_page >= self.total_pages
+    
+    def generate_embed(self):
+        start_idx = (self.current_page - 1) * self.items_per_page
+        end_idx = start_idx + self.items_per_page
+        page_members = self.all_members[start_idx:end_idx]
         
         embed = discord.Embed(
             title="📋 Bound Accounts List",
-            description=f"Total bound accounts: **{total_count}**\nPage {page}/{total_pages}",
+            description=f"Total bound accounts: **{len(self.all_members)}**\nPage {self.current_page}/{self.total_pages}",
             color=discord.Color.blue()
         )
         
@@ -192,7 +175,7 @@ class GuildVerificationCog(commands.Cog):
             
             field_value = f"Discord: <@{user_id}>\nUID: `{character_uid}`"
             
-            if show_values:
+            if self.show_values:
                 try:
                     player_data = get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
                     if player_data and 'result' in player_data:
@@ -216,10 +199,70 @@ class GuildVerificationCog(commands.Cog):
                 inline=False
             )
         
-        embed.set_footer(text="Use page parameter to navigate between pages")
+        return embed
+
+    @discord.ui.button(label="← Previous", style=ButtonStyle.secondary)
+    async def prev_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("You cannot use these buttons.", ephemeral=True)
+            return
         
-        await interaction.followup.send(embed=embed, ephemeral=True)
-        logger.info(f"Bound accounts list viewed by {interaction.user} | Page {page}")
+        self.current_page -= 1
+        self.update_button_states()
+        await interaction.response.edit_message(embed=self.generate_embed(), view=self)
+    
+    @discord.ui.button(label="Next →", style=ButtonStyle.secondary)
+    async def next_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("You cannot use these buttons.", ephemeral=True)
+            return
+        
+        self.current_page += 1
+        self.update_button_states()
+        await interaction.response.edit_message(embed=self.generate_embed(), view=self)
+    
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        await self.message.edit(view=self)
+
+class GuildVerificationCog(commands.Cog):
+
+    @app_commands.command(name="list-bound-accounts", description="List all verified and bound accounts in the database")
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.describe(
+        show_values="Show live character values and stats (default: True)"
+    )
+    async def list_bound_accounts(self, interaction: discord.Interaction, show_values: bool = True):
+        """Admin command to list all bound/verified accounts"""
+        
+        await interaction.response.defer(ephemeral=False)
+        
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM verified_members")
+        total_count = c.fetchone()[0]
+        
+        c.execute("SELECT user_id, username, character_uid, verified_at FROM verified_members ORDER BY verified_at DESC")
+        all_members = c.fetchall()
+        conn.close()
+        
+        if total_count == 0:
+            embed = discord.Embed(
+                title="📋 Bound Accounts List",
+                description="No bound accounts found in the database.",
+                color=discord.Color.yellow()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=False)
+            return
+        
+        pagination_view = BoundAccountsPaginationView(all_members, show_values, interaction.user.id, current_page=1)
+        embed = pagination_view.generate_embed()
+        
+        message = await interaction.followup.send(embed=embed, view=pagination_view, ephemeral=False)
+        pagination_view.message = message
+        
+        logger.info(f"Bound accounts list viewed by {interaction.user}")
 
     @app_commands.command(name="add-verified-member", description="Manually add a verified guild member")
     @app_commands.checks.has_permissions(administrator=True)
