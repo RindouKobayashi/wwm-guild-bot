@@ -12,6 +12,62 @@ from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 
 
+class OnlinePlayersButton(discord.ui.View):
+    def __init__(self, cog):
+        super().__init__(timeout=None)
+        self.cog = cog
+    
+    @discord.ui.button(label="Check Online Players", style=discord.ButtonStyle.green, emoji="🟢", custom_id="online_players_button")
+    async def check_online(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Check if user has the guild member role
+        GUILD_MEMBER_ROLE_ID = 1501140557299318864
+        
+        member_role = discord.utils.get(interaction.user.roles, id=GUILD_MEMBER_ROLE_ID)
+        if not member_role:
+            await interaction.response.send_message("❌ You are not guild member", ephemeral=True)
+            return
+        
+        # Fetch live online players list
+        try:
+            guild_data = get_full_guild_info(CLUB_ID)
+            if not guild_data:
+                await interaction.response.send_message("❌ Failed to retrieve guild data", ephemeral=True)
+                return
+            
+            result = guild_data.get('result', {})
+            members = result.get('members', {})
+            member_list = members.get('members', {})
+            
+            # Get REAL live online status
+            from utility.wwm import get_bulk_players_info
+            all_pids = list(member_list.keys())
+            bulk_data = get_bulk_players_info(all_pids, fields=["base"])
+            
+            online_player_names = []
+            if bulk_data and bulk_data.get('code') == 0:
+                players = bulk_data.get('result', {})
+                for pid, player_data in players.items():
+                    player_base = player_data.get('base', {})
+                    if player_base.get('is_online', 0) == 1:
+                        online_player_names.append(player_base.get('nickname', 'Unknown'))
+            
+            # Build response
+            if online_player_names:
+                lines = []
+                lines.append(f"### 🟢 ONLINE PLAYERS ({len(online_player_names)}):")
+                lines.append("```")
+                for name in sorted(online_player_names):
+                    lines.append(f"✅ {name}")
+                lines.append("```")
+                await interaction.response.send_message("\n".join(lines), ephemeral=True)
+            else:
+                await interaction.response.send_message("🔴 No players are currently online", ephemeral=True)
+                
+        except Exception as e:
+            logger.error(f"Failed to fetch online players: {str(e)}")
+            await interaction.response.send_message("❌ Failed to retrieve online players list", ephemeral=True)
+
+
 class WWMCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -20,6 +76,7 @@ class WWMCog(commands.Cog):
         self.monitor_enabled = False
         self.check_interval_minutes = 2
         self.monitor_message = None
+        self.online_button_view = OnlinePlayersButton(self)
         
         # Load saved config
         self.db_path = BASE_DIR / "data" / "guild_monitor.db"
@@ -348,7 +405,7 @@ class WWMCog(commands.Cog):
             # Build and update status board
             status_message, embeds = self._build_status_board(guild_data)
             
-            await self.monitor_message.edit(content=status_message, embeds=embeds)
+            await self.monitor_message.edit(content=status_message, embeds=embeds, view=self.online_button_view)
             logger.debug("Guild status message updated successfully")
             
             # Check for changes and send alerts
@@ -422,14 +479,6 @@ class WWMCog(commands.Cog):
         lines.append(f"║ 🟢 Online Now: {online}/{member_count}{' ':<30}")
         lines.append("╚═════════════════════════════════════════╝")
         lines.append("```")
-        
-        # Show actual online players
-        if online_player_names:
-            lines.append("### 🟢 ONLINE RIGHT NOW:")
-            lines.append("```ansi")
-            for name in sorted(online_player_names):
-                lines.append(f"✅ {name}")
-            lines.append("```")
         
         
         # Pending Applications (Text Only)
@@ -511,7 +560,7 @@ class WWMCog(commands.Cog):
                     guild_data = get_full_guild_info(CLUB_ID)
                     if guild_data:
                         status_message, embeds = self._build_status_board(guild_data)
-                        self.monitor_message = await self.monitor_channel.send(content=status_message, embeds=embeds)
+                        self.monitor_message = await self.monitor_channel.send(content=status_message, embeds=embeds, view=self.online_button_view)
                         self._save_config()
                         self.last_guild_state = guild_data
     
@@ -524,7 +573,7 @@ class WWMCog(commands.Cog):
         guild_data = get_full_guild_info(CLUB_ID)
         if guild_data:
             status_message, embeds = self._build_status_board(guild_data)
-            self.monitor_message = await channel.send(content=status_message, embeds=embeds)
+            self.monitor_message = await channel.send(content=status_message, embeds=embeds, view=self.online_button_view)
             self.last_guild_state = guild_data
         
         self._save_config()
