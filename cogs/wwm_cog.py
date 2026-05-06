@@ -319,7 +319,7 @@ class WWMCog(commands.Cog):
             self.guild_monitor_task.cancel()
         logger.info("WWM Cog unloaded")
     
-    @tasks.loop(minutes=2)
+    @tasks.loop(minutes=1)
     async def guild_monitor_task(self):
         if not self.monitor_enabled or not self.monitor_channel:
             return
@@ -360,13 +360,38 @@ class WWMCog(commands.Cog):
         member_list = members.get('members', {})
         member_count = members.get('member_num', 0)
         
-        # Calculate online members (last 2 hours)
+        # Get REAL live online status from player API
+        from utility.wwm import get_bulk_players_info
+        
         now = discord.utils.utcnow().timestamp()
+        
         online = 0
-        for pid, member in member_list.items():
-            last_online = member.get('last_online_ts', 0)
-            if now - last_online < 7200: # 2 hours
-                online += 1
+        online_player_names = []
+        
+        try:
+            # Get all member pids
+            all_pids = list(member_list.keys())
+            
+            # Bulk fetch real live online status
+            bulk_data = get_bulk_players_info(all_pids, fields=["base"])
+            
+            if bulk_data and bulk_data.get('code') == 0:
+                players = bulk_data.get('result', {})
+                
+                for pid, player_data in players.items():
+                    base = player_data.get('base', {})
+                    if base.get('is_online', 0) == 1:
+                        online += 1
+                        online_player_names.append(base.get('nickname', 'Unknown'))
+            
+        except Exception as e:
+            logger.warning(f"Failed to get real online status, falling back to estimate: {e}")
+            # Fallback to old estimation method
+            now = discord.utils.utcnow().timestamp()
+            for pid, member in member_list.items():
+                last_online = member.get('last_online_ts', 0)
+                if now - last_online < 7200: # 2 hours
+                    online += 1
         
         lines = []
         lines.append("## 🏰 **GUILD LIVE STATUS**")
@@ -376,53 +401,22 @@ class WWMCog(commands.Cog):
         lines.append(f"║ ⭐ Level: {base.get('level', 0):<40}")
         lines.append(f"║ 👥 Members: {member_count}/100{' ':<32}")
         lines.append(f"║ 🎓 Apprentices: {members.get('apprentice_num', 0):<34}")
-        lines.append(f"║ 💰 Guild Funds: {base.get('fund', 0):,}{' ':<25}")
-        lines.append(f"║ 📈 Total Fame: {base.get('fame', 0):,}{' ':<28}")
-        lines.append(f"║ 🔥 Weekly Activity: {base.get('week_fame', 0):,}{' ':<23}")
+        lines.append(f"║ 💰 Guild Funds: {result.get('base', {}).get('fund', 0):,}{' ':<25}")
+        lines.append(f"║ 📈 Total Fame: {result.get('base', {}).get('fame', 0):,}{' ':<28}")
+        lines.append(f"║ 🔥 Weekly Activity: {result.get('base', {}).get('week_fame', 0):,}{' ':<23}")
         lines.append(f"║ ⚔️ GvG Points: {play.get('pk_match_info', {}).get('battle_score', 0):<32}")
         lines.append(f"║ 🟢 Online Now: {online}/{member_count}{' ':<30}")
         lines.append("╚═════════════════════════════════════════╝")
         lines.append("```")
         
-        # Ranks Table (Text Only - No Embeds)
-        custom_posts = members.get('custom_posts', {})
-        rank_names = {
-            '5': 'Command',
-            '7': 'Half Time Performer',
-            5: 'Command',
-            7: 'Half Time Performer'
-        }
-        rank_order = [
-            '䨻䨻䨻䨻䨻',
-            '䨻䨻䨻䨻',
-            '䨻䨻䨻',
-            '䨻䨻',
-            'Command',
-            'Half Time Performer',
-            'Construction',
-            'Absent'
-        ]
+        # Show actual online players
+        if online_player_names:
+            lines.append("### 🟢 ONLINE RIGHT NOW:")
+            lines.append("```ansi")
+            for name in sorted(online_player_names):
+                lines.append(f"✅ {name}")
+            lines.append("```")
         
-        rank_list = []
-        for post_id, post_data in custom_posts.items():
-            post_id_str = str(post_id)
-            # Skip leader (1) and vice leader (2) ranks
-            if post_id_str in ('1', '2') or int(post_id) in (1, 2):
-                continue
-            name = rank_names.get(post_id, rank_names.get(post_id_str, post_data.get('name', post_id)))
-            count = len(post_data.get('pids', []))
-            rank_list.append( (name, count) )
-        
-        # Sort by custom order
-        rank_list.sort(key=lambda x: rank_order.index(x[0]) if x[0] in rank_order else 999)
-        
-        lines.append("### 👑 **RANKS**")
-        lines.append("```ansi")
-        
-        for name, count in rank_list:
-            lines.append(f"{name}: {count}")
-            
-        lines.append("```")
         
         # Pending Applications (Text Only)
         applys = result.get('applys', {}).get('apply_dict', {})
@@ -435,7 +429,7 @@ class WWMCog(commands.Cog):
         
         # Footer timestamps
         lines.append(f"⏱️ Last Updated: <t:{int(now)}:R>")
-        lines.append(f"🔄 Next Update: <t:{int(now) + 120}:R>")
+        lines.append(f"🔄 Next Update: <t:{int(now) + 60}:R>")
         
         return "\n".join(lines), []
     

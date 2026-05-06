@@ -134,8 +134,26 @@ def get_full_guild_info(club_id):
         'Content-Type': 'application/octet-stream'
     }
     
-    # Dynamic payload injection - replace club_id at exact byte position
-    packed = b'\x84\xa7club_id\xb0' + club_id.encode('utf-8') + b'\xa3uid\xb0aflRzGCSslwu4Bsj\xaafield_info\x8a\xa9warehouse\x90\xa6applys\x90\xa8building\x90\xa7members\x90\xa8activity\x90\xafcustom_activity\x90\xa7targets\x90\xa4play\x90\xa4base\x90\xa5bonus\x90\xa7hostnum\xcd\'w'
+    # Correct full payload with all fields requested
+    payload = {
+        "club_id": club_id,
+        "uid": WWM_UID,
+        "field_info": {
+            "warehouse": [],
+            "applys": [],
+            "building": [],
+            "members": [],
+            "activity": [],
+            "custom_activity": [],
+            "targets": [],
+            "play": [],
+            "base": [],
+            "bonus": []
+        },
+        "hostnum": 10103
+    }
+    
+    packed = msgpack.packb(payload)
     
     try:
         response = requests.post(
@@ -146,11 +164,11 @@ def get_full_guild_info(club_id):
             allow_redirects=False
         )
         
-        logger.info(f"Full guild info request status: {response.status_code}")
+        logger.debug(f"Full guild info request status: {response.status_code}")
         
         if response.status_code == 200:
             data = msgpack.unpackb(response.content, raw=False, strict_map_key=False)
-            logger.info("Full guild data retrieved successfully")
+            logger.debug("Full guild data retrieved successfully")
             return data
         else:
             logger.warning(f"Guild info error: {response.text}")
@@ -200,6 +218,45 @@ def get_club_hostnums(player_pid):
             
     except Exception as e:
         logger.error(f"Club hostnum request failed: {str(e)}")
+        return None
+
+
+def get_bulk_players_info(pid_list, fields=None, hostnum=10595):
+    """Bulk fetch multiple players info in one API call"""
+    if fields is None:
+        fields = ["base"]
+    
+    URL = "https://h72naxx2gb-ms-prod.easebar.com/flk/redis_player/get_players_info"
+    
+    HEADERS = {
+        "Host": WWM_HOST,
+        "Connection": "close",
+        "h72-ms-uid": WWM_UID,
+        "h72-ms-token": WWM_TOKEN,
+        "Accept-Encoding": "gzip, deflate",
+        "Content-Type": "application/octet-stream",
+    }
+    
+    payload = {
+        "fields": fields,
+        "hostnum2pids": {
+            hostnum: pid_list
+        },
+        "uid": WWM_UID
+    }
+    
+    try:
+        packed = msgpack.packb(payload)
+        response = requests.post(URL, headers=HEADERS, data=packed, timeout=10, verify=True)
+        
+        if response.status_code == 200:
+            return msgpack.unpackb(response.content, raw=False, strict_map_key=False)
+        
+        logger.warning(f"Bulk player info failed: {response.status_code}")
+        return None
+        
+    except Exception as e:
+        logger.error(f"Bulk player info request failed: {str(e)}")
         return None
 
 
