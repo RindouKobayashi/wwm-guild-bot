@@ -144,6 +144,83 @@ class GuildVerificationCog(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
         logger.info(f"Member lookup performed by {interaction.user}")
 
+    @app_commands.command(name="list-bound-accounts", description="List all verified and bound accounts in the database")
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.describe(
+        show_values="Show live character values and stats (default: True)",
+        page="Page number to view (default: 1)"
+    )
+    async def list_bound_accounts(self, interaction: discord.Interaction, show_values: bool = True, page: int = 1):
+        """Admin command to list all bound/verified accounts"""
+        
+        await interaction.response.defer(ephemeral=True)
+        
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+        c.execute("SELECT COUNT(*) FROM verified_members")
+        total_count = c.fetchone()[0]
+        
+        c.execute("SELECT user_id, username, character_uid, verified_at FROM verified_members ORDER BY verified_at DESC")
+        all_members = c.fetchall()
+        conn.close()
+        
+        if total_count == 0:
+            embed = discord.Embed(
+                title="📋 Bound Accounts List",
+                description="No bound accounts found in the database.",
+                color=discord.Color.yellow()
+            )
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            return
+        
+        items_per_page = 10
+        total_pages = (total_count + items_per_page - 1) // items_per_page
+        page = max(1, min(page, total_pages))
+        
+        start_idx = (page - 1) * items_per_page
+        end_idx = start_idx + items_per_page
+        page_members = all_members[start_idx:end_idx]
+        
+        embed = discord.Embed(
+            title="📋 Bound Accounts List",
+            description=f"Total bound accounts: **{total_count}**\nPage {page}/{total_pages}",
+            color=discord.Color.blue()
+        )
+        
+        for idx, member in enumerate(page_members, start=start_idx + 1):
+            user_id, username, character_uid, verified_at = member
+            
+            field_value = f"Discord: <@{user_id}>\nUID: `{character_uid}`"
+            
+            if show_values:
+                try:
+                    player_data = get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+                    if player_data and 'result' in player_data:
+                        player = player_data['result']
+                        nickname = player.get('base', {}).get('nickname', 'Unknown')
+                        level = player.get('base', {}).get('level', 0)
+                        power = player.get('base', {}).get('max_xiuwei_kungfu', 0)
+                        
+                        field_value += f"\n**Name:** `{nickname}`\n**Lv:** {level} | **Power:** {power:,}"
+                except:
+                    field_value += "\n⚠️ Failed to load character data"
+            
+            from datetime import timezone
+            verified_dt = datetime.fromisoformat(verified_at).replace(tzinfo=timezone.utc)
+            verified_timestamp = int(verified_dt.timestamp())
+            field_value += f"\nBound: <t:{verified_timestamp}:D>"
+            
+            embed.add_field(
+                name=f"#{idx} - {username}",
+                value=field_value,
+                inline=False
+            )
+        
+        embed.set_footer(text="Use page parameter to navigate between pages")
+        
+        await interaction.followup.send(embed=embed, ephemeral=True)
+        logger.info(f"Bound accounts list viewed by {interaction.user} | Page {page}")
+
     @app_commands.command(name="add-verified-member", description="Manually add a verified guild member")
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(
