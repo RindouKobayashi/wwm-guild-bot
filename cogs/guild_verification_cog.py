@@ -6,6 +6,7 @@ from discord.ext import commands
 from discord import app_commands, ButtonStyle
 from settings import logger, BASE_DIR, WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL, CLUB_ID
 from datetime import datetime
+from discord.ext import tasks
 from utility.wwm import get_player_info, get_club_hostnums
 
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
@@ -15,6 +16,9 @@ class GuildVerificationCog(commands.Cog):
         self.bot = bot
         self.init_database()
         self.load_config()
+        
+        # Start background sync task
+        self.guild_member_sync_task.start()
 
     def init_database(self):
         """Initialize database tables"""
@@ -89,6 +93,108 @@ class GuildVerificationCog(commands.Cog):
     async def on_ready(self):
         logger.info("✅ Guild Verification cog ready")
         logger.info("✅ Persistent views already registered in setup_hook")
+        
+    async def cog_unload(self):
+        if self.guild_member_sync_task.is_running():
+            self.guild_member_sync_task.cancel()
+
+    @tasks.loop(minutes=1)
+    async def guild_member_sync_task(self):
+        """Background task to sync verified members guild membership status every minute"""
+        
+        # Only run if roles are configured
+        if not hasattr(settings, 'GUILD_MEMBER_ROLE_ID') or not hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID'):
+            return
+            
+        try:
+            # Get all verified members from database
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            c.execute("SELECT user_id, character_uid FROM verified_members")
+            verified_members = c.fetchall()
+            conn.close()
+            
+            if not verified_members:
+                return
+                
+            logger.debug(f"Running guild membership sync for {len(verified_members)} verified members")
+            
+            # Get all pids for bulk API call
+            all_pids = []
+            user_id_map = {}
+            
+            for user_id, character_uid in verified_members:
+                all_pids.append(character_uid)
+                user_id_map[character_uid] = user_id
+                
+            # Bulk fetch club membership status
+            from utility.wwm import get_bulk_players_info
+            bulk_data = get_bulk_players_info(all_pids, fields=["club"])
+            
+            if not bulk_data or bulk_data.get('code') != 0:
+                logger.warning("Failed to get bulk player data for membership sync")
+                return
+                
+            players = bulk_data.get('result', {})
+            
+            guild_role = None
+            community_role = None
+            
+            # Process each member
+            for character_uid, player_data in players.items():
+                if character_uid not in user_id_map:
+                    continue
+                    
+                user_id = user_id_map[character_uid]
+                
+                # Get current guild membership
+                club_data = player_data.get('club', {})
+                club_id = club_data.get('club_id')
+                is_current_guild_member = (club_id == CLUB_ID)
+                
+                # Find the guild member
+                guild = self.bot.guilds[0]
+                member = guild.get_member(user_id)
+                
+                if not member:
+                    continue
+                    
+                # Fetch roles if not already fetched
+                if not guild_role:
+                    guild_role = guild.get_role(settings.GUILD_MEMBER_ROLE_ID)
+                    community_role = guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
+                    
+                if not guild_role or not community_role:
+                    continue
+                    
+                # Check current roles
+                has_guild_role = guild_role in member.roles
+                has_community_role = community_role in member.roles
+                
+                # Update roles if mismatch
+                if is_current_guild_member:
+                    # Should have guild role, should NOT have community role
+                    if not has_guild_role:
+                        await member.add_roles(guild_role)
+                        logger.info(f"Added guild role to {member} - joined guild")
+                    if has_community_role:
+                        await member.remove_roles(community_role)
+                        logger.info(f"Removed community role from {member} - joined guild")
+                else:
+                    # Should NOT have guild role, should have community role
+                    if has_guild_role:
+                        await member.remove_roles(guild_role)
+                        logger.info(f"Removed guild role from {member} - left guild")
+                    if not has_community_role:
+                        await member.add_roles(community_role)
+                        logger.info(f"Added community role to {member} - left guild")
+                
+        except Exception as e:
+            logger.error(f"Guild member sync task failed: {str(e)}", exc_info=True)
+    
+    @guild_member_sync_task.before_loop
+    async def before_sync_task(self):
+        await self.bot.wait_until_ready()
 
     @app_commands.command(name="lookup-member", description="Lookup a verified guild member by user or character UID")
     @app_commands.checks.has_permissions(administrator=True)
@@ -292,11 +398,41 @@ class GuildVerificationCog(commands.Cog):
         conn.commit()
         conn.close()
         
-        # Assign guild member role if configured
+        # Assign correct role automatically
+        guild_role = None
+        community_role = None
+        
         if hasattr(settings, 'GUILD_MEMBER_ROLE_ID'):
             guild_role = interaction.guild.get_role(settings.GUILD_MEMBER_ROLE_ID)
-            if guild_role and guild_role not in member.roles:
-                await member.add_roles(guild_role)
+        if hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID'):
+            community_role = interaction.guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
+        
+        # Check live guild membership status
+        is_guild_member = False
+        try:
+            from utility.wwm import get_club_hostnums
+            player_data = get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+            if player_data and 'result' in player_data:
+                player = player_data['result']
+                player_pid = player.get('id')
+                if player_pid:
+                    club_data = get_club_hostnums(player_pid)
+                    if club_data and 'result' in club_data:
+                        player_club_data = club_data['result'].get(player_pid, {})
+                        club_id = player_club_data.get('club', {}).get('club_id')
+                        is_guild_member = (club_id == CLUB_ID)
+        except:
+            pass
+        
+        # Always give exactly one role
+        if is_guild_member and guild_role:
+            await member.add_roles(guild_role)
+            if community_role and community_role in member.roles:
+                await member.remove_roles(community_role)
+        elif community_role:
+            await member.add_roles(community_role)
+            if guild_role and guild_role in member.roles:
+                await member.remove_roles(guild_role)
         
         embed = discord.Embed(
             title="✅ Member Added Successfully",
@@ -931,15 +1067,23 @@ class VerifySignatureView(discord.ui.View):
                 target_user = interaction.guild.get_member(self.user_id)
                 
                 if target_user:
-                    # Assign correct role
-                    if self.is_member and hasattr(settings, 'GUILD_MEMBER_ROLE_ID'):
+                    # Assign correct role - always exactly one
+                    guild_role = None
+                    community_role = None
+                    
+                    if hasattr(settings, 'GUILD_MEMBER_ROLE_ID'):
                         guild_role = interaction.guild.get_role(settings.GUILD_MEMBER_ROLE_ID)
-                        if guild_role:
-                            await target_user.add_roles(guild_role)
-                    elif hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID'):
+                    if hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID'):
                         community_role = interaction.guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
-                        if community_role:
-                            await target_user.add_roles(community_role)
+                    
+                    if self.is_member and guild_role:
+                        await target_user.add_roles(guild_role)
+                        if community_role and community_role in target_user.roles:
+                            await target_user.remove_roles(community_role)
+                    elif community_role:
+                        await target_user.add_roles(community_role)
+                        if guild_role and guild_role in target_user.roles:
+                            await target_user.remove_roles(guild_role)
                 
                 # Add to verified members database
                 conn = sqlite3.connect(DB_PATH)
@@ -1037,17 +1181,25 @@ class VerificationAdminView(discord.ui.View):
             if field.name == "Guild Member":
                 is_member = ("✅" in field.value)
         
-        # Assign correct role based on guild membership
-        if is_member and hasattr(settings, 'GUILD_MEMBER_ROLE_ID'):
+        # Assign correct role - always exactly one
+        guild_role = None
+        community_role = None
+        
+        if hasattr(settings, 'GUILD_MEMBER_ROLE_ID'):
             guild_role = interaction.guild.get_role(settings.GUILD_MEMBER_ROLE_ID)
-            if guild_role:
-                await target_user.add_roles(guild_role)
-                logger.info(f"Guild member role assigned to {target_user} by {interaction.user}")
-        elif hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID'):
+        if hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID'):
             community_role = interaction.guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
-            if community_role:
-                await target_user.add_roles(community_role)
-                logger.info(f"Community member role assigned to {target_user} by {interaction.user}")
+        
+        if is_member and guild_role:
+            await target_user.add_roles(guild_role)
+            if community_role and community_role in target_user.roles:
+                await target_user.remove_roles(community_role)
+            logger.info(f"Guild member role assigned to {target_user} by {interaction.user}")
+        elif community_role:
+            await target_user.add_roles(community_role)
+            if guild_role and guild_role in target_user.roles:
+                await target_user.remove_roles(guild_role)
+            logger.info(f"Community member role assigned to {target_user} by {interaction.user}")
         
         # Update database
         conn = sqlite3.connect(DB_PATH)
