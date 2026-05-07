@@ -569,7 +569,7 @@ class WWMCog(commands.Cog):
         # Sort and take top 10
         weekly_leaderboard.sort()
 
-        # Build simple aligned leaderboard without box borders
+        # Build leaderboard in code block with backticked values
         lines.append("\n## 🔥 WEEKLY ACTIVITY POINTS - TOP 10")
         lines.append("```")
         
@@ -582,9 +582,9 @@ class WWMCog(commands.Cog):
             elif rank == 3:
                 rank_text = "🥉"
             else:
-                rank_text = f"{rank:2d}."
+                rank_text = f"{rank}."
             
-            lines.append(f"{rank_text:<3}  {name:<24}  {points:6,d}")
+            lines.append(f"{rank_text} {name}: {points:,}")
         
         lines.append("```")
 

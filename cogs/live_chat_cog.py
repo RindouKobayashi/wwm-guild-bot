@@ -36,6 +36,8 @@ class LiveChatCog(commands.Cog):
         
         # Only start poller if already enabled in config
         if self.is_running and self.CHANNEL_ID:
+            # Reset running flag to force proper initialization on first poll
+            self.is_running = False
             self.chat_poller.start()
             logger.info("✅ Live chat auto-started from saved configuration")
 
@@ -111,9 +113,8 @@ class LiveChatCog(commands.Cog):
         }
         
         embed = discord.Embed(
-            description=message,
-            color=channel_colors.get(channel_type, 0x3498DB),
-            timestamp=datetime.utcfromtimestamp(ts)
+            description=f"{message}\n\n<t:{ts}:F> (<t:{ts}:R>)",
+            color=channel_colors.get(channel_type, 0x3498DB)
         )
         
         embed.set_author(
