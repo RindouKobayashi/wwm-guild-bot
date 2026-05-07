@@ -163,12 +163,19 @@ class WWMCog(commands.Cog):
             # Get fashion plan with cover image
             try:
                 player_pid = None
+                player_hostnum = 10403
+                
                 if isinstance(raw_data, dict):
                     data = raw_data.get('result', raw_data)
                     player_pid = data.get('id')
+                    
+                    # Extract correct hostnum from player data (root level)
+                    if 'hostnum' in data:
+                        player_hostnum = data.get('hostnum', 10403)
+                        logger.debug(f"✅ Found player's actual hostnum: {player_hostnum}")
                 
                 if player_pid:
-                    fashion_data = get_fashion_plan(player_pid)
+                    fashion_data = get_fashion_plan(player_pid, hostnum=player_hostnum)
                     if fashion_data:
                         if fashion_data.get('code') == 0 and 'result' in fashion_data:
                             cover_img = fashion_data['result'].get('cover_img')

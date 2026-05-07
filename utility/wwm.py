@@ -142,6 +142,10 @@ def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[s
         full_player_data = redis_data['result'][first_pid]
         logger.info("✅ Got full player data with signatures")
         
+        # Preserve hostnum from initial lookup response
+        if 'hostnum' in pid_result['result']:
+            full_player_data['hostnum'] = pid_result['result']['hostnum']
+            
         return {
             'code': 0,
             'result': full_player_data
@@ -213,22 +217,31 @@ def get_bulk_players_info(pid_list: List[str], fields: Optional[List[str]] = Non
     )
 
 
-def get_fashion_plan(player_pid: str, hostnum: int = 40, uid: Optional[str] = None, token: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def get_fashion_plan(player_pid: str, hostnum: int = 10403, uid: Optional[str] = None, token: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Get player fashion plan including cover image"""
-    logger.info(f"Getting fashion plan for PID: {player_pid}")
+    logger.info(f"Getting fashion plan for PID: {player_pid} | hostnum: {hostnum}")
     
     final_uid = uid if uid else WWM_UID
     
-    # Special raw byte payload required for this specific endpoint
-    raw_payload = b'\x83\xa3uid\xb0' + final_uid.encode('utf-8') + b'\xa3pid\xb0' + player_pid.encode('utf-8') + b'\xa7hostnum\xcd(\xa3'
-    logger.debug(f"Fashion plan raw payload bytes: {raw_payload.hex()}")
+    # Proper msgpack payload construction
+    payload = {
+        "uid": final_uid,
+        "pid": player_pid,
+        "hostnum": hostnum
+    }
+    
+    packed = msgpack.packb(payload, use_bin_type=True)
+    # Append required trailing 0xa3 byte that game client sends
+    packed += b'\xa3'
+    
+    logger.debug(f"Fashion plan payload size: {len(packed)} bytes | hex: {packed.hex()}")
 
     return _wwm_api_post(
         WWM_FASHION_PLAN_URL,
         {},
         uid=final_uid,
         token=token,
-        raw_payload=raw_payload
+        raw_payload=packed
     )
 
 
