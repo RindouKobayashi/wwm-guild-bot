@@ -232,6 +232,24 @@ def get_fashion_plan(player_pid: str, hostnum: int = 40, uid: Optional[str] = No
     )
 
 
+def get_club_chat(club_id: str, hostnum: int = 10103) -> Optional[Dict[str, Any]]:
+    """Fetch latest club chat messages"""
+    logger.debug(f"Fetching club chat for club_id: {club_id} (hostnum: {hostnum})")
+    
+    api_url = "https://h72naxx2gb-ms-prod.easebar.com/flk/club_service/get_club_info"
+    
+    payload = {
+        "club_id": club_id,
+        "hostnum": hostnum,
+        "field_info": {
+            "chat": []
+        },
+        "uid": WWM_UID
+    }
+    
+    return _wwm_api_post(api_url, payload)
+
+
 def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
     """Complete player + guild lookup workflow"""
     print(f"\n🔍 Looking up player with number_id: {number_id}")

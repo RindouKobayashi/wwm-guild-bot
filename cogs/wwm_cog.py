@@ -489,34 +489,33 @@ class WWMCog(commands.Cog):
         member_list = members.get('members', {})
         member_count = members.get('member_num', 0)
         
-        # Get REAL live online status from player API
-        from utility.wwm import get_bulk_players_info
-        
         now = discord.utils.utcnow().timestamp()
         
         online = 0
         online_player_names = []
+        players_data = None
         
+        # Get all member pids ONCE
+        all_pids = list(member_list.keys())
+        
+        # ✅ SINGLE API CALL ONLY - fetch ALL required data in ONE request
+        from utility.wwm import get_bulk_players_info
         try:
-            # Get all member pids
-            all_pids = list(member_list.keys())
-            
-            # Bulk fetch real live online status
-            bulk_data = get_bulk_players_info(all_pids, fields=["base"])
+            # ✅ SINGLE API CALL ONLY - fetch ALL required data in ONE request
+            bulk_data = get_bulk_players_info(all_pids, fields=["base", "club"])
             
             if bulk_data and bulk_data.get('code') == 0:
-                players = bulk_data.get('result', {})
+                players_data = bulk_data.get('result', {})
                 
-                for pid, player_data in players.items():
+                # Calculate online players from this same data
+                for pid, player_data in players_data.items():
                     player_base = player_data.get('base', {})
                     if player_base.get('is_online', 0) == 1:
                         online += 1
                         online_player_names.append(player_base.get('nickname', 'Unknown'))
-            
         except Exception as e:
-            logger.warning(f"Failed to get real online status, falling back to estimate: {e}")
+            logger.warning(f"Failed to get bulk player data, falling back to estimate: {e}")
             # Fallback to old estimation method
-            now = discord.utils.utcnow().timestamp()
             for pid, member in member_list.items():
                 last_online = member.get('last_online_ts', 0)
                 if now - last_online < 7200: # 2 hours
@@ -537,8 +536,60 @@ class WWMCog(commands.Cog):
         lines.append(f"║ 🟢 Online Now: {online}/{member_count}{' ':<30}")
         lines.append("╚═════════════════════════════════════════╝")
         lines.append("```")
+
+
+        # 🔥 TOP 10 WEEKLY ACTIVITY POINTS
+        # Extract and sort members by weekly liveness
+        weekly_leaderboard = []
         
+        # ✅ USE ALREADY FETCHED DATA - NO SECOND API CALL!
+        if players_data is not None:
+            for pid, member in member_list.items():
+                nickname = member.get('nickname', 'Unknown')
+                weekly_points = 0
+                
+                if pid in players_data:
+                    player_data = players_data[pid]
+                    club_data = player_data.get('club', {})
+                    base_data = player_data.get('base', {})
+                    weekly_points = club_data.get('liveness', 0)
+                    # Get real nickname from base data if available
+                    if 'nickname' in base_data:
+                        nickname = base_data.get('nickname', nickname)
+                
+                weekly_leaderboard.append( (-weekly_points, nickname, weekly_points) )
+        else:
+            # Fallback if API fails
+            for pid, member in member_list.items():
+                nickname = member.get('nickname', 'Unknown')
+                club_data = member.get('club', {})
+                weekly_points = club_data.get('liveness', 0)
+                weekly_leaderboard.append( (-weekly_points, nickname, weekly_points) )
+
+        # Sort and take top 10
+        weekly_leaderboard.sort()
+
+        # Build simple aligned leaderboard without box borders
+        lines.append("\n## 🔥 WEEKLY ACTIVITY POINTS - TOP 10")
+        lines.append("```")
         
+        for rank, (neg_points, name, points) in enumerate(weekly_leaderboard[:10], 1):
+            # Add medal emojis for top 3
+            if rank == 1:
+                rank_text = "🥇"
+            elif rank == 2:
+                rank_text = "🥈"
+            elif rank == 3:
+                rank_text = "🥉"
+            else:
+                rank_text = f"{rank:2d}."
+            
+            lines.append(f"{rank_text:<3}  {name:<24}  {points:6,d}")
+        
+        lines.append("```")
+
+        embeds = []
+
         # Pending Applications (Text Only)
         applys = result.get('applys', {}).get('apply_dict', {})
         if len(applys) > 0:
@@ -552,7 +603,7 @@ class WWMCog(commands.Cog):
         lines.append(f"⏱️ Last Updated: <t:{int(now)}:R>")
         lines.append(f"🔄 Next Update: <t:{int(now) + 60}:R>")
         
-        return "\n".join(lines), []
+        return "\n".join(lines), embeds
     
     async def _process_changes(self, diff, new_data):
         changes = []
