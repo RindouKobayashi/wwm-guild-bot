@@ -259,6 +259,7 @@ class BoundAccountsPaginationView(discord.ui.View):
         self.current_page = current_page
         self.items_per_page = 10
         self.total_pages = (len(all_members) + self.items_per_page - 1) // self.items_per_page
+        self.player_cache = {}  # Global cache for all fetched players - persists across pages
         self.update_button_states()
     
     def update_button_states(self):
@@ -276,47 +277,54 @@ class BoundAccountsPaginationView(discord.ui.View):
             color=discord.Color.blue()
         )
 
-        player_cache = {}
         if self.show_values:
             try:
-                # Collect all character Number UIDs for this page
-                character_uids = [member[2] for member in page_members]
+                # First check what we already have in cache
+                missing_uids = []
+                for member in page_members:
+                    number_id = member[2]
+                    if number_id not in self.player_cache:
+                        missing_uids.append(number_id)
                 
-                # Step 1: Resolve Number UIDs to internal PIDs
-                pid_list = []
-                uid_to_pid_map = {}
-                
-                from utility.wwm import _wwm_api_post
-                for number_id in character_uids:
-                    try:
-                        pid_result = _wwm_api_post(
-                            WWM_API_URL,
-                            {
-                                "uid": WWM_UID,
-                                "number_id": number_id,
-                                "force_search": False
-                            },
-                            uid=WWM_UID,
-                            token=WWM_TOKEN
-                        )
-                        if pid_result and 'result' in pid_result and 'id' in pid_result['result']:
-                            pid = pid_result['result']['id']
-                            pid_list.append(pid)
-                            uid_to_pid_map[pid] = number_id
-                    except:
-                        continue
-                
-                # Step 2: Bulk fetch ALL resolved players in ONE SINGLE API CALL
-                from utility.wwm import get_bulk_players_info
-                bulk_data = get_bulk_players_info(pid_list, fields=["base"])
-                
-                if bulk_data and bulk_data.get('code') == 0:
-                    bulk_players = bulk_data.get('result', {})
-                    # Map back to original Number UIDs
-                    for pid, player_data in bulk_players.items():
-                        if pid in uid_to_pid_map:
-                            number_id = uid_to_pid_map[pid]
-                            player_cache[number_id] = player_data
+                # Only fetch what we don't already have
+                if missing_uids:
+                    logger.debug(f"Fetching {len(missing_uids)} missing players, {len(self.player_cache)} already cached")
+                    
+                    # Step 1: Resolve Number UIDs to internal PIDs
+                    pid_list = []
+                    uid_to_pid_map = {}
+                    
+                    from utility.wwm import _wwm_api_post
+                    for number_id in missing_uids:
+                        try:
+                            pid_result = _wwm_api_post(
+                                WWM_API_URL,
+                                {
+                                    "uid": WWM_UID,
+                                    "number_id": number_id,
+                                    "force_search": False
+                                },
+                                uid=WWM_UID,
+                                token=WWM_TOKEN
+                            )
+                            if pid_result and 'result' in pid_result and 'id' in pid_result['result']:
+                                pid = pid_result['result']['id']
+                                pid_list.append(pid)
+                                uid_to_pid_map[pid] = number_id
+                        except:
+                            continue
+                    
+                    # Step 2: Bulk fetch ALL resolved players in ONE SINGLE API CALL
+                    from utility.wwm import get_bulk_players_info
+                    bulk_data = get_bulk_players_info(pid_list, fields=["base"])
+                    
+                    if bulk_data and bulk_data.get('code') == 0:
+                        bulk_players = bulk_data.get('result', {})
+                        # Add to permanent cache
+                        for pid, player_data in bulk_players.items():
+                            if pid in uid_to_pid_map:
+                                number_id = uid_to_pid_map[pid]
+                                self.player_cache[number_id] = player_data
                             
             except Exception as e:
                 logger.warning(f"Bulk player fetch failed: {str(e)}", exc_info=True)
@@ -328,8 +336,8 @@ class BoundAccountsPaginationView(discord.ui.View):
             
             if self.show_values:
                 try:
-                    if character_uid in player_cache:
-                        player = player_cache[character_uid]
+                    if character_uid in self.player_cache:
+                        player = self.player_cache[character_uid]
                         nickname = player.get('base', {}).get('nickname', 'Unknown')
                         level = player.get('base', {}).get('level', 0)
                         power = player.get('base', {}).get('max_xiuwei_kungfu', 0)
