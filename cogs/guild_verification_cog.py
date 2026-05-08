@@ -359,9 +359,10 @@ class BoundAccountsPaginationView(discord.ui.View):
             await interaction.response.send_message("You cannot use these buttons.", ephemeral=True)
             return
         
+        await interaction.response.defer()
         self.current_page -= 1
         self.update_button_states()
-        await interaction.response.edit_message(embed=self.generate_embed(), view=self)
+        await interaction.edit_original_response(embed=self.generate_embed(), view=self)
     
     @discord.ui.button(label="Next →", style=ButtonStyle.secondary)
     async def next_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -369,9 +370,10 @@ class BoundAccountsPaginationView(discord.ui.View):
             await interaction.response.send_message("You cannot use these buttons.", ephemeral=True)
             return
         
+        await interaction.response.defer()
         self.current_page += 1
         self.update_button_states()
-        await interaction.response.edit_message(embed=self.generate_embed(), view=self)
+        await interaction.edit_original_response(embed=self.generate_embed(), view=self)
     
     async def on_timeout(self):
         for child in self.children:
