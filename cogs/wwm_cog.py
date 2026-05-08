@@ -1044,7 +1044,7 @@ class WWMCog(commands.Cog):
     ])
     async def player_count_graph(self, interaction: discord.Interaction, range: str = "today"):
         """Show a graph of online player counts over time"""
-        await interaction.response.defer(ephemeral=True)
+        await interaction.response.defer()
         
         try:
             import matplotlib
@@ -1184,13 +1184,13 @@ class WWMCog(commands.Cog):
             embed.set_image(url="attachment://player_count.png")
             embed.set_footer(text=f"Time range: {range_labels.get(range, 'Custom')} | Data recorded every 1 minute")
             
-            await interaction.followup.send(embed=embed, file=file, ephemeral=True)
+            await interaction.followup.send(embed=embed, file=file)
             
         except ImportError as e:
-            await interaction.followup.send(f"❌ Missing dependency: `{e}`. Please ensure matplotlib and numpy are installed.", ephemeral=True)
+            await interaction.followup.send(f"❌ Missing dependency: `{e}`. Please ensure matplotlib and numpy are installed.")
         except Exception as e:
             logger.error(f"Failed to generate player count graph: {str(e)}", exc_info=True)
-            await interaction.followup.send(f"❌ Failed to generate graph: `{str(e)}`", ephemeral=True)
+            await interaction.followup.send(f"❌ Failed to generate graph: `{str(e)}`")
 
 
 async def setup(bot: commands.Bot):
