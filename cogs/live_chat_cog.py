@@ -102,7 +102,15 @@ class LiveChatCog(commands.Cog):
         ts = int(msg.get('ts', 0))
         nickname = msg.get('nickname', 'Unknown')
         level = msg.get('level', 0)
+        # Handle messages with empty msg field (e.g. shared activity cards)
         message = msg.get('msg', '').strip()
+        if not message:
+            ext = msg.get('ext', {})
+            share_text = ext.get('share_text_info') or ext.get('extra_data', {}).get('share_text_info')
+            if share_text:
+                message = "[Shared] " + ", ".join(share_text)
+            elif ext.get('msg_type') == 'club_gonggao':
+                message = msg.get('msg', '')  # Keep original for announcements
         channel_type = msg.get('channel', 'club_chat')
         
         # Channel styling
