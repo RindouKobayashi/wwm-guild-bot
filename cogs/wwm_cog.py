@@ -419,6 +419,14 @@ class WWMCog(commands.Cog):
                     value TEXT
                 )
             """)
+            db.execute("""
+                CREATE TABLE IF NOT EXISTS guild_player_counts (
+                    ts INTEGER PRIMARY KEY,
+                    total_members INTEGER NOT NULL,
+                    online_count INTEGER NOT NULL,
+                    guild_week_fame INTEGER DEFAULT 0
+                )
+            """)
             db.commit()
     
     async def _load_config(self):
@@ -468,7 +476,24 @@ class WWMCog(commands.Cog):
                 return
             
             # Build and update status board
-            status_message, embeds = self._build_status_board(guild_data)
+            status_message, embeds, online_count, member_count = self._build_status_board(guild_data)
+            
+            # Record player count data point
+            try:
+                now_ts = int(discord.utils.utcnow().timestamp())
+                with sqlite3.connect(self.db_path) as db:
+                    db.execute(
+                        "INSERT OR IGNORE INTO guild_player_counts (ts, total_members, online_count, guild_week_fame) VALUES (?, ?, ?, ?)",
+                        (now_ts, member_count, online_count, guild_data.get('result', {}).get('base', {}).get('week_fame', 0))
+                    )
+                    db.commit()
+                    
+                # Cleanup old data (keep 30 days)
+                cleanup_ts = now_ts - 30 * 86400
+                db.execute("DELETE FROM guild_player_counts WHERE ts < ?", (cleanup_ts,))
+                db.commit()
+            except Exception as e:
+                logger.warning(f"Failed to record player count: {e}")
             
             await self.monitor_message.edit(content=status_message, embeds=embeds, view=self.online_button_view)
             logger.debug("Guild status message updated successfully")
@@ -610,7 +635,7 @@ class WWMCog(commands.Cog):
         lines.append(f"⏱️ Last Updated: <t:{int(now)}:R>")
         lines.append(f"🔄 Next Update: <t:{int(now) + 60}:R>")
         
-        return "\n".join(lines), embeds
+        return "\n".join(lines), embeds, online, member_count
     
     async def _process_changes(self, diff, new_data):
         changes = []
@@ -675,7 +700,7 @@ class WWMCog(commands.Cog):
                     # Create new message if old one not found
                     guild_data = get_full_guild_info(CLUB_ID)
                     if guild_data:
-                        status_message, embeds = self._build_status_board(guild_data)
+                        status_message, embeds, _, _ = self._build_status_board(guild_data)
                         self.monitor_message = await self.monitor_channel.send(content=status_message, embeds=embeds, view=self.online_button_view)
                         self._save_config()
                         self.last_guild_state = guild_data
@@ -688,7 +713,7 @@ class WWMCog(commands.Cog):
         # Create initial message
         guild_data = get_full_guild_info(CLUB_ID)
         if guild_data:
-            status_message, embeds = self._build_status_board(guild_data)
+            status_message, embeds, _, _ = self._build_status_board(guild_data)
             self.monitor_message = await channel.send(content=status_message, embeds=embeds, view=self.online_button_view)
             self.last_guild_state = guild_data
         
@@ -1005,6 +1030,167 @@ class WWMCog(commands.Cog):
                 color=discord.Color.red()
             )
             await interaction.followup.send(embed=embed)
+
+
+    @guild_group.command(name="player-count", description="Display graph of online player count over time")
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.describe(
+        range="Time range for the graph"
+    )
+    @app_commands.choices(range=[
+        app_commands.Choice(name="Today (5am GMT+8 to now)", value="today"),
+        app_commands.Choice(name="This Week (current schedule week)", value="week"),
+        app_commands.Choice(name="Last 7 Days", value="7days"),
+    ])
+    async def player_count_graph(self, interaction: discord.Interaction, range: str = "today"):
+        """Show a graph of online player counts over time"""
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            import matplotlib
+            matplotlib.use('Agg')
+            import matplotlib.pyplot as plt
+            import matplotlib.dates as mdates
+            from matplotlib.ticker import MaxNLocator
+            import datetime as dt
+            
+            now_utc = dt.datetime.now(dt.timezone.utc)
+            
+            # Calculate time range based on the 5am GMT+8 schedule day logic
+            GMT8_OFFSET = 8 * 3600
+            now_ts = int(now_utc.timestamp())
+            
+            if range == "today":
+                # Start of today's schedule day (5am GMT+8)
+                gmt8_now = now_ts + GMT8_OFFSET
+                gmt8_dt = dt.datetime.fromtimestamp(gmt8_now, tz=dt.timezone.utc)
+                schedule_start = gmt8_dt.replace(hour=5, minute=0, second=0, microsecond=0)
+                # If current time is before 5am, start from previous day
+                if gmt8_dt.hour < 5:
+                    schedule_start -= dt.timedelta(days=1)
+                start_ts = int(schedule_start.timestamp() - GMT8_OFFSET)
+                
+            elif range == "week":
+                # Start of the current schedule week (Monday 5am GMT+8)
+                gmt8_now = now_ts + GMT8_OFFSET
+                gmt8_dt = dt.datetime.fromtimestamp(gmt8_now, tz=dt.timezone.utc)
+                adjusted = gmt8_dt - dt.timedelta(hours=5)
+                # Monday of that week
+                monday = adjusted - dt.timedelta(days=adjusted.weekday())
+                schedule_start = monday.replace(hour=5, minute=0, second=0, microsecond=0)
+                start_ts = int(schedule_start.timestamp() - GMT8_OFFSET)
+                
+            else:  # 7days
+                start_ts = now_ts - 7 * 86400
+            
+            # Query data from database
+            with sqlite3.connect(self.db_path) as db:
+                db.row_factory = sqlite3.Row
+                cursor = db.execute(
+                    "SELECT ts, online_count, total_members FROM guild_player_counts WHERE ts >= ? ORDER BY ts ASC",
+                    (start_ts,)
+                )
+                rows = cursor.fetchall()
+            
+            if not rows:
+                await interaction.followup.send("❌ No data available for the selected time range.", ephemeral=True)
+                return
+            
+            # Prepare data
+            timestamps = [row['ts'] for row in rows]
+            online_counts = [row['online_count'] for row in rows]
+            
+            # Convert timestamps to datetime objects
+            dates = [dt.datetime.fromtimestamp(ts, tz=dt.timezone.utc) for ts in timestamps]
+            
+            # Create plot with dark theme
+            plt.style.use('dark_background')
+            fig, ax = plt.subplots(figsize=(12, 6))
+            
+            # Plot the data
+            ax.fill_between(dates, online_counts, alpha=0.3, color='#2ECC71')
+            ax.plot(dates, online_counts, color='#2ECC71', linewidth=2, marker='', linestyle='-')
+            
+            # Also add a rolling average line for smoother view
+            if len(online_counts) >= 10:
+                # Simple moving average (10 data points ~ 10 minutes)
+                window = min(10, len(online_counts) // 3)
+                if window > 1:
+                    import numpy as np
+                    weights = np.ones(window) / window
+                    smoothed = np.convolve(online_counts, weights, mode='valid')
+                    # Adjust dates to match smoothed array
+                    smooth_dates = dates[window-1:]
+                    ax.plot(smooth_dates, smoothed, color='#FFD700', linewidth=1.5, linestyle='--', alpha=0.7, label='Trend')
+            
+            # Style the chart
+            ax.set_facecolor('#1a1a2e')
+            fig.patch.set_facecolor('#1a1a2e')
+            ax.grid(True, alpha=0.2, color='white')
+            
+            ax.set_xlabel('Time (GMT+8)', color='white', fontsize=12)
+            ax.set_ylabel('Online Players', color='white', fontsize=12)
+            
+            # Title with range info
+            range_labels = {"today": "Today", "week": "This Week", "7days": "Last 7 Days"}
+            ax.set_title(f'Online Player Count - {range_labels.get(range, "Custom")}', 
+                        color='white', fontsize=14, fontweight='bold')
+            
+            # Format x-axis
+            if range == "today":
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
+                ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+            elif range == "week":
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%a %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
+                ax.xaxis.set_major_locator(mdates.HourLocator(interval=6))
+            else:
+                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
+                ax.xaxis.set_major_locator(mdates.HourLocator(interval=12))
+            
+            plt.xticks(rotation=45, color='white')
+            plt.yticks(color='white')
+            ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+            
+            # Legend
+            ax.legend(['Online Players', 'Trend'], loc='upper right', 
+                     facecolor='#1a1a2e', edgecolor='white', labelcolor='white')
+            
+            # Adjust layout
+            plt.tight_layout()
+            
+            # Save to bytes
+            import io
+            buf = io.BytesIO()
+            plt.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+            buf.seek(0)
+            plt.close()
+            
+            # Send the graph
+            file = discord.File(buf, filename='player_count.png')
+            
+            # Calculate peak info
+            peak_count = max(online_counts)
+            peak_ts = timestamps[online_counts.index(peak_count)]
+            peak_dt = dt.datetime.fromtimestamp(peak_ts, tz=dt.timezone.utc) + dt.timedelta(hours=8)
+            avg_count = round(sum(online_counts) / len(online_counts), 1)
+            
+            embed = discord.Embed(
+                title="📊 Player Count Statistics",
+                color=discord.Color.green()
+            )
+            embed.add_field(name="📈 Peak Online", value=f"`{peak_count} players`", inline=True)
+            embed.add_field(name="📉 Average Online", value=f"`{avg_count} players`", inline=True)
+            embed.add_field(name="📊 Data Points", value=f"`{len(rows)}`", inline=True)
+            embed.set_image(url="attachment://player_count.png")
+            embed.set_footer(text=f"Time range: {range_labels.get(range, 'Custom')} | Data recorded every 1 minute")
+            
+            await interaction.followup.send(embed=embed, file=file, ephemeral=True)
+            
+        except ImportError as e:
+            await interaction.followup.send(f"❌ Missing dependency: `{e}`. Please ensure matplotlib and numpy are installed.", ephemeral=True)
+        except Exception as e:
+            logger.error(f"Failed to generate player count graph: {str(e)}", exc_info=True)
+            await interaction.followup.send(f"❌ Failed to generate graph: `{str(e)}`", ephemeral=True)
 
 
 async def setup(bot: commands.Bot):
