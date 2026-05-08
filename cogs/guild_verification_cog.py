@@ -498,6 +498,23 @@ class GuildVerificationCog(commands.Cog):
         )
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
+        
+        # Send notification to binding log channel
+        try:
+            log_channel = interaction.guild.get_channel(1443104374837608529)
+            if log_channel:
+                notification_embed = discord.Embed(
+                    title="🔗 Account Bound",
+                    description=f"{member.mention} has just bound their account.",
+                    color=discord.Color.green()
+                )
+                notification_embed.add_field(name="Discord User", value=f"{member.mention}\n`{str(member)}`", inline=True)
+                notification_embed.add_field(name="Character UID", value=f"`{character_uid.strip()}`", inline=True)
+                notification_embed.set_footer(text="WWM Guild Verification System")
+                await log_channel.send(embed=notification_embed)
+        except Exception as e:
+            logger.error(f"Failed to send binding notification: {str(e)}")
+        
         logger.info(f"Manual member added: {member} | UID: {character_uid} | by {interaction.user}")
 
     @app_commands.command(name="setup-verification", description="Start guild verification system setup wizard")
@@ -1165,6 +1182,22 @@ class VerifySignatureView(discord.ui.View):
                     "You may now remove the code from your signature if you wish.",
                     ephemeral=True
                 )
+                
+                # Send notification to binding log channel
+                try:
+                    log_channel = interaction.guild.get_channel(1443104374837608529)
+                    if log_channel:
+                        notification_embed = discord.Embed(
+                            title="🔗 Account Bound",
+                            description=f"{interaction.user.mention} has just bound their account.",
+                            color=discord.Color.green()
+                        )
+                        notification_embed.add_field(name="Discord User", value=f"{interaction.user.mention}\n`{self.username}`", inline=True)
+                        notification_embed.add_field(name="Character UID", value=f"`{self.character_uid}`", inline=True)
+                        notification_embed.set_footer(text="WWM Guild Verification System")
+                        await log_channel.send(embed=notification_embed)
+                except Exception as e:
+                    logger.error(f"Failed to send binding notification: {str(e)}")
                 
                 logger.info(f"Automatic verification completed for user {self.username} | Character UID: {self.character_uid}")
             
