@@ -102,15 +102,41 @@ class LiveChatCog(commands.Cog):
         ts = int(msg.get('ts', 0))
         nickname = msg.get('nickname', 'Unknown')
         level = msg.get('level', 0)
-        # Handle messages with empty msg field (e.g. shared activity cards)
+        ext = msg.get('ext', {})
+        msg_type = ext.get('msg_type', 'msg_normal')
+        
+        # Determine message content based on type
         message = msg.get('msg', '').strip()
+        
         if not message:
-            ext = msg.get('ext', {})
+            # Handle msg_common_share with empty text (e.g. activity cards, team invites)
             share_text = ext.get('share_text_info') or ext.get('extra_data', {}).get('share_text_info')
             if share_text:
                 message = "[Shared] " + ", ".join(share_text)
-            elif ext.get('msg_type') == 'club_gonggao':
-                message = msg.get('msg', '')  # Keep original for announcements
+        elif msg_type == 'msg_share_position' and message == "Share Location":
+            # Replace generic location text with actual region name
+            region_name = ext.get('region_name', '')
+            if region_name:
+                # Strip color tags like #G[Co-op]#E from the region name
+                import re
+                region_name = re.sub(r'#[A-Z](\[.*?\])?#E?', '', region_name)
+                message = f"[Location] {region_name}"
+        elif msg_type == 'msg_stuff' and message == "Item Share Message":
+            # Show item number instead of generic text
+            stuff_item = ext.get('stuff_item', {})
+            item_no = stuff_item.get('No', '')
+            if item_no:
+                message = f"[Item] #{item_no}"
+        elif msg_type == 'msg_hongbao':
+            hongbao = msg.get('hongbao_info', {})
+            if message:
+                message = f"[Red Envelope] {message}"
+            else:
+                message = "[Red Envelope]"
+            reward_no = hongbao.get('reward_no', '')
+            if reward_no:
+                message += f" ({reward_no} coins)"
+        
         channel_type = msg.get('channel', 'club_chat')
         
         # Channel styling
