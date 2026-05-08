@@ -275,6 +275,51 @@ class BoundAccountsPaginationView(discord.ui.View):
             description=f"Total bound accounts: **{len(self.all_members)}**\nPage {self.current_page}/{self.total_pages}",
             color=discord.Color.blue()
         )
+
+        player_cache = {}
+        if self.show_values:
+            try:
+                # Collect all character Number UIDs for this page
+                character_uids = [member[2] for member in page_members]
+                
+                # Step 1: Resolve Number UIDs to internal PIDs
+                pid_list = []
+                uid_to_pid_map = {}
+                
+                from utility.wwm import _wwm_api_post
+                for number_id in character_uids:
+                    try:
+                        pid_result = _wwm_api_post(
+                            WWM_API_URL,
+                            {
+                                "uid": WWM_UID,
+                                "number_id": number_id,
+                                "force_search": False
+                            },
+                            uid=WWM_UID,
+                            token=WWM_TOKEN
+                        )
+                        if pid_result and 'result' in pid_result and 'id' in pid_result['result']:
+                            pid = pid_result['result']['id']
+                            pid_list.append(pid)
+                            uid_to_pid_map[pid] = number_id
+                    except:
+                        continue
+                
+                # Step 2: Bulk fetch ALL resolved players in ONE SINGLE API CALL
+                from utility.wwm import get_bulk_players_info
+                bulk_data = get_bulk_players_info(pid_list, fields=["base"])
+                
+                if bulk_data and bulk_data.get('code') == 0:
+                    bulk_players = bulk_data.get('result', {})
+                    # Map back to original Number UIDs
+                    for pid, player_data in bulk_players.items():
+                        if pid in uid_to_pid_map:
+                            number_id = uid_to_pid_map[pid]
+                            player_cache[number_id] = player_data
+                            
+            except Exception as e:
+                logger.warning(f"Bulk player fetch failed: {str(e)}", exc_info=True)
         
         for idx, member in enumerate(page_members, start=start_idx + 1):
             user_id, username, character_uid, verified_at = member
@@ -283,14 +328,15 @@ class BoundAccountsPaginationView(discord.ui.View):
             
             if self.show_values:
                 try:
-                    player_data = get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
-                    if player_data and 'result' in player_data:
-                        player = player_data['result']
+                    if character_uid in player_cache:
+                        player = player_cache[character_uid]
                         nickname = player.get('base', {}).get('nickname', 'Unknown')
                         level = player.get('base', {}).get('level', 0)
                         power = player.get('base', {}).get('max_xiuwei_kungfu', 0)
                         
                         field_value += f"\n**Name:** `{nickname}`\n**Lv:** {level} | **Power:** {power:,}"
+                    else:
+                        field_value += "\n⚠️ Failed to load character data"
                 except:
                     field_value += "\n⚠️ Failed to load character data"
             
