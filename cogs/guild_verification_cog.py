@@ -102,8 +102,8 @@ class GuildVerificationCog(commands.Cog):
     async def guild_member_sync_task(self):
         """Background task to sync verified members guild membership status every minute"""
         
-        # Only run if roles are configured
-        if not hasattr(settings, 'GUILD_MEMBER_ROLE_ID') or not hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID'):
+        # Only run if roles and server ID are configured
+        if not hasattr(settings, 'GUILD_MEMBER_ROLE_ID') or not hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID') or not hasattr(settings, 'DISCORD_SERVER_ID'):
             return
             
         try:
@@ -137,9 +137,19 @@ class GuildVerificationCog(commands.Cog):
                 
             players = bulk_data.get('result', {})
             
-            guild_role = None
-            community_role = None
+            # Find the correct guild using DISCORD_SERVER_ID
+            guild = self.bot.get_guild(settings.DISCORD_SERVER_ID)
+            if not guild:
+                logger.warning(f"Could not find guild with ID {settings.DISCORD_SERVER_ID} for membership sync")
+                return
             
+            guild_role = guild.get_role(settings.GUILD_MEMBER_ROLE_ID)
+            community_role = guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
+                
+            if not guild_role or not community_role:
+                logger.warning("Guild or community role not found for membership sync")
+                return
+                
             # Process each member
             for character_uid, player_data in players.items():
                 if character_uid not in user_id_map:
@@ -152,19 +162,10 @@ class GuildVerificationCog(commands.Cog):
                 club_id = club_data.get('club_id')
                 is_current_guild_member = (club_id == CLUB_ID)
                 
-                # Find the guild member (from settings.DISCORD_SERVER_ID)
-                guild = self.bot.get_guild(settings.DISCORD_SERVER_ID)
+                # Find the guild member
                 member = guild.get_member(user_id)
                 
                 if not member:
-                    continue
-                    
-                # Fetch roles if not already fetched
-                if not guild_role:
-                    guild_role = guild.get_role(settings.GUILD_MEMBER_ROLE_ID)
-                    community_role = guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
-                    
-                if not guild_role or not community_role:
                     continue
                     
                 # Check current roles
@@ -249,146 +250,6 @@ class GuildVerificationCog(commands.Cog):
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
         logger.info(f"Member lookup performed by {interaction.user}")
-
-class BoundAccountsPaginationView(discord.ui.View):
-    def __init__(self, all_members, show_values, user_id, current_page=1):
-        super().__init__(timeout=120)
-        self.all_members = all_members
-        self.show_values = show_values
-        self.user_id = user_id
-        self.current_page = current_page
-        self.items_per_page = 10
-        self.total_pages = (len(all_members) + self.items_per_page - 1) // self.items_per_page
-        self.player_cache = {}  # Global cache for all fetched players - persists across pages
-        self.update_button_states()
-    
-    def update_button_states(self):
-        self.prev_page_button.disabled = self.current_page <= 1
-        self.next_page_button.disabled = self.current_page >= self.total_pages
-    
-    def generate_embed(self):
-        start_idx = (self.current_page - 1) * self.items_per_page
-        end_idx = start_idx + self.items_per_page
-        page_members = self.all_members[start_idx:end_idx]
-        
-        embed = discord.Embed(
-            title="📋 Bound Accounts List",
-            description=f"Total bound accounts: **{len(self.all_members)}**\nPage {self.current_page}/{self.total_pages}",
-            color=discord.Color.blue()
-        )
-
-        if self.show_values:
-            try:
-                # First check what we already have in cache
-                missing_uids = []
-                for member in page_members:
-                    number_id = member[2]
-                    if number_id not in self.player_cache:
-                        missing_uids.append(number_id)
-                
-                # Only fetch what we don't already have
-                if missing_uids:
-                    logger.debug(f"Fetching {len(missing_uids)} missing players, {len(self.player_cache)} already cached")
-                    
-                    # Step 1: Resolve Number UIDs to internal PIDs
-                    pid_list = []
-                    uid_to_pid_map = {}
-                    
-                    from utility.wwm import _wwm_api_post
-                    for number_id in missing_uids:
-                        try:
-                            pid_result = _wwm_api_post(
-                                WWM_API_URL,
-                                {
-                                    "uid": WWM_UID,
-                                    "number_id": number_id,
-                                    "force_search": False
-                                },
-                                uid=WWM_UID,
-                                token=WWM_TOKEN
-                            )
-                            if pid_result and 'result' in pid_result and 'id' in pid_result['result']:
-                                pid = pid_result['result']['id']
-                                pid_list.append(pid)
-                                uid_to_pid_map[pid] = number_id
-                        except:
-                            continue
-                    
-                    # Step 2: Bulk fetch ALL resolved players in ONE SINGLE API CALL
-                    from utility.wwm import get_bulk_players_info
-                    bulk_data = get_bulk_players_info(pid_list, fields=["base"])
-                    
-                    if bulk_data and bulk_data.get('code') == 0:
-                        bulk_players = bulk_data.get('result', {})
-                        # Add to permanent cache
-                        for pid, player_data in bulk_players.items():
-                            if pid in uid_to_pid_map:
-                                number_id = uid_to_pid_map[pid]
-                                self.player_cache[number_id] = player_data
-                            
-            except Exception as e:
-                logger.warning(f"Bulk player fetch failed: {str(e)}", exc_info=True)
-        
-        for idx, member in enumerate(page_members, start=start_idx + 1):
-            user_id, username, character_uid, verified_at = member
-            
-            field_value = f"Discord: <@{user_id}>\nUID: `{character_uid}`"
-            
-            if self.show_values:
-                try:
-                    if character_uid in self.player_cache:
-                        player = self.player_cache[character_uid]
-                        nickname = player.get('base', {}).get('nickname', 'Unknown')
-                        level = player.get('base', {}).get('level', 0)
-                        power = player.get('base', {}).get('max_xiuwei_kungfu', 0)
-                        
-                        field_value += f"\n**Name:** `{nickname}`\n**Lv:** {level} | **Power:** {power:,}"
-                    else:
-                        field_value += "\n⚠️ Failed to load character data"
-                except:
-                    field_value += "\n⚠️ Failed to load character data"
-            
-            from datetime import timezone
-            verified_dt = datetime.fromisoformat(verified_at).replace(tzinfo=timezone.utc)
-            verified_timestamp = int(verified_dt.timestamp())
-            field_value += f"\nBound: <t:{verified_timestamp}:D>"
-            
-            embed.add_field(
-                name=f"#{idx} - {username}",
-                value=field_value,
-                inline=False
-            )
-        
-        return embed
-
-    @discord.ui.button(label="← Previous", style=ButtonStyle.secondary)
-    async def prev_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message("You cannot use these buttons.", ephemeral=True)
-            return
-        
-        await interaction.response.defer()
-        self.current_page -= 1
-        self.update_button_states()
-        await interaction.edit_original_response(embed=self.generate_embed(), view=self)
-    
-    @discord.ui.button(label="Next →", style=ButtonStyle.secondary)
-    async def next_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if interaction.user.id != self.user_id:
-            await interaction.response.send_message("You cannot use these buttons.", ephemeral=True)
-            return
-        
-        await interaction.response.defer()
-        self.current_page += 1
-        self.update_button_states()
-        await interaction.edit_original_response(embed=self.generate_embed(), view=self)
-    
-    async def on_timeout(self):
-        for child in self.children:
-            child.disabled = True
-        await self.message.edit(view=self)
-
-class GuildVerificationCog(commands.Cog):
 
     @app_commands.command(name="list-bound-accounts", description="List all verified and bound accounts in the database")
     @app_commands.checks.has_permissions(administrator=True)
@@ -554,6 +415,144 @@ class GuildVerificationCog(commands.Cog):
                 view=SetupWizardView(),
                 ephemeral=False
             )
+
+class BoundAccountsPaginationView(discord.ui.View):
+    def __init__(self, all_members, show_values, user_id, current_page=1):
+        super().__init__(timeout=120)
+        self.all_members = all_members
+        self.show_values = show_values
+        self.user_id = user_id
+        self.current_page = current_page
+        self.items_per_page = 10
+        self.total_pages = (len(all_members) + self.items_per_page - 1) // self.items_per_page
+        self.player_cache = {}  # Global cache for all fetched players - persists across pages
+        self.update_button_states()
+    
+    def update_button_states(self):
+        self.prev_page_button.disabled = self.current_page <= 1
+        self.next_page_button.disabled = self.current_page >= self.total_pages
+    
+    def generate_embed(self):
+        start_idx = (self.current_page - 1) * self.items_per_page
+        end_idx = start_idx + self.items_per_page
+        page_members = self.all_members[start_idx:end_idx]
+        
+        embed = discord.Embed(
+            title="📋 Bound Accounts List",
+            description=f"Total bound accounts: **{len(self.all_members)}**\nPage {self.current_page}/{self.total_pages}",
+            color=discord.Color.blue()
+        )
+
+        if self.show_values:
+            try:
+                # First check what we already have in cache
+                missing_uids = []
+                for member in page_members:
+                    number_id = member[2]
+                    if number_id not in self.player_cache:
+                        missing_uids.append(number_id)
+                
+                # Only fetch what we don't already have
+                if missing_uids:
+                    logger.debug(f"Fetching {len(missing_uids)} missing players, {len(self.player_cache)} already cached")
+                    
+                    # Step 1: Resolve Number UIDs to internal PIDs
+                    pid_list = []
+                    uid_to_pid_map = {}
+                    
+                    from utility.wwm import _wwm_api_post
+                    for number_id in missing_uids:
+                        try:
+                            pid_result = _wwm_api_post(
+                                WWM_API_URL,
+                                {
+                                    "uid": WWM_UID,
+                                    "number_id": number_id,
+                                    "force_search": False
+                                },
+                                uid=WWM_UID,
+                                token=WWM_TOKEN
+                            )
+                            if pid_result and 'result' in pid_result and 'id' in pid_result['result']:
+                                pid = pid_result['result']['id']
+                                pid_list.append(pid)
+                                uid_to_pid_map[pid] = number_id
+                        except:
+                            continue
+                    
+                    # Step 2: Bulk fetch ALL resolved players in ONE SINGLE API CALL
+                    from utility.wwm import get_bulk_players_info
+                    bulk_data = get_bulk_players_info(pid_list, fields=["base"])
+                    
+                    if bulk_data and bulk_data.get('code') == 0:
+                        bulk_players = bulk_data.get('result', {})
+                        # Add to permanent cache
+                        for pid, player_data in bulk_players.items():
+                            if pid in uid_to_pid_map:
+                                number_id = uid_to_pid_map[pid]
+                                self.player_cache[number_id] = player_data
+                            
+            except Exception as e:
+                logger.warning(f"Bulk player fetch failed: {str(e)}", exc_info=True)
+        
+        for idx, member in enumerate(page_members, start=start_idx + 1):
+            user_id, username, character_uid, verified_at = member
+            
+            field_value = f"Discord: <@{user_id}>\nUID: `{character_uid}`"
+            
+            if self.show_values:
+                try:
+                    if character_uid in self.player_cache:
+                        player = self.player_cache[character_uid]
+                        nickname = player.get('base', {}).get('nickname', 'Unknown')
+                        level = player.get('base', {}).get('level', 0)
+                        power = player.get('base', {}).get('max_xiuwei_kungfu', 0)
+                        
+                        field_value += f"\n**Name:** `{nickname}`\n**Lv:** {level} | **Power:** {power:,}"
+                    else:
+                        field_value += "\n⚠️ Failed to load character data"
+                except:
+                    field_value += "\n⚠️ Failed to load character data"
+            
+            from datetime import timezone
+            verified_dt = datetime.fromisoformat(verified_at).replace(tzinfo=timezone.utc)
+            verified_timestamp = int(verified_dt.timestamp())
+            field_value += f"\nBound: <t:{verified_timestamp}:D>"
+            
+            embed.add_field(
+                name=f"#{idx} - {username}",
+                value=field_value,
+                inline=False
+            )
+        
+        return embed
+
+    @discord.ui.button(label="← Previous", style=ButtonStyle.secondary)
+    async def prev_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("You cannot use these buttons.", ephemeral=True)
+            return
+        
+        await interaction.response.defer()
+        self.current_page -= 1
+        self.update_button_states()
+        await interaction.edit_original_response(embed=self.generate_embed(), view=self)
+    
+    @discord.ui.button(label="Next →", style=ButtonStyle.secondary)
+    async def next_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message("You cannot use these buttons.", ephemeral=True)
+            return
+        
+        await interaction.response.defer()
+        self.current_page += 1
+        self.update_button_states()
+        await interaction.edit_original_response(embed=self.generate_embed(), view=self)
+    
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        await self.message.edit(view=self)
 
 class ExistingConfigCheckView(discord.ui.View):
     def __init__(self):
