@@ -155,6 +155,7 @@ class GuildVerificationCog(commands.Cog):
             # Process each member
             for character_uid, player_data in players.items():
                 if character_uid not in user_id_map:
+                    logger.debug(f"Character UID {character_uid} not found in user_id_map, skipping")
                     continue
                     
                 user_id = user_id_map[character_uid]
@@ -168,6 +169,7 @@ class GuildVerificationCog(commands.Cog):
                 member = guild.get_member(user_id)
                 
                 if not member:
+                    logger.debug(f"Member with ID {user_id} not found in guild, skipping")
                     continue
                     
                 # Check current roles
