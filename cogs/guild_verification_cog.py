@@ -164,6 +164,8 @@ class GuildVerificationCog(commands.Cog):
                 club_data = player_data.get('club', {})
                 club_id = club_data.get('club_id')
                 is_current_guild_member = (club_id == CLUB_ID)
+
+                logger.debug(f"Syncing user_id {user_id} | character_uid {character_uid} | club_id {club_id} | is_guild_member: {is_current_guild_member}")
                 
                 # Find the guild member
                 member = guild.get_member(user_id)
