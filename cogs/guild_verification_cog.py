@@ -119,7 +119,7 @@ class GuildVerificationCog(commands.Cog):
             if not verified_members:
                 return
                 
-            logger.debug(f"Running guild membership sync for {len(verified_members)} verified members")
+            logger.warning(f"Running guild membership sync for {len(verified_members)} verified members")
             
             # Get all pids for bulk API call
             all_pids = []
