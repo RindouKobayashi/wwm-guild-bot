@@ -64,12 +64,46 @@ class GuildVerificationCog(commands.Cog):
                 user_id INTEGER PRIMARY KEY,
                 username TEXT NOT NULL,
                 character_uid TEXT NOT NULL,
+                player_pid TEXT,
                 verified_at TIMESTAMP NOT NULL,
                 verified_by INTEGER NOT NULL
             )
         ''')
         
         conn.commit()
+        
+        # Migration: add player_pid column if it doesn't exist (for databases created before this column was added)
+        try:
+            c.execute("ALTER TABLE verified_members ADD COLUMN player_pid TEXT")
+            conn.commit()
+            logger.info("✅ Added player_pid column to verified_members table")
+        except:
+            pass  # Column already exists
+        
+        # Migration: resolve existing records without player_pid
+        c.execute("SELECT rowid, user_id, character_uid FROM verified_members WHERE player_pid IS NULL")
+        rows_to_migrate = c.fetchall()
+        if rows_to_migrate:
+            logger.info(f"⚙️ Migrating {len(rows_to_migrate)} existing verified member records to resolve PIDs...")
+            for row in rows_to_migrate:
+                rowid, user_id, character_uid = row
+                try:
+                    player_data = get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+                    if player_data and 'result' in player_data:
+                        player = player_data['result']
+                        pid = player.get('id')
+                        if pid:
+                            c.execute("UPDATE verified_members SET player_pid = ? WHERE rowid = ?", (str(pid), rowid))
+                            logger.debug(f"  ✅ Resolved {character_uid} -> PID {pid}")
+                        else:
+                            logger.warning(f"  ❌ Could not resolve PID for {character_uid} (user_id: {user_id})")
+                    else:
+                        logger.warning(f"  ❌ Failed to fetch player data for {character_uid} (user_id: {user_id})")
+                except Exception as e:
+                    logger.error(f"  ❌ Error migrating {character_uid} (user_id: {user_id}): {e}")
+            conn.commit()
+            logger.info(f"✅ Migration complete: {len(rows_to_migrate)} records processed")
+        
         conn.close()
         logger.info("Guild Verification database initialized")
     
@@ -101,33 +135,38 @@ class GuildVerificationCog(commands.Cog):
     @tasks.loop(minutes=1)
     async def guild_member_sync_task(self):
         """Background task to sync verified members guild membership status every minute"""
-        logger.info("Running guild member sync task...")
         
         # Only run if roles and server ID are configured
         if not hasattr(settings, 'GUILD_MEMBER_ROLE_ID') or not hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID') or not hasattr(settings, 'DISCORD_SERVER_ID'):
-            logger.info("Skipping guild member sync task because roles or server ID are not configured")
             return
             
         try:
-            # Get all verified members from database
+            # Get all verified members from database (include player_pid)
             conn = sqlite3.connect(DB_PATH)
             c = conn.cursor()
-            c.execute("SELECT user_id, character_uid FROM verified_members")
+            c.execute("SELECT user_id, character_uid, player_pid FROM verified_members")
             verified_members = c.fetchall()
             conn.close()
             
             if not verified_members:
                 return
                 
-            logger.warning(f"Running guild membership sync for {len(verified_members)} verified members")
+            logger.debug(f"Running guild membership sync for {len(verified_members)} verified members")
             
-            # Get all pids for bulk API call
+            # Get all pids for bulk API call - use player_pid, NOT character_uid
             all_pids = []
-            user_id_map = {}
+            pid_to_userid_map = {}
             
-            for user_id, character_uid in verified_members:
-                all_pids.append(character_uid)
-                user_id_map[character_uid] = user_id
+            for user_id, character_uid, player_pid in verified_members:
+                if player_pid:
+                    all_pids.append(player_pid)
+                    pid_to_userid_map[player_pid] = user_id
+                else:
+                    logger.warning(f"Skipping member {user_id} (UID: {character_uid}) - no player_pid resolved yet")
+                
+            if not all_pids:
+                logger.warning("No resolved player PIDs available for membership sync")
+                return
                 
             # Bulk fetch club membership status
             from utility.wwm import get_bulk_players_info
@@ -152,33 +191,27 @@ class GuildVerificationCog(commands.Cog):
                 logger.warning("Guild or community role not found for membership sync")
                 return
                 
-            # Process each member
-            for character_uid, player_data in players.items():
-                if character_uid not in user_id_map:
-                    logger.debug(f"Character UID {character_uid} not found in user_id_map, skipping")
+            # Process each member - iterate by PID (which matches API response keys)
+            for pid, player_data in players.items():
+                if pid not in pid_to_userid_map:
                     continue
                     
-                user_id = user_id_map[character_uid]
+                user_id = pid_to_userid_map[pid]
                 
                 # Get current guild membership
                 club_data = player_data.get('club', {})
                 club_id = club_data.get('club_id')
                 is_current_guild_member = (club_id == CLUB_ID)
-
-                logger.debug(f"Syncing user_id {user_id} | character_uid {character_uid} | club_id {club_id} | is_guild_member: {is_current_guild_member}")
                 
                 # Find the guild member
                 member = guild.get_member(user_id)
                 
                 if not member:
-                    logger.debug(f"Member with ID {user_id} not found in guild, skipping")
                     continue
                     
                 # Check current roles
                 has_guild_role = guild_role in member.roles
                 has_community_role = community_role in member.roles
-
-                logger.debug(f"Syncing {member} | Guild Member: {is_current_guild_member} | Has Guild Role: {has_guild_role} | Has Community Role: {has_community_role}")
                 
                 # Update roles if mismatch
                 if is_current_guild_member:
@@ -303,19 +336,39 @@ class GuildVerificationCog(commands.Cog):
     )
     async def add_verified_member(self, interaction: discord.Interaction, member: discord.Member, character_uid: str):
         """Admin command to manually add existing members to verified database"""
+        await interaction.response.defer(ephemeral=True)
         
-        # Add to verified members database
+        # Check live guild membership status and resolve PID
+        is_guild_member = False
+        player_pid = ''
+        try:
+            from utility.wwm import get_club_hostnums
+            player_data = get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+            if player_data and 'result' in player_data:
+                player = player_data['result']
+                player_pid = str(player.get('id', ''))
+                if player_pid:
+                    club_data = get_club_hostnums(player_pid)
+                    if club_data and 'result' in club_data:
+                        player_club_data = club_data['result'].get(player_pid, {})
+                        club_id = player_club_data.get('club', {}).get('club_id')
+                        is_guild_member = (club_id == CLUB_ID)
+        except:
+            pass
+        
+        # Add to verified members database (with player_pid)
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
         
         c.execute('''
             REPLACE INTO verified_members
-            (user_id, username, character_uid, verified_at, verified_by)
-            VALUES (?, ?, ?, ?, ?)
+            (user_id, username, character_uid, player_pid, verified_at, verified_by)
+            VALUES (?, ?, ?, ?, ?, ?)
         ''', (
             member.id,
             str(member),
             character_uid.strip(),
+            player_pid,
             datetime.utcnow(),
             interaction.user.id
         ))
@@ -331,23 +384,6 @@ class GuildVerificationCog(commands.Cog):
             guild_role = interaction.guild.get_role(settings.GUILD_MEMBER_ROLE_ID)
         if hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID'):
             community_role = interaction.guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
-        
-        # Check live guild membership status
-        is_guild_member = False
-        try:
-            from utility.wwm import get_club_hostnums
-            player_data = get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
-            if player_data and 'result' in player_data:
-                player = player_data['result']
-                player_pid = player.get('id')
-                if player_pid:
-                    club_data = get_club_hostnums(player_pid)
-                    if club_data and 'result' in club_data:
-                        player_club_data = club_data['result'].get(player_pid, {})
-                        club_id = player_club_data.get('club', {}).get('club_id')
-                        is_guild_member = (club_id == CLUB_ID)
-        except:
-            pass
         
         # Always give exactly one role
         if is_guild_member and guild_role:
@@ -366,7 +402,7 @@ class GuildVerificationCog(commands.Cog):
             color=discord.Color.green()
         )
         
-        await interaction.response.send_message(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)
         
         # Send notification to binding log channel
         try:
@@ -1165,17 +1201,19 @@ class VerifySignatureView(discord.ui.View):
                         if guild_role and guild_role in target_user.roles:
                             await target_user.remove_roles(guild_role)
                 
-                # Add to verified members database
+                # Add to verified members database (with player_pid)
+                player_pid = str(player.get('id', ''))
                 conn = sqlite3.connect(DB_PATH)
                 c = conn.cursor()
                 c.execute('''
                     REPLACE INTO verified_members
-                    (user_id, username, character_uid, verified_at, verified_by)
-                    VALUES (?, ?, ?, ?, ?)
+                    (user_id, username, character_uid, player_pid, verified_at, verified_by)
+                    VALUES (?, ?, ?, ?, ?, ?)
                 ''', (
                     self.user_id,
                     self.username,
                     self.character_uid,
+                    player_pid,
                     datetime.utcnow(),
                     self.user_id # Verified automatically by user themselves
                 ))
@@ -1308,15 +1346,25 @@ class VerificationAdminView(discord.ui.View):
             WHERE user_id = ? AND status = 'pending'
         ''', (interaction.user.id, datetime.utcnow(), self.user_id))
         
+        # Resolve player PID for this character UID
+        player_pid = ''
+        try:
+            pid_data = get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+            if pid_data and 'result' in pid_data:
+                player_pid = str(pid_data['result'].get('id', ''))
+        except Exception as e:
+            logger.warning(f"Failed to resolve PID for admin approval of {self.character_uid}: {e}")
+        
         # Add to verified members registry
         c.execute('''
             REPLACE INTO verified_members
-            (user_id, username, character_uid, verified_at, verified_by)
-            VALUES (?, ?, ?, ?, ?)
+            (user_id, username, character_uid, player_pid, verified_at, verified_by)
+            VALUES (?, ?, ?, ?, ?, ?)
         ''', (
             self.user_id,
             self.username,
             self.character_uid,
+            player_pid,
             datetime.utcnow(),
             interaction.user.id
         ))
