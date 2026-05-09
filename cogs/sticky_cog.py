@@ -326,11 +326,14 @@ class CreateEmbedModal(Modal):
             name = f.get('name', '')
             value = f.get('value', '')
             inline = f.get('inline', False)
-            fields_text += f"{name} | {value} | {'yes' if inline else 'no'}\n"
+            if inline:
+                fields_text += f"{name} || {value} || yes\n---\n"
+            else:
+                fields_text += f"{name} || {value}\n---\n"
         self.fields_input = TextInput(
-            label="Fields (one per line: name | value | inline)",
-            placeholder="🔗 Step 1 | Bind your account first! | no",
-            default=fields_text.strip(),
+            label="Fields (separate with --- between each)",
+            placeholder="🔗 Step 1 || Bind your account first! || no\n---\nStep 2 || More info with\nmultiple lines || yes",
+            default=fields_text.strip().rstrip('\n---'),
             required=False,
             style=discord.TextStyle.paragraph,
             max_length=2000
@@ -357,17 +360,31 @@ class CreateEmbedModal(Modal):
         self.add_item(self.timeout_input)
 
     async def on_submit(self, interaction: discord.Interaction):
-        # Parse fields
+        # Parse fields: each field block separated by "---", with "||" as separator
         fields = []
-        for line in self.fields_input.value.strip().split('\n'):
-            line = line.strip()
-            if not line:
-                continue
-            parts = [p.strip() for p in line.split('|')]
-            if len(parts) >= 2:
-                name = parts[0]
-                value = parts[1]
-                inline = len(parts) >= 3 and parts[2].lower() in ('yes', 'true', '1')
+        raw = self.fields_input.value.strip()
+        if raw:
+            blocks = raw.split('---')
+            for block in blocks:
+                block = block.strip()
+                if not block:
+                    continue
+                # First line is the name, rest is the value
+                lines = block.split('\n')
+                first_line = lines[0].strip() if lines else ''
+                if '||' in first_line:
+                    parts = [p.strip() for p in first_line.split('||', 2)]
+                    name = parts[0]
+                    value = parts[1] if len(parts) > 1 else ''
+                    inline = len(parts) > 2 and parts[2].lower() in ('yes', 'true', '1')
+                else:
+                    name = first_line
+                    value = ''
+                    inline = False
+                # Append remaining lines to value
+                for extra_line in lines[1:]:
+                    value += '\n' + extra_line
+                value = value.strip()
                 fields.append({'name': name, 'value': value, 'inline': inline})
 
         # Parse idle timeout
