@@ -101,9 +101,11 @@ class GuildVerificationCog(commands.Cog):
     @tasks.loop(minutes=1)
     async def guild_member_sync_task(self):
         """Background task to sync verified members guild membership status every minute"""
+        logger.info("Running guild member sync task...")
         
         # Only run if roles and server ID are configured
         if not hasattr(settings, 'GUILD_MEMBER_ROLE_ID') or not hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID') or not hasattr(settings, 'DISCORD_SERVER_ID'):
+            logger.info("Skipping guild member sync task because roles or server ID are not configured")
             return
             
         try:
@@ -171,6 +173,8 @@ class GuildVerificationCog(commands.Cog):
                 # Check current roles
                 has_guild_role = guild_role in member.roles
                 has_community_role = community_role in member.roles
+
+                logger.debug(f"Syncing {member} | Guild Member: {is_current_guild_member} | Has Guild Role: {has_guild_role} | Has Community Role: {has_community_role}")
                 
                 # Update roles if mismatch
                 if is_current_guild_member:
