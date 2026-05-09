@@ -152,8 +152,8 @@ class GuildVerificationCog(commands.Cog):
                 club_id = club_data.get('club_id')
                 is_current_guild_member = (club_id == CLUB_ID)
                 
-                # Find the guild member
-                guild = self.bot.guilds[0]
+                # Find the guild member (from settings.DISCORD_SERVER_ID)
+                guild = self.bot.get_guild(settings.DISCORD_SERVER_ID)
                 member = guild.get_member(user_id)
                 
                 if not member:
