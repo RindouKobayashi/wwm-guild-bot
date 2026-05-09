@@ -7,7 +7,7 @@ import json
 from deepdiff import DeepDiff
 
 import settings
-from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan
+from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
@@ -73,6 +73,216 @@ class OnlinePlayersButton(discord.ui.View):
         except Exception as e:
             logger.error(f"Failed to fetch online players: {str(e)}")
             await loading_msg.edit(content="❌ Failed to retrieve online players list")
+
+
+class GuildSearchSelectView(discord.ui.View):
+    """View with buttons for selecting a guild from search results"""
+    def __init__(self, clubs: list, guild_infos: list, cog):
+        super().__init__(timeout=60)
+        self.cog = cog
+        self.clubs = clubs
+        self.guild_infos = guild_infos  # brief info from get_club_brief_info_batch
+        
+        # Add a button for each result (up to 5)
+        for idx, club in enumerate(clubs[:5]):
+            guild_name = "Unknown"
+            member_num = "?"
+            apprentice_num = "?"
+            
+            # Try to get name from brief info
+            if guild_infos and idx < len(guild_infos):
+                info = guild_infos[idx]
+                guild_name = info.get('base', {}).get('name', 'Unknown')
+                member_num = info.get('members', {}).get('member_num', '?')
+                apprentice_num = info.get('members', {}).get('apprentice_num', '?')
+            
+            # Label: "1. GuildName (M: 80 | A: 10)"
+            label = f"{idx + 1}. {guild_name[:40]}" if len(guild_name) > 40 else f"{idx + 1}. {guild_name}"
+            button = discord.ui.Button(
+                label=label,
+                style=discord.ButtonStyle.primary,
+                custom_id=f"guild_select_{idx}"
+            )
+            button.callback = self.make_callback(idx)
+            self.add_item(button)
+    
+    def make_callback(self, idx: int):
+        """Create a callback for a specific guild result button"""
+        async def callback(interaction: discord.Interaction):
+            await self._handle_guild_select(interaction, idx)
+        return callback
+    
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, custom_id="guild_select_cancel", row=4)
+    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="❌ Search cancelled.", embed=None, view=None)
+        self.stop()
+    
+    async def _handle_guild_select(self, interaction: discord.Interaction, idx: int):
+        """Handle when a user clicks a guild selection button"""
+        # Only the original command user can interact
+        await interaction.response.defer(ephemeral=True)
+        
+        club = self.clubs[idx]
+        club_id = club.get('club_id')
+        hostnum = club.get('hostnum', 10103)
+        
+        if not club_id:
+            await interaction.followup.send("❌ Invalid club data", ephemeral=True)
+            return
+        
+        # Send loading message
+        loading_msg = await interaction.followup.send("📋 Loading guild data...", ephemeral=True, wait=True)
+        
+        try:
+            # Fetch full guild info
+            logger.info(f"Trying to fetch full guild info for selected club_id: {club_id} with hostnum: {hostnum}")
+            guild_data = get_full_guild_info(club_id, hostnum=hostnum)
+            
+            if not guild_data or 'result' not in guild_data:
+                await loading_msg.edit(content="❌ Guild not found or API error")
+                return
+            
+            result = guild_data['result']
+            base = result.get('base', {})
+            members = result.get('members', {})
+            play = result.get('play', {})
+            
+            # Build response embed
+            embed = discord.Embed(
+                title="🏰 Guild Profile",
+                color=discord.Color.og_blurple()
+            )
+            
+            embed.description = f"**{base.get('name', 'Unknown Guild')}**"
+            
+            embed.add_field(
+                name="📛 Guild Name",
+                value=f"`{base.get('name', 'Unknown')}`",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="⭐ Level",
+                value=f"`{base.get('level', 0)}`",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="👥 Members",
+                value=f"`{members.get('member_num', 0)} / 100`",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="💰 Guild Funds",
+                value=f"`{base.get('fund', 0):,}`",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="📈 Total Fame",
+                value=f"`{base.get('fame', 0):,}`",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="🔥 Weekly Activity",
+                value=f"`{base.get('week_fame', 0):,}`",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="⚔️ GvG Points",
+                value=f"`{play.get('pk_match_info', {}).get('battle_score', 0)}`",
+                inline=True
+            )
+            
+            # Find guild leadership
+            leader_name = "None"
+            vice_leader_name = "None"
+            leader_pid = "None"
+            vice_leader_pid = "None"
+            
+            member_list = members.get('members', {})
+            for pid, member in member_list.items():
+                post_list = member.get('post', [])
+                if 1 in post_list:
+                    leader_pid = pid
+                if 2 in post_list:
+                    vice_leader_pid = pid
+            
+            # Fetch nicknames for leadership
+            pids_to_fetch = []
+            if leader_pid != "None":
+                pids_to_fetch.append(leader_pid)
+            if vice_leader_pid != "None":
+                pids_to_fetch.append(vice_leader_pid)
+            
+            if pids_to_fetch:
+                bulk_data = get_bulk_players_info(pids_to_fetch, fields=["base"])
+                if bulk_data and bulk_data.get('code') == 0:
+                    players = bulk_data.get('result', {})
+                    if leader_pid in players:
+                        leader_base = players[leader_pid].get('base', {})
+                        leader_name = leader_base.get('nickname', 'Unknown')
+                    if vice_leader_pid in players:
+                        vice_base = players[vice_leader_pid].get('base', {})
+                        vice_leader_name = vice_base.get('nickname', 'Unknown')
+            
+            # Calculate online players
+            online = 0
+            all_pids = list(member_list.keys())
+            bulk_data = get_bulk_players_info(all_pids, fields=["base"])
+            if bulk_data and bulk_data.get('code') == 0:
+                players = bulk_data.get('result', {})
+                for pid, player_data in players.items():
+                    player_base = player_data.get('base', {})
+                    if player_base.get('is_online', 0) == 1:
+                        online += 1
+            
+            embed.add_field(
+                name="👑 Guild Leader",
+                value=f"`{leader_name}`",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="⚔️ Vice Leader",
+                value=f"`{vice_leader_name}`",
+                inline=True
+            )
+            
+            embed.add_field(
+                name="🟢 Online Now",
+                value=f"`{online} / {members.get('member_num', 0)}`",
+                inline=True
+            )
+            
+            # Guild announcement
+            announcement = result.get('gonggao_info', {}).get('msg')
+            if announcement and announcement.strip():
+                embed.add_field(
+                    name="📢 Guild Announcement",
+                    value=f"`{announcement}`",
+                    inline=False
+                )
+            
+            # Edit the original search results message to show the guild profile
+            await interaction.edit_original_response(content=None, embed=embed, view=None)
+            
+            # Clean up the ephemeral loading message
+            await loading_msg.edit(content="✅ Guild found!")
+            
+        except Exception as e:
+            logger.error(f"Guild detail fetch failed: {str(e)}", exc_info=True)
+            await loading_msg.edit(content=f"❌ Failed to load guild details: `{str(e)}`")
+    
+    async def on_timeout(self):
+        """Disable all buttons on timeout"""
+        for child in self.children:
+            child.disabled = True
+        # Note: We can't edit the message here since we don't have a reference,
+        # but the timeout is 60s so the buttons will just be non-functional
 
 
 class WWMCog(commands.Cog):
@@ -1025,6 +1235,116 @@ class WWMCog(commands.Cog):
 
         except Exception as e:
             logger.error(f"Guild search failed: {str(e)}", exc_info=True)
+            embed = discord.Embed(
+                title="❌ Search Failed",
+                description=f"An error occurred while searching: `{str(e)}`",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+
+
+    @guild_group.command(
+        name="search-name",
+        description="Search for a guild by name (shows up to 5 results to choose from)"
+    )
+    @app_commands.describe(
+        name="The guild name to search for"
+    )
+    async def guild_search_name(self, interaction: discord.Interaction, name: str):
+        """Search for guilds by name and let user select which one to view"""
+        # Defer since this may take time
+        await interaction.response.defer()
+        
+        try:
+            if not name or len(name.strip()) == 0:
+                embed = discord.Embed(
+                    title="❌ Invalid Name",
+                    description="Please provide a guild name to search for.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            search_term = name.strip()
+            
+            # Call the API to search for guilds by name
+            clubs = get_club_by_name(search_term, limit=5)
+            
+            if not clubs or len(clubs) == 0:
+                embed = discord.Embed(
+                    title="❌ No Results",
+                    description=f"No guilds found matching `{search_term}`",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            # Fetch brief info for all found clubs (guild names, member counts, apprentice counts)
+            club_ids = [club.get('club_id') for club in clubs]
+            hostnums = [club.get('hostnum', 10103) for club in clubs]
+            guild_infos = get_club_brief_info_batch(club_ids, hostnums) or []
+            
+            # Filter out deleted guilds (those not returned by brief info batch API)
+            # Build a mapping of club_id -> brief info from the batch response
+            guild_info_map = {}
+            for info in guild_infos:
+                info_club_id = info.get('club_id')
+                info_hostnum = info.get('hostnum')
+                if info_club_id:
+                    # Use (club_id, hostnum) as key to handle same id on different hosts
+                    guild_info_map[info_club_id] = info
+            
+            # Only keep clubs that have valid brief info (not deleted)
+            valid_clubs = []
+            valid_infos = []
+            for club in clubs:
+                cid = club.get('club_id')
+                if cid in guild_info_map:
+                    valid_clubs.append(club)
+                    valid_infos.append(guild_info_map[cid])
+            
+            if len(valid_clubs) == 0:
+                embed = discord.Embed(
+                    title="❌ No Active Guilds Found",
+                    description=f"The guilds matching `{search_term}` no longer exist or are inaccessible.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+            
+            removed_count = len(clubs) - len(valid_clubs)
+            
+            # Build selection embed with guild names from brief info
+            embed = discord.Embed(
+                title="🔍 Guild Search Results",
+                description=f"Found **{len(valid_clubs)}** active guild(s) matching `{search_term}`" +
+                            (f"\n*({removed_count} deleted guild(s) filtered out)*" if removed_count > 0 else "") +
+                            "\n\nSelect a button below to view the guild details.",
+                color=discord.Color.og_blurple()
+            )
+            
+            # List each result with its guild name, member and apprentice counts
+            result_lines = []
+            for idx, info in enumerate(valid_infos, 1):
+                guild_name = info.get('base', {}).get('name', 'Unknown')
+                member_num = info.get('members', {}).get('member_num', '?')
+                apprentice_num = info.get('members', {}).get('apprentice_num', '?')
+                result_lines.append(f"**{idx}.** **{guild_name}** — 👥 `{member_num}` 🎓 `{apprentice_num}`")
+            
+            embed.add_field(
+                name="📋 Results",
+                value="\n".join(result_lines),
+                inline=False
+            )
+            
+            embed.set_footer(text="⏳ This selection will expire in 60 seconds")
+            
+            # Create and send the view with selection buttons (pass valid_infos and valid_clubs)
+            view = GuildSearchSelectView(valid_clubs, valid_infos, self)
+            await interaction.followup.send(embed=embed, view=view)
+            
+        except Exception as e:
+            logger.error(f"Guild name search failed: {str(e)}", exc_info=True)
             embed = discord.Embed(
                 title="❌ Search Failed",
                 description=f"An error occurred while searching: `{str(e)}`",

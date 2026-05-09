@@ -8,7 +8,8 @@ import json
 from typing import Dict, Any, Optional, List
 from settings import (
     WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL,
-    WWM_FULL_GUILD_URL, WWM_FASHION_PLAN_URL, WWM_HOST, logger
+    WWM_FULL_GUILD_URL, WWM_FASHION_PLAN_URL, WWM_CLUB_BY_NAME_URL,
+    WWM_CLUB_BRIEF_INFO_BATCH_URL, WWM_CLUB_CHAT_URL, WWM_HOST, logger
 )
 
 # -----------------------------------------------------------------------------
@@ -158,7 +159,7 @@ def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[s
 
 def get_full_guild_info(club_id: int, hostnum: int = 10103) -> Optional[Dict[str, Any]]:
     """Get complete guild information including all fields"""
-    logger.info(f"Getting full guild info for club_id: {club_id}")
+    logger.debug(f"Getting full guild info for club_id: {club_id}")
     
     return _wwm_api_post(
         WWM_FULL_GUILD_URL,
@@ -203,7 +204,7 @@ def get_bulk_players_info(pid_list: List[str], fields: Optional[List[str]] = Non
     if fields is None:
         fields = ["base"]
     
-    logger.info(f"Bulk fetching {len(pid_list)} players")
+    logger.debug(f"Bulk fetching {len(pid_list)} players")
     
     return _wwm_api_post(
         WWM_CLUB_HOSTNUMS_URL,
@@ -245,11 +246,68 @@ def get_fashion_plan(player_pid: str, hostnum: int = 10403, uid: Optional[str] =
     )
 
 
+
+def get_club_brief_info_batch(club_ids: List[str], hostnums: List[int]) -> Optional[List[Dict]]:
+    """
+    Fetch brief info for multiple clubs in batch (name, member count, apprentice count).
+    Args:
+        club_ids: List of club IDs
+        hostnums: List of hostnums (same order as club_ids)
+    Returns:
+        List of dicts with base['name'], members['member_num'], members['apprentice_num'], club_id, etc.
+    """
+    logger.info(f"Fetching brief info for {len(club_ids)} clubs in batch")
+    
+    payload = {
+        "club_list": [{"club_id": cid, "hostnum": hnum} for cid, hnum in zip(club_ids, hostnums)],
+        "uid": WWM_UID
+    }
+    
+    response = _wwm_api_post(WWM_CLUB_BRIEF_INFO_BATCH_URL, payload)
+    
+    if response and 'result' in response and 'data' in response['result']:
+        data = response['result']['data']
+        logger.info(f"Received brief info for {len(data)} clubs")
+        return data
+    
+    logger.warning("Failed to fetch club brief info batch")
+    return None
+
+
+def get_club_by_name(club_name: str, limit: int = 5, start: int = 0) -> Optional[List[Dict]]:
+    """
+    Search for clubs/guilds by name.
+    Args:
+        club_name: Name of the club to search for
+        limit: Number of results to return
+        start: Pagination start index
+    Returns:
+        List of dicts with club_id and hostnum, or None if no results
+    """
+    logger.info(f"Searching for clubs with name: '{club_name}' (limit: {limit}, start: {start})")
+    
+    payload = {
+        "club_name": club_name,
+        "limit": limit,
+        "start": start,
+        "uid": WWM_UID,
+        "group_number": 10001
+    }
+    
+    response = _wwm_api_post(WWM_CLUB_BY_NAME_URL, payload)
+    
+    if response and 'result' in response and 'results' in response['result']:
+        clubs = response['result']['results']
+        logger.info(f"Found {len(clubs)} clubs matching '{club_name}'")
+        return clubs
+    
+    logger.info(f"No clubs found matching '{club_name}'")
+    return None
+
+
 def get_club_chat(club_id: str, hostnum: int = 10103) -> Optional[Dict[str, Any]]:
     """Fetch latest club chat messages"""
     logger.debug(f"Fetching club chat for club_id: {club_id} (hostnum: {hostnum})")
-    
-    api_url = "https://h72naxx2gb-ms-prod.easebar.com/flk/club_service/get_club_info"
     
     payload = {
         "club_id": club_id,
@@ -260,7 +318,7 @@ def get_club_chat(club_id: str, hostnum: int = 10103) -> Optional[Dict[str, Any]
         "uid": WWM_UID
     }
     
-    return _wwm_api_post(api_url, payload)
+    return _wwm_api_post(WWM_CLUB_CHAT_URL, payload)
 
 
 def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
@@ -305,7 +363,7 @@ def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
     }
 
     # Save to JSON file
-    filename = f"{number_id}.json"
+    filename = f"data/{number_id}.json"
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(combined_data, f, indent=4, default=str, ensure_ascii=False)
     
