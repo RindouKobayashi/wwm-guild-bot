@@ -6,6 +6,7 @@ import sqlite3
 import json
 from deepdiff import DeepDiff
 
+import settings
 from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 
@@ -23,7 +24,7 @@ class OnlinePlayersButton(discord.ui.View):
         await interaction.response.defer(ephemeral=True)
         
         # Check if user has the guild member role
-        GUILD_MEMBER_ROLE_ID = 1501140557299318864
+        GUILD_MEMBER_ROLE_ID = settings.GUILD_MEMBER_ROLE_ID
         
         member_role = discord.utils.get(interaction.user.roles, id=GUILD_MEMBER_ROLE_ID)
         if not member_role:
