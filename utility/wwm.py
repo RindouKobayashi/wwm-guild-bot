@@ -41,6 +41,21 @@ ALL_KNOWN_FIELDS = [
 ]
 
 # -----------------------------------------------------------------------------
+# Helper: recursively convert bytes keys/values to str for json compatibility
+# -----------------------------------------------------------------------------
+def _convert_bytes_to_str(obj):
+    """Recursively convert bytes keys/values to strings in msgpack raw-mode output."""
+    if isinstance(obj, dict):
+        return {_convert_bytes_to_str(k): _convert_bytes_to_str(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_convert_bytes_to_str(item) for item in obj]
+    elif isinstance(obj, bytes):
+        return obj.decode('utf-8', errors='replace')
+    else:
+        return obj
+
+
+# -----------------------------------------------------------------------------
 # Base API Request Handler (all common logic in one place)
 # -----------------------------------------------------------------------------
 def _wwm_api_post(
@@ -79,11 +94,20 @@ def _wwm_api_post(
         logger.debug(f"API Request {url} status: {response.status_code}")
 
         if response.status_code == 200:
-            return msgpack.unpackb(
-                response.content,
-                raw=False,
-                strict_map_key=False
-            )
+            try:
+                return msgpack.unpackb(
+                    response.content,
+                    raw=False,
+                    strict_map_key=False
+                )
+            except UnicodeDecodeError:
+                logger.warning("Response contains non-UTF8 binary data, falling back to raw mode")
+                raw_result = msgpack.unpackb(
+                    response.content,
+                    raw=True,
+                    strict_map_key=False
+                )
+                return _convert_bytes_to_str(raw_result)
         
         logger.warning(f"API Request failed {url}: HTTP {response.status_code}")
         return None
@@ -178,6 +202,20 @@ def get_full_guild_info(club_id: int, hostnum: int = 10103) -> Optional[Dict[str
                 "base": [],
                 "bonus": []
             },
+            "hostnum": hostnum
+        }
+    )
+
+def get_custom_guild_info(club_id: int, hostnum: int = 10103, fields: Optional[Dict[str, list]] = None) -> Optional[Dict[str, Any]]:
+    """Get custom guild information with specified fields"""
+    logger.debug(f"Getting custom guild info for club_id: {club_id} with fields: {fields}")
+    
+    return _wwm_api_post(
+        WWM_FULL_GUILD_URL,
+        {
+            "club_id": club_id,
+            "uid": WWM_UID,
+            "field_info": fields,
             "hostnum": hostnum
         }
     )
