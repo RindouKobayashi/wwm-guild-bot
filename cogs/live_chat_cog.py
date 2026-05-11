@@ -1,9 +1,3 @@
-#!/usr/bin/env python3
-"""
-Live Guild Chat Cog
-Automatically polls WWM guild chat every 10 seconds and posts new messages to Discord
-"""
-
 import asyncio
 import json
 import os
@@ -13,6 +7,7 @@ import discord
 from discord.ext import commands, tasks
 from settings import logger
 from utility.wwm import get_club_chat
+from googletrans import Translator
 
 
 class LiveChatCog(commands.Cog):
@@ -20,7 +15,7 @@ class LiveChatCog(commands.Cog):
         self.bot = bot
         self.last_seen_msg_ids: Set[str] = set()
         self.is_running = False
-        
+        self.translator = Translator()
         # Configuration
         self.CONFIG_FILE = "data/live_chat_config.json"
         self.CLUB_ID = "aRvTyiPA8WMSXrRj"      # Your guild ID
@@ -87,7 +82,7 @@ class LiveChatCog(commands.Cog):
                 channel = self.bot.get_channel(self.CHANNEL_ID)
                 if channel:
                     for msg in new_messages:
-                        embed = self.format_message_embed(msg)
+                        embed = await self.format_message_embed(msg)
                         await channel.send(embed=embed)
                 
                 # Keep only last 200 message IDs to prevent memory leak
@@ -97,7 +92,7 @@ class LiveChatCog(commands.Cog):
         except Exception as e:
             logger.error(f"Error in chat poller: {str(e)}", exc_info=True)
 
-    def format_message_embed(self, msg: dict) -> discord.Embed:
+    async def format_message_embed(self, msg: dict) -> discord.Embed:
         """Format chat message into Discord embed"""
         ts = int(msg.get('ts', 0))
         nickname = msg.get('nickname', 'Unknown')
@@ -136,6 +131,21 @@ class LiveChatCog(commands.Cog):
             reward_no = hongbao.get('reward_no', '')
             if reward_no:
                 message += f" ({reward_no} coins)"
+        elif msg_type == 'msg_normal':
+            # Translate englsih to chinese and vice versa for normal messages to make it more accessible for all users
+            try:
+                # Check if message contains Chinese characters
+                if any('\u4e00' <= char <= '\u9fff' for char in message):
+                    # Contains Chinese characters, translate to English
+                    translation = await self.translator.translate(message, src='zh-cn', dest='en')
+                    message += f"\n\n[Translated] {translation.text}"
+                else:
+                    # No Chinese characters, translate to Chinese
+                    translation = await self.translator.translate(message, src='en', dest='zh-cn')
+                    message += f"\n\n[Translated] {translation.text}"
+            except Exception as e:
+                logger.error(f"Failed to translate message: {e}")
+
         
         channel_type = msg.get('channel', 'club_chat')
         
