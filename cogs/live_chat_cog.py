@@ -190,7 +190,8 @@ class LiveChatCog(commands.Cog):
         )
         
         embed.set_author(
-            name=f"{nickname} ({rank_name}) (Lv.{level})"
+            # If rank_name is "Unknown", it will just show nickname without rank
+            name=f"{nickname} ({rank_name}) (Lv.{level})" if rank_name != "Unknown" else f"{nickname} (Lv.{level})",
         )
         
         return embed
