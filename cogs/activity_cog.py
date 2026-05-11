@@ -1,5 +1,5 @@
 import discord
-import sqlite3
+import aiosqlite
 import time
 import os
 import settings
@@ -41,20 +41,21 @@ class ActivityCog(commands.Cog):
         self.bot = bot
         self.activity_check.start()
         self.reset_check.start()
-        self._init_db()
+
+    async def cog_load(self):
+        await self._init_db()
     
     def cog_unload(self):
         """Cancel background tasks when cog is unloaded."""
         self.activity_check.cancel()
         self.reset_check.cancel()
     
-    def _init_db(self):
+    async def _init_db(self):
         """Initialize the database and create tables if they don't exist."""
         os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
+        async with aiosqlite.connect(DB_PATH) as conn:
             # All-time points table
-            cursor.execute('''
+            await conn.execute('''
                 CREATE TABLE IF NOT EXISTS activity_alltime (
                     user_id INTEGER NOT NULL,
                     guild_id INTEGER NOT NULL,
@@ -63,7 +64,7 @@ class ActivityCog(commands.Cog):
                 )
             ''')
             # Session points table (resets daily)
-            cursor.execute('''
+            await conn.execute('''
                 CREATE TABLE IF NOT EXISTS activity_session (
                     user_id INTEGER NOT NULL,
                     guild_id INTEGER NOT NULL,
@@ -73,31 +74,29 @@ class ActivityCog(commands.Cog):
                     PRIMARY KEY (user_id, guild_id, session_id)
                 )
             ''')
-            conn.commit()
+            await conn.commit()
         logger.info("Activity database initialized with all-time and session tables")
     
-    def _update_points(self, user_id: int, guild_id: int):
+    async def _update_points(self, user_id: int, guild_id: int):
         """Update user points if cooldown has passed. Updates both session and all-time."""
         now = time.time()
         cooldown = 15  # 1 point per 15 seconds
         session_id = get_today_session_id()
         
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            
+        async with aiosqlite.connect(DB_PATH) as conn:
             # Update session points
-            cursor.execute(
+            cursor = await conn.execute(
                 "SELECT points, last_point_time FROM activity_session WHERE user_id = ? AND guild_id = ? AND session_id = ?",
                 (user_id, guild_id, session_id)
             )
-            result = cursor.fetchone()
+            result = await cursor.fetchone()
             
             session_points = 0
             if result:
                 points, last_time = result
                 if now - last_time >= cooldown:
                     new_points = points + 1
-                    cursor.execute(
+                    await conn.execute(
                         "UPDATE activity_session SET points = ?, last_point_time = ? WHERE user_id = ? AND guild_id = ? AND session_id = ?",
                         (new_points, now, user_id, guild_id, session_id)
                     )
@@ -105,31 +104,31 @@ class ActivityCog(commands.Cog):
                 else:
                     return None  # Cooldown not passed
             else:
-                cursor.execute(
+                await conn.execute(
                     "INSERT INTO activity_session (user_id, guild_id, session_id, points, last_point_time) VALUES (?, ?, ?, 1, ?)",
                     (user_id, guild_id, session_id, now)
                 )
                 session_points = 1
             
             # Update all-time points
-            cursor.execute(
+            cursor = await conn.execute(
                 "SELECT points FROM activity_alltime WHERE user_id = ? AND guild_id = ?",
                 (user_id, guild_id)
             )
-            alltime_result = cursor.fetchone()
+            alltime_result = await cursor.fetchone()
             
             if alltime_result:
-                cursor.execute(
+                await conn.execute(
                     "UPDATE activity_alltime SET points = points + 1 WHERE user_id = ? AND guild_id = ?",
                     (user_id, guild_id)
                 )
             else:
-                cursor.execute(
+                await conn.execute(
                     "INSERT INTO activity_alltime (user_id, guild_id, points) VALUES (?, ?, 1)",
                     (user_id, guild_id)
                 )
             
-            conn.commit()
+            await conn.commit()
             return session_points
     
     async def _check_has_special_role(self, guild: discord.Guild, user_id: int) -> bool:
@@ -140,16 +139,15 @@ class ActivityCog(commands.Cog):
         special_role_ids = set(settings.SPECIAL_ROLES.values())
         return any(role.id in special_role_ids for role in member.roles)
     
-    def _get_session_candidates(self, guild_id: int) -> list:
+    async def _get_session_candidates(self, guild_id: int) -> list:
         """Get all users ordered by session points, for filtering special role users."""
         session_id = get_today_session_id()
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute(
                 "SELECT user_id, points FROM activity_session WHERE guild_id = ? AND session_id = ? ORDER BY points DESC, last_point_time ASC",
                 (guild_id, session_id)
             )
-            return cursor.fetchall()
+            return await cursor.fetchall()
     
     async def _get_eligible_leader(self, guild: discord.Guild) -> tuple:
         """Get the activity leader who is eligible for the role (no special roles).
@@ -158,7 +156,7 @@ class ActivityCog(commands.Cog):
             (user_id, session_points) of the eligible leader, or None if no eligible user.
             Users with special roles are skipped - role only goes to users without special roles.
         """
-        candidates = self._get_session_candidates(guild.id)
+        candidates = await self._get_session_candidates(guild.id)
         for user_id, points in candidates:
             has_special = await self._check_has_special_role(guild, user_id)
             if not has_special:
@@ -173,7 +171,7 @@ class ActivityCog(commands.Cog):
             - Users with special roles cannot hold the activity leader role
             - Current eligible leader keeps the role until someone STRICTLY exceeds their points
         """
-        candidates = self._get_session_candidates(guild.id)
+        candidates = await self._get_session_candidates(guild.id)
         
         # Find the current eligible leader (without special role)
         current_eligible_leader_id = None
@@ -200,27 +198,25 @@ class ActivityCog(commands.Cog):
         # Current leader keeps the role (even on tie)
         return current_eligible_leader_id
     
-    def _get_user_session_points(self, user_id: int, guild_id: int) -> int:
+    async def _get_user_session_points(self, user_id: int, guild_id: int) -> int:
         """Get a user's session points for today."""
         session_id = get_today_session_id()
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute(
                 "SELECT points FROM activity_session WHERE user_id = ? AND guild_id = ? AND session_id = ?",
                 (user_id, guild_id, session_id)
             )
-            result = cursor.fetchone()
+            result = await cursor.fetchone()
             return result[0] if result else 0
     
-    def _get_user_alltime_points(self, user_id: int, guild_id: int) -> int:
+    async def _get_user_alltime_points(self, user_id: int, guild_id: int) -> int:
         """Get a user's all-time points."""
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute(
                 "SELECT points FROM activity_alltime WHERE user_id = ? AND guild_id = ?",
                 (user_id, guild_id)
             )
-            result = cursor.fetchone()
+            result = await cursor.fetchone()
             return result[0] if result else 0
     
     def _reset_session_points(self, guild_id: int):
@@ -241,10 +237,11 @@ class ActivityCog(commands.Cog):
             return
         
         # Update points
-        new_points = self._update_points(message.author.id, message.guild.id)
+        new_points = await self._update_points(message.author.id, message.guild.id)
         
         if new_points is not None:
-            logger.debug(f"User {message.author} earned a point! Session: {new_points}, All-time: {self._get_user_alltime_points(message.author.id, message.guild.id)}, Session ID: {get_today_session_id()}")
+            alltime_pts = await self._get_user_alltime_points(message.author.id, message.guild.id)
+            logger.debug(f"User {message.author} earned a point! Session: {new_points}, All-time: {alltime_pts}, Session ID: {get_today_session_id()}")
             
             # Check if they're now the leader (must strictly exceed current leader)
             leader_id = await self._get_leader_before_update(message.guild, message.author.id, new_points)
@@ -332,10 +329,11 @@ class ActivityCog(commands.Cog):
         
         member = interaction.guild.get_member(leader[0])
         if member:
-            alltime_points = self._get_user_alltime_points(member.id, interaction.guild.id)
+            alltime_points = await self._get_user_alltime_points(member.id, interaction.guild.id)
+            alltime_rank = await self._get_alltime_rank(member.id, interaction.guild.id)
             embed = discord.Embed(
                 title="🏆 Today's Most Active Member",
-                description=f"**{member.display_name}** is leading today with **{leader[1]} points!**\n\n*All-time rank: #{self._get_alltime_rank(member.id, interaction.guild.id)} ({alltime_points} total points)*",
+                description=f"**{member.display_name}** is leading today with **{leader[1]} points!**\n\n*All-time rank: #{alltime_rank} ({alltime_points} total points)*",
                 color=discord.Color.gold()
             )
             await interaction.response.send_message(embed=embed)
@@ -347,11 +345,11 @@ class ActivityCog(commands.Cog):
     async def activity_stats(self, interaction: discord.Interaction, user: discord.Member = None):
         """Show activity stats for a user."""
         target = user or interaction.user
-        session_points = self._get_user_session_points(target.id, interaction.guild.id)
-        alltime_points = self._get_user_alltime_points(target.id, interaction.guild.id)
+        session_points = await self._get_user_session_points(target.id, interaction.guild.id)
+        alltime_points = await self._get_user_alltime_points(target.id, interaction.guild.id)
         
-        session_rank = self._get_session_rank(target.id, interaction.guild.id)
-        alltime_rank = self._get_alltime_rank(target.id, interaction.guild.id)
+        session_rank = await self._get_session_rank(target.id, interaction.guild.id)
+        alltime_rank = await self._get_alltime_rank(target.id, interaction.guild.id)
         
         wasted_today = self._format_wasted_time(session_points)
         wasted_alltime = self._format_wasted_time(alltime_points)
@@ -381,23 +379,21 @@ class ActivityCog(commands.Cog):
         """Show the activity leaderboard."""
         session_id = get_today_session_id()
         
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            
+        async with aiosqlite.connect(DB_PATH) as conn:
             if view == "today":
-                cursor.execute(
+                cursor = await conn.execute(
                     "SELECT user_id, points FROM activity_session WHERE guild_id = ? AND session_id = ? ORDER BY points DESC, last_point_time ASC LIMIT 15",
                     (interaction.guild.id, session_id)
                 )
                 title = "🏆 Today's Activity Leaderboard"
             else:
-                cursor.execute(
+                cursor = await conn.execute(
                     "SELECT user_id, points FROM activity_alltime WHERE guild_id = ? ORDER BY points DESC LIMIT 15",
                     (interaction.guild.id,)
                 )
                 title = "⭐ All-Time Activity Leaderboard"
             
-            entries = cursor.fetchall()
+            entries = await cursor.fetchall()
         
         if not entries:
             await interaction.response.send_message("No activity data recorded yet!")
@@ -425,28 +421,28 @@ class ActivityCog(commands.Cog):
         
         await interaction.response.send_message(embed=embed)
     
-    def _get_session_rank(self, user_id: int, guild_id: int) -> int:
+    async def _get_session_rank(self, user_id: int, guild_id: int) -> int:
         """Get a user's session rank."""
         session_id = get_today_session_id()
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute(
                 "SELECT COUNT(*) + 1 FROM activity_session WHERE guild_id = ? AND session_id = ? AND points > (SELECT points FROM activity_session WHERE user_id = ? AND guild_id = ? AND session_id = ?)",
                 (guild_id, session_id, user_id, guild_id, session_id)
             )
-            result = cursor.fetchone()
-            return result[0] if result[0] > 0 else 1 if self._get_user_session_points(user_id, guild_id) > 0 else "-"
+            result = await cursor.fetchone()
+            session_pts = await self._get_user_session_points(user_id, guild_id)
+            return result[0] if result[0] > 0 else 1 if session_pts > 0 else "-"
     
-    def _get_alltime_rank(self, user_id: int, guild_id: int) -> int:
+    async def _get_alltime_rank(self, user_id: int, guild_id: int) -> int:
         """Get a user's all-time rank."""
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute(
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute(
                 "SELECT COUNT(*) + 1 FROM activity_alltime WHERE guild_id = ? AND points > (SELECT COALESCE(points, 0) FROM activity_alltime WHERE user_id = ? AND guild_id = ?)",
                 (guild_id, user_id, guild_id)
             )
-            result = cursor.fetchone()
-            return result[0] if result[0] > 0 else 1 if self._get_user_alltime_points(user_id, guild_id) > 0 else "-"
+            result = await cursor.fetchone()
+            alltime_pts = await self._get_user_alltime_points(user_id, guild_id)
+            return result[0] if result[0] > 0 else 1 if alltime_pts > 0 else "-"
     
     def _format_wasted_time(self, points: int) -> str:
         """Convert activity points to human readable wasted time.

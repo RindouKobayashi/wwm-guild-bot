@@ -1,6 +1,6 @@
 import discord
 import random
-import sqlite3
+import aiosqlite
 import os
 from datetime import datetime
 from discord.ext import commands, tasks
@@ -21,7 +21,7 @@ class PresenceCog(commands.Cog):
     def cog_unload(self):
         self.change_status.cancel()
 
-    def get_statuses(self):
+    async def get_statuses(self):
         """Get a list of possible statuses, including activity database stats."""
         statuses = []
         
@@ -32,13 +32,11 @@ class PresenceCog(commands.Cog):
         # 2. Activity database stats
         if os.path.exists(DB_PATH):
             try:
-                with sqlite3.connect(DB_PATH) as conn:
-                    cursor = conn.cursor()
-                    
+                async with aiosqlite.connect(DB_PATH) as conn:
                     # Get today's top scorer across all guilds
                     from cogs.activity_cog import get_today_session_id
                     session_id = get_today_session_id()
-                    cursor.execute("""
+                    cursor = await conn.execute("""
                         SELECT user_id, SUM(points) as total 
                         FROM activity_session 
                         WHERE session_id = ?
@@ -46,7 +44,7 @@ class PresenceCog(commands.Cog):
                         ORDER BY total DESC 
                         LIMIT 1
                     """, (session_id,))
-                    result = cursor.fetchone()
+                    result = await cursor.fetchone()
                     if result and result[1] > 0:
                         user_id, points = result
                         # Try to get the user from cache
@@ -57,17 +55,19 @@ class PresenceCog(commands.Cog):
                             statuses.append((discord.ActivityType.competing, f"Top scorer: {points} pts"))
                     
                     # Get total points tracked (all-time)
-                    cursor.execute("SELECT SUM(points) FROM activity_alltime")
-                    total = cursor.fetchone()[0] or 0
+                    cursor = await conn.execute("SELECT SUM(points) FROM activity_alltime")
+                    total_row = await cursor.fetchone()
+                    total = total_row[0] or 0
                     if total > 0:
                         statuses.append((discord.ActivityType.watching, f"{total} messages tracked"))
                     
                     # Get number of active users today
-                    cursor.execute("""
+                    cursor = await conn.execute("""
                         SELECT COUNT(DISTINCT user_id) FROM activity_session 
                         WHERE session_id = ? AND points > 0
                     """, (session_id,))
-                    active_users = cursor.fetchone()[0] or 0
+                    active_users_row = await cursor.fetchone()
+                    active_users = active_users_row[0] or 0
                     if active_users > 0:
                         statuses.append((discord.ActivityType.listening, f"{active_users} active users"))
                         
@@ -85,7 +85,7 @@ class PresenceCog(commands.Cog):
         """Changes the bot's presence every 12 seconds."""
         try:
             self.guild_count = len(self.bot.guilds)
-            available_statuses = self.get_statuses()
+            available_statuses = await self.get_statuses()
             if not available_statuses:
                 return
             

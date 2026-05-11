@@ -2,7 +2,7 @@ import discord
 import json
 import os
 import asyncio
-import sqlite3
+import aiosqlite
 import time
 from discord.ext import commands
 from discord import app_commands
@@ -16,12 +16,11 @@ MANAGE_PERMISSION = "manage_messages"
 # Database Initialization
 # ─────────────────────────────────────────────
 
-def init_db():
+async def init_db():
     """Initialize the database and create tables if they don't exist."""
     os.makedirs(DB_PATH.parent, exist_ok=True)
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
+    async with aiosqlite.connect(DB_PATH) as conn:
+        await conn.execute('''
             CREATE TABLE IF NOT EXISTS sticky_configs (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 guild_id INTEGER NOT NULL,
@@ -39,7 +38,7 @@ def init_db():
                 updated_at REAL NOT NULL
             )
         ''')
-        cursor.execute('''
+        await conn.execute('''
             CREATE TABLE IF NOT EXISTS sticky_state (
                 sticky_id INTEGER PRIMARY KEY,
                 sticky_message_id INTEGER,
@@ -49,7 +48,7 @@ def init_db():
                 FOREIGN KEY (sticky_id) REFERENCES sticky_configs(id) ON DELETE CASCADE
             )
         ''')
-        conn.commit()
+        await conn.commit()
     logger.info("Sticky database initialized")
 
 
@@ -61,7 +60,7 @@ class StickyManager:
     """Handles all database operations for stickies."""
 
     @staticmethod
-    def create_sticky(guild_id: int, channel_id: int, author_id: int,
+    async def create_sticky(guild_id: int, channel_id: int, author_id: int,
                       title: str = "", description: str = "",
                       color: int = 3447003, fields: list = None,
                       footer_text: str = "", idle_timeout: int = 180,
@@ -69,9 +68,8 @@ class StickyManager:
         """Create a new sticky config and its state row. Returns the sticky ID."""
         now = time.time()
         fields_json = json.dumps(fields or [])
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute('''
                 INSERT INTO sticky_configs
                     (guild_id, channel_id, author_id, title, description, color,
                      fields, footer_text, idle_timeout, is_embed, plain_text,
@@ -81,15 +79,15 @@ class StickyManager:
                   fields_json, footer_text, idle_timeout, 1 if is_embed else 0,
                   plain_text, now, now))
             sticky_id = cursor.lastrowid
-            cursor.execute('''
+            await conn.execute('''
                 INSERT INTO sticky_state (sticky_id, last_message_time)
                 VALUES (?, ?)
             ''', (sticky_id, now))
-            conn.commit()
+            await conn.commit()
             return sticky_id
 
     @staticmethod
-    def update_sticky(sticky_id: int, **kwargs):
+    async def update_sticky(sticky_id: int, **kwargs):
         """Update sticky config fields. Pass column names as kwargs."""
         allowed = {'title', 'description', 'color', 'fields', 'footer_text',
                    'idle_timeout', 'is_embed', 'plain_text', 'channel_id'}
@@ -103,25 +101,24 @@ class StickyManager:
         updates['updated_at'] = time.time()
         set_clause = ", ".join(f"{k} = ?" for k in updates)
         values = list(updates.values()) + [sticky_id]
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.execute(f"UPDATE sticky_configs SET {set_clause} WHERE id = ?", values)
-            conn.commit()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await conn.execute(f"UPDATE sticky_configs SET {set_clause} WHERE id = ?", values)
+            await conn.commit()
 
     @staticmethod
-    def delete_sticky(sticky_id: int):
+    async def delete_sticky(sticky_id: int):
         """Delete a sticky config and its state."""
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.execute("DELETE FROM sticky_state WHERE sticky_id = ?", (sticky_id,))
-            conn.execute("DELETE FROM sticky_configs WHERE id = ?", (sticky_id,))
-            conn.commit()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await conn.execute("DELETE FROM sticky_state WHERE sticky_id = ?", (sticky_id,))
+            await conn.execute("DELETE FROM sticky_configs WHERE id = ?", (sticky_id,))
+            await conn.commit()
 
     @staticmethod
-    def get_guild_stickies(guild_id: int) -> list:
+    async def get_guild_stickies(guild_id: int) -> list:
         """Get all sticky configs for a guild, joined with state."""
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute('''
+        async with aiosqlite.connect(DB_PATH) as conn:
+            conn.row_factory = aiosqlite.Row
+            cursor = await conn.execute('''
                 SELECT c.*, s.sticky_message_id, s.last_message_id,
                        s.last_message_time, s.is_paused
                 FROM sticky_configs c
@@ -129,7 +126,7 @@ class StickyManager:
                 WHERE c.guild_id = ?
                 ORDER BY c.created_at DESC
             ''', (guild_id,))
-            rows = cursor.fetchall()
+            rows = await cursor.fetchall()
             result = []
             for row in rows:
                 d = dict(row)
@@ -139,19 +136,18 @@ class StickyManager:
             return result
 
     @staticmethod
-    def get_sticky(sticky_id: int) -> dict:
+    async def get_sticky(sticky_id: int) -> dict:
         """Get a single sticky config with state."""
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute('''
+        async with aiosqlite.connect(DB_PATH) as conn:
+            conn.row_factory = aiosqlite.Row
+            cursor = await conn.execute('''
                 SELECT c.*, s.sticky_message_id, s.last_message_id,
                        s.last_message_time, s.is_paused
                 FROM sticky_configs c
                 LEFT JOIN sticky_state s ON s.sticky_id = c.id
                 WHERE c.id = ?
             ''', (sticky_id,))
-            row = cursor.fetchone()
+            row = await cursor.fetchone()
             if row:
                 d = dict(row)
                 if isinstance(d.get('fields'), str):
@@ -160,12 +156,11 @@ class StickyManager:
             return None
 
     @staticmethod
-    def get_stickies_for_channel(channel_id: int) -> list:
+    async def get_stickies_for_channel(channel_id: int) -> list:
         """Get all active (non-paused) stickies targeting a channel."""
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute('''
+        async with aiosqlite.connect(DB_PATH) as conn:
+            conn.row_factory = aiosqlite.Row
+            cursor = await conn.execute('''
                 SELECT c.*, s.sticky_message_id, s.last_message_id,
                        s.last_message_time, s.is_paused
                 FROM sticky_configs c
@@ -173,7 +168,7 @@ class StickyManager:
                 WHERE c.channel_id = ? AND (s.is_paused IS NULL OR s.is_paused = 0)
                 ORDER BY c.created_at ASC
             ''', (channel_id,))
-            rows = cursor.fetchall()
+            rows = await cursor.fetchall()
             result = []
             for row in rows:
                 d = dict(row)
@@ -183,7 +178,7 @@ class StickyManager:
             return result
 
     @staticmethod
-    def set_state(sticky_id: int, **kwargs):
+    async def set_state(sticky_id: int, **kwargs):
         """Update sticky state fields. Pass column names as kwargs."""
         allowed = {'sticky_message_id', 'last_message_id', 'last_message_time', 'is_paused'}
         updates = {k: v for k, v in kwargs.items() if k in allowed}
@@ -191,17 +186,16 @@ class StickyManager:
             return
         set_clause = ", ".join(f"{k} = ?" for k in updates)
         values = list(updates.values()) + [sticky_id]
-        with sqlite3.connect(DB_PATH) as conn:
-            conn.execute(f"UPDATE sticky_state SET {set_clause} WHERE sticky_id = ?", values)
-            conn.commit()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await conn.execute(f"UPDATE sticky_state SET {set_clause} WHERE sticky_id = ?", values)
+            await conn.commit()
 
     @staticmethod
-    def is_paused(sticky_id: int) -> bool:
+    async def is_paused(sticky_id: int) -> bool:
         """Check if a sticky is paused."""
-        with sqlite3.connect(DB_PATH) as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT is_paused FROM sticky_state WHERE sticky_id = ?", (sticky_id,))
-            row = cursor.fetchone()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute("SELECT is_paused FROM sticky_state WHERE sticky_id = ?", (sticky_id,))
+            row = await cursor.fetchone()
             return bool(row and row[0])
 
     @staticmethod
@@ -241,10 +235,10 @@ class ConfirmEditView(View):
     async def confirm(self, interaction: discord.Interaction, button: Button):
         sticky_id = self.sticky_id
         if self.is_edit and self.sticky_id:
-            StickyManager.update_sticky(self.sticky_id, **self.config)
+            await StickyManager.update_sticky(self.sticky_id, **self.config)
             sticky_id = self.sticky_id
         else:
-            sticky_id = StickyManager.create_sticky(
+            sticky_id = await StickyManager.create_sticky(
                 guild_id=interaction.guild_id,
                 channel_id=self.config['channel_id'],
                 author_id=interaction.user.id,
@@ -260,7 +254,7 @@ class ConfirmEditView(View):
         # Start the idle timer for the new/updated sticky
         await self.cog._start_sticky_timer(sticky_id)
         # If there's an old sticky message in the channel, remove it
-        old_state = StickyManager.get_sticky(sticky_id)
+        old_state = await StickyManager.get_sticky(sticky_id)
         channel_id = self.config.get('channel_id', old_state and old_state.get('channel_id', 0))
         if old_state and old_state.get('sticky_message_id'):
             try:
@@ -491,17 +485,21 @@ class StickyManagePanel(View):
         self.guild = guild
 
         # Build options from DB
-        stickies = StickyManager.get_guild_stickies(guild.id)
-        options = self._build_select_options(stickies)
-
+        # We can't await here, so we'll create and populate async
         self.sticky_select = Select(
             custom_id="sticky_select",
             placeholder="Select a sticky...",
-            options=options,
+            options=[discord.SelectOption(label="Loading...", value="__loading__")],
             row=0
         )
         self.sticky_select.callback = self._on_sticky_select
         self.add_item(self.sticky_select)
+
+    async def populate(self):
+        """Populate the select options asynchronously."""
+        stickies = await StickyManager.get_guild_stickies(self.guild.id)
+        options = self._build_select_options(stickies)
+        self.sticky_select.options = options
 
     def _build_select_options(self, stickies: list) -> list:
         """Build select options from sticky list."""
@@ -533,7 +531,7 @@ class StickyManagePanel(View):
 
     async def build_embed(self) -> discord.Embed:
         """Build the main panel embed listing all stickies."""
-        stickies = StickyManager.get_guild_stickies(self.guild.id)
+        stickies = await StickyManager.get_guild_stickies(self.guild.id)
 
         embed = discord.Embed(
             title="📌 Sticky Message Manager",
@@ -615,7 +613,7 @@ class StickyManagePanel(View):
     async def preview(self, interaction: discord.Interaction, button: Button):
         if not self.selected_sticky_id:
             return
-        sticky = StickyManager.get_sticky(self.selected_sticky_id)
+        sticky = await StickyManager.get_sticky(self.selected_sticky_id)
         if not sticky:
             await interaction.response.send_message("❌ Sticky not found.", ephemeral=True)
             return
@@ -632,7 +630,7 @@ class StickyManagePanel(View):
     async def edit(self, interaction: discord.Interaction, button: Button):
         if not self.selected_sticky_id:
             return
-        sticky = StickyManager.get_sticky(self.selected_sticky_id)
+        sticky = await StickyManager.get_sticky(self.selected_sticky_id)
         if not sticky:
             await interaction.response.send_message("❌ Sticky not found.", ephemeral=True)
             return
@@ -657,12 +655,12 @@ class StickyManagePanel(View):
     async def pause_resume(self, interaction: discord.Interaction, button: Button):
         if not self.selected_sticky_id:
             return
-        sticky = StickyManager.get_sticky(self.selected_sticky_id)
+        sticky = await StickyManager.get_sticky(self.selected_sticky_id)
         if not sticky:
             return
         was_paused = bool(sticky.get('is_paused'))
         new_paused = 0 if was_paused else 1
-        StickyManager.set_state(self.selected_sticky_id, is_paused=new_paused)
+        await StickyManager.set_state(self.selected_sticky_id, is_paused=new_paused)
 
         if new_paused:
             await self.cog._cancel_sticky_timer(self.selected_sticky_id)
@@ -683,6 +681,7 @@ class StickyManagePanel(View):
         self.selected_sticky_id = None
         # Rebuild panel
         view = StickyManagePanel(self.cog, self.user_id, self.guild)
+        await view.populate()
         embed = await view.build_embed()
         await interaction.edit_original_response(embed=embed, view=view)
 
@@ -690,7 +689,7 @@ class StickyManagePanel(View):
     async def delete(self, interaction: discord.Interaction, button: Button):
         if not self.selected_sticky_id:
             return
-        sticky = StickyManager.get_sticky(self.selected_sticky_id)
+        sticky = await StickyManager.get_sticky(self.selected_sticky_id)
         if not sticky:
             return
 
@@ -710,19 +709,21 @@ class StickyManagePanel(View):
                             pass
                 except Exception:
                     pass
-            StickyManager.delete_sticky(del_id)
+            await StickyManager.delete_sticky(del_id)
             await interaction.response.edit_message(
                 content=f"✅ Sticky **#{del_id}** deleted.",
                 embed=None,
                 view=None
             )
             view = StickyManagePanel(self.cog, self.user_id, self.guild)
+            await view.populate()
             embed = await view.build_embed()
             await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
         async def cancel_callback(interaction: discord.Interaction):
             await interaction.response.edit_message(content="❌ Deletion cancelled.", embed=None, view=None)
             view = StickyManagePanel(self.cog, self.user_id, self.guild)
+            await view.populate()
             embed = await view.build_embed()
             await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
@@ -744,7 +745,7 @@ class StickyManagePanel(View):
     async def settings(self, interaction: discord.Interaction, button: Button):
         if not self.selected_sticky_id:
             return
-        sticky = StickyManager.get_sticky(self.selected_sticky_id)
+        sticky = await StickyManager.get_sticky(self.selected_sticky_id)
         if not sticky:
             return
         modal = SettingsModal(
@@ -772,6 +773,7 @@ class ChannelSelectView(View):
     @discord.ui.button(label="⬅️ Back to Manager", style=discord.ButtonStyle.secondary, row=4)
     async def back(self, interaction: discord.Interaction, button: Button):
         view = StickyManagePanel(self.cog, self.user_id, interaction.guild)
+        await view.populate()
         embed = await view.build_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -799,6 +801,7 @@ class TypeSelectView(View):
     @discord.ui.button(label="⬅️ Back to Manager", style=discord.ButtonStyle.secondary, row=1)
     async def back(self, interaction: discord.Interaction, button: Button):
         view = StickyManagePanel(self.cog, self.user_id, interaction.guild)
+        await view.populate()
         embed = await view.build_embed()
         await interaction.response.edit_message(embed=embed, view=view)
 
@@ -853,7 +856,7 @@ class SettingsModal(Modal):
             except ValueError:
                 pass  # Keep existing color
 
-        StickyManager.update_sticky(self.sticky_id, **updates)
+        await StickyManager.update_sticky(self.sticky_id, **updates)
         await self.cog._start_sticky_timer(self.sticky_id)
 
         await interaction.response.send_message(
@@ -870,8 +873,10 @@ class SettingsModal(Modal):
 class StickyCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        init_db()
         self.active_tasks: dict[int, asyncio.Task] = {}
+
+    async def cog_load(self):
+        await init_db()
 
     def cog_unload(self):
         """Cancel all sticky timer tasks when cog is unloaded."""
@@ -889,7 +894,7 @@ class StickyCog(commands.Cog):
         """Start (or restart) the idle timer for a sticky."""
         await self._cancel_sticky_timer(sticky_id)
 
-        sticky = StickyManager.get_sticky(sticky_id)
+        sticky = await StickyManager.get_sticky(sticky_id)
         if not sticky:
             return
         if sticky.get('is_paused'):
@@ -915,7 +920,7 @@ class StickyCog(commands.Cog):
 
     async def _post_sticky(self, sticky_id: int):
         """Post/update a sticky message in its channel."""
-        sticky = StickyManager.get_sticky(sticky_id)
+        sticky = await StickyManager.get_sticky(sticky_id)
         if not sticky or sticky.get('is_paused'):
             return
 
@@ -942,7 +947,7 @@ class StickyCog(commands.Cog):
             else:
                 message = await channel.send(content=sticky.get('plain_text') or "(empty)")
 
-            StickyManager.set_state(sticky_id, sticky_message_id=message.id)
+            await StickyManager.set_state(sticky_id, sticky_message_id=message.id)
             logger.info(f"Sticky #{sticky_id} posted in #{channel.name} (ID: {message.id})")
         except discord.Forbidden:
             logger.warning(f"Cannot post sticky #{sticky_id} in #{channel.name} — no permission")
@@ -956,6 +961,7 @@ class StickyCog(commands.Cog):
     async def sticky_manage(self, interaction: discord.Interaction):
         """Open the sticky management panel."""
         view = StickyManagePanel(self, interaction.user.id, interaction.guild)
+        await view.populate()
         embed = await view.build_embed()
         await interaction.response.send_message(embed=embed, view=view, ephemeral=True)
 
@@ -966,7 +972,7 @@ class StickyCog(commands.Cog):
         """On bot ready, load all active stickies and schedule their timers."""
         logger.info("StickyCog loading stickies from database...")
         for guild in self.bot.guilds:
-            stickies = StickyManager.get_guild_stickies(guild.id)
+            stickies = await StickyManager.get_guild_stickies(guild.id)
             for sticky in stickies:
                 if sticky.get('is_paused'):
                     continue
@@ -982,7 +988,7 @@ class StickyCog(commands.Cog):
                             logger.debug(f"Deleted leftover sticky #{sticky_id} message in #{channel.name}")
                         except (discord.NotFound, discord.Forbidden):
                             pass
-                    StickyManager.set_state(sticky_id, sticky_message_id=None)
+                    await StickyManager.set_state(sticky_id, sticky_message_id=None)
 
                 # Calculate elapsed time since last user message
                 last_msg_time = sticky.get('last_message_time', 0)
@@ -1009,14 +1015,14 @@ class StickyCog(commands.Cog):
         if not message.guild:
             return
 
-        stickies = StickyManager.get_stickies_for_channel(message.channel.id)
+        stickies = await StickyManager.get_stickies_for_channel(message.channel.id)
         if not stickies:
             return
 
         now = time.time()
         for sticky in stickies:
             sticky_id = sticky['id']
-            StickyManager.set_state(sticky_id,
+            await StickyManager.set_state(sticky_id,
                                     last_message_id=message.id,
                                     last_message_time=now)
             await self._start_sticky_timer(sticky_id)

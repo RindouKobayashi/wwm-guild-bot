@@ -1,6 +1,6 @@
 import re
 import os
-import sqlite3
+import aiosqlite
 import random
 import discord
 import settings
@@ -17,12 +17,11 @@ def get_presets_db_path():
     return DB_PATH
 
 
-def init_presets_table():
+async def init_presets_table():
     """Initialize the color presets table if it doesn't exist."""
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    with sqlite3.connect(get_presets_db_path()) as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
+    async with aiosqlite.connect(get_presets_db_path()) as conn:
+        await conn.execute('''
             CREATE TABLE IF NOT EXISTS color_presets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_id INTEGER NOT NULL,
@@ -32,21 +31,20 @@ def init_presets_table():
                 UNIQUE(user_id, guild_id, preset_name)
             )
         ''')
-        conn.commit()
+        await conn.commit()
 
 
-def get_user_presets(user_id: int, guild_id: int) -> list:
+async def get_user_presets(user_id: int, guild_id: int) -> list:
     """Get all presets for a user in a guild."""
-    with sqlite3.connect(get_presets_db_path()) as conn:
-        cursor = conn.cursor()
-        cursor.execute(
+    async with aiosqlite.connect(get_presets_db_path()) as conn:
+        cursor = await conn.execute(
             "SELECT preset_name, hex_code FROM color_presets WHERE user_id = ? AND guild_id = ? ORDER BY preset_name ASC",
             (user_id, guild_id)
         )
-        return cursor.fetchall()
+        return await cursor.fetchall()
 
 
-def save_preset(user_id: int, guild_id: int, preset_name: str, hex_code: str) -> bool:
+async def save_preset(user_id: int, guild_id: int, preset_name: str, hex_code: str) -> bool:
     """Save a color preset for a user. Returns True if successful."""
     # Validate hex code
     if not re.match(r'^#?([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$', hex_code):
@@ -56,31 +54,29 @@ def save_preset(user_id: int, guild_id: int, preset_name: str, hex_code: str) ->
     if not hex_code.startswith('#'):
         hex_code = '#' + hex_code
     
-    with sqlite3.connect(get_presets_db_path()) as conn:
-        cursor = conn.cursor()
-        cursor.execute(
+    async with aiosqlite.connect(get_presets_db_path()) as conn:
+        await conn.execute(
             "INSERT OR REPLACE INTO color_presets (user_id, guild_id, preset_name, hex_code) VALUES (?, ?, ?, ?)",
             (user_id, guild_id, preset_name.lower(), hex_code.upper())
         )
-        conn.commit()
+        await conn.commit()
     return True
 
 
-def delete_preset(user_id: int, guild_id: int, preset_name: str) -> bool:
+async def delete_preset(user_id: int, guild_id: int, preset_name: str) -> bool:
     """Delete a color preset. Returns True if deleted."""
-    with sqlite3.connect(get_presets_db_path()) as conn:
-        cursor = conn.cursor()
-        cursor.execute(
+    async with aiosqlite.connect(get_presets_db_path()) as conn:
+        cursor = await conn.execute(
             "DELETE FROM color_presets WHERE user_id = ? AND guild_id = ? AND preset_name = ?",
             (user_id, guild_id, preset_name.lower())
         )
-        conn.commit()
+        await conn.commit()
         return cursor.rowcount > 0
 
 
 async def preset_autocomplete(interaction: discord.Interaction, current: str) -> list:
     """Autocomplete for preset names."""
-    presets = get_user_presets(interaction.user.id, interaction.guild.id)
+    presets = await get_user_presets(interaction.user.id, interaction.guild.id)
     return [
         app_commands.Choice(name=f"{name} - {hex_code}", value=name)
         for name, hex_code in presets
@@ -91,7 +87,9 @@ async def preset_autocomplete(interaction: discord.Interaction, current: str) ->
 class CustomRolesCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        init_presets_table()
+
+    async def cog_load(self):
+        await init_presets_table()
 
     @app_commands.command(name="change_color", description="Change the color of your role")
     @app_commands.describe(
@@ -135,7 +133,7 @@ class CustomRolesCog(commands.Cog):
                 return
             
             # Look up the preset
-            presets = get_user_presets(interaction.user.id, interaction.guild.id)
+            presets = await get_user_presets(interaction.user.id, interaction.guild.id)
             preset_dict = {name.lower(): hex_code for name, hex_code in presets}
             
             if preset.lower() not in preset_dict:
@@ -188,7 +186,7 @@ class CustomRolesCog(commands.Cog):
                 await interaction.response.send_message("Preset name is too long. Maximum 50 characters allowed.", ephemeral=True)
                 return
             
-            if save_preset(interaction.user.id, interaction.guild.id, name, hex_code):
+            if await save_preset(interaction.user.id, interaction.guild.id, name, hex_code):
                 # Normalize hex code for display
                 if not hex_code.startswith('#'):
                     hex_code = '#' + hex_code
@@ -202,13 +200,13 @@ class CustomRolesCog(commands.Cog):
                 await interaction.response.send_message("Please provide the name of the preset to delete.", ephemeral=True)
                 return
             
-            if delete_preset(interaction.user.id, interaction.guild.id, name):
+            if await delete_preset(interaction.user.id, interaction.guild.id, name):
                 await interaction.response.send_message(f"Preset `{name}` deleted!")
             else:
                 await interaction.response.send_message(f"Preset `{name}` not found.", ephemeral=True)
         
         elif action == "list":
-            presets = get_user_presets(interaction.user.id, interaction.guild.id)
+            presets = await get_user_presets(interaction.user.id, interaction.guild.id)
             if not presets:
                 await interaction.response.send_message("You don't have any saved presets. Use `/preset save` to create one!", ephemeral=True)
                 return

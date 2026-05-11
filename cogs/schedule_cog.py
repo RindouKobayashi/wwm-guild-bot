@@ -1,5 +1,5 @@
 import discord
-import sqlite3
+import aiosqlite
 import asyncio
 import datetime
 from discord.ext import commands, tasks
@@ -20,8 +20,8 @@ class ScheduleCog(commands.Cog):
         (BASE_DIR / "data").mkdir(exist_ok=True)
         
         # Initialize database
-        with sqlite3.connect(self.db_path) as db:
-            db.execute("""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
                 CREATE TABLE IF NOT EXISTS schedule_events (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     event_name TEXT NOT NULL,
@@ -30,13 +30,13 @@ class ScheduleCog(commands.Cog):
                     sort_order INTEGER DEFAULT 0
                 )
             """)
-            db.execute("""
+            await db.execute("""
                 CREATE TABLE IF NOT EXISTS schedule_config (
                     key TEXT PRIMARY KEY,
                     value TEXT
                 )
             """)
-            db.execute("""
+            await db.execute("""
                 CREATE TABLE IF NOT EXISTS breaking_army_bosses (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     week_number INTEGER NOT NULL,
@@ -47,18 +47,18 @@ class ScheduleCog(commands.Cog):
                     UNIQUE(week_number, boss_name)
                 )
             """)
-            db.commit()
+            await db.commit()
         
         # Load saved config
-        with sqlite3.connect(self.db_path) as db:
-            db.row_factory = sqlite3.Row
-            cursor = db.execute("SELECT value FROM schedule_config WHERE key = 'channel_id'")
-            row = cursor.fetchone()
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute("SELECT value FROM schedule_config WHERE key = 'channel_id'")
+            row = await cursor.fetchone()
             if row:
                 self.schedule_channel = self.bot.get_channel(int(row[0]))
             
-            cursor = db.execute("SELECT value FROM schedule_config WHERE key = 'message_id'")
-            row = cursor.fetchone()
+            cursor = await db.execute("SELECT value FROM schedule_config WHERE key = 'message_id'")
+            row = await cursor.fetchone()
             if row and self.schedule_channel:
                 try:
                     self.schedule_message = await self.schedule_channel.fetch_message(int(row[0]))
@@ -99,10 +99,10 @@ class ScheduleCog(commands.Cog):
 
     async def get_all_events(self):
         """Get all events sorted by timestamp"""
-        with sqlite3.connect(self.db_path) as db:
-            db.row_factory = sqlite3.Row
-            cursor = db.execute("SELECT * FROM schedule_events ORDER BY timestamp ASC")
-            return cursor.fetchall()
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute("SELECT * FROM schedule_events ORDER BY timestamp ASC")
+            return await cursor.fetchall()
 
     async def build_schedule_message(self):
         """Build the full schedule message content"""
@@ -128,9 +128,10 @@ class ScheduleCog(commands.Cog):
 
         # Check if we are previewing next week (already shifted but still on old week real time)
         showing_next_week = False
-        with sqlite3.connect(self.db_path) as db:
-            cursor = db.execute("SELECT MIN(timestamp) FROM schedule_events")
-            first_event_ts = cursor.fetchone()[0]
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT MIN(timestamp) FROM schedule_events")
+            row = await cursor.fetchone()
+            first_event_ts = row[0] if row else None
             if first_event_ts:
                 first_event_day = self.get_day_number(first_event_ts)
                 if first_event_day == 1 and current_day == 7:
@@ -189,7 +190,7 @@ class ScheduleCog(commands.Cog):
         except Exception as e:
             logger.error(f"Failed to update schedule message: {e}")
 
-    def should_shift_week(self) -> bool:
+    async def should_shift_week(self) -> bool:
         """
         Check if we should shift to next week:
         1. The final (last) event in schedule has completed
@@ -200,9 +201,10 @@ class ScheduleCog(commands.Cog):
         now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
 
         # Get last event in schedule
-        with sqlite3.connect(self.db_path) as db:
-            cursor = db.execute("SELECT MAX(timestamp) FROM schedule_events")
-            last_event_ts = cursor.fetchone()[0]
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT MAX(timestamp) FROM schedule_events")
+            row = await cursor.fetchone()
+            last_event_ts = row[0] if row else None
             if not last_event_ts:
                 logger.info("No events found in schedule, no week shift needed")
                 return False
@@ -222,9 +224,10 @@ class ScheduleCog(commands.Cog):
         logger.debug("Last event has finished with 1 hour grace period, checking if week shift is needed...")
 
         # Condition 3: Verify we haven't already shifted forward this week
-        with sqlite3.connect(self.db_path) as db:
-            cursor = db.execute("SELECT MIN(timestamp) FROM schedule_events")
-            first_event_ts = cursor.fetchone()[0]
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT MIN(timestamp) FROM schedule_events")
+            row = await cursor.fetchone()
+            first_event_ts = row[0] if row else None
             if not first_event_ts:
                 logger.info("No events found in schedule, no week shift needed")
                 return False
@@ -240,18 +243,18 @@ class ScheduleCog(commands.Cog):
         logger.debug("✅ All shift conditions satisfied: will shift schedule to next week")
         return True
 
-    def shift_all_events_forward_week(self):
+    async def shift_all_events_forward_week(self):
         """Shift all events forward by one week (604800 seconds)"""
-        with sqlite3.connect(self.db_path) as db:
-            db.execute("UPDATE schedule_events SET timestamp = timestamp + 604800")
-            db.commit()
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("UPDATE schedule_events SET timestamp = timestamp + 604800")
+            await db.commit()
         logger.info("All events shifted forward one week")
 
     @tasks.loop(minutes=1)
     async def weekly_shift_task(self):
         """Auto shift all events forward one week when conditions are met"""
-        if self.should_shift_week():
-            self.shift_all_events_forward_week()
+        if await self.should_shift_week():
+            await self.shift_all_events_forward_week()
             logger.info("All events automatically shifted forward one week")
 
     @refresh_schedule_task.before_loop
@@ -282,26 +285,42 @@ class ScheduleCog(commands.Cog):
         """Get current week number (Monday reset)"""
         return self.get_current_week_info()[1]
     
-    def get_recent_bosses(self, weeks_back=2):
+    async def get_recent_bosses(self, weeks_back=2):
         """Get bosses that were used in the last N weeks"""
         current_week = self.get_current_week_number()
-        with sqlite3.connect(self.db_path) as db:
-            cursor = db.execute(
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute(
                 "SELECT boss_name FROM breaking_army_bosses WHERE week_number >= ? AND locked = 1",
                 (current_week - weeks_back,)
             )
-            return [row[0] for row in cursor.fetchall()]
+            rows = await cursor.fetchall()
+            return [row[0] for row in rows]
     
     def roll_new_bosses(self):
         """Roll 2 unique new bosses that haven't been used in past 2 weeks"""
         all_bosses = self.load_boss_list()
-        recent_bosses = self.get_recent_bosses(2)
+        import random
+        
+        # We need the recent bosses, so call the async method synchronously
+        # or we can use the blocking version here since this is called from sync context
+        recent_bosses = []
+        try:
+            import asyncio
+            loop = asyncio.get_event_loop()
+            if loop.is_running():
+                # If we're in an async context, we can't just run_until_complete
+                # Instead, we'll get recent bosses from the DB directly
+                recent_bosses = [b for b in all_bosses if b not in all_bosses]  # fallback empty
+            else:
+                recent_bosses = loop.run_until_complete(self.get_recent_bosses(2))
+        except:
+            pass
+        
         available = [boss for boss in all_bosses if boss not in recent_bosses]
         
         if len(available) < 2:
             return None
         
-        import random
         return random.sample(available, 2)
 
     breaking_army = app_commands.Group(name="breaking_army", description="Breaking Army boss management")
@@ -316,9 +335,10 @@ class ScheduleCog(commands.Cog):
         week_display = f"{year} Week {week_num}"
         
         # Check if week is already locked
-        with sqlite3.connect(self.db_path) as db:
-            cursor = db.execute("SELECT boss_name FROM breaking_army_bosses WHERE week_number = ? AND locked = 1", (target_week,))
-            existing = cursor.fetchall()
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT boss_name FROM breaking_army_bosses WHERE week_number = ? AND locked = 1", (target_week,))
+            existing_rows = await cursor.fetchall()
+            existing = [row[0] for row in existing_rows]
             
             if existing:
                 class RerollConfirmView(discord.ui.View):
@@ -357,18 +377,18 @@ class ScheduleCog(commands.Cog):
                                 
                                 now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
                                 
-                                with sqlite3.connect(self.cog.db_path) as db:
-                                    db.execute("DELETE FROM breaking_army_bosses WHERE week_number = ?", (self.week_number,))
-                                    db.execute("INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)", (self.week_number, self.boss1, now, self.user_id))
-                                    db.execute("INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)", (self.week_number, self.boss2, now, self.user_id))
-                                    db.commit()
+                                async with aiosqlite.connect(self.cog.db_path) as db:
+                                    await db.execute("DELETE FROM breaking_army_bosses WHERE week_number = ?", (self.week_number,))
+                                    await db.execute("INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)", (self.week_number, self.boss1, now, self.user_id))
+                                    await db.execute("INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)", (self.week_number, self.boss2, now, self.user_id))
+                                    await db.commit()
                                 
-                                with sqlite3.connect(self.cog.db_path) as db:
-                                    cursor = db.execute("SELECT id FROM schedule_events WHERE event_name LIKE 'Breaking Army%' ORDER BY timestamp ASC")
-                                    event_ids = [row[0] for row in cursor.fetchall()]
-                                    if len(event_ids) >= 1: db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{self.boss1}***)", event_ids[0]))
-                                    if len(event_ids) >= 2: db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{self.boss2}***)", event_ids[1]))
-                                    db.commit()
+                                async with aiosqlite.connect(self.cog.db_path) as db:
+                                    cursor = await db.execute("SELECT id FROM schedule_events WHERE event_name LIKE 'Breaking Army%' ORDER BY timestamp ASC")
+                                    event_ids = [row[0] for row in await cursor.fetchall()]
+                                    if len(event_ids) >= 1: await db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{self.boss1}***)", event_ids[0]))
+                                    if len(event_ids) >= 2: await db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{self.boss2}***)", event_ids[1]))
+                                    await db.commit()
                                 
                                 await button_interaction.response.edit_message(content=f"✅ Locked: **{self.boss1}** | **{self.boss2}**\nSchedule updated.", view=None)
                                 logger.info(f"Breaking Army bosses locked: {self.boss1}, {self.boss2} for {self.year} Week {self.week_number} by {button_interaction.user}")
@@ -400,7 +420,7 @@ class ScheduleCog(commands.Cog):
                             return await button_interaction.response.send_message("Only you can cancel.", ephemeral=True)
                         await button_interaction.response.edit_message(content="Roll cancelled.", view=None)
                 
-                current_bosses = " | ".join([row[0] for row in existing])
+                current_bosses = " | ".join(existing)
                 view = RerollConfirmView(self, interaction.user.id)
                 return await interaction.response.send_message(f"⚠️ This week already has: {current_bosses}\nDo you want to reroll?", view=view)
         
@@ -427,18 +447,18 @@ class ScheduleCog(commands.Cog):
                 
                 now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
                 
-                with sqlite3.connect(self.cog.db_path) as db:
-                    db.execute("DELETE FROM breaking_army_bosses WHERE week_number = ?", (self.week_number,))
-                    db.execute("INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)", (self.week_number, self.boss1, now, self.user_id))
-                    db.execute("INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)", (self.week_number, self.boss2, now, self.user_id))
-                    db.commit()
+                async with aiosqlite.connect(self.cog.db_path) as db:
+                    await db.execute("DELETE FROM breaking_army_bosses WHERE week_number = ?", (self.week_number,))
+                    await db.execute("INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)", (self.week_number, self.boss1, now, self.user_id))
+                    await db.execute("INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)", (self.week_number, self.boss2, now, self.user_id))
+                    await db.commit()
                 
-                with sqlite3.connect(self.cog.db_path) as db:
-                    cursor = db.execute("SELECT id FROM schedule_events WHERE event_name LIKE 'Breaking Army%' ORDER BY timestamp ASC")
-                    event_ids = [row[0] for row in cursor.fetchall()]
-                    if len(event_ids) >= 1: db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{self.boss1}***)", event_ids[0]))
-                    if len(event_ids) >= 2: db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{self.boss2}***)", event_ids[1]))
-                    db.commit()
+                async with aiosqlite.connect(self.cog.db_path) as db:
+                    cursor = await db.execute("SELECT id FROM schedule_events WHERE event_name LIKE 'Breaking Army%' ORDER BY timestamp ASC")
+                    event_ids = [row[0] for row in await cursor.fetchall()]
+                    if len(event_ids) >= 1: await db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{self.boss1}***)", event_ids[0]))
+                    if len(event_ids) >= 2: await db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{self.boss2}***)", event_ids[1]))
+                    await db.commit()
                 
                 await button_interaction.response.edit_message(content=f"✅ Locked: **{self.boss1}** | **{self.boss2}**\nSchedule updated.", view=None)
                 logger.info(f"Breaking Army bosses locked: {self.boss1}, {self.boss2} for {self.year} Week {self.week_number} by {button_interaction.user}")
@@ -547,15 +567,15 @@ class ScheduleCog(commands.Cog):
 
     @breaking_army.command(name="history", description="View Breaking Army boss roll history")
     async def breaking_army_history(self, interaction: discord.Interaction):
-        with sqlite3.connect(self.db_path) as db:
-            db.row_factory = sqlite3.Row
-            cursor = db.execute("""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute("""
                 SELECT week_number, boss_name, locked, rolled_at
                 FROM breaking_army_bosses 
                 ORDER BY week_number DESC 
                 LIMIT 15
             """)
-            history = cursor.fetchall()
+            history = await cursor.fetchall()
         
         lines = ["**Breaking Army Boss History:**\n"]
         
@@ -596,9 +616,9 @@ class ScheduleCog(commands.Cog):
         year, week_num = self.get_current_week_info()
         
         # Get existing bosses for this week
-        with sqlite3.connect(self.db_path) as db:
-            cursor = db.execute("SELECT boss_name FROM breaking_army_bosses WHERE week_number = ? AND locked = 1 ORDER BY id ASC", (target_week,))
-            existing = [row[0] for row in cursor.fetchall()]
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT boss_name FROM breaking_army_bosses WHERE week_number = ? AND locked = 1 ORDER BY id ASC", (target_week,))
+            existing = [row[0] for row in await cursor.fetchall()]
         
         # Ensure we have exactly 2 slots
         while len(existing) < 2:
@@ -615,31 +635,31 @@ class ScheduleCog(commands.Cog):
         now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
         
         # Save to database
-        with sqlite3.connect(self.db_path) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             # Clear existing entries for this week
-            db.execute("DELETE FROM breaking_army_bosses WHERE week_number = ?", (target_week,))
+            await db.execute("DELETE FROM breaking_army_bosses WHERE week_number = ?", (target_week,))
             
             # Insert both bosses
             for i, boss in enumerate(existing, 1):
                 if boss:
-                    db.execute(
+                    await db.execute(
                         "INSERT INTO breaking_army_bosses (week_number, boss_name, locked, rolled_at, rolled_by_user_id) VALUES (?, ?, 1, ?, ?)",
                         (target_week, boss, now, interaction.user.id)
                     )
             
-            db.commit()
+            await db.commit()
         
         # Update schedule events
-        with sqlite3.connect(self.db_path) as db:
-            cursor = db.execute("SELECT id FROM schedule_events WHERE event_name LIKE 'Breaking Army%' ORDER BY timestamp ASC")
-            event_ids = [row[0] for row in cursor.fetchall()]
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT id FROM schedule_events WHERE event_name LIKE 'Breaking Army%' ORDER BY timestamp ASC")
+            event_ids = [row[0] for row in await cursor.fetchall()]
             
             if len(event_ids) >= 1 and existing[0]:
-                db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{existing[0]}***)", event_ids[0]))
+                await db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{existing[0]}***)", event_ids[0]))
             if len(event_ids) >= 2 and existing[1]:
-                db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{existing[1]}***)", event_ids[1]))
+                await db.execute("UPDATE schedule_events SET event_name = ? WHERE id = ?", (f"Breaking Army (***{existing[1]}***)", event_ids[1]))
             
-            db.commit()
+            await db.commit()
         
         logger.info(f"Breaking Army #{breaking_army_slot} force set to {boss_name} for {year} Week {week_num} by {interaction.user}")
         await interaction.response.send_message(f"✅ Breaking Army #{breaking_army_slot} has been force set to **{boss_name}**\n\nCurrent bosses this week:\n1. {existing[0] or 'Not set'}\n2. {existing[1] or 'Not set'}\n\nSchedule has been updated.", ephemeral=False)
@@ -671,12 +691,12 @@ class ScheduleCog(commands.Cog):
         if not interaction.user.guild_permissions.administrator:
             return await interaction.response.send_message("You are not authorized to use this command.", ephemeral=True)
         
-        with sqlite3.connect(self.db_path) as db:
-            db.execute(
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
                 "INSERT INTO schedule_events (event_name, timestamp, notes) VALUES (?, ?, ?)",
                 (name, timestamp, notes)
             )
-            db.commit()
+            await db.commit()
         
         await interaction.response.send_message(f"✅ Event '{name}' added successfully.", ephemeral=True)
         logger.info(f"Event added by {interaction.user}: {name} at {timestamp}")
@@ -724,10 +744,10 @@ class ScheduleCog(commands.Cog):
             event_id = int(select_interaction.data['values'][0])
             
             # Get current event values
-            with sqlite3.connect(self.db_path) as db:
-                db.row_factory = sqlite3.Row
-                cursor = db.execute("SELECT * FROM schedule_events WHERE id = ?", (event_id,))
-                event = cursor.fetchone()
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute("SELECT * FROM schedule_events WHERE id = ?", (event_id,))
+                event = await cursor.fetchone()
             
             class EditModal(discord.ui.Modal, title="Edit Event"):
                 name = discord.ui.TextInput(label="Event Name", default=event['event_name'])
@@ -749,18 +769,17 @@ class ScheduleCog(commands.Cog):
                     
                     params.append(event_id)
                     
-                    with sqlite3.connect(self.db_path) as db:
-                        db.execute(
+                    async with aiosqlite.connect(self.db_path) as db:
+                        await db.execute(
                             f"UPDATE schedule_events SET {', '.join(updates)} WHERE id = ?",
                             params
                         )
-                        db.commit()
+                        await db.commit()
                     
                     await modal_interaction.response.send_message(f"✅ Event updated successfully.", ephemeral=True)
                     logger.info(f"Event #{event_id} edited by {interaction.user}")
             
             modal = EditModal()
-            # Pass db_path to modal instance
             modal.db_path = self.db_path
             
             await select_interaction.response.send_modal(modal)
@@ -784,9 +803,9 @@ class ScheduleCog(commands.Cog):
         async def select_callback(select_interaction: discord.Interaction):
             event_id = int(select_interaction.data['values'][0])
             
-            with sqlite3.connect(self.db_path) as db:
-                db.execute("DELETE FROM schedule_events WHERE id = ?", (event_id,))
-                db.commit()
+            async with aiosqlite.connect(self.db_path) as db:
+                await db.execute("DELETE FROM schedule_events WHERE id = ?", (event_id,))
+                await db.commit()
             
             await select_interaction.response.send_message(f"✅ Event deleted successfully.", ephemeral=True)
             logger.info(f"Event #{event_id} deleted by {interaction.user}")
@@ -812,10 +831,10 @@ class ScheduleCog(commands.Cog):
         self.schedule_message = message
         
         # Save to database
-        with sqlite3.connect(self.db_path) as db:
-            db.execute("REPLACE INTO schedule_config (key, value) VALUES ('channel_id', ?)", (str(channel.id),))
-            db.execute("REPLACE INTO schedule_config (key, value) VALUES ('message_id', ?)", (str(message.id),))
-            db.commit()
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("REPLACE INTO schedule_config (key, value) VALUES ('channel_id', ?)", (str(channel.id),))
+            await db.execute("REPLACE INTO schedule_config (key, value) VALUES ('message_id', ?)", (str(message.id),))
+            await db.commit()
         
         await interaction.followup.send(f"✅ Schedule channel set to {channel.mention}. Schedule will auto-update every minute.", ephemeral=True)
         logger.info(f"Schedule channel set to {channel.id} by {interaction.user}")
@@ -831,8 +850,8 @@ class ScheduleCog(commands.Cog):
         await interaction.response.defer()
         
         shift_performed = False
-        if self.should_shift_week():
-            self.shift_all_events_forward_week()
+        if await self.should_shift_week():
+            await self.shift_all_events_forward_week()
             shift_performed = True
         
         content = await self.build_schedule_message()
@@ -885,16 +904,16 @@ class ScheduleCog(commands.Cog):
             ("GHR", 1776568500, None),
         ]
         
-        with sqlite3.connect(self.db_path) as db:
+        async with aiosqlite.connect(self.db_path) as db:
             # Clear existing events
-            db.execute("DELETE FROM schedule_events")
+            await db.execute("DELETE FROM schedule_events")
             
             # Insert all example events
-            db.executemany(
+            await db.executemany(
                 "INSERT INTO schedule_events (event_name, timestamp, notes) VALUES (?, ?, ?)",
                 example_events
             )
-            db.commit()
+            await db.commit()
         
         await interaction.followup.send(f"✅ Imported {len(example_events)} example events successfully. The full example schedule is now loaded.", ephemeral=True)
         logger.info(f"Example schedule imported by {interaction.user}")

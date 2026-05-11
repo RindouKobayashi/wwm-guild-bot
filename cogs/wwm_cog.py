@@ -2,8 +2,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands, tasks
 import logging
-import sqlite3
+import aiosqlite
 import json
+from collections import defaultdict
 from deepdiff import DeepDiff
 
 import settings
@@ -31,12 +32,9 @@ class OnlinePlayersButton(discord.ui.View):
             await interaction.followup.send("❌ You are not guild member", ephemeral=True)
             return
         
-        # Send immediate loading feedback - CAPTURE MESSAGE REFERENCE
         loading_msg = await interaction.followup.send("🔄 Getting player list...", ephemeral=True, wait=True)
         
-        # Fetch live online players list
         try:
-            # Use cached member list from guild monitor state (no extra API call)
             if not self.cog.last_guild_state:
                 await loading_msg.edit(content="❌ Guild data not initialized, please try again shortly")
                 return
@@ -45,7 +43,6 @@ class OnlinePlayersButton(discord.ui.View):
             members = result.get('members', {})
             member_list = members.get('members', {})
             
-            # Get REAL live online status - MINIMAL API CALL ONLY
             from utility.wwm import get_bulk_players_info
             all_pids = list(member_list.keys())
             bulk_data = get_bulk_players_info(all_pids, fields=["base"])
@@ -58,7 +55,6 @@ class OnlinePlayersButton(discord.ui.View):
                     if player_base.get('is_online', 0) == 1:
                         online_player_names.append(player_base.get('nickname', 'Unknown'))
             
-            # Build response - EDIT ONLY OUR PRIVATE MESSAGE
             if online_player_names:
                 lines = []
                 lines.append(f"### 🟢 ONLINE PLAYERS ({len(online_player_names)}):")
@@ -75,28 +71,281 @@ class OnlinePlayersButton(discord.ui.View):
             await loading_msg.edit(content="❌ Failed to retrieve online players list")
 
 
+class GuildRegionSummaryView(discord.ui.View):
+    """Summary view: shows 5 members per region with buttons to expand each region fully."""
+    def __init__(self, guild_name: str, regions: dict, tag_map: dict, cog, original_embed=None):
+        super().__init__(timeout=120)
+        self.guild_name = guild_name
+        self.regions = regions
+        self.tag_map = tag_map
+        self.cog = cog
+        self.original_embed = original_embed
+
+        sorted_tags = sorted(regions.keys(), key=lambda t: self._region_label(t))
+
+        for idx, tag in enumerate(sorted_tags):
+            label = f"{self._region_label(tag)} ({len(regions[tag])})"
+            button = discord.ui.Button(
+                label=label[:80],
+                style=discord.ButtonStyle.secondary,
+                custom_id=f"region_detail_{idx}"
+            )
+            button.callback = self._make_detail_callback(tag)
+            self.add_item(button)
+
+    def _region_label(self, tag):
+        return self.tag_map.get(tag, f"❓ {tag}")
+
+    def _build_summary_embed(self):
+        sorted_tags = sorted(self.regions.keys(), key=lambda t: self._region_label(t))
+        total_members = sum(len(m) for m in self.regions.values())
+
+        embed = discord.Embed(
+            title=f"🌍 {self.guild_name} — Members by Region",
+            color=discord.Color.og_blurple()
+        )
+        embed.description = f"**Total members:** {total_members}  |  **Regions found:** {len(sorted_tags)}" + \
+                            "\n*Click a region button below to see full list*"
+
+        for tag in sorted_tags:
+            member_list = self.regions[tag]
+            sorted_members = sorted(member_list, key=lambda m: (not m['is_online'], m['nickname'].lower()))
+            online_count = sum(1 for m in member_list if m['is_online'])
+            region_label = self._region_label(tag)
+
+            preview = sorted_members[:5]
+            remaining = len(sorted_members) - 5
+
+            lines = []
+            for m in preview:
+                online_icon = "🟢" if m['is_online'] else "⚫"
+                number_id = m.get('number_id', 'N/A')
+                lines.append(f"{online_icon} Lv{m['level']:<3} | {m['nickname']:<25} | ID: {number_id}")
+
+            preview_text = "\n".join(lines)
+            if remaining > 0:
+                preview_text += f"\n... and {remaining} more"
+
+            embed.add_field(
+                name=f"{region_label}  ({len(member_list)} members, 🟢 {online_count} online)",
+                value=f"```{preview_text}```",
+                inline=False
+            )
+        return embed
+
+    def _make_detail_callback(self, tag: str):
+        async def callback(interaction: discord.Interaction):
+            await interaction.response.defer()
+            members = self.regions[tag]
+            sorted_members = sorted(members, key=lambda m: (not m['is_online'], m['nickname'].lower()))
+            online_count = sum(1 for m in members if m['is_online'])
+            region_label = self._region_label(tag)
+
+            lines = []
+            for m in sorted_members:
+                online_icon = "🟢" if m['is_online'] else "⚫"
+                number_id = m.get('number_id', 'N/A')
+                lines.append(f"{online_icon} Lv{m['level']:<3} | {m['nickname']:<25} | ID: {number_id}")
+
+            members_text = "\n".join(lines)
+
+            embed = discord.Embed(
+                title=f"🌍 {region_label} — {self.guild_name}",
+                description=f"**{len(members)} members** | 🟢 {online_count} online",
+                color=discord.Color.og_blurple()
+            )
+
+            chunk_size = 950
+            chunks = [members_text[i:i+chunk_size] for i in range(0, len(members_text), chunk_size)]
+            for i, chunk in enumerate(chunks):
+                embed.add_field(
+                    name=f"📋 Members (part {i+1}/{len(chunks)})" if len(chunks) > 1 else "📋 Members",
+                    value=f"```{chunk}```",
+                    inline=False
+                )
+
+            back_view = discord.ui.View(timeout=120)
+            back_button = discord.ui.Button(
+                label="🔙 Back to Summary",
+                style=discord.ButtonStyle.primary,
+                custom_id=f"region_back_{tag}"
+            )
+            async def back_cb(back_interaction: discord.Interaction):
+                await back_interaction.response.defer()
+                summary_embed = self._build_summary_embed()
+                await back_interaction.edit_original_response(embed=summary_embed, view=self)
+            back_button.callback = back_cb
+            back_view.add_item(back_button)
+
+            await interaction.edit_original_response(embed=embed, view=back_view)
+        return callback
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+
+
+class GuildRegionSelectView(discord.ui.View):
+    """View with buttons for selecting a guild to view region breakdown"""
+    def __init__(self, clubs: list, guild_infos: list, cog):
+        super().__init__(timeout=60)
+        self.cog = cog
+        self.clubs = clubs
+        self.guild_infos = guild_infos
+        
+        for idx, club in enumerate(clubs[:5]):
+            guild_name = "Unknown"
+            if guild_infos and idx < len(guild_infos):
+                info = guild_infos[idx]
+                guild_name = info.get('base', {}).get('name', 'Unknown')
+            
+            label = f"{idx + 1}. {guild_name[:45]}" if len(guild_name) > 45 else f"{idx + 1}. {guild_name}"
+            button = discord.ui.Button(
+                label=label,
+                style=discord.ButtonStyle.primary,
+                custom_id=f"guild_region_select_{idx}"
+            )
+            button.callback = self.make_callback(idx)
+            self.add_item(button)
+    
+    def make_callback(self, idx: int):
+        async def callback(interaction: discord.Interaction):
+            await self._handle_guild_select(interaction, idx)
+        return callback
+    
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, custom_id="guild_region_select_cancel", row=4)
+    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(content="❌ Cancelled.", embed=None, view=None)
+        self.stop()
+    
+    async def _handle_guild_select(self, interaction: discord.Interaction, idx: int):
+        await interaction.response.defer()
+        
+        club = self.clubs[idx]
+        club_id = club.get('club_id')
+        hostnum = club.get('hostnum', 10103)
+        
+        if not club_id:
+            await interaction.followup.send("❌ Invalid club data")
+            return
+        
+        try:
+            guild_data = get_full_guild_info(club_id, hostnum=hostnum)
+            if not guild_data or 'result' not in guild_data:
+                await interaction.followup.send("❌ Guild not found or API error")
+                return
+
+            result = guild_data['result']
+            members = result.get('members', {}).get('members', {})
+            all_uids = list(members.keys())
+
+            if not all_uids:
+                await interaction.followup.send("❌ No members found in guild")
+                return
+
+            bulk_data = get_bulk_players_info(all_uids, fields=["base"])
+            if not bulk_data or bulk_data.get('code') != 0:
+                await interaction.followup.send("❌ Failed to fetch player info")
+                return
+
+            players_result = bulk_data.get('result', {})
+            tag_map = {
+                "": "Unknown",
+                "CN": "🇨🇳 CN (Mainland China)",
+                "AS": "🌏 AS (Asia)",
+                "EU": "🇪🇺 EU (Europe)",
+                "HMT": "🇭🇰 HMT (Hong Kong/Macau/Taiwan)",
+                "JP": "🇯🇵 JP (Japan)",
+                "KR": "🇰🇷 KR (South Korea)",
+                "NA": "🇺🇸 NA (North America)",
+                "NAW": "🌎 NAW (North America West)",
+                "SA": "🌎 SA (South America)",
+                "SEA": "🌏 SEA (Southeast Asia)",
+                "OC": "🌏 OC (Oceania)",
+                "OTHER": "🌍 Other",
+            }
+            def get_region_label(tag):
+                return tag_map.get(tag, f"❓ {tag}")
+
+            regions = defaultdict(list)
+            for pid, player_data in players_result.items():
+                base = player_data.get('base', {})
+                nickname = base.get('nickname', 'Unknown')
+                level = base.get('level', 0)
+                number_id = base.get('number_id', '')
+                oversea_tag = str(base.get('oversea_tag', ''))
+                is_online = base.get('is_online', 0) == 1
+                regions[oversea_tag].append({
+                    'pid': pid, 'number_id': str(number_id), 'nickname': nickname,
+                    'level': level, 'is_online': is_online, 'oversea_tag': oversea_tag,
+                })
+
+            guild_name = result.get('base', {}).get('name', 'Unknown Guild')
+            total_members = sum(len(m) for m in regions.values())
+            sorted_tags = sorted(regions.keys(), key=lambda t: get_region_label(t))
+
+            embed = discord.Embed(
+                title=f"🌍 {guild_name} — Members by Region",
+                color=discord.Color.og_blurple()
+            )
+            embed.description = f"**Total members:** {total_members}  |  **Regions found:** {len(sorted_tags)}"
+
+            for tag in sorted_tags:
+                member_list = regions[tag]
+                sorted_members = sorted(member_list, key=lambda m: (not m['is_online'], m['nickname'].lower()))
+                online_count = sum(1 for m in member_list if m['is_online'])
+                region_label = get_region_label(tag)
+
+                preview = sorted_members[:5]
+                remaining = len(sorted_members) - 5
+
+                lines = []
+                for m in preview:
+                    online_icon = "🟢" if m['is_online'] else "⚫"
+                    number_id = m.get('number_id', 'N/A')
+                    lines.append(f"{online_icon} Lv{m['level']:<3} | {m['nickname']:<25} | ID: {number_id}")
+
+                preview_text = "\n".join(lines)
+                if remaining > 0:
+                    preview_text += f"\n... and {remaining} more"
+
+                embed.add_field(
+                    name=f"{region_label}  ({len(member_list)} members, 🟢 {online_count} online)",
+                    value=f"```{preview_text}```",
+                    inline=False
+                )
+
+            view = GuildRegionSummaryView(guild_name, regions, tag_map, self.cog)
+            await interaction.edit_original_response(content=None, embed=embed, view=view)
+
+        except Exception as e:
+            logger.error(f"Guild region select failed: {str(e)}", exc_info=True)
+            await interaction.followup.send(f"❌ Failed to load region data: `{str(e)}`")
+    
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+
+
 class GuildSearchSelectView(discord.ui.View):
     """View with buttons for selecting a guild from search results"""
     def __init__(self, clubs: list, guild_infos: list, cog):
         super().__init__(timeout=60)
         self.cog = cog
         self.clubs = clubs
-        self.guild_infos = guild_infos  # brief info from get_club_brief_info_batch
+        self.guild_infos = guild_infos
         
-        # Add a button for each result (up to 5)
         for idx, club in enumerate(clubs[:5]):
             guild_name = "Unknown"
             member_num = "?"
             apprentice_num = "?"
             
-            # Try to get name from brief info
             if guild_infos and idx < len(guild_infos):
                 info = guild_infos[idx]
                 guild_name = info.get('base', {}).get('name', 'Unknown')
                 member_num = info.get('members', {}).get('member_num', '?')
                 apprentice_num = info.get('members', {}).get('apprentice_num', '?')
             
-            # Label: "1. GuildName (M: 80 | A: 10)"
             label = f"{idx + 1}. {guild_name[:40]}" if len(guild_name) > 40 else f"{idx + 1}. {guild_name}"
             button = discord.ui.Button(
                 label=label,
@@ -107,7 +356,6 @@ class GuildSearchSelectView(discord.ui.View):
             self.add_item(button)
     
     def make_callback(self, idx: int):
-        """Create a callback for a specific guild result button"""
         async def callback(interaction: discord.Interaction):
             await self._handle_guild_select(interaction, idx)
         return callback
@@ -118,8 +366,6 @@ class GuildSearchSelectView(discord.ui.View):
         self.stop()
     
     async def _handle_guild_select(self, interaction: discord.Interaction, idx: int):
-        """Handle when a user clicks a guild selection button"""
-        # Only the original command user can interact
         await interaction.response.defer(ephemeral=True)
         
         club = self.clubs[idx]
@@ -130,11 +376,9 @@ class GuildSearchSelectView(discord.ui.View):
             await interaction.followup.send("❌ Invalid club data", ephemeral=True)
             return
         
-        # Send loading message
         loading_msg = await interaction.followup.send("📋 Loading guild data...", ephemeral=True, wait=True)
         
         try:
-            # Fetch full guild info
             logger.info(f"Trying to fetch full guild info for selected club_id: {club_id} with hostnum: {hostnum}")
             guild_data = get_full_guild_info(club_id, hostnum=hostnum)
             
@@ -147,7 +391,6 @@ class GuildSearchSelectView(discord.ui.View):
             members = result.get('members', {})
             play = result.get('play', {})
             
-            # Build response embed
             embed = discord.Embed(
                 title="🏰 Guild Profile",
                 color=discord.Color.og_blurple()
@@ -155,49 +398,14 @@ class GuildSearchSelectView(discord.ui.View):
             
             embed.description = f"**{base.get('name', 'Unknown Guild')}**"
             
-            embed.add_field(
-                name="📛 Guild Name",
-                value=f"`{base.get('name', 'Unknown')}`",
-                inline=True
-            )
+            embed.add_field(name="📛 Guild Name", value=f"`{base.get('name', 'Unknown')}`", inline=True)
+            embed.add_field(name="⭐ Level", value=f"`{base.get('level', 0)}`", inline=True)
+            embed.add_field(name="👥 Members", value=f"`{members.get('member_num', 0)} / 100`", inline=True)
+            embed.add_field(name="💰 Guild Funds", value=f"`{base.get('fund', 0):,}`", inline=True)
+            embed.add_field(name="📈 Total Fame", value=f"`{base.get('fame', 0):,}`", inline=True)
+            embed.add_field(name="🔥 Weekly Activity", value=f"`{base.get('week_fame', 0):,}`", inline=True)
+            embed.add_field(name="⚔️ GvG Points", value=f"`{play.get('pk_match_info', {}).get('battle_score', 0)}`", inline=True)
             
-            embed.add_field(
-                name="⭐ Level",
-                value=f"`{base.get('level', 0)}`",
-                inline=True
-            )
-            
-            embed.add_field(
-                name="👥 Members",
-                value=f"`{members.get('member_num', 0)} / 100`",
-                inline=True
-            )
-            
-            embed.add_field(
-                name="💰 Guild Funds",
-                value=f"`{base.get('fund', 0):,}`",
-                inline=True
-            )
-            
-            embed.add_field(
-                name="📈 Total Fame",
-                value=f"`{base.get('fame', 0):,}`",
-                inline=True
-            )
-            
-            embed.add_field(
-                name="🔥 Weekly Activity",
-                value=f"`{base.get('week_fame', 0):,}`",
-                inline=True
-            )
-            
-            embed.add_field(
-                name="⚔️ GvG Points",
-                value=f"`{play.get('pk_match_info', {}).get('battle_score', 0)}`",
-                inline=True
-            )
-            
-            # Find guild leadership
             leader_name = "None"
             vice_leader_name = "None"
             leader_pid = "None"
@@ -211,7 +419,6 @@ class GuildSearchSelectView(discord.ui.View):
                 if 2 in post_list:
                     vice_leader_pid = pid
             
-            # Fetch nicknames for leadership
             pids_to_fetch = []
             if leader_pid != "None":
                 pids_to_fetch.append(leader_pid)
@@ -229,7 +436,6 @@ class GuildSearchSelectView(discord.ui.View):
                         vice_base = players[vice_leader_pid].get('base', {})
                         vice_leader_name = vice_base.get('nickname', 'Unknown')
             
-            # Calculate online players
             online = 0
             all_pids = list(member_list.keys())
             bulk_data = get_bulk_players_info(all_pids, fields=["base"])
@@ -240,37 +446,15 @@ class GuildSearchSelectView(discord.ui.View):
                     if player_base.get('is_online', 0) == 1:
                         online += 1
             
-            embed.add_field(
-                name="👑 Guild Leader",
-                value=f"`{leader_name}`",
-                inline=True
-            )
+            embed.add_field(name="👑 Guild Leader", value=f"`{leader_name}`", inline=True)
+            embed.add_field(name="⚔️ Vice Leader", value=f"`{vice_leader_name}`", inline=True)
+            embed.add_field(name="🟢 Online Now", value=f"`{online} / {members.get('member_num', 0)}`", inline=True)
             
-            embed.add_field(
-                name="⚔️ Vice Leader",
-                value=f"`{vice_leader_name}`",
-                inline=True
-            )
-            
-            embed.add_field(
-                name="🟢 Online Now",
-                value=f"`{online} / {members.get('member_num', 0)}`",
-                inline=True
-            )
-            
-            # Guild announcement
             announcement = result.get('gonggao_info', {}).get('msg')
             if announcement and announcement.strip():
-                embed.add_field(
-                    name="📢 Guild Announcement",
-                    value=f"`{announcement}`",
-                    inline=False
-                )
+                embed.add_field(name="📢 Guild Announcement", value=f"`{announcement}`", inline=False)
             
-            # Edit the original search results message to show the guild profile
             await interaction.edit_original_response(content=None, embed=embed, view=None)
-            
-            # Clean up the ephemeral loading message
             await loading_msg.edit(content="✅ Guild found!")
             
         except Exception as e:
@@ -278,11 +462,8 @@ class GuildSearchSelectView(discord.ui.View):
             await loading_msg.edit(content=f"❌ Failed to load guild details: `{str(e)}`")
     
     async def on_timeout(self):
-        """Disable all buttons on timeout"""
         for child in self.children:
             child.disabled = True
-        # Note: We can't edit the message here since we don't have a reference,
-        # but the timeout is 60s so the buttons will just be non-functional
 
 
 class WWMCog(commands.Cog):
@@ -294,11 +475,7 @@ class WWMCog(commands.Cog):
         self.check_interval_minutes = 2
         self.monitor_message = None
         self.online_button_view = OnlinePlayersButton(self)
-        
-        # Load saved config
         self.db_path = BASE_DIR / "data" / "guild_monitor.db"
-        self._init_database()
-        
 
     player_group = app_commands.Group(
         name="player",
@@ -310,25 +487,77 @@ class WWMCog(commands.Cog):
         description="Guild monitoring commands"
     )
 
-    @player_group.command(
-        name="search",
-        description="Search for a WWM player by their Number ID"
-    )
-    @app_commands.describe(
-        number_id="The player's 10-digit Number ID"
-    )
+    async def _init_database(self):
+        (BASE_DIR / "data").mkdir(exist_ok=True)
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS monitor_config (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                )
+            """)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS guild_player_counts (
+                    ts INTEGER PRIMARY KEY,
+                    total_members INTEGER NOT NULL,
+                    online_count INTEGER NOT NULL,
+                    guild_week_fame INTEGER DEFAULT 0
+                )
+            """)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS guild_player_snapshots (
+                    ts INTEGER PRIMARY KEY,
+                    snapshot_json TEXT NOT NULL
+                )
+            """)
+            await db.commit()
+    
+    async def _load_config(self):
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT key, value FROM monitor_config")
+            rows = await cursor.fetchall()
+            config = {row[0]: row[1] for row in rows}
+            
+            if 'channel_id' in config:
+                self.monitor_channel = self.bot.get_channel(int(config['channel_id']))
+            if 'message_id' in config and self.monitor_channel:
+                try:
+                    self.monitor_message = await self.monitor_channel.fetch_message(int(config['message_id']))
+                except:
+                    self.monitor_message = None
+            if 'enabled' in config:
+                self.monitor_enabled = config['enabled'] == 'true'
+            if 'interval' in config:
+                self.check_interval_minutes = int(config['interval'])
+    
+    async def _save_config(self):
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute("REPLACE INTO monitor_config VALUES ('channel_id', ?)", (str(self.monitor_channel.id) if self.monitor_channel else None,))
+            await db.execute("REPLACE INTO monitor_config VALUES ('message_id', ?)", (str(self.monitor_message.id) if self.monitor_message else None,))
+            await db.execute("REPLACE INTO monitor_config VALUES ('enabled', ?)", ('true' if self.monitor_enabled else 'false',))
+            await db.execute("REPLACE INTO monitor_config VALUES ('interval', ?)", (str(self.check_interval_minutes),))
+            await db.commit()
+    
+    async def cog_load(self):
+        await self._init_database()
+        await self._load_config()
+        if self.monitor_enabled and self.monitor_channel:
+            self.guild_monitor_task.start()
+    
+    async def cog_unload(self):
+        if self.guild_monitor_task.is_running():
+            self.guild_monitor_task.cancel()
+
+    @player_group.command(name="search", description="Search for a WWM player by their Number ID")
+    @app_commands.describe(number_id="The player's 10-digit Number ID")
     async def player_search(self, interaction: discord.Interaction, number_id: str):
-        # Send initial message immediately - no defer
         await interaction.response.send_message("🔍 Searching for player...")
 
-        # Check if user has bound their account
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT 1 FROM verified_members WHERE user_id = ?", (interaction.user.id,))
-        is_verified = c.fetchone() is not None
-        conn.close()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute("SELECT 1 FROM verified_members WHERE user_id = ?", (interaction.user.id,))
+            row = await cursor.fetchone()
+            is_verified = row is not None
 
-        # Validate input
         if not number_id.isdigit() or len(number_id) != 10:
             embed = discord.Embed(
                 title="❌ Invalid Number ID",
@@ -338,7 +567,6 @@ class WWMCog(commands.Cog):
             await interaction.followup.send(embed=embed)
             return
 
-        # Check if config is set
         if not WWM_UID or not WWM_TOKEN:
             embed = discord.Embed(
                 title="❌ API Not Configured",
@@ -351,27 +579,17 @@ class WWMCog(commands.Cog):
         try:
             await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...")
             
-            # Get player info using utility function
             raw_data = get_player_info(number_id, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
             
             if not raw_data:
-                embed = discord.Embed(
-                    title="❌ Player not found",
-                    color=discord.Color.red()
-                )
+                embed = discord.Embed(title="❌ Player not found", color=discord.Color.red())
                 await interaction.followup.send(embed=embed)
                 return
 
-            # Debug: log full response structure
             logger.debug(f"API Response received: {str(raw_data)}")
 
-            # Build response embed
-            embed = discord.Embed(
-                title="👤 Player Profile",
-                color=discord.Color.og_blurple()
-            )
+            embed = discord.Embed(title="👤 Player Profile", color=discord.Color.og_blurple())
             
-            # Get fashion plan with cover image
             try:
                 player_pid = None
                 player_hostnum = 10403
@@ -379,11 +597,8 @@ class WWMCog(commands.Cog):
                 if isinstance(raw_data, dict):
                     data = raw_data.get('result', raw_data)
                     player_pid = data.get('id')
-                    
-                    # Extract correct hostnum from player data (root level)
                     if 'hostnum' in data:
                         player_hostnum = data.get('hostnum', 10403)
-                        logger.debug(f"✅ Found player's actual hostnum: {player_hostnum}")
                 
                 if player_pid:
                     fashion_data = get_fashion_plan(player_pid, hostnum=player_hostnum)
@@ -392,149 +607,56 @@ class WWMCog(commands.Cog):
                             cover_img = fashion_data['result'].get('cover_img')
                             if cover_img:
                                 embed.set_image(url=cover_img)
-                                logger.debug(f"Successfully added cover image: {cover_img}")
-                        elif fashion_data.get('code') == 2:
-                            logger.debug("Fashion plan API requires valid user session token (code 2)")
-                        else:
-                            logger.debug(f"Fashion plan returned code: {fashion_data.get('code')}")
             except Exception as fashion_err:
                 logger.warning(f"Failed to get fashion cover image: {str(fashion_err)}")
-                # Continue without image - don't fail whole request
 
-            # Handle different API response structures
             if isinstance(raw_data, dict):
-                # Check if data is nested inside result field
                 if 'result' in raw_data:
                     data = raw_data.get('result', {})
                 else:
                     data = raw_data
                 
                 base_data = data.get('base', {})
-                
-                # If base is list, take first item
                 if isinstance(base_data, list) and len(base_data) > 0:
                     base_data = base_data[0]
-                    
-                # Fallback: check if base is directly on root
                 if not base_data and 'nickname' in data:
                     base_data = data
                 
-                # Main player info
                 nickname = base_data.get('nickname', data.get('nickname', 'Unknown'))
                 embed.description = f"**{nickname}**"
                 
-                embed.add_field(
-                    name="📛 Nickname",
-                    value=f"`{nickname}`",
-                    inline=True
-                )
-                
-                embed.add_field(
-                    name="🏆 Level",
-                    value=f"`{base_data.get('level', 0)}`",
-                    inline=True
-                )
-                
-                embed.add_field(
-                    name="🆔 Number ID",
-                    value=f"`{base_data.get('number_id', number_id)}`",
-                    inline=True
-                )
+                embed.add_field(name="📛 Nickname", value=f"`{nickname}`", inline=True)
+                embed.add_field(name="🏆 Level", value=f"`{base_data.get('level', 0)}`", inline=True)
+                embed.add_field(name="🆔 Number ID", value=f"`{base_data.get('number_id', number_id)}`", inline=True)
 
-                # Player signature / bio
                 name_card = data.get('name_card', {})
                 player_signature = name_card.get('sign', None)
                 if player_signature and player_signature.strip():
-                    embed.add_field(
-                        name="✍️ Player Signature",
-                        value=f"`{player_signature}`",
-                        inline=False
-                    )
+                    embed.add_field(name="✍️ Player Signature", value=f"`{player_signature}`", inline=False)
 
                 if is_verified:
-                    # Full stats only for verified bound users - All from attr object
                     attr = data.get('attr', {})
-                    
-                    embed.add_field(
-                        name="⚔️ Martial Mastery",
-                        value=f"`{round(attr.get('XIUWEI_KUNGFU', 0), 1)}`",
-                        inline=True
-                    )
-                    
-                    embed.add_field(
-                        name="📚 Scholar Mastery",
-                        value=f"`{round(attr.get('XIUWEI_TRADE3', 0), 1)}`",
-                        inline=True
-                    )
-                    
-                    embed.add_field(
-                        name="💚 Healer Mastery",
-                        value=f"`{round(attr.get('XIUWEI_TRADE4', 0), 1)}`",
-                        inline=True
-                    )
-                    
-                    embed.add_field(
-                        name="🗺️ Exploration Mastery",
-                        value=f"`{round(attr.get('XIUWEI_EXPLORE', 0), 1)}`",
-                        inline=True
-                    )
-
-                    embed.add_field(
-                        name="🥊 Power",
-                        value=f"`{round(attr.get('STR', 0), 1)}`",
-                        inline=True
-                    )
-                    
-                    embed.add_field(
-                        name="🛡️ Body",
-                        value=f"`{round(attr.get('CON', 0), 1)}`",
-                        inline=True
-                    )
-                    
-                    embed.add_field(
-                        name="⚡ Momentum",
-                        value=f"`{round(attr.get('BAS', 0), 1)}`",
-                        inline=True
-                    )
-                    
-                    embed.add_field(
-                        name="💨 Agility",
-                        value=f"`{round(attr.get('CRI', 0), 1)}`",
-                        inline=True
-                    )
-                    
-                    embed.add_field(
-                        name="🔰 Defense",
-                        value=f"`{round(attr.get('AGI', 0), 1)}`",
-                        inline=True
-                    )
-                    
-                    embed.add_field(
-                        name="🌍 Region",
-                        value=f"`{base_data.get('oversea_tag', 'N/A')}`",
-                        inline=True
-                    )
-                    
-                    embed.add_field(
-                        name="⌛ Total Online Time",
-                        value=f"`{round(base_data.get('online_time', 0) / 3600, 1)} hours`",
-                        inline=True
-                    )
+                    embed.add_field(name="⚔️ Martial Mastery", value=f"`{round(attr.get('XIUWEI_KUNGFU', 0), 1)}`", inline=True)
+                    embed.add_field(name="📚 Scholar Mastery", value=f"`{round(attr.get('XIUWEI_TRADE3', 0), 1)}`", inline=True)
+                    embed.add_field(name="💚 Healer Mastery", value=f"`{round(attr.get('XIUWEI_TRADE4', 0), 1)}`", inline=True)
+                    embed.add_field(name="🗺️ Exploration Mastery", value=f"`{round(attr.get('XIUWEI_EXPLORE', 0), 1)}`", inline=True)
+                    embed.add_field(name="🥊 Power", value=f"`{round(attr.get('STR', 0), 1)}`", inline=True)
+                    embed.add_field(name="🛡️ Body", value=f"`{round(attr.get('CON', 0), 1)}`", inline=True)
+                    embed.add_field(name="⚡ Momentum", value=f"`{round(attr.get('BAS', 0), 1)}`", inline=True)
+                    embed.add_field(name="💨 Agility", value=f"`{round(attr.get('CRI', 0), 1)}`", inline=True)
+                    embed.add_field(name="🔰 Defense", value=f"`{round(attr.get('AGI', 0), 1)}`", inline=True)
+                    embed.add_field(name="🌍 Region", value=f"`{base_data.get('oversea_tag', 'N/A')}`", inline=True)
+                    embed.add_field(name="⌛ Total Online Time", value=f"`{round(base_data.get('online_time', 0) / 3600, 1)} hours`", inline=True)
                 else:
-                    # Binding prompt footer for unbound users
                     embed.set_footer(text="🔗 Bind your account to view full stats, combat power and details. Go to #1501139237594992780 to link your game account.")
 
-                # Extra interesting fields
                 status_lines = []
-                
-                # Online status
                 is_online = base_data.get('is_online', 0)
                 if is_online == 1:
                     status_lines.append("`🟢 ONLINE NOW`")
                 else:
                     status_lines.append("`🔴 Offline`")
                 
-                # PvP Grade
                 gameplay = data.get('gameplay_trail', {})
                 played = gameplay.get('played', [])
                 for match in played:
@@ -543,13 +665,8 @@ class WWMCog(commands.Cog):
                         break
                 
                 if status_lines:
-                    embed.add_field(
-                        name="📋 Status",
-                        value="\n".join(status_lines),
-                        inline=False
-                    )
-                
-            # Get club info using utility function
+                    embed.add_field(name="📋 Status", value="\n".join(status_lines), inline=False)
+            
             player_pid = data.get('id')
             if player_pid:
                 try:
@@ -569,7 +686,6 @@ class WWMCog(commands.Cog):
                         club_hostnum = club_info.get('hostnum', 10103)
                     
                     if player_club_id:
-                        # Fetch actual guild name using correct hostnum from club data
                         await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...\n🏰 Checking guild info...\n📋 Loading guild data...")
                         guild_full_data = get_full_guild_info(player_club_id, hostnum=club_hostnum)
                         
@@ -577,29 +693,20 @@ class WWMCog(commands.Cog):
                             guild_base = guild_full_data.get('result', {}).get('base', {})
                             guild_name = guild_base.get('name', 'Unknown Guild')
                         
-                        # Check if member of our guild
                         if player_club_id == CLUB_ID:
                             member_status = f"✅ **Guild Member**"
                             embed.color = discord.Color.green()
                         else:
                             member_status = "❌ Not In Our Guild"
                     
-                    # Display both status and guild name
                     status_text = f"{member_status}\n🏰 Guild: `{guild_name}`"
-                    
-                    embed.add_field(
-                        name="👥 Member Status",
-                        value=status_text,
-                        inline=False
-                    )
+                    embed.add_field(name="👥 Member Status", value=status_text, inline=False)
                     
                 except Exception as club_err:
                     logger.warning(f"Failed to get club info: {str(club_err)}")
-                
             else:
                 embed.description = f"```\n{str(raw_data)}\n```"
 
-            # Send final result
             await interaction.edit_original_response(content=None, embed=embed)
 
         except Exception as e:
@@ -611,69 +718,6 @@ class WWMCog(commands.Cog):
             )
             await interaction.edit_original_response(content=None, embed=embed)
 
-        except Exception as e:
-            logger.error(f"Player search failed: {str(e)}", exc_info=True)
-            embed = discord.Embed(
-                title="❌ Search Failed",
-                description=f"An error occurred while searching: `{str(e)}`",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-
-
-    def _init_database(self):
-        (BASE_DIR / "data").mkdir(exist_ok=True)
-        with sqlite3.connect(self.db_path) as db:
-            db.execute("""
-                CREATE TABLE IF NOT EXISTS monitor_config (
-                    key TEXT PRIMARY KEY,
-                    value TEXT
-                )
-            """)
-            db.execute("""
-                CREATE TABLE IF NOT EXISTS guild_player_counts (
-                    ts INTEGER PRIMARY KEY,
-                    total_members INTEGER NOT NULL,
-                    online_count INTEGER NOT NULL,
-                    guild_week_fame INTEGER DEFAULT 0
-                )
-            """)
-            db.commit()
-    
-    async def _load_config(self):
-        with sqlite3.connect(self.db_path) as db:
-            cursor = db.execute("SELECT key, value FROM monitor_config")
-            config = {row[0]: row[1] for row in cursor.fetchall()}
-            
-            if 'channel_id' in config:
-                self.monitor_channel = self.bot.get_channel(int(config['channel_id']))
-            if 'message_id' in config and self.monitor_channel:
-                try:
-                    self.monitor_message = await self.monitor_channel.fetch_message(int(config['message_id']))
-                except:
-                    self.monitor_message = None
-            if 'enabled' in config:
-                self.monitor_enabled = config['enabled'] == 'true'
-            if 'interval' in config:
-                self.check_interval_minutes = int(config['interval'])
-    
-    def _save_config(self):
-        with sqlite3.connect(self.db_path) as db:
-            db.execute("REPLACE INTO monitor_config VALUES ('channel_id', ?)", (str(self.monitor_channel.id) if self.monitor_channel else None,))
-            db.execute("REPLACE INTO monitor_config VALUES ('message_id', ?)", (str(self.monitor_message.id) if self.monitor_message else None,))
-            db.execute("REPLACE INTO monitor_config VALUES ('enabled', ?)", ('true' if self.monitor_enabled else 'false',))
-            db.execute("REPLACE INTO monitor_config VALUES ('interval', ?)", (str(self.check_interval_minutes),))
-            db.commit()
-    
-    async def cog_load(self):
-        await self._load_config()
-        if self.monitor_enabled and self.monitor_channel:
-            self.guild_monitor_task.start()
-    
-    async def cog_unload(self):
-        if self.guild_monitor_task.is_running():
-            self.guild_monitor_task.cancel()
-    
     @tasks.loop(minutes=1)
     async def guild_monitor_task(self):
         if not self.monitor_enabled or not self.monitor_channel:
@@ -686,33 +730,54 @@ class WWMCog(commands.Cog):
                 logger.warning("Guild check returned no data")
                 return
             
-            # Build and update status board
-            status_message, embeds, online_count, member_count = self._build_status_board(guild_data)
+            status_message, embeds, online_count, member_count, players_data = self._build_status_board(guild_data)
             
-            # Record player count data point
             try:
                 now_ts = int(discord.utils.utcnow().timestamp())
-                with sqlite3.connect(self.db_path) as db:
-                    db.execute(
+                async with aiosqlite.connect(self.db_path) as db:
+                    await db.execute(
                         "INSERT OR IGNORE INTO guild_player_counts (ts, total_members, online_count, guild_week_fame) VALUES (?, ?, ?, ?)",
                         (now_ts, member_count, online_count, guild_data.get('result', {}).get('base', {}).get('week_fame', 0))
                     )
-                    db.commit()
                     
-                # Cleanup old data (keep 30 days)
-                cleanup_ts = now_ts - 30 * 86400
-                db.execute("DELETE FROM guild_player_counts WHERE ts < ?", (cleanup_ts,))
-                db.commit()
+                    if players_data is not None:
+                        snapshot = []
+                        for pid, player_data in players_data.items():
+                            base = player_data.get('base', {})
+                            club = player_data.get('club', {})
+                            player_entry = {
+                                'pid': pid,
+                                'nickname': base.get('nickname', 'Unknown'),
+                                'level': base.get('level', 0),
+                                'number_id': str(base.get('number_id', '')),
+                                'is_online': base.get('is_online', 0) == 1,
+                                'oversea_tag': str(base.get('oversea_tag', '')),
+                                'online_time': base.get('online_time', 0),
+                                'last_online_ts': base.get('last_online_ts', 0),
+                                'liveness': club.get('liveness', 0),
+                                'total_liveness': club.get('total_liveness', 0),
+                                'contribution': club.get('contribution', 0),
+                            }
+                            snapshot.append(player_entry)
+                        
+                        await db.execute(
+                            "INSERT OR IGNORE INTO guild_player_snapshots (ts, snapshot_json) VALUES (?, ?)",
+                            (now_ts, json.dumps(snapshot, ensure_ascii=False))
+                        )
+                    
+                    cleanup_ts = now_ts - 30 * 86400
+                    await db.execute("DELETE FROM guild_player_counts WHERE ts < ?", (cleanup_ts,))
+                    await db.execute("DELETE FROM guild_player_snapshots WHERE ts < ?", (cleanup_ts,))
+                    await db.commit()
+
             except Exception as e:
                 logger.warning(f"Failed to record player count: {e}")
             
             await self.monitor_message.edit(content=status_message, embeds=embeds, view=self.online_button_view)
             logger.debug("Guild status message updated successfully")
             
-            # Check for changes and send alerts
             if self.last_guild_state is not None:
                 diff = DeepDiff(self.last_guild_state, guild_data, ignore_order=True, exclude_paths=["root['timestamp']"])
-                
                 if diff:
                     logger.debug(f"Guild changes detected: {list(diff.keys())}")
                     await self._process_changes(diff, guild_data)
@@ -721,7 +786,7 @@ class WWMCog(commands.Cog):
             
         except Exception as e:
             logger.error(f"Guild monitor task failed: {str(e)}", exc_info=True)
-    
+
     def _build_status_board(self, guild_data):
         result = guild_data.get('result', {})
         base = result.get('base', {})
@@ -738,19 +803,13 @@ class WWMCog(commands.Cog):
         online_player_names = []
         players_data = None
         
-        # Get all member pids ONCE
         all_pids = list(member_list.keys())
         
-        # ✅ SINGLE API CALL ONLY - fetch ALL required data in ONE request
         from utility.wwm import get_bulk_players_info
         try:
-            # ✅ SINGLE API CALL ONLY - fetch ALL required data in ONE request
             bulk_data = get_bulk_players_info(all_pids, fields=["base", "club"])
-            
             if bulk_data and bulk_data.get('code') == 0:
                 players_data = bulk_data.get('result', {})
-                
-                # Calculate online players from this same data
                 for pid, player_data in players_data.items():
                     player_base = player_data.get('base', {})
                     if player_base.get('is_online', 0) == 1:
@@ -758,10 +817,9 @@ class WWMCog(commands.Cog):
                         online_player_names.append(player_base.get('nickname', 'Unknown'))
         except Exception as e:
             logger.warning(f"Failed to get bulk player data, falling back to estimate: {e}")
-            # Fallback to old estimation method
             for pid, member in member_list.items():
                 last_online = member.get('last_online_ts', 0)
-                if now - last_online < 7200: # 2 hours
+                if now - last_online < 7200:
                     online += 1
         
         lines = []
@@ -780,12 +838,8 @@ class WWMCog(commands.Cog):
         lines.append("╚═════════════════════════════════════════╝")
         lines.append("```")
 
-
-        # 🔥 TOP 10 WEEKLY ACTIVITY POINTS
-        # Extract and sort members by weekly liveness
         weekly_leaderboard = []
         
-        # ✅ USE ALREADY FETCHED DATA - NO SECOND API CALL!
         if players_data is not None:
             for pid, member in member_list.items():
                 nickname = member.get('nickname', 'Unknown')
@@ -796,28 +850,23 @@ class WWMCog(commands.Cog):
                     club_data = player_data.get('club', {})
                     base_data = player_data.get('base', {})
                     weekly_points = club_data.get('liveness', 0)
-                    # Get real nickname from base data if available
                     if 'nickname' in base_data:
                         nickname = base_data.get('nickname', nickname)
                 
                 weekly_leaderboard.append( (-weekly_points, nickname, weekly_points) )
         else:
-            # Fallback if API fails
             for pid, member in member_list.items():
                 nickname = member.get('nickname', 'Unknown')
                 club_data = member.get('club', {})
                 weekly_points = club_data.get('liveness', 0)
                 weekly_leaderboard.append( (-weekly_points, nickname, weekly_points) )
 
-        # Sort and take top 10
         weekly_leaderboard.sort()
 
-        # Build leaderboard in code block with backticked values
         lines.append("\n## 🔥 WEEKLY ACTIVITY POINTS - TOP 10")
         lines.append("```")
         
         for rank, (neg_points, name, points) in enumerate(weekly_leaderboard[:10], 1):
-            # Add medal emojis for top 3
             if rank == 1:
                 rank_text = "🥇"
             elif rank == 2:
@@ -826,14 +875,12 @@ class WWMCog(commands.Cog):
                 rank_text = "🥉"
             else:
                 rank_text = f"{rank}."
-            
             lines.append(f"{rank_text} {name}: {points:,}")
         
         lines.append("```")
 
         embeds = []
 
-        # Pending Applications (Text Only)
         applys = result.get('applys', {}).get('apply_dict', {})
         if len(applys) > 0:
             lines.append(f"\n### 📋 **PENDING APPLICATIONS: {len(applys)}**")
@@ -842,46 +889,39 @@ class WWMCog(commands.Cog):
                 lines.append(f"✅ {app.get('nickname', 'Unknown')}")
             lines.append("```")
         
-        # Footer timestamps
         lines.append(f"⏱️ Last Updated: <t:{int(now)}:R>")
         lines.append(f"🔄 Next Update: <t:{int(now) + 60}:R>")
         
-        return "\n".join(lines), embeds, online, member_count
+        return "\n".join(lines), embeds, online, member_count, players_data
     
     async def _process_changes(self, diff, new_data):
         changes = []
         
-        # Member joined
         if 'iterable_item_added' in diff:
             for path, item in diff['iterable_item_added'].items():
                 if 'members' in path and isinstance(item, dict) and 'nickname' in item:
                     changes.append(f"✅ **New Member Joined:** {item.get('nickname')}")
         
-        # Member left
         if 'iterable_item_removed' in diff:
             for path, item in diff['iterable_item_removed'].items():
                 if 'members' in path and isinstance(item, dict) and 'nickname' in item:
                     changes.append(f"❌ **Member Left:** {item.get('nickname')}")
         
-        # Building level up
         if 'values_changed' in diff:
             for path, change in diff['values_changed'].items():
                 if 'building' in path and 'lv' in path:
                     changes.append(f"🏗️ **Building Upgraded:** Level {change['old_value']} → {change['new_value']}")
         
-        # Guild level up
         if 'values_changed' in diff:
             for path, change in diff['values_changed'].items():
                 if path.endswith('base.level'):
                     changes.append(f"⭐ **GUILD LEVEL UP!** {change['old_value']} → {change['new_value']}")
         
-        # New applications
         if 'iterable_item_added' in diff:
             for path, item in diff['iterable_item_added'].items():
                 if 'apply_dict' in path:
                     changes.append(f"📥 **New Guild Application:** {item.get('nickname', 'Unknown')}")
         
-        # Guild announcement changed
         if 'values_changed' in diff:
             for path, change in diff['values_changed'].items():
                 if 'gonggao_info.msg' in path:
@@ -900,20 +940,18 @@ class WWMCog(commands.Cog):
     async def before_guild_monitor(self):
         await self.bot.wait_until_ready()
         
-        # Load message on first run
-        with sqlite3.connect(self.db_path) as db:
-            cursor = db.execute("SELECT value FROM monitor_config WHERE key = 'message_id'")
-            row = cursor.fetchone()
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT value FROM monitor_config WHERE key = 'message_id'")
+            row = await cursor.fetchone()
             if row and self.monitor_channel:
                 try:
                     self.monitor_message = await self.monitor_channel.fetch_message(int(row[0]))
                 except:
-                    # Create new message if old one not found
                     guild_data = get_full_guild_info(CLUB_ID)
                     if guild_data:
-                        status_message, embeds, _, _ = self._build_status_board(guild_data)
+                        status_message, embeds, _, _, _ = self._build_status_board(guild_data)
                         self.monitor_message = await self.monitor_channel.send(content=status_message, embeds=embeds, view=self.online_button_view)
-                        self._save_config()
+                        await self._save_config()
                         self.last_guild_state = guild_data
     
     @guild_group.command(name="set-channel", description="Set channel for guild monitor notifications")
@@ -921,14 +959,13 @@ class WWMCog(commands.Cog):
     async def set_monitor_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         self.monitor_channel = channel
         
-        # Create initial message
         guild_data = get_full_guild_info(CLUB_ID)
         if guild_data:
-            status_message, embeds, _, _ = self._build_status_board(guild_data)
+            status_message, embeds, _, _, _ = self._build_status_board(guild_data)
             self.monitor_message = await channel.send(content=status_message, embeds=embeds, view=self.online_button_view)
             self.last_guild_state = guild_data
         
-        self._save_config()
+        await self._save_config()
         await interaction.response.send_message(f"✅ Guild monitor channel set to {channel.mention}. Status board created.", ephemeral=True)
         logger.info(f"Guild monitor channel set to {channel.id} by {interaction.user}")
     
@@ -946,7 +983,7 @@ class WWMCog(commands.Cog):
                 self.guild_monitor_task.cancel()
             status = "❌ DISABLED"
         
-        self._save_config()
+        await self._save_config()
         await interaction.response.send_message(f"Guild monitor is now {status}", ephemeral=True)
         logger.info(f"Guild monitor toggled to {self.monitor_enabled} by {interaction.user}")
     
@@ -975,23 +1012,15 @@ class WWMCog(commands.Cog):
         
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
-    @guild_group.command(
-        name="search",
-        description="Search for a guild by Player ID"
-    )
-    @app_commands.describe(
-        player_id="Search using a player's 10-digit Number ID (finds their guild)"
-    )
+    @guild_group.command(name="search", description="Search for a guild by Player ID")
+    @app_commands.describe(player_id="Search using a player's 10-digit Number ID (finds their guild)")
     async def guild_search(self, interaction: discord.Interaction, player_id: str):
-        # Send initial message immediately
         await interaction.response.send_message("🔍 Searching for player...")
 
-        # Check if user has bound their account
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT 1 FROM verified_members WHERE user_id = ?", (interaction.user.id,))
-        is_verified = c.fetchone() is not None
-        conn.close()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute("SELECT 1 FROM verified_members WHERE user_id = ?", (interaction.user.id,))
+            row = await cursor.fetchone()
+            is_verified = row is not None
 
         if not is_verified:
             embed = discord.Embed(
@@ -1002,7 +1031,6 @@ class WWMCog(commands.Cog):
             await interaction.followup.send(embed=embed)
             return
 
-        # Check if API is configured
         if not WWM_UID or not WWM_TOKEN:
             embed = discord.Embed(
                 title="❌ API Not Configured",
@@ -1016,7 +1044,6 @@ class WWMCog(commands.Cog):
         target_hostnum = 10103
 
         try:
-            # Validate player number id format
             if not player_id.isdigit() or len(player_id) != 10:
                 embed = discord.Embed(
                     title="❌ Invalid Player ID",
@@ -1028,14 +1055,10 @@ class WWMCog(commands.Cog):
 
             await interaction.edit_original_response(content="✅ Found player\n🏰 Looking up guild info...")
             
-            # Get player info to find their guild
             player_data = get_player_info(player_id)
             
             if not player_data or 'result' not in player_data:
-                embed = discord.Embed(
-                    title="❌ Player not found",
-                    color=discord.Color.red()
-                )
+                embed = discord.Embed(title="❌ Player not found", color=discord.Color.red())
                 await interaction.followup.send(embed=embed)
                 return
 
@@ -1043,21 +1066,14 @@ class WWMCog(commands.Cog):
             player_pid = player_result.get('id')
 
             if not player_pid:
-                embed = discord.Embed(
-                    title="❌ Failed to get player data",
-                    color=discord.Color.red()
-                )
+                embed = discord.Embed(title="❌ Failed to get player data", color=discord.Color.red())
                 await interaction.followup.send(embed=embed)
                 return
 
-            # Get club info for this player
             club_data = get_club_hostnums(player_pid)
             
             if not club_data or 'result' not in club_data:
-                embed = discord.Embed(
-                    title="❌ Player is not in any guild",
-                    color=discord.Color.red()
-                )
+                embed = discord.Embed(title="❌ Player is not in any guild", color=discord.Color.red())
                 await interaction.followup.send(embed=embed)
                 return
 
@@ -1069,23 +1085,16 @@ class WWMCog(commands.Cog):
             target_hostnum = club_info.get('hostnum', 10103)
 
             if not target_guild_id:
-                embed = discord.Embed(
-                    title="❌ Player is not in any guild",
-                    color=discord.Color.red()
-                )
+                embed = discord.Embed(title="❌ Player is not in any guild", color=discord.Color.red())
                 await interaction.followup.send(embed=embed)
                 return
 
             await interaction.edit_original_response(content="✅ Found player\n🏰 Looking up guild info...\n📋 Loading guild data...")
             
-            # Now fetch full guild information
             guild_data = get_full_guild_info(target_guild_id, hostnum=target_hostnum)
             
             if not guild_data or 'result' not in guild_data:
-                embed = discord.Embed(
-                    title="❌ Guild not found",
-                    color=discord.Color.red()
-                )
+                embed = discord.Embed(title="❌ Guild not found", color=discord.Color.red())
                 await interaction.edit_original_response(content=None, embed=embed)
                 return
 
@@ -1094,57 +1103,16 @@ class WWMCog(commands.Cog):
             members = result.get('members', {})
             play = result.get('play', {})
 
-            # Build response embed
-            embed = discord.Embed(
-                title="🏰 Guild Profile",
-                color=discord.Color.og_blurple()
-            )
-
+            embed = discord.Embed(title="🏰 Guild Profile", color=discord.Color.og_blurple())
             embed.description = f"**{base.get('name', 'Unknown Guild')}**"
+            embed.add_field(name="📛 Guild Name", value=f"`{base.get('name', 'Unknown')}`", inline=True)
+            embed.add_field(name="⭐ Level", value=f"`{base.get('level', 0)}`", inline=True)
+            embed.add_field(name="👥 Members", value=f"`{members.get('member_num', 0)} / 100`", inline=True)
+            embed.add_field(name="💰 Guild Funds", value=f"`{base.get('fund', 0):,}`", inline=True)
+            embed.add_field(name="📈 Total Fame", value=f"`{base.get('fame', 0):,}`", inline=True)
+            embed.add_field(name="🔥 Weekly Activity", value=f"`{base.get('week_fame', 0):,}`", inline=True)
+            embed.add_field(name="⚔️ GvG Points", value=f"`{play.get('pk_match_info', {}).get('battle_score', 0)}`", inline=True)
 
-            embed.add_field(
-                name="📛 Guild Name",
-                value=f"`{base.get('name', 'Unknown')}`",
-                inline=True
-            )
-
-            embed.add_field(
-                name="⭐ Level",
-                value=f"`{base.get('level', 0)}`",
-                inline=True
-            )
-
-            embed.add_field(
-                name="👥 Members",
-                value=f"`{members.get('member_num', 0)} / 100`",
-                inline=True
-            )
-
-            embed.add_field(
-                name="💰 Guild Funds",
-                value=f"`{base.get('fund', 0):,}`",
-                inline=True
-            )
-
-            embed.add_field(
-                name="📈 Total Fame",
-                value=f"`{base.get('fame', 0):,}`",
-                inline=True
-            )
-
-            embed.add_field(
-                name="🔥 Weekly Activity",
-                value=f"`{base.get('week_fame', 0):,}`",
-                inline=True
-            )
-
-            embed.add_field(
-                name="⚔️ GvG Points",
-                value=f"`{play.get('pk_match_info', {}).get('battle_score', 0)}`",
-                inline=True
-            )
-
-            # Find guild leadership
             leader_name = "None"
             vice_leader_name = "None"
             leader_pid = "None"
@@ -1153,16 +1121,11 @@ class WWMCog(commands.Cog):
             member_list = members.get('members', {})
             for pid, member in member_list.items():
                 post_list = member.get('post', [])
-                
-                # ACTUAL POST IDs FROM LIVE DATA:
-                # 1 = Guild Master / Leader
-                # 2 = Vice Leader / Deputy
                 if 1 in post_list:
                     leader_pid = pid
                 if 2 in post_list:
                     vice_leader_pid = pid
 
-            # Now fetch actual nicknames using bulk player API
             pids_to_fetch = []
             if leader_pid != "None":
                 pids_to_fetch.append(leader_pid)
@@ -1172,64 +1135,37 @@ class WWMCog(commands.Cog):
             if pids_to_fetch:
                 from utility.wwm import get_bulk_players_info
                 bulk_data = get_bulk_players_info(pids_to_fetch, fields=["base"])
-                
                 if bulk_data and bulk_data.get('code') == 0:
                     players = bulk_data.get('result', {})
-                    
                     if leader_pid in players:
                         leader_base = players[leader_pid].get('base', {})
                         leader_name = leader_base.get('nickname', 'Unknown')
-                    
                     if vice_leader_pid in players:
                         vice_base = players[vice_leader_pid].get('base', {})
                         vice_leader_name = vice_base.get('nickname', 'Unknown')
 
-            # Log leadership info for debug
             logger.debug(f"=== GUILD LEADERSHIP FOUND ===")
             logger.debug(f"Guild Leader: {leader_name} | PID: {leader_pid}")
             logger.debug(f"Vice Leader: {vice_leader_name} | PID: {vice_leader_pid}")
 
-            # Calculate real online players count
             online = 0
             all_pids = list(member_list.keys())
-            
             from utility.wwm import get_bulk_players_info
             bulk_data = get_bulk_players_info(all_pids, fields=["base"])
-            
             if bulk_data and bulk_data.get('code') == 0:
                 players = bulk_data.get('result', {})
-                
                 for pid, player_data in players.items():
                     player_base = player_data.get('base', {})
                     if player_base.get('is_online', 0) == 1:
                         online += 1
 
-            embed.add_field(
-                name="👑 Guild Leader",
-                value=f"`{leader_name}`",
-                inline=True
-            )
+            embed.add_field(name="👑 Guild Leader", value=f"`{leader_name}`", inline=True)
+            embed.add_field(name="⚔️ Vice Leader", value=f"`{vice_leader_name}`", inline=True)
+            embed.add_field(name="🟢 Online Now", value=f"`{online} / {members.get('member_num', 0)}`", inline=True)
 
-            embed.add_field(
-                name="⚔️ Vice Leader",
-                value=f"`{vice_leader_name}`",
-                inline=True
-            )
-
-            embed.add_field(
-                name="🟢 Online Now",
-                value=f"`{online} / {members.get('member_num', 0)}`",
-                inline=True
-            )
-
-            # Guild announcement
             announcement = result.get('gonggao_info', {}).get('msg')
             if announcement and announcement.strip():
-                embed.add_field(
-                    name="📢 Guild Announcement",
-                    value=f"`{announcement}`",
-                    inline=False
-                )
+                embed.add_field(name="📢 Guild Announcement", value=f"`{announcement}`", inline=False)
 
             await interaction.edit_original_response(content=None, embed=embed)
 
@@ -1242,59 +1178,35 @@ class WWMCog(commands.Cog):
             )
             await interaction.followup.send(embed=embed)
 
-
-    @guild_group.command(
-        name="search-name",
-        description="Search for a guild by name (shows up to 5 results to choose from)"
-    )
-    @app_commands.describe(
-        name="The guild name to search for"
-    )
+    @guild_group.command(name="search-name", description="Search for a guild by name (shows up to 5 results to choose from)")
+    @app_commands.describe(name="The guild name to search for")
     async def guild_search_name(self, interaction: discord.Interaction, name: str):
-        """Search for guilds by name and let user select which one to view"""
-        # Defer since this may take time
         await interaction.response.defer()
         
         try:
             if not name or len(name.strip()) == 0:
-                embed = discord.Embed(
-                    title="❌ Invalid Name",
-                    description="Please provide a guild name to search for.",
-                    color=discord.Color.red()
-                )
+                embed = discord.Embed(title="❌ Invalid Name", description="Please provide a guild name to search for.", color=discord.Color.red())
                 await interaction.followup.send(embed=embed)
                 return
             
             search_term = name.strip()
-            
-            # Call the API to search for guilds by name
             clubs = get_club_by_name(search_term, limit=5)
             
             if not clubs or len(clubs) == 0:
-                embed = discord.Embed(
-                    title="❌ No Results",
-                    description=f"No guilds found matching `{search_term}`",
-                    color=discord.Color.red()
-                )
+                embed = discord.Embed(title="❌ No Results", description=f"No guilds found matching `{search_term}`", color=discord.Color.red())
                 await interaction.followup.send(embed=embed)
                 return
             
-            # Fetch brief info for all found clubs (guild names, member counts, apprentice counts)
             club_ids = [club.get('club_id') for club in clubs]
             hostnums = [club.get('hostnum', 10103) for club in clubs]
             guild_infos = get_club_brief_info_batch(club_ids, hostnums) or []
             
-            # Filter out deleted guilds (those not returned by brief info batch API)
-            # Build a mapping of club_id -> brief info from the batch response
             guild_info_map = {}
             for info in guild_infos:
                 info_club_id = info.get('club_id')
-                info_hostnum = info.get('hostnum')
                 if info_club_id:
-                    # Use (club_id, hostnum) as key to handle same id on different hosts
                     guild_info_map[info_club_id] = info
             
-            # Only keep clubs that have valid brief info (not deleted)
             valid_clubs = []
             valid_infos = []
             for club in clubs:
@@ -1304,17 +1216,12 @@ class WWMCog(commands.Cog):
                     valid_infos.append(guild_info_map[cid])
             
             if len(valid_clubs) == 0:
-                embed = discord.Embed(
-                    title="❌ No Active Guilds Found",
-                    description=f"The guilds matching `{search_term}` no longer exist or are inaccessible.",
-                    color=discord.Color.red()
-                )
+                embed = discord.Embed(title="❌ No Active Guilds Found", color=discord.Color.red())
                 await interaction.followup.send(embed=embed)
                 return
             
             removed_count = len(clubs) - len(valid_clubs)
             
-            # Build selection embed with guild names from brief info
             embed = discord.Embed(
                 title="🔍 Guild Search Results",
                 description=f"Found **{len(valid_clubs)}** active guild(s) matching `{search_term}`" +
@@ -1323,7 +1230,6 @@ class WWMCog(commands.Cog):
                 color=discord.Color.og_blurple()
             )
             
-            # List each result with its guild name, member and apprentice counts
             result_lines = []
             for idx, info in enumerate(valid_infos, 1):
                 guild_name = info.get('base', {}).get('name', 'Unknown')
@@ -1331,40 +1237,30 @@ class WWMCog(commands.Cog):
                 apprentice_num = info.get('members', {}).get('apprentice_num', '?')
                 result_lines.append(f"**{idx}.** **{guild_name}** — 👥 `{member_num}` 🎓 `{apprentice_num}`")
             
-            embed.add_field(
-                name="📋 Results",
-                value="\n".join(result_lines),
-                inline=False
-            )
-            
+            embed.add_field(name="📋 Results", value="\n".join(result_lines), inline=False)
             embed.set_footer(text="⏳ This selection will expire in 60 seconds")
             
-            # Create and send the view with selection buttons (pass valid_infos and valid_clubs)
             view = GuildSearchSelectView(valid_clubs, valid_infos, self)
             await interaction.followup.send(embed=embed, view=view)
             
         except Exception as e:
             logger.error(f"Guild name search failed: {str(e)}", exc_info=True)
-            embed = discord.Embed(
-                title="❌ Search Failed",
-                description=f"An error occurred while searching: `{str(e)}`",
-                color=discord.Color.red()
-            )
+            embed = discord.Embed(title="❌ Search Failed", description=f"An error occurred while searching: `{str(e)}`", color=discord.Color.red())
             await interaction.followup.send(embed=embed)
 
-
-    @guild_group.command(name="player-count", description="Display graph of online player count over time")
+    @guild_group.command(name="stats", description="Display graphs of guild statistics over time")
     @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.describe(
-        range="Time range for the graph"
-    )
+    @app_commands.describe(type="Type of graph to display", range="Time range for the graph")
+    @app_commands.choices(type=[
+        app_commands.Choice(name="🟢 Online Players", value="online"),
+        app_commands.Choice(name="🌐 Online by Region Over Time", value="online_by_region"),
+    ])
     @app_commands.choices(range=[
         app_commands.Choice(name="Today (5am GMT+8 to now)", value="today"),
         app_commands.Choice(name="This Week (current schedule week)", value="week"),
         app_commands.Choice(name="Last 7 Days", value="7days"),
     ])
-    async def player_count_graph(self, interaction: discord.Interaction, range: str = "today"):
-        """Show a graph of online player counts over time"""
+    async def guild_stats(self, interaction: discord.Interaction, type: str = "online", range: str = "today"):
         await interaction.response.defer()
         
         try:
@@ -1374,144 +1270,317 @@ class WWMCog(commands.Cog):
             import matplotlib.dates as mdates
             from matplotlib.ticker import MaxNLocator
             import datetime as dt
+            import numpy as np
+            from collections import Counter
+            import json
             
             now_utc = dt.datetime.now(dt.timezone.utc)
-            
-            # Calculate time range based on the 5am GMT+8 schedule day logic
             GMT8_OFFSET = 8 * 3600
             now_ts = int(now_utc.timestamp())
             
             if range == "today":
-                # Start of today's schedule day (5am GMT+8)
                 gmt8_now = now_ts + GMT8_OFFSET
                 gmt8_dt = dt.datetime.fromtimestamp(gmt8_now, tz=dt.timezone.utc)
                 schedule_start = gmt8_dt.replace(hour=5, minute=0, second=0, microsecond=0)
-                # If current time is before 5am, start from previous day
                 if gmt8_dt.hour < 5:
                     schedule_start -= dt.timedelta(days=1)
                 start_ts = int(schedule_start.timestamp() - GMT8_OFFSET)
-                
             elif range == "week":
-                # Start of the current schedule week (Monday 5am GMT+8)
                 gmt8_now = now_ts + GMT8_OFFSET
                 gmt8_dt = dt.datetime.fromtimestamp(gmt8_now, tz=dt.timezone.utc)
                 adjusted = gmt8_dt - dt.timedelta(hours=5)
-                # Monday of that week
                 monday = adjusted - dt.timedelta(days=adjusted.weekday())
                 schedule_start = monday.replace(hour=5, minute=0, second=0, microsecond=0)
                 start_ts = int(schedule_start.timestamp() - GMT8_OFFSET)
-                
-            else:  # 7days
+            else:
                 start_ts = now_ts - 7 * 86400
             
-            # Query data from database
-            with sqlite3.connect(self.db_path) as db:
-                db.row_factory = sqlite3.Row
-                cursor = db.execute(
-                    "SELECT ts, online_count, total_members FROM guild_player_counts WHERE ts >= ? ORDER BY ts ASC",
-                    (start_ts,)
-                )
-                rows = cursor.fetchall()
-            
-            if not rows:
-                await interaction.followup.send("❌ No data available for the selected time range.", ephemeral=True)
-                return
-            
-            # Prepare data
-            timestamps = [row['ts'] for row in rows]
-            online_counts = [row['online_count'] for row in rows]
-            
-            # Convert timestamps to datetime objects
-            dates = [dt.datetime.fromtimestamp(ts, tz=dt.timezone.utc) for ts in timestamps]
-            
-            # Create plot with dark theme
-            plt.style.use('dark_background')
-            fig, ax = plt.subplots(figsize=(12, 6))
-            
-            # Plot the data
-            ax.fill_between(dates, online_counts, alpha=0.3, color='#2ECC71')
-            ax.plot(dates, online_counts, color='#2ECC71', linewidth=2, marker='', linestyle='-')
-            
-            # Also add a rolling average line for smoother view
-            if len(online_counts) >= 10:
-                # Simple moving average (10 data points ~ 10 minutes)
-                window = min(10, len(online_counts) // 3)
-                if window > 1:
-                    import numpy as np
-                    weights = np.ones(window) / window
-                    smoothed = np.convolve(online_counts, weights, mode='valid')
-                    # Adjust dates to match smoothed array
-                    smooth_dates = dates[window-1:]
-                    ax.plot(smooth_dates, smoothed, color='#FFD700', linewidth=1.5, linestyle='--', alpha=0.7, label='Trend')
-            
-            # Style the chart
-            ax.set_facecolor('#1a1a2e')
-            fig.patch.set_facecolor('#1a1a2e')
-            ax.grid(True, alpha=0.2, color='white')
-            
-            ax.set_xlabel('Time (GMT+8)', color='white', fontsize=12)
-            ax.set_ylabel('Online Players', color='white', fontsize=12)
-            
-            # Title with range info
             range_labels = {"today": "Today", "week": "This Week", "7days": "Last 7 Days"}
-            ax.set_title(f'Online Player Count - {range_labels.get(range, "Custom")}', 
-                        color='white', fontsize=14, fontweight='bold')
             
-            # Format x-axis
-            if range == "today":
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
-                ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
-            elif range == "week":
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%a %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
-                ax.xaxis.set_major_locator(mdates.HourLocator(interval=6))
-            else:
-                ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
-                ax.xaxis.set_major_locator(mdates.HourLocator(interval=12))
+            if type == "online":
+                async with aiosqlite.connect(self.db_path) as db:
+                    db.row_factory = aiosqlite.Row
+                    cursor = await db.execute(
+                        "SELECT ts, online_count, total_members FROM guild_player_counts WHERE ts >= ? ORDER BY ts ASC",
+                        (start_ts,)
+                    )
+                    rows = await cursor.fetchall()
+                
+                if not rows:
+                    await interaction.followup.send("❌ No data available for the selected time range.")
+                    return
+                
+                timestamps = [row['ts'] for row in rows]
+                dates = [dt.datetime.fromtimestamp(ts, tz=dt.timezone.utc) for ts in timestamps]
+                y_values = [row['online_count'] for row in rows]
+                
+                plt.style.use('dark_background')
+                fig, ax = plt.subplots(figsize=(12, 6))
+                ax.fill_between(dates, y_values, alpha=0.3, color='#2ECC71')
+                ax.plot(dates, y_values, color='#2ECC71', linewidth=2, marker='', linestyle='-')
+                
+                if len(y_values) >= 10:
+                    window = min(10, len(y_values) // 3)
+                    if window > 1:
+                        weights = np.ones(window) / window
+                        smoothed = np.convolve(y_values, weights, mode='valid')
+                        smooth_dates = dates[window-1:]
+                        ax.plot(smooth_dates, smoothed, color='#FFD700', linewidth=1.5, linestyle='--', alpha=0.7, label='Trend')
+                
+                ax.set_facecolor('#1a1a2e')
+                fig.patch.set_facecolor('#1a1a2e')
+                ax.grid(True, alpha=0.2, color='white')
+                ax.set_xlabel('Time (GMT+8)', color='white', fontsize=12)
+                ax.set_ylabel('Online Players', color='white', fontsize=12)
+                ax.set_title(f'Online Players Over Time - {range_labels.get(range, "Custom")}', color='white', fontsize=14, fontweight='bold')
+                ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+                
+                if range == "today":
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
+                    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+                elif range == "week":
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%a %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
+                    ax.xaxis.set_major_locator(mdates.HourLocator(interval=6))
+                else:
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
+                    ax.xaxis.set_major_locator(mdates.HourLocator(interval=12))
+                
+                plt.xticks(rotation=45, color='white')
+                plt.yticks(color='white')
+                
+                ax.legend(['Online Players', 'Trend'], loc='upper right', facecolor='#1a1a2e', edgecolor='white', labelcolor='white')
+                plt.tight_layout()
+                
+                import io
+                buf = io.BytesIO()
+                plt.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+                buf.seek(0)
+                plt.close()
+                
+                file = discord.File(buf, filename='stats_graph.png')
+                
+                peak_val = max(y_values)
+                avg_val = round(sum(y_values) / len(y_values), 1)
+                
+                embed = discord.Embed(title=":bar_chart: Online Players", color=discord.Color.green())
+                embed.add_field(name=":chart_with_upwards_trend: Peak", value=f"`{peak_val} players`", inline=True)
+                embed.add_field(name=":chart_with_downwards_trend: Average", value=f"`{avg_val} players`", inline=True)
+                embed.add_field(name=":bar_chart: Data Points", value=f"`{len(rows)}`", inline=True)
+                embed.set_image(url="attachment://stats_graph.png")
+                embed.set_footer(text=f"Time range: {range_labels.get(range, 'Custom')} | Data recorded every 1 minute")
+                
+                await interaction.followup.send(embed=embed, file=file)
             
-            plt.xticks(rotation=45, color='white')
-            plt.yticks(color='white')
-            ax.yaxis.set_major_locator(MaxNLocator(integer=True))
-            
-            # Legend
-            ax.legend(['Online Players', 'Trend'], loc='upper right', 
-                     facecolor='#1a1a2e', edgecolor='white', labelcolor='white')
-            
-            # Adjust layout
-            plt.tight_layout()
-            
-            # Save to bytes
-            import io
-            buf = io.BytesIO()
-            plt.savefig(buf, format='png', dpi=150, bbox_inches='tight')
-            buf.seek(0)
-            plt.close()
-            
-            # Send the graph
-            file = discord.File(buf, filename='player_count.png')
-            
-            # Calculate peak info
-            peak_count = max(online_counts)
-            peak_ts = timestamps[online_counts.index(peak_count)]
-            peak_dt = dt.datetime.fromtimestamp(peak_ts, tz=dt.timezone.utc) + dt.timedelta(hours=8)
-            avg_count = round(sum(online_counts) / len(online_counts), 1)
-            
-            embed = discord.Embed(
-                title="📊 Player Count Statistics",
-                color=discord.Color.green()
-            )
-            embed.add_field(name="📈 Peak Online", value=f"`{peak_count} players`", inline=True)
-            embed.add_field(name="📉 Average Online", value=f"`{avg_count} players`", inline=True)
-            embed.add_field(name="📊 Data Points", value=f"`{len(rows)}`", inline=True)
-            embed.set_image(url="attachment://player_count.png")
-            embed.set_footer(text=f"Time range: {range_labels.get(range, 'Custom')} | Data recorded every 1 minute")
-            
-            await interaction.followup.send(embed=embed, file=file)
-            
+            elif type == "online_by_region":
+                async with aiosqlite.connect(self.db_path) as db:
+                    db.row_factory = aiosqlite.Row
+                    cursor = await db.execute(
+                        "SELECT ts, snapshot_json FROM guild_player_snapshots WHERE ts >= ? ORDER BY ts ASC",
+                        (start_ts,)
+                    )
+                    rows = await cursor.fetchall()
+                
+                if not rows:
+                    await interaction.followup.send("❌ No snapshot data available for the selected time range.")
+                    return
+                
+                region_labels = {
+                    "": "Unknown", "CN": "CN (Mainland China)", "AS": "AS (Asia)",
+                    "EU": "EU (Europe)", "HMT": "HMT (HK/Macau/Taiwan)", "JP": "JP (Japan)",
+                    "KR": "KR (South Korea)", "NA": "NA (North America)", "NAW": "NAW (North America West)",
+                    "SA": "SA (South America)", "SEA": "SEA (Southeast Asia)", "OC": "OC (Oceania)", "OTHER": "Other",
+                }
+                
+                timestamps = []
+                region_online_series = defaultdict(list)
+                all_region_tags = set()
+                
+                for row in rows:
+                    snapshot = json.loads(row['snapshot_json'])
+                    ts = row['ts']
+                    timestamps.append(ts)
+                    for p in snapshot:
+                        if p.get('is_online', False):
+                            tag = str(p.get('oversea_tag', ''))
+                            all_region_tags.add(tag)
+                
+                for row in rows:
+                    snapshot = json.loads(row['snapshot_json'])
+                    region_online = Counter()
+                    for p in snapshot:
+                        if p.get('is_online', False):
+                            tag = str(p.get('oversea_tag', ''))
+                            region_online[tag] += 1
+                    for tag in all_region_tags:
+                        region_online_series[tag].append(region_online.get(tag, 0))
+                
+                if not region_online_series:
+                    await interaction.followup.send("❌ No online players found in the selected time range.")
+                    return
+                
+                dates = [dt.datetime.fromtimestamp(ts, tz=dt.timezone.utc) for ts in timestamps]
+                sorted_regions = sorted(region_online_series.keys(), key=lambda tag: sum(region_online_series[tag]), reverse=True)
+                
+                region_colors = ['#3498DB', '#E74C3C', '#2ECC71', '#F39C12', '#9B59B6', '#1ABC9C', '#E67E22', '#ECF0F1', '#7F8C8D', '#2980B9', '#C0392B', '#27AE60', '#D35400']
+                color_map = {tag: region_colors[i % len(region_colors)] for i, tag in enumerate(sorted_regions)}
+                
+                plt.style.use('dark_background')
+                fig, ax = plt.subplots(figsize=(14, 7))
+                ax.set_facecolor('#1a1a2e')
+                fig.patch.set_facecolor('#1a1a2e')
+                ax.grid(True, alpha=0.2, color='white')
+                
+                for tag in sorted_regions:
+                    series = region_online_series[tag]
+                    color = color_map[tag]
+                    label = region_labels.get(tag, f"? {tag}")
+                    ax.fill_between(dates, series, alpha=0.25, color=color)
+                    ax.plot(dates, series, color=color, linewidth=1.5, marker='', linestyle='-', label=label)
+                
+                ax.set_xlabel('Time (GMT+8)', color='white', fontsize=12)
+                ax.set_ylabel('Online Players', color='white', fontsize=12)
+                ax.set_title(f'Online Players by Region Over Time - {range_labels.get(range, "Custom")}', color='white', fontsize=14, fontweight='bold')
+                ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+                
+                if range == "today":
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
+                    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+                elif range == "week":
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%a %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
+                    ax.xaxis.set_major_locator(mdates.HourLocator(interval=6))
+                else:
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
+                    ax.xaxis.set_major_locator(mdates.HourLocator(interval=12))
+                
+                plt.xticks(rotation=45, color='white')
+                plt.yticks(color='white')
+                ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), facecolor='#1a1a2e', edgecolor='white', labelcolor='white', fontsize=9)
+                plt.tight_layout(rect=[0, 0, 0.85, 1])
+                
+                import io
+                buf = io.BytesIO()
+                plt.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+                buf.seek(0)
+                plt.close()
+                
+                file = discord.File(buf, filename='stats_graph.png')
+                
+                embed = discord.Embed(title=":globe_with_meridians: Online Players by Region Over Time", color=discord.Color.og_blurple())
+                embed.add_field(name=":bar_chart: Data Points", value=f"`{len(rows)}`", inline=True)
+                embed.add_field(name=":earth_asia: Regions Tracked", value=f"`{len(sorted_regions)}`", inline=True)
+                embed.set_image(url="attachment://stats_graph.png")
+                embed.set_footer(text=f"Time range: {range_labels.get(range, 'Custom')} | Data recorded every 1 minute")
+                
+                await interaction.followup.send(embed=embed, file=file)
+        
         except ImportError as e:
             await interaction.followup.send(f"❌ Missing dependency: `{e}`. Please ensure matplotlib and numpy are installed.")
         except Exception as e:
-            logger.error(f"Failed to generate player count graph: {str(e)}", exc_info=True)
+            logger.error(f"Failed to generate stats graph: {str(e)}", exc_info=True)
             await interaction.followup.send(f"❌ Failed to generate graph: `{str(e)}`")
+
+    @guild_group.command(name="region", description="Sort and display guild members grouped by region (admin only)")
+    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.describe(name="Optional guild name to search for (leave empty to use our guild)")
+    async def guild_region(self, interaction: discord.Interaction, name: str = None):
+        if name:
+            await interaction.response.defer()
+            try:
+                search_term = name.strip()
+                if not search_term:
+                    await interaction.followup.send("❌ Please provide a valid guild name")
+                    return
+                clubs = get_club_by_name(search_term, limit=5)
+                if not clubs or len(clubs) == 0:
+                    embed = discord.Embed(title="❌ No Results", color=discord.Color.red())
+                    await interaction.followup.send(embed=embed)
+                    return
+                club_ids = [club.get('club_id') for club in clubs]
+                hostnums = [club.get('hostnum', 10103) for club in clubs]
+                guild_infos = get_club_brief_info_batch(club_ids, hostnums) or []
+                guild_info_map = {}
+                for info in guild_infos:
+                    info_club_id = info.get('club_id')
+                    if info_club_id:
+                        guild_info_map[info_club_id] = info
+                valid_clubs = []
+                valid_infos = []
+                for club in clubs:
+                    cid = club.get('club_id')
+                    if cid in guild_info_map:
+                        valid_clubs.append(club)
+                        valid_infos.append(guild_info_map[cid])
+                if len(valid_clubs) == 0:
+                    embed = discord.Embed(title="❌ No Active Guilds Found", color=discord.Color.red())
+                    await interaction.followup.send(embed=embed)
+                    return
+                embed = discord.Embed(title="🔍 Guild Search for Region View", color=discord.Color.og_blurple())
+                result_lines = []
+                for idx, info in enumerate(valid_infos, 1):
+                    guild_name = info.get('base', {}).get('name', 'Unknown')
+                    member_num = info.get('members', {}).get('member_num', '?')
+                    apprentice_num = info.get('members', {}).get('apprentice_num', '?')
+                    result_lines.append(f"**{idx}.** **{guild_name}** — 👥 `{member_num}` 🎓 `{apprentice_num}`")
+                embed.add_field(name="📋 Results", value="\n".join(result_lines), inline=False)
+                embed.set_footer(text="⏳ This selection will expire in 60 seconds")
+                view = GuildRegionSelectView(valid_clubs, valid_infos, self)
+                await interaction.followup.send(embed=embed, view=view)
+            except Exception as e:
+                logger.error(f"Guild region search failed: {str(e)}", exc_info=True)
+                embed = discord.Embed(title="❌ Search Failed", color=discord.Color.red())
+                await interaction.followup.send(embed=embed)
+            return
+
+        await interaction.response.defer()
+        try:
+            guild_data = get_full_guild_info(CLUB_ID)
+            if not guild_data or 'result' not in guild_data:
+                await interaction.followup.send("❌ Failed to fetch guild data")
+                return
+            result = guild_data['result']
+            members = result.get('members', {}).get('members', {})
+            all_uids = list(members.keys())
+            if not all_uids:
+                await interaction.followup.send("❌ No members found in guild")
+                return
+            bulk_data = get_bulk_players_info(all_uids, fields=["base"])
+            if not bulk_data or bulk_data.get('code') != 0:
+                await interaction.followup.send("❌ Failed to fetch player info")
+                return
+            players_result = bulk_data.get('result', {})
+            tag_map = {"": "Unknown", "CN": "🇨🇳 CN (Mainland China)", "AS": "🌏 AS (Asia)", "EU": "🇪🇺 EU (Europe)", "HMT": "🇭🇰 HMT (Hong Kong/Macau/Taiwan)", "JP": "🇯🇵 JP (Japan)", "KR": "🇰🇷 KR (South Korea)", "NA": "🇺🇸 NA (North America)", "NAW": "🌎 NAW (North America West)", "SA": "🌎 SA (South America)", "SEA": "🌏 SEA (Southeast Asia)", "OC": "🌏 OC (Oceania)", "OTHER": "🌍 Other"}
+            def get_region_label(tag): return tag_map.get(tag, f"❓ {tag}")
+            regions = defaultdict(list)
+            for pid, player_data in players_result.items():
+                base = player_data.get('base', {})
+                regions[str(base.get('oversea_tag', ''))].append({
+                    'pid': pid, 'number_id': str(base.get('number_id', '')), 'nickname': base.get('nickname', 'Unknown'),
+                    'level': base.get('level', 0), 'is_online': base.get('is_online', 0) == 1, 'oversea_tag': str(base.get('oversea_tag', '')),
+                })
+            guild_name = result.get('base', {}).get('name', 'Our Guild')
+            total_members = sum(len(m) for m in regions.values())
+            sorted_tags = sorted(regions.keys(), key=lambda t: get_region_label(t))
+            embed = discord.Embed(title=f"🌍 {guild_name} — Members by Region", color=discord.Color.og_blurple())
+            embed.description = f"**Total members:** {total_members}  |  **Regions found:** {len(sorted_tags)}" + "\n*Click a region button below to see full list*"
+            for tag in sorted_tags:
+                member_list = regions[tag]
+                sorted_members = sorted(member_list, key=lambda m: (not m['is_online'], m['nickname'].lower()))
+                online_count = sum(1 for m in member_list if m['is_online'])
+                region_label = get_region_label(tag)
+                preview = sorted_members[:5]
+                remaining = len(sorted_members) - 5
+                lines = []
+                for m in preview:
+                    lines.append(f"{'🟢' if m['is_online'] else '⚫'} Lv{m['level']:<3} | {m['nickname']:<25} | ID: {m.get('number_id', 'N/A')}")
+                preview_text = "\n".join(lines)
+                if remaining > 0:
+                    preview_text += f"\n... and {remaining} more"
+                embed.add_field(name=f"{region_label}  ({len(member_list)} members, 🟢 {online_count} online)", value=f"```{preview_text}```", inline=False)
+            view = GuildRegionSummaryView(guild_name, regions, tag_map, self)
+            await interaction.followup.send(embed=embed, view=view)
+        except Exception as e:
+            logger.error(f"Guild region command failed: {str(e)}", exc_info=True)
+            await interaction.followup.send(f"❌ Failed to display guild regions: `{str(e)}`")
 
 
 async def setup(bot: commands.Bot):

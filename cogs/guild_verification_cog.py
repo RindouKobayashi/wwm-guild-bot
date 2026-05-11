@@ -1,6 +1,6 @@
 import discord
 import settings
-import sqlite3
+import aiosqlite
 import random
 from discord.ext import commands
 from discord import app_commands, ButtonStyle
@@ -14,114 +14,113 @@ DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 class GuildVerificationCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.init_database()
+
+    async def cog_load(self):
+        await self.init_database()
         self.load_config()
-        
-        # Start background sync task
         self.guild_member_sync_task.start()
 
-    def init_database(self):
+    async def init_database(self):
         """Initialize database tables"""
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        
-        # Configuration table
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS verification_config (
-                key TEXT PRIMARY KEY,
-                value TEXT NOT NULL
-            )
-        ''')
-        
-        # Verification requests history
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS verification_requests (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                username TEXT NOT NULL,
-                character_uid TEXT NOT NULL,
-                status TEXT NOT NULL,
-                admin_id INTEGER,
-                reason TEXT,
-                message_id INTEGER,
-                created_at TIMESTAMP NOT NULL,
-                processed_at TIMESTAMP,
-                verification_code TEXT
-            )
-        ''')
-        
-        # Add verification_code column if table already exists
-        try:
-            c.execute("ALTER TABLE verification_requests ADD COLUMN verification_code TEXT")
-            conn.commit()
-        except:
-            # Column already exists
-            pass
-        
-        # Approved members registry
-        c.execute('''
-            CREATE TABLE IF NOT EXISTS verified_members (
-                user_id INTEGER PRIMARY KEY,
-                username TEXT NOT NULL,
-                character_uid TEXT NOT NULL,
-                player_pid TEXT,
-                verified_at TIMESTAMP NOT NULL,
-                verified_by INTEGER NOT NULL
-            )
-        ''')
-        
-        conn.commit()
-        
-        # Migration: add player_pid column if it doesn't exist (for databases created before this column was added)
-        try:
-            c.execute("ALTER TABLE verified_members ADD COLUMN player_pid TEXT")
-            conn.commit()
-            logger.info("✅ Added player_pid column to verified_members table")
-        except:
-            pass  # Column already exists
-        
-        # Migration: resolve existing records without player_pid
-        c.execute("SELECT rowid, user_id, character_uid FROM verified_members WHERE player_pid IS NULL")
-        rows_to_migrate = c.fetchall()
-        if rows_to_migrate:
-            logger.info(f"⚙️ Migrating {len(rows_to_migrate)} existing verified member records to resolve PIDs...")
-            for row in rows_to_migrate:
-                rowid, user_id, character_uid = row
-                try:
-                    player_data = get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
-                    if player_data and 'result' in player_data:
-                        player = player_data['result']
-                        pid = player.get('id')
-                        if pid:
-                            c.execute("UPDATE verified_members SET player_pid = ? WHERE rowid = ?", (str(pid), rowid))
-                            logger.debug(f"  ✅ Resolved {character_uid} -> PID {pid}")
+        async with aiosqlite.connect(DB_PATH) as conn:
+            # Configuration table
+            await conn.execute('''
+                CREATE TABLE IF NOT EXISTS verification_config (
+                    key TEXT PRIMARY KEY,
+                    value TEXT NOT NULL
+                )
+            ''')
+            
+            # Verification requests history
+            await conn.execute('''
+                CREATE TABLE IF NOT EXISTS verification_requests (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    user_id INTEGER NOT NULL,
+                    username TEXT NOT NULL,
+                    character_uid TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    admin_id INTEGER,
+                    reason TEXT,
+                    message_id INTEGER,
+                    created_at TIMESTAMP NOT NULL,
+                    processed_at TIMESTAMP,
+                    verification_code TEXT
+                )
+            ''')
+            
+            # Add verification_code column if table already exists
+            try:
+                await conn.execute("ALTER TABLE verification_requests ADD COLUMN verification_code TEXT")
+            except:
+                pass
+            
+            # Approved members registry
+            await conn.execute('''
+                CREATE TABLE IF NOT EXISTS verified_members (
+                    user_id INTEGER PRIMARY KEY,
+                    username TEXT NOT NULL,
+                    character_uid TEXT NOT NULL,
+                    player_pid TEXT,
+                    verified_at TIMESTAMP NOT NULL,
+                    verified_by INTEGER NOT NULL
+                )
+            ''')
+            
+            await conn.commit()
+            
+            # Migration: add player_pid column if it doesn't exist
+            try:
+                await conn.execute("ALTER TABLE verified_members ADD COLUMN player_pid TEXT")
+                await conn.commit()
+                logger.info("✅ Added player_pid column to verified_members table")
+            except:
+                pass
+            
+            # Migration: resolve existing records without player_pid
+            cursor = await conn.execute("SELECT rowid, user_id, character_uid FROM verified_members WHERE player_pid IS NULL")
+            rows_to_migrate = await cursor.fetchall()
+            if rows_to_migrate:
+                logger.info(f"⚙️ Migrating {len(rows_to_migrate)} existing verified member records to resolve PIDs...")
+                for row in rows_to_migrate:
+                    rowid, user_id, character_uid = row
+                    try:
+                        player_data = get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+                        if player_data and 'result' in player_data:
+                            player = player_data['result']
+                            pid = player.get('id')
+                            if pid:
+                                await conn.execute("UPDATE verified_members SET player_pid = ? WHERE rowid = ?", (str(pid), rowid))
+                                logger.debug(f"  ✅ Resolved {character_uid} -> PID {pid}")
+                            else:
+                                logger.warning(f"  ❌ Could not resolve PID for {character_uid} (user_id: {user_id})")
                         else:
-                            logger.warning(f"  ❌ Could not resolve PID for {character_uid} (user_id: {user_id})")
-                    else:
-                        logger.warning(f"  ❌ Failed to fetch player data for {character_uid} (user_id: {user_id})")
-                except Exception as e:
-                    logger.error(f"  ❌ Error migrating {character_uid} (user_id: {user_id}): {e}")
-            conn.commit()
-            logger.info(f"✅ Migration complete: {len(rows_to_migrate)} records processed")
+                            logger.warning(f"  ❌ Failed to fetch player data for {character_uid} (user_id: {user_id})")
+                    except Exception as e:
+                        logger.error(f"  ❌ Error migrating {character_uid} (user_id: {user_id}): {e}")
+                await conn.commit()
+                logger.info(f"✅ Migration complete: {len(rows_to_migrate)} records processed")
         
-        conn.close()
         logger.info("Guild Verification database initialized")
     
     def load_config(self):
         """Load configuration from database into runtime"""
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT key, value FROM verification_config")
-        config = dict(c.fetchall())
-        conn.close()
+        import asyncio
         
-        for key, value in config.items():
-            if value.isdigit():
-                setattr(settings, key, int(value))
-            else:
-                setattr(settings, key, value)
+        async def _load():
+            async with aiosqlite.connect(DB_PATH) as conn:
+                cursor = await conn.execute("SELECT key, value FROM verification_config")
+                rows = await cursor.fetchall()
+                config = dict(rows)
+            
+            for key, value in config.items():
+                if value.isdigit():
+                    setattr(settings, key, int(value))
+                else:
+                    setattr(settings, key, value)
+            
+            logger.info(f"Loaded {len(config)} configuration entries from database")
         
-        logger.info(f"Loaded {len(config)} configuration entries from database")
+        asyncio.get_event_loop().create_task(_load())
 
     @commands.Cog.listener()
     async def on_ready(self):
@@ -136,24 +135,20 @@ class GuildVerificationCog(commands.Cog):
     async def guild_member_sync_task(self):
         """Background task to sync verified members guild membership status every minute"""
         
-        # Only run if roles and server ID are configured
         if not hasattr(settings, 'GUILD_MEMBER_ROLE_ID') or not hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID') or not hasattr(settings, 'DISCORD_SERVER_ID'):
             return
             
         try:
             # Get all verified members from database (include player_pid)
-            conn = sqlite3.connect(DB_PATH)
-            c = conn.cursor()
-            c.execute("SELECT user_id, character_uid, player_pid FROM verified_members")
-            verified_members = c.fetchall()
-            conn.close()
+            async with aiosqlite.connect(DB_PATH) as conn:
+                cursor = await conn.execute("SELECT user_id, character_uid, player_pid FROM verified_members")
+                verified_members = await cursor.fetchall()
             
             if not verified_members:
                 return
                 
             logger.debug(f"Running guild membership sync for {len(verified_members)} verified members")
             
-            # Get all pids for bulk API call - use player_pid, NOT character_uid
             all_pids = []
             pid_to_userid_map = {}
             
@@ -168,7 +163,6 @@ class GuildVerificationCog(commands.Cog):
                 logger.warning("No resolved player PIDs available for membership sync")
                 return
                 
-            # Bulk fetch club membership status
             from utility.wwm import get_bulk_players_info
             bulk_data = get_bulk_players_info(all_pids, fields=["club"])
             
@@ -178,7 +172,6 @@ class GuildVerificationCog(commands.Cog):
                 
             players = bulk_data.get('result', {})
             
-            # Find the correct guild using DISCORD_SERVER_ID
             guild = self.bot.get_guild(settings.DISCORD_SERVER_ID)
             if not guild:
                 logger.warning(f"Could not find guild with ID {settings.DISCORD_SERVER_ID} for membership sync")
@@ -191,31 +184,25 @@ class GuildVerificationCog(commands.Cog):
                 logger.warning("Guild or community role not found for membership sync")
                 return
                 
-            # Process each member - iterate by PID (which matches API response keys)
             for pid, player_data in players.items():
                 if pid not in pid_to_userid_map:
                     continue
                     
                 user_id = pid_to_userid_map[pid]
                 
-                # Get current guild membership
                 club_data = player_data.get('club', {})
                 club_id = club_data.get('club_id')
                 is_current_guild_member = (club_id == CLUB_ID)
                 
-                # Find the guild member
                 member = guild.get_member(user_id)
                 
                 if not member:
                     continue
                     
-                # Check current roles
                 has_guild_role = guild_role in member.roles
                 has_community_role = community_role in member.roles
                 
-                # Update roles if mismatch
                 if is_current_guild_member:
-                    # Should have guild role, should NOT have community role
                     if not has_guild_role:
                         await member.add_roles(guild_role)
                         logger.info(f"Added guild role to {member} - joined guild")
@@ -223,7 +210,6 @@ class GuildVerificationCog(commands.Cog):
                         await member.remove_roles(community_role)
                         logger.info(f"Removed community role from {member} - joined guild")
                 else:
-                    # Should NOT have guild role, should have community role
                     if has_guild_role:
                         await member.remove_roles(guild_role)
                         logger.info(f"Removed guild role from {member} - left guild")
@@ -254,19 +240,15 @@ class GuildVerificationCog(commands.Cog):
             )
             return
         
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        
-        result = None
-        if member:
-            c.execute("SELECT user_id, username, character_uid, verified_at, verified_by FROM verified_members WHERE user_id = ?", (member.id,))
-            result = c.fetchone()
-        
-        if character_uid and not result:
-            c.execute("SELECT user_id, username, character_uid, verified_at, verified_by FROM verified_members WHERE character_uid = ?", (character_uid.strip(),))
-            result = c.fetchone()
-        
-        conn.close()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            result = None
+            if member:
+                cursor = await conn.execute("SELECT user_id, username, character_uid, verified_at, verified_by FROM verified_members WHERE user_id = ?", (member.id,))
+                result = await cursor.fetchone()
+            
+            if character_uid and not result:
+                cursor = await conn.execute("SELECT user_id, username, character_uid, verified_at, verified_by FROM verified_members WHERE character_uid = ?", (character_uid.strip(),))
+                result = await cursor.fetchone()
         
         if not result:
             embed = discord.Embed(
@@ -282,7 +264,6 @@ class GuildVerificationCog(commands.Cog):
             
             embed.add_field(name="Discord User", value=f"<@{result[0]}>\n`{result[1]}`", inline=True)
             embed.add_field(name="Character UID", value=f"`{result[2]}`", inline=True)
-            # Convert stored UTC timestamp properly
             from datetime import timezone
             verified_dt = datetime.fromisoformat(result[3]).replace(tzinfo=timezone.utc)
             verified_timestamp = int(verified_dt.timestamp())
@@ -302,14 +283,13 @@ class GuildVerificationCog(commands.Cog):
         
         await interaction.response.defer(ephemeral=False)
         
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT COUNT(*) FROM verified_members")
-        total_count = c.fetchone()[0]
-        
-        c.execute("SELECT user_id, username, character_uid, verified_at FROM verified_members ORDER BY verified_at DESC")
-        all_members = c.fetchall()
-        conn.close()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute("SELECT COUNT(*) FROM verified_members")
+            total_count_row = await cursor.fetchone()
+            total_count = total_count_row[0]
+            
+            cursor = await conn.execute("SELECT user_id, username, character_uid, verified_at FROM verified_members ORDER BY verified_at DESC")
+            all_members = await cursor.fetchall()
         
         if total_count == 0:
             embed = discord.Embed(
@@ -338,7 +318,6 @@ class GuildVerificationCog(commands.Cog):
         """Admin command to manually add existing members to verified database"""
         await interaction.response.defer(ephemeral=True)
         
-        # Check live guild membership status and resolve PID
         is_guild_member = False
         player_pid = ''
         try:
@@ -356,27 +335,21 @@ class GuildVerificationCog(commands.Cog):
         except:
             pass
         
-        # Add to verified members database (with player_pid)
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await conn.execute('''
+                REPLACE INTO verified_members
+                (user_id, username, character_uid, player_pid, verified_at, verified_by)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                member.id,
+                str(member),
+                character_uid.strip(),
+                player_pid,
+                datetime.utcnow(),
+                interaction.user.id
+            ))
+            await conn.commit()
         
-        c.execute('''
-            REPLACE INTO verified_members
-            (user_id, username, character_uid, player_pid, verified_at, verified_by)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (
-            member.id,
-            str(member),
-            character_uid.strip(),
-            player_pid,
-            datetime.utcnow(),
-            interaction.user.id
-        ))
-        
-        conn.commit()
-        conn.close()
-        
-        # Assign correct role automatically
         guild_role = None
         community_role = None
         
@@ -385,7 +358,6 @@ class GuildVerificationCog(commands.Cog):
         if hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID'):
             community_role = interaction.guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
         
-        # Always give exactly one role
         if is_guild_member and guild_role:
             await member.add_roles(guild_role)
             if community_role and community_role in member.roles:
@@ -404,7 +376,6 @@ class GuildVerificationCog(commands.Cog):
         
         await interaction.followup.send(embed=embed, ephemeral=True)
         
-        # Send notification to binding log channel
         try:
             log_channel = interaction.guild.get_channel(1443104374837608529)
             if log_channel:
@@ -428,12 +399,9 @@ class GuildVerificationCog(commands.Cog):
         """Admin command to start the verification setup wizard"""
         logger.info(f"Verification setup wizard started by {interaction.user}")
         
-        # Check if existing configuration exists
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("SELECT value FROM verification_config WHERE key = 'GUILD_VERIFICATION_CHANNEL_ID'")
-        existing_config = c.fetchone()
-        conn.close()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute("SELECT value FROM verification_config WHERE key = 'GUILD_VERIFICATION_CHANNEL_ID'")
+            existing_config = await cursor.fetchone()
         
         if existing_config:
             embed = discord.Embed(
@@ -469,7 +437,7 @@ class BoundAccountsPaginationView(discord.ui.View):
         self.current_page = current_page
         self.items_per_page = 10
         self.total_pages = (len(all_members) + self.items_per_page - 1) // self.items_per_page
-        self.player_cache = {}  # Global cache for all fetched players - persists across pages
+        self.player_cache = {}
         self.update_button_states()
     
     def update_button_states(self):
@@ -489,18 +457,15 @@ class BoundAccountsPaginationView(discord.ui.View):
 
         if self.show_values:
             try:
-                # First check what we already have in cache
                 missing_uids = []
                 for member in page_members:
                     number_id = member[2]
                     if number_id not in self.player_cache:
                         missing_uids.append(number_id)
                 
-                # Only fetch what we don't already have
                 if missing_uids:
                     logger.debug(f"Fetching {len(missing_uids)} missing players, {len(self.player_cache)} already cached")
                     
-                    # Step 1: Resolve Number UIDs to internal PIDs
                     pid_list = []
                     uid_to_pid_map = {}
                     
@@ -524,13 +489,11 @@ class BoundAccountsPaginationView(discord.ui.View):
                         except:
                             continue
                     
-                    # Step 2: Bulk fetch ALL resolved players in ONE SINGLE API CALL
                     from utility.wwm import get_bulk_players_info
                     bulk_data = get_bulk_players_info(pid_list, fields=["base"])
                     
                     if bulk_data and bulk_data.get('code') == 0:
                         bulk_players = bulk_data.get('result', {})
-                        # Add to permanent cache
                         for pid, player_data in bulk_players.items():
                             if pid in uid_to_pid_map:
                                 number_id = uid_to_pid_map[pid]
@@ -604,14 +567,10 @@ class ExistingConfigCheckView(discord.ui.View):
     
     @discord.ui.button(label="Replace Existing", style=ButtonStyle.danger, emoji="🔄")
     async def replace_config(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Delete old configuration
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("DELETE FROM verification_config")
-        conn.commit()
-        conn.close()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await conn.execute("DELETE FROM verification_config")
+            await conn.commit()
         
-        # Clear runtime settings
         for key in ['GUILD_VERIFICATION_CHANNEL_ID', 'GUILD_ADMIN_CHANNEL_ID', 'GUILD_MEMBER_ROLE_ID', 'GUILD_ADMIN_ROLE_ID', 'VERIFICATION_MESSAGE_ID']:
             if hasattr(settings, key):
                 delattr(settings, key)
@@ -683,7 +642,6 @@ class Step1_ChannelSelect(discord.ui.View):
         channel_select.callback = self.channel_selected
         self.add_item(channel_select)
         
-        # Pagination buttons
         if page > 0:
             prev_btn = discord.ui.Button(style=ButtonStyle.secondary, label="← Previous", custom_id="prev_page")
             prev_btn.callback = self.prev_page
@@ -741,7 +699,6 @@ class Step2_AdminChannelSelect(discord.ui.View):
         channel_select.callback = self.channel_selected
         self.add_item(channel_select)
         
-        # Pagination buttons
         if page > 0:
             prev_btn = discord.ui.Button(style=ButtonStyle.secondary, label="← Previous", custom_id="prev_page")
             prev_btn.callback = self.prev_page
@@ -799,7 +756,6 @@ class Step3_MemberRoleSelect(discord.ui.View):
         role_select.callback = self.role_selected
         self.add_item(role_select)
         
-        # Pagination buttons
         if page > 0:
             prev_btn = discord.ui.Button(style=ButtonStyle.secondary, label="← Previous", custom_id="prev_page")
             prev_btn.callback = self.prev_page
@@ -858,7 +814,6 @@ class Step4_CommunityRoleSelect(discord.ui.View):
         role_select.callback = self.role_selected
         self.add_item(role_select)
         
-        # Pagination buttons
         if page > 0:
             prev_btn = discord.ui.Button(style=ButtonStyle.secondary, label="← Previous", custom_id="prev_page")
             prev_btn.callback = self.prev_page
@@ -916,7 +871,6 @@ class Step5_AdminRoleSelect(discord.ui.View):
         role_select.callback = self.role_selected
         self.add_item(role_select)
         
-        # Pagination buttons
         if page > 0:
             prev_btn = discord.ui.Button(style=ButtonStyle.secondary, label="← Previous", custom_id="prev_page")
             prev_btn.callback = self.prev_page
@@ -936,16 +890,11 @@ class Step5_AdminRoleSelect(discord.ui.View):
     async def role_selected(self, interaction: discord.Interaction):
         self.config['GUILD_ADMIN_ROLE_ID'] = int(interaction.data['values'][0])
         
-        # Save configuration to database
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        
-        for key, value in self.config.items():
-            c.execute("REPLACE INTO verification_config (key, value) VALUES (?, ?)", (key, str(value)))
-            setattr(settings, key, value)
-        
-        conn.commit()
-        conn.close()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            for key, value in self.config.items():
+                await conn.execute("REPLACE INTO verification_config (key, value) VALUES (?, ?)", (key, str(value)))
+                setattr(settings, key, value)
+            await conn.commit()
         
         embed = discord.Embed(
             title="✅ Setup Complete!",
@@ -986,12 +935,9 @@ class FinalSetupView(discord.ui.View):
             view=VerificationStartView()
         )
         
-        # Save message ID to database for persistence
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        c.execute("REPLACE INTO verification_config (key, value) VALUES (?, ?)", ("VERIFICATION_MESSAGE_ID", str(message.id)))
-        conn.commit()
-        conn.close()
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await conn.execute("REPLACE INTO verification_config (key, value) VALUES (?, ?)", ("VERIFICATION_MESSAGE_ID", str(message.id)))
+            await conn.commit()
         
         final_embed = discord.Embed(
             title="✅ System Successfully Activated!",
@@ -1029,7 +975,6 @@ class CharacterUIDModal(discord.ui.Modal, title="Bind Game Account"):
     async def on_submit(self, interaction: discord.Interaction):
         uid = self.character_uid.value.strip()
         
-        # Validate Character UID format
         if not uid.isdigit() or len(uid) != 10:
             await interaction.response.send_message(
                 "❌ **Invalid Character UID**\n\nCharacter UID must be exactly 10 numbers.\nPlease try again with a valid UID.",
@@ -1040,7 +985,6 @@ class CharacterUIDModal(discord.ui.Modal, title="Bind Game Account"):
         await interaction.response.defer(ephemeral=True)
         
         try:
-            # Fetch player info from API
             player_data = get_player_info(uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
             
             if not player_data or 'result' not in player_data:
@@ -1054,7 +998,6 @@ class CharacterUIDModal(discord.ui.Modal, title="Bind Game Account"):
             nickname = player.get('base', {}).get('nickname', 'Unknown')
             level = player.get('base', {}).get('level', 0)
             
-            # Check guild membership
             is_guild_member = False
             player_pid = player.get('id')
             
@@ -1065,7 +1008,6 @@ class CharacterUIDModal(discord.ui.Modal, title="Bind Game Account"):
                     club_id = player_club_data.get('club', {}).get('club_id')
                     is_guild_member = (club_id == CLUB_ID)
             
-            # Show confirmation embed
             embed = discord.Embed(
                 title="✅ Character Found",
                 color=discord.Color.green() if is_guild_member else discord.Color.red()
@@ -1162,7 +1104,6 @@ class VerifySignatureView(discord.ui.View):
         await interaction.response.defer(ephemeral=True)
         
         try:
-            # Re-fetch live player profile
             player_data = get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
             
             if not player_data or 'result' not in player_data:
@@ -1173,17 +1114,13 @@ class VerifySignatureView(discord.ui.View):
                 return
             
             player = player_data.get('result', {})
-            # Signature is stored under name_card field NOT base
             name_card = player.get('name_card', {})
             signature = name_card.get('sign', '')
             
-            # Check if verification code exists anywhere in signature
             if self.verify_code in str(signature):
-                # ✅ Verification successful!
                 target_user = interaction.guild.get_member(self.user_id)
                 
                 if target_user:
-                    # Assign correct role - always exactly one
                     guild_role = None
                     community_role = None
                     
@@ -1201,24 +1138,21 @@ class VerifySignatureView(discord.ui.View):
                         if guild_role and guild_role in target_user.roles:
                             await target_user.remove_roles(guild_role)
                 
-                # Add to verified members database (with player_pid)
                 player_pid = str(player.get('id', ''))
-                conn = sqlite3.connect(DB_PATH)
-                c = conn.cursor()
-                c.execute('''
-                    REPLACE INTO verified_members
-                    (user_id, username, character_uid, player_pid, verified_at, verified_by)
-                    VALUES (?, ?, ?, ?, ?, ?)
-                ''', (
-                    self.user_id,
-                    self.username,
-                    self.character_uid,
-                    player_pid,
-                    datetime.utcnow(),
-                    self.user_id # Verified automatically by user themselves
-                ))
-                conn.commit()
-                conn.close()
+                async with aiosqlite.connect(DB_PATH) as conn:
+                    await conn.execute('''
+                        REPLACE INTO verified_members
+                        (user_id, username, character_uid, player_pid, verified_at, verified_by)
+                        VALUES (?, ?, ?, ?, ?, ?)
+                    ''', (
+                        self.user_id,
+                        self.username,
+                        self.character_uid,
+                        player_pid,
+                        datetime.utcnow(),
+                        self.user_id
+                    ))
+                    await conn.commit()
                 
                 await interaction.followup.send(
                     "✅ **Verification Successful!**\n\n"
@@ -1228,7 +1162,6 @@ class VerifySignatureView(discord.ui.View):
                     ephemeral=True
                 )
                 
-                # Send notification to binding log channel
                 try:
                     log_channel = interaction.guild.get_channel(1443104374837608529)
                     if log_channel:
@@ -1247,7 +1180,6 @@ class VerifySignatureView(discord.ui.View):
                 logger.info(f"Automatic verification completed for user {self.username} | Character UID: {self.character_uid}")
             
             else:
-                # ❌ Code not found
                 signature_preview = str(signature).strip() if signature else "(empty signature)"
                 if len(signature_preview) > 500:
                     signature_preview = signature_preview[:500] + "... (truncated)"
@@ -1283,9 +1215,7 @@ class VerificationAdminView(discord.ui.View):
         emoji="✅"
     )
     async def approve_verification(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Fix for persistent view restoration: extract user_id from embed if not in instance
         if not self.user_id:
-            # Extract from message embed fields
             for field in interaction.message.embeds[0].fields:
                 if field.name == "User ID":
                     self.user_id = int(field.value.strip('`'))
@@ -1309,13 +1239,11 @@ class VerificationAdminView(discord.ui.View):
             )
             return
         
-        # Get is_member status from embed
         is_member = False
         for field in interaction.message.embeds[0].fields:
             if field.name == "Guild Member":
                 is_member = ("✅" in field.value)
         
-        # Assign correct role - always exactly one
         guild_role = None
         community_role = None
         
@@ -1335,18 +1263,6 @@ class VerificationAdminView(discord.ui.View):
                 await target_user.remove_roles(guild_role)
             logger.info(f"Community member role assigned to {target_user} by {interaction.user}")
         
-        # Update database
-        conn = sqlite3.connect(DB_PATH)
-        c = conn.cursor()
-        
-        # Update request status
-        c.execute('''
-            UPDATE verification_requests
-            SET status = 'approved', admin_id = ?, processed_at = ?
-            WHERE user_id = ? AND status = 'pending'
-        ''', (interaction.user.id, datetime.utcnow(), self.user_id))
-        
-        # Resolve player PID for this character UID
         player_pid = ''
         try:
             pid_data = get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
@@ -1355,24 +1271,27 @@ class VerificationAdminView(discord.ui.View):
         except Exception as e:
             logger.warning(f"Failed to resolve PID for admin approval of {self.character_uid}: {e}")
         
-        # Add to verified members registry
-        c.execute('''
-            REPLACE INTO verified_members
-            (user_id, username, character_uid, player_pid, verified_at, verified_by)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (
-            self.user_id,
-            self.username,
-            self.character_uid,
-            player_pid,
-            datetime.utcnow(),
-            interaction.user.id
-        ))
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await conn.execute('''
+                UPDATE verification_requests
+                SET status = 'approved', admin_id = ?, processed_at = ?
+                WHERE user_id = ? AND status = 'pending'
+            ''', (interaction.user.id, datetime.utcnow(), self.user_id))
+            
+            await conn.execute('''
+                REPLACE INTO verified_members
+                (user_id, username, character_uid, player_pid, verified_at, verified_by)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (
+                self.user_id,
+                self.username,
+                self.character_uid,
+                player_pid,
+                datetime.utcnow(),
+                interaction.user.id
+            ))
+            await conn.commit()
         
-        conn.commit()
-        conn.close()
-        
-        # Update original message
         embed = interaction.message.embeds[0]
         embed.color = discord.Color.green()
         embed.add_field(name="Status", value=f"✅ **APPROVED** by {interaction.user.mention}", inline=False)
@@ -1380,7 +1299,6 @@ class VerificationAdminView(discord.ui.View):
         await interaction.message.edit(embed=embed, view=None)
         await interaction.response.send_message("✅ Verification approved and role assigned!", ephemeral=True)
         
-        # Send DM notification to user
         try:
             await target_user.send(
                 "✅ **Your account binding has been approved!**\n\n"
@@ -1396,7 +1314,6 @@ class VerificationAdminView(discord.ui.View):
         emoji="❌"
     )
     async def reject_verification(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # Check if user has admin role
         admin_role = interaction.guild.get_role(settings.GUILD_ADMIN_ROLE_ID)
         if not admin_role or admin_role not in interaction.user.roles:
             await interaction.response.send_message(
@@ -1405,7 +1322,6 @@ class VerificationAdminView(discord.ui.View):
             )
             return
         
-        # Open reject reason modal
         await interaction.response.send_modal(RejectReasonModal(
             user_id=self.user_id,
             username=self.username,
@@ -1433,10 +1349,8 @@ class RejectReasonModal(discord.ui.Modal, title="Reject Verification Request"):
     async def on_submit(self, interaction: discord.Interaction):
         reject_reason = self.reason.value.strip()
         
-        # Get target user
         target_user = interaction.guild.get_member(self.user_id)
         
-        # Update original admin message
         embed = self.original_message.embeds[0]
         embed.color = discord.Color.red()
         embed.add_field(name="Status", value=f"❌ **REJECTED** by {interaction.user.mention}", inline=False)
@@ -1445,7 +1359,6 @@ class RejectReasonModal(discord.ui.Modal, title="Reject Verification Request"):
         await self.original_message.edit(embed=embed, view=None)
         await interaction.response.send_message("✅ Verification rejected with reason!", ephemeral=True)
         
-        # Try to DM the user with reason
         if target_user:
             try:
                 await target_user.send(
