@@ -6,7 +6,7 @@ from typing import Optional, Set
 import discord
 from discord.ext import commands, tasks
 from settings import logger
-from utility.wwm import get_club_chat
+from utility.wwm import get_club_chat, get_custom_guild_info
 from googletrans import Translator
 
 
@@ -22,7 +22,8 @@ class LiveChatCog(commands.Cog):
         self.HOSTNUM = 10103                    # Your server hostnum
         self.CHANNEL_ID = None                  # Set via /chatenable command
         self.POLL_INTERVAL = 10                 # Seconds between checks
-        
+        self.ranks = None                       # To store rank information
+
         # Ensure data directory exists
         os.makedirs("data", exist_ok=True)
         
@@ -74,7 +75,11 @@ class LiveChatCog(commands.Cog):
             
             if new_messages:
                 logger.info(f"🔔 Found {len(new_messages)} new chat messages")
-                
+
+                # Call guild api so that we can get rank of sender and other info that might not be included in chat message data
+                self.ranks = await asyncio.to_thread(get_custom_guild_info, self.CLUB_ID, self.HOSTNUM, {'members': ['custom_posts']})
+                self.ranks = self.ranks.get('result', {}).get('members', {}).get('custom_posts', {}) if self.ranks else {}
+                #logger.info(f"Ranks data: {self.ranks}")
                 # Sort messages by timestamp (oldest first)
                 new_messages.sort(key=lambda x: x.get('ts', 0))
                 
@@ -99,6 +104,29 @@ class LiveChatCog(commands.Cog):
         level = msg.get('level', 0)
         ext = msg.get('ext', {})
         msg_type = ext.get('msg_type', 'msg_normal')
+        sender_pid = msg.get('from_pid', None)
+        
+        # Determine sender's rank if possible
+        rank_name = "Unknown"
+        if sender_pid:
+            # Get all ranks for sender PID
+            sender_ranks = []
+            for rank_id, rank_info in self.ranks.items():
+                if sender_pid in rank_info.get('pids', []):
+                    sender_ranks.append((rank_id, rank_info.get('name', 'Unknown')))
+
+            if sender_ranks:
+                sender_ranks.sort(key=lambda x: int(x[0]), reverse=False)  # Sort by rank ID ascending (assuming lower ID = higher rank)
+                # Include some custom ranks like 1 = Guild Leader, 2 = Vice Leader,etc
+                custom_rank_names = {
+                    1: "Guild Leader",
+                    2: "Vice Leader",
+                    5: "Command",
+                    7: "Half Time Performer"
+                }
+                # Get the highest rank (lowest ID) and use custom name if available
+                highest_rank_id, highest_rank_name = sender_ranks[0]
+                rank_name = custom_rank_names.get(highest_rank_id, highest_rank_name)
         
         # Determine message content based on type
         message = msg.get('msg', '').strip()
@@ -162,7 +190,7 @@ class LiveChatCog(commands.Cog):
         )
         
         embed.set_author(
-            name=f"{nickname} (Lv.{level})"
+            name=f"{nickname} ({rank_name}) (Lv.{level})"
         )
         
         return embed
