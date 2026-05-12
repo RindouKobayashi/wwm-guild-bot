@@ -254,7 +254,7 @@ class ActivityCog(commands.Cog):
         leader_role = guild.get_role(leader_role_id)
         
         if not leader_role:
-            logger.warning(f"Leader role not found with ID {leader_role_id}")
+            logger.debug(f"Leader role not found with ID {leader_role_id} - no activity leader assigned")
             return
         
         # Remove role from all members who have it (in case of multiple)

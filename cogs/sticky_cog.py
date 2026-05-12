@@ -49,7 +49,7 @@ async def init_db():
             )
         ''')
         await conn.commit()
-    logger.info("Sticky database initialized")
+    logger.debug("Sticky database initialized")
 
 
 # ─────────────────────────────────────────────
@@ -1030,4 +1030,3 @@ class StickyCog(commands.Cog):
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(StickyCog(bot))
-    logger.info("✅ StickyCog loaded")

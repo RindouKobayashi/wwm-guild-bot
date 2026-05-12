@@ -100,7 +100,7 @@ class GuildVerificationCog(commands.Cog):
                 await conn.commit()
                 logger.info(f"✅ Migration complete: {len(rows_to_migrate)} records processed")
         
-        logger.info("Guild Verification database initialized")
+        logger.debug("Guild Verification database initialized")
     
     def load_config(self):
         """Load configuration from database into runtime"""
@@ -118,14 +118,10 @@ class GuildVerificationCog(commands.Cog):
                 else:
                     setattr(settings, key, value)
             
-            logger.info(f"Loaded {len(config)} configuration entries from database")
+            logger.debug(f"Loaded {len(config)} configuration entries from database")
         
         asyncio.get_event_loop().create_task(_load())
 
-    @commands.Cog.listener()
-    async def on_ready(self):
-        logger.info("✅ Guild Verification cog ready")
-        logger.info("✅ Persistent views already registered in setup_hook")
         
     async def cog_unload(self):
         if self.guild_member_sync_task.is_running():

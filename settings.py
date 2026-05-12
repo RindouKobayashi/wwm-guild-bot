@@ -93,14 +93,14 @@ LOGGING_CONFIG = {
     "disable_existing_loggers": False,
     "formatters": {
         "verbose": {
-            "format": "%(levelname)-10s - %(asctime)s - %(module)-15s : %(message)s",
+            "format": "%(levelname)-10s - %(asctime)s - %(module)-25s : %(message)s",
         },
         "standard": {
             "format": "%(levelname)-10s - %(name)-15s : %(message)s",
         },
         "colored": {
             "()": ColoredFormatter,
-            "format": "%(levelname)-10s - %(name)-15s : %(message)s",
+            "format": "%(levelname)-10s - %(lineno)4d:%(module)-25s : %(message)s",
         }
     },
     "handlers": {

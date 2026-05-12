@@ -68,7 +68,6 @@ class ScheduleCog(commands.Cog):
         # Start background tasks
         self.refresh_schedule_task.start()
         self.weekly_shift_task.start()
-        logger.info("Schedule cog loaded successfully")
 
     async def cog_unload(self):
         self.refresh_schedule_task.cancel()

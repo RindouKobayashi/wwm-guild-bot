@@ -1,5 +1,6 @@
 import sys
 import os
+import time as time_module
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 import requests
@@ -64,11 +65,14 @@ def _wwm_api_post(
     uid: Optional[str] = None,
     token: Optional[str] = None,
     timeout: int = 10,
-    raw_payload: Optional[bytes] = None
+    raw_payload: Optional[bytes] = None,
+    max_retries: int = 2,
+    base_delay: float = 2.0
 ) -> Optional[Dict[str, Any]]:
     """
     Internal base handler for all WWM MessagePack API requests
     Handles packing, headers, request sending, unpacking and logging automatically
+    Retries up to max_retries times on timeout/connection errors with exponential backoff.
     """
     headers = DEFAULT_HEADERS.copy()
     
@@ -78,43 +82,55 @@ def _wwm_api_post(
     if token:
         headers["h72-ms-token"] = token
 
-    try:
-        # Pack payload unless raw bytes are explicitly provided
-        request_data = raw_payload if raw_payload is not None else msgpack.packb(payload)
-        
-        response = requests.post(
-            url,
-            headers=headers,
-            data=request_data,
-            timeout=timeout,
-            verify=True,
-            allow_redirects=False
-        )
+    last_error = None
+    for attempt in range(max_retries + 1):
+        try:
+            # Pack payload unless raw bytes are explicitly provided
+            request_data = raw_payload if raw_payload is not None else msgpack.packb(payload)
+            
+            response = requests.post(
+                url,
+                headers=headers,
+                data=request_data,
+                timeout=timeout,
+                verify=True,
+                allow_redirects=False
+            )
 
-        logger.debug(f"API Request {url} status: {response.status_code}")
+            logger.debug(f"API Request {url} status: {response.status_code}")
 
-        if response.status_code == 200:
-            try:
-                return msgpack.unpackb(
-                    response.content,
-                    raw=False,
-                    strict_map_key=False
-                )
-            except UnicodeDecodeError:
-                logger.warning("Response contains non-UTF8 binary data, falling back to raw mode")
-                raw_result = msgpack.unpackb(
-                    response.content,
-                    raw=True,
-                    strict_map_key=False
-                )
-                return _convert_bytes_to_str(raw_result)
-        
-        logger.warning(f"API Request failed {url}: HTTP {response.status_code}")
-        return None
+            if response.status_code == 200:
+                try:
+                    return msgpack.unpackb(
+                        response.content,
+                        raw=False,
+                        strict_map_key=False
+                    )
+                except UnicodeDecodeError:
+                    logger.warning("Response contains non-UTF8 binary data, falling back to raw mode")
+                    raw_result = msgpack.unpackb(
+                        response.content,
+                        raw=True,
+                        strict_map_key=False
+                    )
+                    return _convert_bytes_to_str(raw_result)
+            
+            logger.warning(f"API Request failed {url}: HTTP {response.status_code}")
+            return None
 
-    except Exception as e:
-        logger.error(f"API Request failed {url}: {str(e)}", exc_info=True)
-        return None
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+            last_error = e
+            if attempt < max_retries:
+                delay = base_delay * (2 ** attempt)
+                logger.warning(f"API Request {url} timed out (attempt {attempt + 1}/{max_retries + 1}), retrying in {delay}s...")
+                time_module.sleep(delay)
+            else:
+                logger.error(f"API Request failed {url} after {max_retries + 1} attempts: {str(e)}")
+        except Exception as e:
+            logger.error(f"API Request failed {url}: {str(e)}", exc_info=True)
+            return None
+
+    return None
 
 # -----------------------------------------------------------------------------
 # Public API Functions
@@ -125,7 +141,7 @@ def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[s
     1. Resolve Number ID to PID
     2. Fetch full player data from Redis endpoint
     """
-    logger.info(f"Resolving Number ID {number_id} to PID")
+    logger.debug(f"Resolving Number ID {number_id} to PID")
     
     # Step 1: Resolve Number ID to PID
     pid_result = _wwm_api_post(
@@ -144,10 +160,10 @@ def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[s
         return pid_result
 
     player_pid = pid_result['result']['id']
-    logger.info(f"✅ Resolved PID: {player_pid}")
+    logger.debug(f"✅ Resolved PID: {player_pid}")
 
     # Step 2: Get full player data
-    logger.info(f"Getting full player data for PID {player_pid}")
+    logger.debug(f"Getting full player data for PID {player_pid}")
     
     redis_data = _wwm_api_post(
         WWM_CLUB_HOSTNUMS_URL,
@@ -165,7 +181,7 @@ def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[s
     if redis_data and 'result' in redis_data and redis_data['result']:
         first_pid = next(iter(redis_data['result'].keys()))
         full_player_data = redis_data['result'][first_pid]
-        logger.info("✅ Got full player data with signatures")
+        logger.debug("✅ Got full player data with signatures")
         
         # Preserve hostnum from initial lookup response
         if 'hostnum' in pid_result['result']:
@@ -177,7 +193,7 @@ def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[s
         }
 
     # Fallback to original data if redis request fails
-    logger.info("Falling back to original player data")
+    logger.debug("Falling back to original player data")
     return pid_result
 
 
@@ -223,7 +239,7 @@ def get_custom_guild_info(club_id: int, hostnum: int = 10103, fields: Optional[D
 
 def get_club_hostnums(player_pid: str) -> Optional[Dict[str, Any]]:
     """Get club hostnum associations for a player"""
-    logger.info(f"Getting club hostnums for PID: {player_pid}")
+    logger.debug(f"Getting club hostnums for PID: {player_pid}")
     
     return _wwm_api_post(
         WWM_CLUB_HOSTNUMS_URL,
@@ -258,7 +274,7 @@ def get_bulk_players_info(pid_list: List[str], fields: Optional[List[str]] = Non
 
 def get_fashion_plan(player_pid: str, hostnum: int = 10403, uid: Optional[str] = None, token: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Get player fashion plan including cover image"""
-    logger.info(f"Getting fashion plan for PID: {player_pid} | hostnum: {hostnum}")
+    logger.debug(f"Getting fashion plan for PID: {player_pid} | hostnum: {hostnum}")
     
     final_uid = uid if uid else WWM_UID
     
@@ -294,7 +310,7 @@ def get_club_brief_info_batch(club_ids: List[str], hostnums: List[int]) -> Optio
     Returns:
         List of dicts with base['name'], members['member_num'], members['apprentice_num'], club_id, etc.
     """
-    logger.info(f"Fetching brief info for {len(club_ids)} clubs in batch")
+    logger.debug(f"Fetching brief info for {len(club_ids)} clubs in batch")
     
     payload = {
         "club_list": [{"club_id": cid, "hostnum": hnum} for cid, hnum in zip(club_ids, hostnums)],
@@ -305,7 +321,7 @@ def get_club_brief_info_batch(club_ids: List[str], hostnums: List[int]) -> Optio
     
     if response and 'result' in response and 'data' in response['result']:
         data = response['result']['data']
-        logger.info(f"Received brief info for {len(data)} clubs")
+        logger.debug(f"Received brief info for {len(data)} clubs")
         return data
     
     logger.warning("Failed to fetch club brief info batch")
@@ -322,7 +338,7 @@ def get_club_by_name(club_name: str, limit: int = 5, start: int = 0) -> Optional
     Returns:
         List of dicts with club_id and hostnum, or None if no results
     """
-    logger.info(f"Searching for clubs with name: '{club_name}' (limit: {limit}, start: {start})")
+    logger.debug(f"Searching for clubs with name: '{club_name}' (limit: {limit}, start: {start})")
     
     payload = {
         "club_name": club_name,
@@ -336,10 +352,10 @@ def get_club_by_name(club_name: str, limit: int = 5, start: int = 0) -> Optional
     
     if response and 'result' in response and 'results' in response['result']:
         clubs = response['result']['results']
-        logger.info(f"Found {len(clubs)} clubs matching '{club_name}'")
+        logger.debug(f"Found {len(clubs)} clubs matching '{club_name}'")
         return clubs
     
-    logger.info(f"No clubs found matching '{club_name}'")
+    logger.debug(f"No clubs found matching '{club_name}'")
     return None
 
 

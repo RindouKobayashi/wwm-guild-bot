@@ -5,7 +5,7 @@ from settings import logger
 from discord import app_commands
 from googletrans import Translator, LANGUAGES
 
-logger.info("Loading translate context menu...")
+logger.debug("Loading translate context menu...")
 
 translator = Translator()
 
@@ -179,4 +179,4 @@ def setup_contextmenu(bot: commands.Bot):
             await interaction.followup.send(embed=embed, view=view, ephemeral=True)
 
 
-logger.info("Translate context menu loaded successfully.")
+logger.info("Loaded Context Menu: Translate")

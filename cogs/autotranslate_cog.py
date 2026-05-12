@@ -33,7 +33,7 @@ class AutoTranslateCog(commands.Cog):
             if os.path.exists(self.message_map_file):
                 with open(self.message_map_file, 'r', encoding='utf-8') as f:
                     self.message_map = json.load(f)
-                logger.info(f"Loaded {len(self.message_map)//2} message mappings from storage")
+                logger.debug(f"Loaded {len(self.message_map)//2} message mappings from storage")
         except Exception as e:
             logger.warning(f"Could not load message map: {e}, starting fresh")
             self.message_map = {}
@@ -65,6 +65,22 @@ class AutoTranslateCog(commands.Cog):
     def _get_mapped_message(self, message_id: int) -> int | None:
         """Get matching translated message id if exists"""
         return self.message_map.get(str(message_id))
+
+    async def translate_with_retry(self, text: str, dest: str, src: str = 'auto', max_retries: int = 2, delay: float = 2.0) -> str:
+        """Translate with automatic retry on failure."""
+        import asyncio
+        last_error = None
+        for attempt in range(max_retries + 1):
+            try:
+                translation = await self.translator.translate(text, src=src, dest=dest)
+                return translation.text
+            except Exception as e:
+                last_error = e
+                if attempt < max_retries:
+                    logger.debug(f"Translation retry {attempt + 1}/{max_retries} after error: {e}")
+                    await asyncio.sleep(delay)
+                else:
+                    raise last_error
 
     def strip_mentions(self, content: str) -> tuple[str, list, bool]:
         """
@@ -136,12 +152,12 @@ class AutoTranslateCog(commands.Cog):
 
                 if existing_webhook:
                     self.webhooks[channel_name] = existing_webhook
-                    logger.info(f"Reusing existing webhook for {channel_name}: {existing_webhook.id}")
+                    logger.debug(f"Reusing existing webhook for {channel_name}: {existing_webhook.id}")
                 else:
                     # Create a new webhook if none exists
                     webhook = await target_channel.create_webhook(name=f"AutoTranslate-{channel_name.capitalize()}")
                     self.webhooks[channel_name] = webhook
-                    logger.info(f"Created new webhook for {channel_name}: {webhook.id}")
+                    logger.debug(f"Created new webhook for {channel_name}: {webhook.id}")
         except Exception as e:
             logger.error(f"Failed to create persistent webhooks: {e}")
 
@@ -180,10 +196,9 @@ class AutoTranslateCog(commands.Cog):
                     logger.debug(f"AutoTranslate DEBUG: Skipping translation, using original content")
                     translated_text = message.content
                 else:
-                    # Translate the message (without mentions)
+                    # Translate the message (without mentions) with retry
                     logger.debug(f"AutoTranslate DEBUG: Running translation")
-                    translation = await self.translator.translate(content_to_translate, dest=target_language)
-                    translated_text = translation.text
+                    translated_text = await self.translate_with_retry(content_to_translate, dest=target_language)
                     
                     # Restore original emotes and mentions back into translated text
                     translated_text = self.restore_entities(translated_text, extracted_entities)
@@ -319,7 +334,7 @@ class AutoTranslateCog(commands.Cog):
                                                 files.append(File(fp=output_bytes, filename=filename))
                                                 logger.debug(f"AutoTranslate DEBUG: Resized static sticker '{sticker.name}' to 128x128")
                                     except Exception as e:
-                                        logger.error(f"Failed to process sticker '{sticker.name}': {e}")
+                                        logger.debug(f"Skipped sticker '{sticker.name}': {e}")
                                         continue
 
                                     
@@ -430,8 +445,7 @@ class AutoTranslateCog(commands.Cog):
             if not cleaned_check:
                 translated_text = after.content
             else:
-                translation = await self.translator.translate(content_to_translate, dest=target_language)
-                translated_text = translation.text
+                translated_text = await self.translate_with_retry(content_to_translate, dest=target_language)
                 translated_text = self.restore_entities(translated_text, extracted_entities)
 
             # Get webhook

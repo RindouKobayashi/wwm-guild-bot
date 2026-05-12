@@ -94,7 +94,10 @@ class PresenceCog(commands.Cog):
             activity = discord.Activity(type=activity_type, name=status_text)
             await self.bot.change_presence(activity=activity)
         except Exception as e:
-            logger.error(f"Error changing presence: {e}")
+            if "Cannot write to closing transport" in str(e):
+                logger.debug(f"Presence skipped - websocket closing: {e}")
+            else:
+                logger.error(f"Error changing presence: {e}")
 
     @change_status.before_loop
     async def before_change_status(self):

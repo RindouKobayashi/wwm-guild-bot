@@ -21,7 +21,7 @@ async def setup_hook():
     from cogs.guild_verification_cog import VerificationStartView, VerificationAdminView
     bot.add_view(VerificationStartView())
     bot.add_view(VerificationAdminView())
-    logger.info("✅ Registered persistent views in setup_hook")
+    logger.info("Registered persistent views in setup_hook")
 
 @bot.event
 async def on_ready():

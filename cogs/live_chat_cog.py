@@ -16,6 +16,8 @@ class LiveChatCog(commands.Cog):
         self.last_seen_msg_ids: Set[str] = set()
         self.is_running = False
         self.translator = Translator()
+        self._translate_retry_delay = 2.0
+        self._translate_max_retries = 2
         # Configuration
         self.CONFIG_FILE = "data/live_chat_config.json"
         self.CLUB_ID = "aRvTyiPA8WMSXrRj"      # Your guild ID
@@ -35,7 +37,7 @@ class LiveChatCog(commands.Cog):
             # Reset running flag to force proper initialization on first poll
             self.is_running = False
             self.chat_poller.start()
-            logger.info("✅ Live chat auto-started from saved configuration")
+            logger.debug("✅ Live chat auto-started from saved configuration")
 
     def cog_unload(self):
         self.chat_poller.cancel()
@@ -60,7 +62,7 @@ class LiveChatCog(commands.Cog):
             if not self.is_running:
                 self.is_running = True
                 self.last_seen_msg_ids = {msg['msg_id'] for msg in chat_messages if 'msg_id' in msg}
-                logger.info(f"✅ Live chat monitoring started. Tracked {len(self.last_seen_msg_ids)} existing messages.")
+                logger.debug(f"✅ Live chat monitoring started. Tracked {len(self.last_seen_msg_ids)} existing messages.")
                 return
             
             # Process new messages
@@ -96,6 +98,22 @@ class LiveChatCog(commands.Cog):
                 
         except Exception as e:
             logger.error(f"Error in chat poller: {str(e)}", exc_info=True)
+
+    async def translate_with_retry(self, text: str, src: str, dest: str) -> str:
+        """Translate with automatic retry on failure."""
+        last_error = None
+        for attempt in range(self._translate_max_retries + 1):
+            try:
+                translation = await self.translator.translate(text, src=src, dest=dest)
+                return translation.text
+            except Exception as e:
+                last_error = e
+                if attempt < self._translate_max_retries:
+                    logger.debug(f"Translation retry {attempt + 1}/{self._translate_max_retries} after error: {e}")
+                    await asyncio.sleep(self._translate_retry_delay)
+                else:
+                    logger.error(f"Failed to translate message: {last_error}")
+                    return None
 
     async def format_message_embed(self, msg: dict) -> discord.Embed:
         """Format chat message into Discord embed"""
@@ -161,18 +179,17 @@ class LiveChatCog(commands.Cog):
                 message += f" ({reward_no} coins)"
         elif msg_type == 'msg_normal':
             # Translate englsih to chinese and vice versa for normal messages to make it more accessible for all users
-            try:
-                # Check if message contains Chinese characters
-                if any('\u4e00' <= char <= '\u9fff' for char in message):
-                    # Contains Chinese characters, translate to English
-                    translation = await self.translator.translate(message, src='zh-cn', dest='en')
-                    message += f"\n\n[Translated] {translation.text}"
-                else:
-                    # No Chinese characters, translate to Chinese
-                    translation = await self.translator.translate(message, src='en', dest='zh-cn')
-                    message += f"\n\n[Translated] {translation.text}"
-            except Exception as e:
-                logger.error(f"Failed to translate message: {e}")
+            # Check if message contains Chinese characters
+            if any('\u4e00' <= char <= '\u9fff' for char in message):
+                # Contains Chinese characters, translate to English
+                translated = await self.translate_with_retry(message, src='zh-cn', dest='en')
+                if translated:
+                    message += f"\n\n[Translated] {translated}"
+            else:
+                # No Chinese characters, translate to Chinese
+                translated = await self.translate_with_retry(message, src='en', dest='zh-cn')
+                if translated:
+                    message += f"\n\n[Translated] {translated}"
 
         
         channel_type = msg.get('channel', 'club_chat')
@@ -274,4 +291,3 @@ class LiveChatCog(commands.Cog):
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(LiveChatCog(bot))
-    logger.info("✅ LiveChatCog loaded successfully")

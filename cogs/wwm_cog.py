@@ -379,7 +379,7 @@ class GuildSearchSelectView(discord.ui.View):
         loading_msg = await interaction.followup.send("📋 Loading guild data...", ephemeral=True, wait=True)
         
         try:
-            logger.info(f"Trying to fetch full guild info for selected club_id: {club_id} with hostnum: {hostnum}")
+            logger.debug(f"Trying to fetch full guild info for selected club_id: {club_id} with hostnum: {hostnum}")
             guild_data = get_full_guild_info(club_id, hostnum=hostnum)
             
             if not guild_data or 'result' not in guild_data:
@@ -1250,17 +1250,18 @@ class WWMCog(commands.Cog):
 
     @guild_group.command(name="stats", description="Display graphs of guild statistics over time")
     @app_commands.checks.has_permissions(administrator=True)
-    @app_commands.describe(type="Type of graph to display", range="Time range for the graph")
+    @app_commands.describe(type="Type of graph to display", period="Time range for the graph")
     @app_commands.choices(type=[
         app_commands.Choice(name="🟢 Online Players", value="online"),
         app_commands.Choice(name="🌐 Online by Region Over Time", value="online_by_region"),
+        app_commands.Choice(name="🔥 Liveness Gain Over Time", value="liveness_gain"),
     ])
-    @app_commands.choices(range=[
+    @app_commands.choices(period=[
         app_commands.Choice(name="Today (5am GMT+8 to now)", value="today"),
         app_commands.Choice(name="This Week (current schedule week)", value="week"),
         app_commands.Choice(name="Last 7 Days", value="7days"),
     ])
-    async def guild_stats(self, interaction: discord.Interaction, type: str = "online", range: str = "today"):
+    async def guild_stats(self, interaction: discord.Interaction, type: str = "online", period: str = "today"):
         await interaction.response.defer()
         
         try:
@@ -1278,14 +1279,14 @@ class WWMCog(commands.Cog):
             GMT8_OFFSET = 8 * 3600
             now_ts = int(now_utc.timestamp())
             
-            if range == "today":
+            if period == "today":
                 gmt8_now = now_ts + GMT8_OFFSET
                 gmt8_dt = dt.datetime.fromtimestamp(gmt8_now, tz=dt.timezone.utc)
                 schedule_start = gmt8_dt.replace(hour=5, minute=0, second=0, microsecond=0)
                 if gmt8_dt.hour < 5:
                     schedule_start -= dt.timedelta(days=1)
                 start_ts = int(schedule_start.timestamp() - GMT8_OFFSET)
-            elif range == "week":
+            elif period == "week":
                 gmt8_now = now_ts + GMT8_OFFSET
                 gmt8_dt = dt.datetime.fromtimestamp(gmt8_now, tz=dt.timezone.utc)
                 adjusted = gmt8_dt - dt.timedelta(hours=5)
@@ -1295,7 +1296,7 @@ class WWMCog(commands.Cog):
             else:
                 start_ts = now_ts - 7 * 86400
             
-            range_labels = {"today": "Today", "week": "This Week", "7days": "Last 7 Days"}
+            period_labels = {"today": "Today", "week": "This Week", "7days": "Last 7 Days"}
             
             if type == "online":
                 async with aiosqlite.connect(self.db_path) as db:
@@ -1332,13 +1333,13 @@ class WWMCog(commands.Cog):
                 ax.grid(True, alpha=0.2, color='white')
                 ax.set_xlabel('Time (GMT+8)', color='white', fontsize=12)
                 ax.set_ylabel('Online Players', color='white', fontsize=12)
-                ax.set_title(f'Online Players Over Time - {range_labels.get(range, "Custom")}', color='white', fontsize=14, fontweight='bold')
+                ax.set_title(f'Online Players Over Time - {period_labels.get(period, "Custom")}', color='white', fontsize=14, fontweight='bold')
                 ax.yaxis.set_major_locator(MaxNLocator(integer=True))
                 
-                if range == "today":
+                if period == "today":
                     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
                     ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
-                elif range == "week":
+                elif period == "week":
                     ax.xaxis.set_major_formatter(mdates.DateFormatter('%a %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
                     ax.xaxis.set_major_locator(mdates.HourLocator(interval=6))
                 else:
@@ -1367,7 +1368,7 @@ class WWMCog(commands.Cog):
                 embed.add_field(name=":chart_with_downwards_trend: Average", value=f"`{avg_val} players`", inline=True)
                 embed.add_field(name=":bar_chart: Data Points", value=f"`{len(rows)}`", inline=True)
                 embed.set_image(url="attachment://stats_graph.png")
-                embed.set_footer(text=f"Time range: {range_labels.get(range, 'Custom')} | Data recorded every 1 minute")
+                embed.set_footer(text=f"Time range: {period_labels.get(period, 'Custom')} | Data recorded every 1 minute")
                 
                 await interaction.followup.send(embed=embed, file=file)
             
@@ -1439,13 +1440,13 @@ class WWMCog(commands.Cog):
                 
                 ax.set_xlabel('Time (GMT+8)', color='white', fontsize=12)
                 ax.set_ylabel('Online Players', color='white', fontsize=12)
-                ax.set_title(f'Online Players by Region Over Time - {range_labels.get(range, "Custom")}', color='white', fontsize=14, fontweight='bold')
+                ax.set_title(f'Online Players by Region Over Time - {period_labels.get(period, "Custom")}', color='white', fontsize=14, fontweight='bold')
                 ax.yaxis.set_major_locator(MaxNLocator(integer=True))
                 
-                if range == "today":
+                if period == "today":
                     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
                     ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
-                elif range == "week":
+                elif period == "week":
                     ax.xaxis.set_major_formatter(mdates.DateFormatter('%a %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
                     ax.xaxis.set_major_locator(mdates.HourLocator(interval=6))
                 else:
@@ -1469,7 +1470,185 @@ class WWMCog(commands.Cog):
                 embed.add_field(name=":bar_chart: Data Points", value=f"`{len(rows)}`", inline=True)
                 embed.add_field(name=":earth_asia: Regions Tracked", value=f"`{len(sorted_regions)}`", inline=True)
                 embed.set_image(url="attachment://stats_graph.png")
-                embed.set_footer(text=f"Time range: {range_labels.get(range, 'Custom')} | Data recorded every 1 minute")
+                embed.set_footer(text=f"Time range: {period_labels.get(period, 'Custom')} | Data recorded every 1 minute")
+                
+                await interaction.followup.send(embed=embed, file=file)
+            
+            elif type == "liveness_gain":
+                async with aiosqlite.connect(self.db_path) as db:
+                    db.row_factory = aiosqlite.Row
+                    cursor = await db.execute(
+                        "SELECT ts, snapshot_json FROM guild_player_snapshots WHERE ts >= ? ORDER BY ts ASC",
+                        (start_ts,)
+                    )
+                    rows = await cursor.fetchall()
+                
+                if not rows:
+                    await interaction.followup.send("❌ No snapshot data available for the selected time range.")
+                    return
+                
+                if len(rows) < 2:
+                    await interaction.followup.send("❌ Need at least 2 snapshots to calculate liveness gain (data records every 1 minute).")
+                    return
+                
+                sample_step = max(1, len(rows) // 200)
+                sampled_rows = rows[::sample_step]
+                if sampled_rows[-1] is not rows[-1]:
+                    sampled_rows.append(rows[-1])
+                
+                timestamps = [row['ts'] for row in sampled_rows]
+                dates = [dt.datetime.fromtimestamp(ts, tz=dt.timezone.utc) for ts in timestamps]
+                num_points = len(timestamps)
+                
+                baseline_snapshot = json.loads(sampled_rows[0]['snapshot_json'])
+                all_player_nicknames = {}
+                
+                for p in baseline_snapshot:
+                    pid = p.get('pid')
+                    all_player_nicknames[pid] = p.get('nickname', 'Unknown')
+                
+                for row in sampled_rows[1:]:
+                    snapshot = json.loads(row['snapshot_json'])
+                    for p in snapshot:
+                        pid = p.get('pid')
+                        if pid and pid not in all_player_nicknames:
+                            all_player_nicknames[pid] = p.get('nickname', 'Unknown')
+                
+                total_gains = {}
+                for pid in list(all_player_nicknames.keys()):
+                    last_lv = None
+                    total_gain = 0
+                    for row in sampled_rows:
+                        snapshot = json.loads(row['snapshot_json'])
+                        curr_lv = None
+                        for p in snapshot:
+                            if p.get('pid') == pid:
+                                curr_lv = p.get('liveness', 0)
+                                break
+                        if curr_lv is None:
+                            continue
+                        if last_lv is not None:
+                            diff = curr_lv - last_lv
+                            if diff > 0:
+                                total_gain += diff
+                        last_lv = curr_lv
+                    if total_gain >= 0:
+                        total_gains[pid] = total_gain
+                
+                if not total_gains:
+                    await interaction.followup.send("❌ No liveness gains detected in the selected time range.")
+                    return
+                
+                sorted_players = sorted(total_gains.items(), key=lambda x: x[1], reverse=True)
+                top_n = sorted_players[:10]
+                top_pids = {pid for pid, _ in top_n}
+                
+                top_nicknames = {}
+                for pid, _ in top_n:
+                    top_nicknames[pid] = all_player_nicknames.get(pid, f"PID:{pid[:8]}")
+                
+                def compute_cumulative_gain(pid, sampled_rows, initial_lv=None):
+                    series = []
+                    last_lv = initial_lv
+                    cumulative = 0
+                    for row in sampled_rows:
+                        snapshot = json.loads(row['snapshot_json'])
+                        curr_lv = None
+                        for p in snapshot:
+                            if p.get('pid') == pid:
+                                curr_lv = p.get('liveness', 0)
+                                break
+                        if curr_lv is None:
+                            if series:
+                                series.append(series[-1])
+                            else:
+                                series.append(0)
+                            continue
+                        if last_lv is not None:
+                            diff = curr_lv - last_lv
+                            if diff < -100:
+                                cumulative = 0
+                            elif diff > 0:
+                                cumulative += diff
+                        series.append(cumulative)
+                        last_lv = curr_lv
+                    return series
+                
+                cumulative_series = {}
+                for pid in top_pids:
+                    cumulative_series[pid] = compute_cumulative_gain(pid, sampled_rows)
+                
+                num_other_players = len(total_gains) - len(top_n)
+                all_other_pids = [pid for pid in total_gains if pid not in top_pids]
+                combined_series = [0] * num_points
+                
+                for pid in all_other_pids:
+                    series = compute_cumulative_gain(pid, sampled_rows)
+                    for idx in range(num_points):
+                        combined_series[idx] += series[idx]
+                
+                plt.style.use('dark_background')
+                fig, ax = plt.subplots(figsize=(14, 7))
+                ax.set_facecolor('#1a1a2e')
+                fig.patch.set_facecolor('#1a1a2e')
+                ax.grid(True, alpha=0.2, color='white')
+                
+                top_colors = ['#FF6B6B', '#4ECDC4', '#45B7D1', '#FFA07A', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9', '#F0B27A', '#82E0AA']
+                
+                for i, (pid, gain) in enumerate(top_n):
+                    color = top_colors[i % len(top_colors)]
+                    label = top_nicknames[pid]
+                    ax.plot(dates, cumulative_series[pid], color=color, linewidth=2, marker='', linestyle='-', label=label)
+                    ax.fill_between(dates, cumulative_series[pid], alpha=0.1, color=color)
+                
+                ax.plot(dates, combined_series, color='#7F8C8D', linewidth=1.5, marker='', linestyle='--', alpha=0.8, label=f'Everyone Else ({len(total_gains) - len(top_n)} players)')
+                ax.fill_between(dates, combined_series, alpha=0.05, color='#7F8C8D')
+                
+                ax.set_xlabel('Time (GMT+8)', color='white', fontsize=12)
+                ax.set_ylabel('Cumulative Liveness Gained', color='white', fontsize=12)
+                ax.set_title(f'Liveness Gain Over Time - {period_labels.get(period, "Custom")}', color='white', fontsize=14, fontweight='bold')
+                ax.yaxis.set_major_locator(MaxNLocator(integer=True))
+                
+                if period == "today":
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
+                    ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
+                elif period == "week":
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%a %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
+                    ax.xaxis.set_major_locator(mdates.HourLocator(interval=6))
+                else:
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
+                    ax.xaxis.set_major_locator(mdates.HourLocator(interval=12))
+                
+                plt.xticks(rotation=45, color='white')
+                plt.yticks(color='white')
+                ax.legend(loc='upper left', bbox_to_anchor=(1.02, 1), facecolor='#1a1a2e', edgecolor='white', labelcolor='white', fontsize=9)
+                plt.tight_layout(rect=[0, 0, 0.85, 1])
+                
+                import io
+                buf = io.BytesIO()
+                plt.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+                buf.seek(0)
+                plt.close()
+                
+                file = discord.File(buf, filename='stats_graph.png')
+                
+                top_gainers_text = "\n".join(
+                    f"🥇 {top_nicknames[pid]}: +{gain:,}" if i == 0 else
+                    f"🥈 {top_nicknames[pid]}: +{gain:,}" if i == 1 else
+                    f"🥉 {top_nicknames[pid]}: +{gain:,}" if i == 2 else
+                    f"{i+1}. {top_nicknames[pid]}: +{gain:,}"
+                    for i, (pid, gain) in enumerate(top_n)
+                )
+                
+                total_guild_gain = sum(total_gains.values())
+                
+                embed = discord.Embed(title="🔥 Liveness Gain Over Time", color=discord.Color.orange())
+                embed.add_field(name="📊 Data Points", value=f"`{len(rows)}`", inline=True)
+                embed.add_field(name="🏆 Players Tracked", value=f"`{len(total_gains)}`", inline=True)
+                embed.add_field(name="📈 Total Guild Gain", value=f"`+{total_guild_gain:,}`", inline=True)
+                embed.add_field(name="🏅 Top Gainers", value=f"```{top_gainers_text}```", inline=False)
+                embed.set_image(url="attachment://stats_graph.png")
+                embed.set_footer(text=f"Time range: {period_labels.get(period, 'Custom')} | Each player's line starts from 0")
                 
                 await interaction.followup.send(embed=embed, file=file)
         
@@ -1483,8 +1662,8 @@ class WWMCog(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(name="Optional guild name to search for (leave empty to use our guild)")
     async def guild_region(self, interaction: discord.Interaction, name: str = None):
+        await interaction.response.defer()
         if name:
-            await interaction.response.defer()
             try:
                 search_term = name.strip()
                 if not search_term:
@@ -1531,7 +1710,6 @@ class WWMCog(commands.Cog):
                 await interaction.followup.send(embed=embed)
             return
 
-        await interaction.response.defer()
         try:
             guild_data = get_full_guild_info(CLUB_ID)
             if not guild_data or 'result' not in guild_data:
