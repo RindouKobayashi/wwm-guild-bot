@@ -75,7 +75,7 @@ class ActivityCog(commands.Cog):
                 )
             ''')
             await conn.commit()
-        logger.info("Activity database initialized with all-time and session tables")
+        logger.debug("Activity database initialized with all-time and session tables")
     
     async def _update_points(self, user_id: int, guild_id: int):
         """Update user points if cooldown has passed. Updates both session and all-time."""
