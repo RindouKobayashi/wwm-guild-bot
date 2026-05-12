@@ -1299,56 +1299,21 @@ class WWMCog(commands.Cog):
             
             period_labels = {"today": "Today", "week": "This Week", "7days": "Last 7 Days"}
             
-            def _make_schedule_day_formatter():
-                """Returns a FuncFormatter that shows day header on first tick of each schedule day, time only thereafter."""
-                DAY_NAMES = {1: "Mon", 2: "Tue", 3: "Wed", 4: "Thu", 5: "Fri", 6: "Sat", 7: "Sun"}
-                last_day = [None]
-                def fmt(x, pos):
-                    ts_utc = mdates.num2date(x).replace(tzinfo=dt.timezone.utc)
-                    ts = int(ts_utc.timestamp())
-                    gmt8_time = ts + GMT8_OFFSET
-                    gmt8_dt = dt.datetime.fromtimestamp(gmt8_time, tz=dt.timezone.utc)
-                    adjusted = gmt8_dt - dt.timedelta(hours=5)
-                    day_num = adjusted.weekday() + 1
-                    time_str = gmt8_dt.strftime("%H:%M")
-                    if last_day[0] is None or last_day[0] != day_num:
-                        last_day[0] = day_num
-                        day_name = DAY_NAMES.get(day_num, f"Day{day_num}")
-                        return f"{day_name} {gmt8_dt.strftime('%m/%d')}\n{time_str}"
-                    return time_str
-                return plt.FuncFormatter(fmt)
-            
-            # Weekly event offsets from the schedule week start (Monday 5am GMT+8)
-            # day_offset = (day_num - 1) * 86400, time_offset varies by event type
-            WEEKLY_EVENTS = [
-                (1, 14400, "Guild Party"),    # Mon 09:00
-                (2, 21600, "Guild Party"),    # Tue 11:00
-                (2, 23400, "Showdown"),       # Tue 11:30
-                (3, 21600, "Guild Party"),    # Wed 11:00
-                (4, 21600, "Guild Party"),    # Thu 11:00
-                (4, 23400, "Breaking Army"),  # Thu 11:30
-                (5, 21600, "Guild Party"),    # Fri 11:00
-                (5, 23400, "Showdown"),       # Fri 11:30
-                (6, 21600, "Guild Party"),    # Sat 11:00
-                (6, 23400, "Breaking Army"),  # Sat 11:30
-                (7, 21600, "Guild Party"),    # Sun 11:00
-            ]
-            
-            # Compute week start (Monday 5am GMT+8) for the current schedule week
-            gmt8_now = now_ts + GMT8_OFFSET
-            gmt8_dt = dt.datetime.fromtimestamp(gmt8_now, tz=dt.timezone.utc)
-            adjusted = gmt8_dt - dt.timedelta(hours=5)
-            week_monday = adjusted - dt.timedelta(days=adjusted.weekday())
-            week_start_ts = int(week_monday.timestamp()) - GMT8_OFFSET  # Monday 5am GMT+8 in UTC
-            
             schedule_events = []
-            for day_num, time_offset, event_name in WEEKLY_EVENTS:
-                event_ts = week_start_ts + (day_num - 1) * 86400 + time_offset
-                if start_ts <= event_ts <= now_ts:
-                    schedule_events.append((event_name, event_ts))
-            
-            # Sort by timestamp
-            schedule_events.sort(key=lambda x: x[1])
+            try:
+                async with aiosqlite.connect(SCHEDULE_DB_PATH) as sched_db:
+                    sched_db.row_factory = aiosqlite.Row
+                    cursor = await sched_db.execute(
+                        "SELECT event_name, timestamp FROM schedule_events WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp ASC",
+                        (start_ts, now_ts)
+                    )
+                    all_rows = await cursor.fetchall()
+                    for row in all_rows:
+                        name = row['event_name']
+                        if any(kw in name for kw in ["Guild Party", "Showdown", "Breaking Army"]):
+                            schedule_events.append((name, row['timestamp']))
+            except Exception as sched_err:
+                logger.warning(f"Failed to fetch schedule events for graph: {sched_err}")
             
             if type == "online":
                 async with aiosqlite.connect(self.db_path) as db:
@@ -1392,11 +1357,11 @@ class WWMCog(commands.Cog):
                     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
                     ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
                 elif period == "week":
-                    ax.xaxis.set_major_formatter(_make_schedule_day_formatter())
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%a %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
                     ax.xaxis.set_major_locator(mdates.HourLocator(interval=4))
                     ax.xaxis.set_minor_locator(mdates.HourLocator(interval=2))
                 else:
-                    ax.xaxis.set_major_formatter(_make_schedule_day_formatter())
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
                     ax.xaxis.set_major_locator(mdates.HourLocator(interval=4))
                     ax.xaxis.set_minor_locator(mdates.HourLocator(interval=2))
                 
@@ -1510,11 +1475,11 @@ class WWMCog(commands.Cog):
                     ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
                     ax.xaxis.set_major_locator(mdates.HourLocator(interval=1))
                 elif period == "week":
-                    ax.xaxis.set_major_formatter(_make_schedule_day_formatter())
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%a %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
                     ax.xaxis.set_major_locator(mdates.HourLocator(interval=4))
                     ax.xaxis.set_minor_locator(mdates.HourLocator(interval=2))
                 else:
-                    ax.xaxis.set_major_formatter(_make_schedule_day_formatter())
+                    ax.xaxis.set_major_formatter(mdates.DateFormatter('%m/%d %H:%M', tz=dt.timezone(dt.timedelta(hours=8))))
                     ax.xaxis.set_major_locator(mdates.HourLocator(interval=4))
                     ax.xaxis.set_minor_locator(mdates.HourLocator(interval=2))
                 
