@@ -477,6 +477,8 @@ class WWMCog(commands.Cog):
         self.monitor_message = None
         self.online_button_view = OnlinePlayersButton(self)
         self.db_path = BASE_DIR / "data" / "guild_monitor.db"
+        self.last_known_applications = {}
+        self.pending_apps_channel_id = 1443104374837608529
 
     player_group = app_commands.Group(
         name="player",
@@ -777,6 +779,38 @@ class WWMCog(commands.Cog):
             await self.monitor_message.edit(content=status_message, embeds=embeds, view=self.online_button_view)
             logger.debug("Guild status message updated successfully")
             
+            # Notify about new pending applications to the designated channel
+            applys = guild_data.get('result', {}).get('applys', {}).get('apply_dict', {})
+            if applys:
+                new_applications = {}
+                for pid, app in applys.items():
+                    if pid not in self.last_known_applications:
+                        new_applications[pid] = app
+                
+                if new_applications:
+                    try:
+                        channel = self.bot.get_channel(self.pending_apps_channel_id)
+                        if channel:
+                            embed = discord.Embed(
+                                title="📥 New Guild Applications",
+                                color=discord.Color.blue(),
+                                timestamp=discord.utils.utcnow()
+                            )
+                            app_lines = []
+                            for pid, app in new_applications.items():
+                                nickname = app.get('nickname', 'Unknown')
+                                app_lines.append(f"• {nickname}")
+                            embed.description = f"There are **{len(applys)}** pending applications total.\n\n**New applications:**\n" + "\n".join(app_lines)
+                            await channel.send(embed=embed)
+                    except Exception as e:
+                        logger.error(f"Failed to send pending applications notification: {e}")
+                
+                self.last_known_applications = dict(applys)
+            else:
+                if self.last_known_applications:
+                    logger.debug("All pending applications have been resolved")
+                self.last_known_applications = {}
+            
             if self.last_guild_state is not None:
                 diff = DeepDiff(self.last_guild_state, guild_data, ignore_order=True, exclude_paths=["root['timestamp']"])
                 if diff:
@@ -885,10 +919,6 @@ class WWMCog(commands.Cog):
         applys = result.get('applys', {}).get('apply_dict', {})
         if len(applys) > 0:
             lines.append(f"\n### 📋 **PENDING APPLICATIONS: {len(applys)}**")
-            lines.append("```ansi")
-            for pid, app in applys.items():
-                lines.append(f"✅ {app.get('nickname', 'Unknown')}")
-            lines.append("```")
         
         lines.append(f"⏱️ Last Updated: <t:{int(now)}:R>")
         lines.append(f"🔄 Next Update: <t:{int(now) + 60}:R>")
