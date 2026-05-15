@@ -10,31 +10,32 @@ GMT8_OFFSET = 8 * 3600  # 8 hours in seconds
 
 class ReminderPreviewView(discord.ui.View):
     """A view that allows users to cycle through upcoming Guild Party reminders."""
-    def __init__(self, cog, events: list):
+    def __init__(self, cog, gp_events: list, all_events: list):
         super().__init__(timeout=120)
         self.cog = cog
-        self.events = events  # List of event rows
+        self.gp_events = gp_events  # List of Guild Party event rows (for navigation)
+        self.all_events = all_events  # List of ALL schedule events (for embed context)
         self.current_index = 0
 
     async def update_message(self, interaction: discord.Interaction):
-        event = self.events[self.current_index]
-        # Pass pre-fetched events so we don't re-query the database
-        embed = await self.cog.create_reminder_embed(event, pre_fetched_events=self.events)
+        event = self.gp_events[self.current_index]
+        # Pass ALL events so the embed can show non-GP events on the same day
+        embed = await self.cog.create_reminder_embed(event, pre_fetched_events=self.all_events)
         
         # Update the text to show progress (e.g., "Previewing 1 of 5")
-        description = f"**Previewing {self.current_index + 1} of {len(self.events)} upcoming Guild Party reminders.**"
+        description = f"**Previewing {self.current_index + 1} of {len(self.gp_events)} upcoming Guild Party reminders.**"
         
         # We edit the existing message with the new embed and text
         await interaction.response.edit_message(embed=embed, content=description, view=self)
 
     @discord.ui.button(label="⬅️ Previous", style=discord.ButtonStyle.gray)
     async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.current_index = (self.current_index - 1) % len(self.events)
+        self.current_index = (self.current_index - 1) % len(self.gp_events)
         await self.update_message(interaction)
 
     @discord.ui.button(label="Next ➡️", style=discord.ButtonStyle.gray)
     async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
-        self.current_index = (self.current_index + 1) % len(self.events)
+        self.current_index = (self.current_index + 1) % len(self.gp_events)
         await self.update_message(interaction)
 
 
@@ -135,6 +136,9 @@ class ReminderCog(commands.Cog):
         
         events_found = False
         for event in future_events:
+            # Only show events after the guild party ends AND on the same day
+            if event['timestamp'] <= gp_ts:
+                continue
             if self.get_day_number(event['timestamp']) == day_num:
                 ts = event['timestamp']
                 # Use Discord relative timestamp for the countdown effect
@@ -230,14 +234,18 @@ class ReminderCog(commands.Cog):
 
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
+            # Fetch ALL events (not just GP) so the embed can show non-GP events on the same day
+            cursor = await db.execute("SELECT * FROM schedule_events ORDER BY timestamp ASC")
+            all_events = await cursor.fetchall()
+            # Also fetch just GP events to know what to navigate through
             cursor = await db.execute("SELECT * FROM schedule_events WHERE event_name LIKE ? ORDER BY timestamp ASC", ("%Guild Party%",))
             all_gp_events = await cursor.fetchall()
 
         if not all_gp_events:
             return await interaction.response.send_message("No upcoming Guild Party events found in the schedule.", ephemeral=False)
 
-        view = ReminderPreviewView(self, all_gp_events)
-        embed = await self.create_reminder_embed(all_gp_events[0], pre_fetched_events=all_gp_events)
+        view = ReminderPreviewView(self, all_gp_events, all_events)
+        embed = await self.create_reminder_embed(all_gp_events[0], pre_fetched_events=all_events)
         
         await interaction.response.send_message(
             content="**Previewing 1 of {} upcoming Guild Party reminders.**".format(len(all_gp_events)),
