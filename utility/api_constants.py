@@ -128,6 +128,7 @@ API_ENDPOINTS = {
     "get_club_hostnums": "/club/hostnums",
     "get_fashion_plan": "/fashion/plan/get",
     "get_club_chat": "/club/chat/get",
+    "find_people_by_nickname": "/find_people/by_nickname",
 }
 
 

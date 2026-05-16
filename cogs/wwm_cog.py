@@ -8,7 +8,7 @@ from collections import defaultdict
 from deepdiff import DeepDiff
 
 import settings
-from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch
+from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
@@ -551,24 +551,37 @@ class WWMCog(commands.Cog):
         if self.guild_monitor_task.is_running():
             self.guild_monitor_task.cancel()
 
-    @player_group.command(name="search", description="Search for a WWM player by their Number ID")
-    @app_commands.describe(number_id="The player's 10-digit Number ID")
-    async def player_search(self, interaction: discord.Interaction, number_id: str):
+    @player_group.command(name="search", description="Search for a WWM player by their Number ID or nickname")
+    @app_commands.describe(
+        number_id="The player's 10-digit Number ID (use this OR nickname)",
+        nickname="The player's in-game nickname (use this OR number_id)"
+    )
+    async def player_search(self, interaction: discord.Interaction, number_id: str = None, nickname: str = None):
         await interaction.response.send_message("🔍 Searching for player...")
+
+        # Validate exactly one parameter is provided
+        if number_id is None and nickname is None:
+            embed = discord.Embed(
+                title="❌ Missing Arguments",
+                description="You must provide either a **Number ID** or a **nickname** to search by.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
+        
+        if number_id is not None and nickname is not None:
+            embed = discord.Embed(
+                title="❌ Too Many Arguments",
+                description="Please provide only **one** of: Number ID **or** nickname, not both.",
+                color=discord.Color.red()
+            )
+            await interaction.followup.send(embed=embed)
+            return
 
         async with aiosqlite.connect(DB_PATH) as conn:
             cursor = await conn.execute("SELECT 1 FROM verified_members WHERE user_id = ?", (interaction.user.id,))
             row = await cursor.fetchone()
             is_verified = row is not None
-
-        if not number_id.isdigit() or len(number_id) != 10:
-            embed = discord.Embed(
-                title="❌ Invalid Number ID",
-                description="Number ID must be exactly 10 digits long",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
 
         if not WWM_UID or not WWM_TOKEN:
             embed = discord.Embed(
@@ -580,29 +593,72 @@ class WWMCog(commands.Cog):
             return
 
         try:
-            await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...")
-            
-            raw_data = get_player_info(number_id, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
-            
-            if not raw_data:
-                embed = discord.Embed(title="❌ Player not found", color=discord.Color.red())
-                await interaction.followup.send(embed=embed)
-                return
+            if number_id is not None:
+                # --- Lookup by Number ID ---
+                if not number_id.isdigit() or len(number_id) != 10:
+                    embed = discord.Embed(
+                        title="❌ Invalid Number ID",
+                        description="Number ID must be exactly 10 digits long",
+                        color=discord.Color.red()
+                    )
+                    await interaction.followup.send(embed=embed)
+                    return
 
-            logger.debug(f"API Response received: {str(raw_data)}")
+                await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...")
+                raw_data = get_player_info(number_id, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+                
+                if not raw_data:
+                    embed = discord.Embed(title="❌ Player not found", color=discord.Color.red())
+                    await interaction.followup.send(embed=embed)
+                    return
+
+                data = raw_data.get('result', raw_data) if isinstance(raw_data, dict) else raw_data
+                player_pid = data.get('id')
+                player_hostnum = data.get('hostnum', 10403)
+            else:
+                # --- Lookup by Nickname ---
+                await interaction.edit_original_response(content="✅ Found by nickname\n📦 Loading player profile...")
+                
+                nickname_data = find_people_by_nickname(nickname)
+                
+                if not nickname_data or 'result' not in nickname_data or not nickname_data['result']:
+                    embed = discord.Embed(
+                        title="❌ Player not found",
+                        description=f"No player found with nickname `{nickname}`",
+                        color=discord.Color.red()
+                    )
+                    await interaction.followup.send(embed=embed)
+                    return
+                
+                people_info = nickname_data['result']
+                player_pid = people_info.get('id')
+                player_hostnum = people_info.get('hostnum', 10403)
+                
+                if not player_pid:
+                    embed = discord.Embed(
+                        title="❌ Player not found",
+                        description=f"Could not resolve nickname `{nickname}` to a player ID",
+                        color=discord.Color.red()
+                    )
+                    await interaction.followup.send(embed=embed)
+                    return
+                
+                raw_data = fetch_player_data_by_pid(player_pid, hostnum=10595)
+                
+                if not raw_data:
+                    embed = discord.Embed(title="❌ Failed to load player data", color=discord.Color.red())
+                    await interaction.followup.send(embed=embed)
+                    return
+                
+                data = raw_data.get('result', raw_data) if isinstance(raw_data, dict) else raw_data
+                # Preserve hostnum from nickname lookup
+                data['hostnum'] = player_hostnum
+
+            logger.debug(f"API Response received for PID: {player_pid}")
 
             embed = discord.Embed(title="👤 Player Profile", color=discord.Color.og_blurple())
             
             try:
-                player_pid = None
-                player_hostnum = 10403
-                
-                if isinstance(raw_data, dict):
-                    data = raw_data.get('result', raw_data)
-                    player_pid = data.get('id')
-                    if 'hostnum' in data:
-                        player_hostnum = data.get('hostnum', 10403)
-                
                 if player_pid:
                     fashion_data = get_fashion_plan(player_pid, hostnum=player_hostnum)
                     if fashion_data:
@@ -613,64 +669,57 @@ class WWMCog(commands.Cog):
             except Exception as fashion_err:
                 logger.warning(f"Failed to get fashion cover image: {str(fashion_err)}")
 
-            if isinstance(raw_data, dict):
-                if 'result' in raw_data:
-                    data = raw_data.get('result', {})
-                else:
-                    data = raw_data
-                
-                base_data = data.get('base', {})
-                if isinstance(base_data, list) and len(base_data) > 0:
-                    base_data = base_data[0]
-                if not base_data and 'nickname' in data:
-                    base_data = data
-                
-                nickname = base_data.get('nickname', data.get('nickname', 'Unknown'))
-                embed.description = f"**{nickname}**"
-                
-                embed.add_field(name="📛 Nickname", value=f"`{nickname}`", inline=True)
-                embed.add_field(name="🏆 Level", value=f"`{base_data.get('level', 0)}`", inline=True)
-                embed.add_field(name="🆔 Number ID", value=f"`{base_data.get('number_id', number_id)}`", inline=True)
-
-                name_card = data.get('name_card', {})
-                player_signature = name_card.get('sign', None)
-                if player_signature and player_signature.strip():
-                    embed.add_field(name="✍️ Player Signature", value=f"`{player_signature}`", inline=False)
-
-                if is_verified:
-                    attr = data.get('attr', {})
-                    embed.add_field(name="⚔️ Martial Mastery", value=f"`{round(attr.get('XIUWEI_KUNGFU', 0), 1)}`", inline=True)
-                    embed.add_field(name="📚 Scholar Mastery", value=f"`{round(attr.get('XIUWEI_TRADE3', 0), 1)}`", inline=True)
-                    embed.add_field(name="💚 Healer Mastery", value=f"`{round(attr.get('XIUWEI_TRADE4', 0), 1)}`", inline=True)
-                    embed.add_field(name="🗺️ Exploration Mastery", value=f"`{round(attr.get('XIUWEI_EXPLORE', 0), 1)}`", inline=True)
-                    embed.add_field(name="🥊 Power", value=f"`{round(attr.get('STR', 0), 1)}`", inline=True)
-                    embed.add_field(name="🛡️ Body", value=f"`{round(attr.get('CON', 0), 1)}`", inline=True)
-                    embed.add_field(name="⚡ Momentum", value=f"`{round(attr.get('BAS', 0), 1)}`", inline=True)
-                    embed.add_field(name="💨 Agility", value=f"`{round(attr.get('CRI', 0), 1)}`", inline=True)
-                    embed.add_field(name="🔰 Defense", value=f"`{round(attr.get('AGI', 0), 1)}`", inline=True)
-                    embed.add_field(name="🌍 Region", value=f"`{base_data.get('oversea_tag', 'N/A')}`", inline=True)
-                    embed.add_field(name="⌛ Total Online Time", value=f"`{round(base_data.get('online_time', 0) / 3600, 1)} hours`", inline=True)
-                else:
-                    embed.set_footer(text="🔗 Bind your account to view full stats, combat power and details. Go to #1501139237594992780 to link your game account.")
-
-                status_lines = []
-                is_online = base_data.get('is_online', 0)
-                if is_online == 1:
-                    status_lines.append("`🟢 ONLINE NOW`")
-                else:
-                    status_lines.append("`🔴 Offline`")
-                
-                gameplay = data.get('gameplay_trail', {})
-                played = gameplay.get('played', [])
-                for match in played:
-                    if 'grade' in match and 'score' in match:
-                        status_lines.append(f"⚔️ PvP Grade: `{match['grade']}` | Score: `{match['score']}`")
-                        break
-                
-                if status_lines:
-                    embed.add_field(name="📋 Status", value="\n".join(status_lines), inline=False)
+            base_data = data.get('base', {})
+            if isinstance(base_data, list) and len(base_data) > 0:
+                base_data = base_data[0]
+            if not base_data and 'nickname' in data:
+                base_data = data
             
-            player_pid = data.get('id')
+            player_nickname = base_data.get('nickname', data.get('nickname', nickname or 'Unknown'))
+            embed.description = f"**{player_nickname}**"
+            
+            embed.add_field(name="📛 Nickname", value=f"`{player_nickname}`", inline=True)
+            embed.add_field(name="🏆 Level", value=f"`{base_data.get('level', 0)}`", inline=True)
+            embed.add_field(name="🆔 Number ID", value=f"`{base_data.get('number_id', number_id or 'N/A')}`", inline=True)
+
+            name_card = data.get('name_card', {})
+            player_signature = name_card.get('sign', None)
+            if player_signature and player_signature.strip():
+                embed.add_field(name="✍️ Player Signature", value=f"`{player_signature}`", inline=False)
+
+            if is_verified:
+                attr = data.get('attr', {})
+                embed.add_field(name="⚔️ Martial Mastery", value=f"`{round(attr.get('XIUWEI_KUNGFU', 0), 1)}`", inline=True)
+                embed.add_field(name="📚 Scholar Mastery", value=f"`{round(attr.get('XIUWEI_TRADE3', 0), 1)}`", inline=True)
+                embed.add_field(name="💚 Healer Mastery", value=f"`{round(attr.get('XIUWEI_TRADE4', 0), 1)}`", inline=True)
+                embed.add_field(name="🗺️ Exploration Mastery", value=f"`{round(attr.get('XIUWEI_EXPLORE', 0), 1)}`", inline=True)
+                embed.add_field(name="🥊 Power", value=f"`{round(attr.get('STR', 0), 1)}`", inline=True)
+                embed.add_field(name="🛡️ Body", value=f"`{round(attr.get('CON', 0), 1)}`", inline=True)
+                embed.add_field(name="⚡ Momentum", value=f"`{round(attr.get('BAS', 0), 1)}`", inline=True)
+                embed.add_field(name="💨 Agility", value=f"`{round(attr.get('CRI', 0), 1)}`", inline=True)
+                embed.add_field(name="🔰 Defense", value=f"`{round(attr.get('AGI', 0), 1)}`", inline=True)
+                embed.add_field(name="🌍 Region", value=f"`{base_data.get('oversea_tag', 'N/A')}`", inline=True)
+                embed.add_field(name="⌛ Total Online Time", value=f"`{round(base_data.get('online_time', 0) / 3600, 1)} hours`", inline=True)
+            else:
+                embed.set_footer(text="🔗 Bind your account to view full stats, combat power and details. Go to #1501139237594992780 to link your game account.")
+
+            status_lines = []
+            is_online = base_data.get('is_online', 0)
+            if is_online == 1:
+                status_lines.append("`🟢 ONLINE NOW`")
+            else:
+                status_lines.append("`🔴 Offline`")
+            
+            gameplay = data.get('gameplay_trail', {})
+            played = gameplay.get('played', [])
+            for match in played:
+                if 'grade' in match and 'score' in match:
+                    status_lines.append(f"⚔️ PvP Grade: `{match['grade']}` | Score: `{match['score']}`")
+                    break
+            
+            if status_lines:
+                embed.add_field(name="📋 Status", value="\n".join(status_lines), inline=False)
+            
             if player_pid:
                 try:
                     await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...\n🏰 Checking guild info...")
@@ -707,16 +756,14 @@ class WWMCog(commands.Cog):
                     
                 except Exception as club_err:
                     logger.warning(f"Failed to get club info: {str(club_err)}")
-            else:
-                embed.description = f"```\n{str(raw_data)}\n```"
-
+            
             await interaction.edit_original_response(content=None, embed=embed)
 
         except Exception as e:
-            logger.error(f"API Request failed: {str(e)}")
+            logger.error(f"Player search failed: {str(e)}")
             embed = discord.Embed(
                 title="❌ API Error",
-                description=f"Failed to connect to WWM API: `{str(e)}`",
+                description=f"Failed to search for player: `{str(e)}`",
                 color=discord.Color.red()
             )
             await interaction.edit_original_response(content=None, embed=embed)

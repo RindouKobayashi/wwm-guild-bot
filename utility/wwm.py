@@ -10,7 +10,8 @@ from typing import Dict, Any, Optional, List
 from settings import (
     WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL,
     WWM_FULL_GUILD_URL, WWM_FASHION_PLAN_URL, WWM_CLUB_BY_NAME_URL,
-    WWM_CLUB_BRIEF_INFO_BATCH_URL, WWM_CLUB_CHAT_URL, WWM_HOST, logger
+    WWM_CLUB_BRIEF_INFO_BATCH_URL, WWM_CLUB_CHAT_URL,
+    WWM_FIND_PEOPLE_BY_NICKNAME_URL, WWM_HOST, logger
 )
 
 # -----------------------------------------------------------------------------
@@ -356,6 +357,70 @@ def get_club_by_name(club_name: str, limit: int = 5, start: int = 0) -> Optional
         return clubs
     
     logger.debug(f"No clubs found matching '{club_name}'")
+    return None
+
+
+def find_people_by_nickname(nickname: str) -> Optional[Dict[str, Any]]:
+    """
+    Search for a player by their in-game nickname.
+    Returns player info including 'id' (PID) and 'hostnum'.
+    """
+    logger.debug(f"Searching for player by nickname: '{nickname}'")
+    
+    if not WWM_FIND_PEOPLE_BY_NICKNAME_URL:
+        logger.error("WWM_FIND_PEOPLE_BY_NICKNAME_URL is not configured")
+        return None
+    
+    payload = {
+        "nickname": nickname,
+        "uid": WWM_UID,
+        "force_search": False
+    }
+    
+    response = _wwm_api_post(WWM_FIND_PEOPLE_BY_NICKNAME_URL, payload)
+    
+    if response and 'result' in response:
+        people_info = response['result']
+        logger.debug(f"Found player by nickname: {people_info.get('id', 'unknown')}")
+        return {
+            'code': 0,
+            'result': people_info
+        }
+    
+    logger.warning(f"No player found for nickname: '{nickname}'")
+    return response
+
+
+def fetch_player_data_by_pid(player_pid: str, uid: Optional[str] = None, token: Optional[str] = None, hostnum: int = 10595) -> Optional[Dict[str, Any]]:
+    """
+    Fetch full player data directly by PID (player ID) from the Redis endpoint.
+    This is used after resolving a player's PID via nickname lookup.
+    """
+    logger.debug(f"Fetching full player data for PID: {player_pid}")
+    
+    redis_data = _wwm_api_post(
+        WWM_CLUB_HOSTNUMS_URL,
+        {
+            "fields": DEFAULT_FIELDS,
+            "hostnum2pids": {
+                hostnum: [player_pid]
+            },
+            "uid": uid if uid else WWM_UID
+        },
+        uid=uid,
+        token=token
+    )
+    
+    if redis_data and 'result' in redis_data and redis_data['result']:
+        first_pid = next(iter(redis_data['result'].keys()))
+        full_player_data = redis_data['result'][first_pid]
+        logger.debug("✅ Got full player data by PID")
+        return {
+            'code': 0,
+            'result': full_player_data
+        }
+    
+    logger.warning("Failed to fetch player data by PID")
     return None
 
 
