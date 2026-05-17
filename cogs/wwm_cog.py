@@ -719,11 +719,13 @@ class WWMCog(commands.Cog):
                 embed.set_footer(text="🔗 Bind your account to view full stats, combat power and details. Go to #1501139237594992780 to link your game account.")
 
             status_lines = []
+            is_invisible = base_data.get('invisible', False)
             is_online = base_data.get('is_online', 0)
-            if is_online == 1:
-                status_lines.append("`🟢 ONLINE NOW`")
-            else:
-                status_lines.append("`🔴 Offline`")
+            if not is_invisible:
+                if is_online == 1:
+                    status_lines.append("`🟢 ONLINE NOW`")
+                else:
+                    status_lines.append("`🔴 Offline`")
             
             gameplay = data.get('gameplay_trail', {})
             played = gameplay.get('played', [])
