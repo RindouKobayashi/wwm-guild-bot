@@ -688,6 +688,21 @@ class WWMCog(commands.Cog):
                 embed.add_field(name="✍️ Player Signature", value=f"`{player_signature}`", inline=False)
 
             if is_verified:
+                # ---- Account Creation Time ----
+                create_time = base_data.get('create_time', 0)
+                if create_time:
+                    embed.add_field(name="📅 Account Created", value=f"<t:{int(create_time)}:R>", inline=True)
+
+                # ---- Sworn Cohort (Jieyi) ----
+                jieyi = data.get('jieyi', {})
+                jieyi_name = jieyi.get('jieyi_name')
+                jieyi_text = jieyi.get('jieyi_text')
+                if jieyi_name:
+                    cohort_display = jieyi_name
+                    if jieyi_text:
+                        cohort_display += f" {jieyi_text}"
+                    embed.add_field(name="🤝 Sworn Cohort", value=f"`{cohort_display}`", inline=True)
+
                 attr = data.get('attr', {})
                 embed.add_field(name="⚔️ Martial Mastery", value=f"`{round(attr.get('XIUWEI_KUNGFU', 0), 1)}`", inline=True)
                 embed.add_field(name="📚 Scholar Mastery", value=f"`{round(attr.get('XIUWEI_TRADE3', 0), 1)}`", inline=True)
