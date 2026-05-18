@@ -139,6 +139,21 @@ CLUB_CHAT_FIELDS = [
     "chat"
 ]
 
+# ==============================================
+# SCHOOL / SECT MAPPING
+# ==============================================
+# In-game Sects (base.school is a numeric ID).
+SCHOOL_NAMES = {
+    1: "Well of Heaven",
+    2: "Masked Troupe",
+    3: "Raging Tides",
+    4: "Silver Neddle",
+    6: "Midnight Blades",
+    11: "Nine Mortal Ways",
+    12: "Velvet Shade",
+    100: "Sectless",
+}
+
 CLUB_CHAT_MESSAGE_FIELDS = {
     "from_pid",
     "nickname",

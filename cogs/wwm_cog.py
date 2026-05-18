@@ -10,6 +10,7 @@ from deepdiff import DeepDiff
 import settings
 from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
+from utility.api_constants import SCHOOL_NAMES
 
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 SCHEDULE_DB_PATH = BASE_DIR / "data" / "schedule.db"
@@ -677,6 +678,10 @@ class WWMCog(commands.Cog):
             
             player_nickname = base_data.get('nickname', data.get('nickname', nickname or 'Unknown'))
             embed.description = f"**{player_nickname}**"
+
+            # Log school ID for mapping purposes
+            school_id = base_data.get('school', 0)
+            logger.info(f"[PLAYER SEARCH] {player_nickname} (PID: {player_pid}) — School ID: {school_id}")
             
             embed.add_field(name="📛 Nickname", value=f"`{player_nickname}`", inline=True)
             embed.add_field(name="🏆 Level", value=f"`{base_data.get('level', 0)}`", inline=True)
@@ -702,6 +707,11 @@ class WWMCog(commands.Cog):
                     if jieyi_text:
                         cohort_display += f" {jieyi_text}"
                     embed.add_field(name="🤝 Sworn Cohort", value=f"`{cohort_display}`", inline=True)
+
+                # ---- Sect (School) ----
+                school_id = base_data.get('school', 0)
+                if school_id in SCHOOL_NAMES:
+                    embed.add_field(name="🏛️ Sect", value=f"`{SCHOOL_NAMES[school_id]}`", inline=True)
 
                 attr = data.get('attr', {})
                 embed.add_field(name="⚔️ Martial Mastery", value=f"`{round(attr.get('XIUWEI_KUNGFU', 0), 1)}`", inline=True)
