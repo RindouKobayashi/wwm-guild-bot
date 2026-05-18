@@ -123,7 +123,7 @@ class ReminderCog(commands.Cog):
             async with aiosqlite.connect(self.db_path) as db:
                 db.row_factory = aiosqlite.Row
                 cursor = await db.execute(
-                    "SELECT * FROM schedule_events WHERE timestamp > ? ORDER BY timestamp ASC",
+                    "SELECT * FROM schedule_events WHERE timestamp >= ? ORDER BY timestamp ASC",
                     (gp_ts,)
                 )
                 future_events = await cursor.fetchall()
@@ -137,7 +137,10 @@ class ReminderCog(commands.Cog):
         events_found = False
         for event in future_events:
             # Only show events after the guild party ends AND on the same day
-            if event['timestamp'] <= gp_ts:
+            if event['timestamp'] < gp_ts:
+                continue
+            # Skip the guild party event itself
+            if event['id'] == gp_event['id']:
                 continue
             if self.get_day_number(event['timestamp']) == day_num:
                 ts = event['timestamp']
