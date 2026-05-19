@@ -373,21 +373,128 @@ class GuildVerificationCog(commands.Cog):
         await interaction.followup.send(embed=embed, ephemeral=True)
         
         try:
-            log_channel = interaction.guild.get_channel(1443104374837608529)
-            if log_channel:
-                notification_embed = discord.Embed(
-                    title="🔗 Account Bound",
-                    description=f"{member.mention} has just bound their account.",
-                    color=discord.Color.green()
-                )
-                notification_embed.add_field(name="Discord User", value=f"{member.mention}\n`{str(member)}`", inline=True)
-                notification_embed.add_field(name="Character UID", value=f"`{character_uid.strip()}`", inline=True)
-                notification_embed.set_footer(text="WWM Guild Verification System")
-                await log_channel.send(embed=notification_embed)
+            mod_channel_id = getattr(settings, 'MOD_CHANNEL_LOG_ID', None)
+            if mod_channel_id:
+                log_channel = interaction.guild.get_channel(mod_channel_id)
+                if log_channel:
+                    notification_embed = discord.Embed(
+                        title="🔗 Account Bound",
+                        description=f"{member.mention} has just bound their account.",
+                        color=discord.Color.green()
+                    )
+                    notification_embed.add_field(name="Discord User", value=f"{member.mention}\n`{str(member)}`", inline=True)
+                    notification_embed.add_field(name="Character UID", value=f"`{character_uid.strip()}`", inline=True)
+                    notification_embed.set_footer(text="WWM Guild Verification System")
+                    await log_channel.send(embed=notification_embed)
         except Exception as e:
             logger.error(f"Failed to send binding notification: {str(e)}")
         
         logger.info(f"Manual member added: {member} | UID: {character_uid} | by {interaction.user}")
+
+    @app_commands.command(name="unbind-account", description="Unbind your game account from Discord")
+    @app_commands.describe(
+        member="(Admin) Force unbind a specific Discord member",
+        character_uid="(Admin) Force unbind by Character UID"
+    )
+    async def unbind_account(self, interaction: discord.Interaction, member: discord.Member = None, character_uid: str = None):
+        """Unbind a verified account - self-service or admin force unbind"""
+        
+        # If member or character_uid is provided, it's an admin force unbind
+        is_admin_force = member is not None or character_uid is not None
+        
+        if is_admin_force:
+            # Admin force unbind - check permissions
+            if not interaction.user.guild_permissions.administrator:
+                # Also check if they have the GUILD_ADMIN_ROLE
+                if hasattr(settings, 'GUILD_ADMIN_ROLE_ID'):
+                    admin_role = interaction.guild.get_role(settings.GUILD_ADMIN_ROLE_ID)
+                    if not admin_role or admin_role not in interaction.user.roles:
+                        await interaction.response.send_message(
+                            "❌ You don't have permission to force unbind users.",
+                            ephemeral=True
+                        )
+                        return
+                else:
+                    await interaction.response.send_message(
+                        "❌ You don't have permission to force unbind users.",
+                        ephemeral=True
+                    )
+                    return
+        await interaction.response.defer(ephemeral=True)
+        
+        # Look up the verified member record
+        async with aiosqlite.connect(DB_PATH) as conn:
+            result = None
+            if is_admin_force:
+                if member:
+                    cursor = await conn.execute(
+                        "SELECT user_id, username, character_uid, verified_at FROM verified_members WHERE user_id = ?",
+                        (member.id,)
+                    )
+                    result = await cursor.fetchone()
+                elif character_uid:
+                    cursor = await conn.execute(
+                        "SELECT user_id, username, character_uid, verified_at FROM verified_members WHERE character_uid = ?",
+                        (character_uid.strip(),)
+                    )
+                    result = await cursor.fetchone()
+            else:
+                # Self-service: lookup by the command user
+                cursor = await conn.execute(
+                    "SELECT user_id, username, character_uid, verified_at FROM verified_members WHERE user_id = ?",
+                    (interaction.user.id,)
+                )
+                result = await cursor.fetchone()
+        
+        if not result:
+            if is_admin_force:
+                await interaction.followup.send(
+                    "❌ No bound account found for the provided search criteria.",
+                    ephemeral=True
+                )
+            else:
+                await interaction.followup.send(
+                    "❌ You don't have a bound account to unbind.",
+                    ephemeral=True
+                )
+            return
+        
+        target_user_id, target_username, target_character_uid, verified_at_str = result
+        
+        from datetime import timezone
+        verified_dt = datetime.fromisoformat(verified_at_str).replace(tzinfo=timezone.utc)
+        verified_timestamp = int(verified_dt.timestamp())
+        
+        if is_admin_force:
+            embed = discord.Embed(
+                title="⚠️ Force Unbind Account",
+                description="Are you sure you want to force unbind this account? This action cannot be undone.",
+                color=discord.Color.red()
+            )
+            embed.add_field(name="Target User", value=f"<@{target_user_id}>\n`{target_username}`", inline=True)
+            embed.add_field(name="Character UID", value=f"`{target_character_uid}`", inline=True)
+            embed.add_field(name="Bound Since", value=f"<t:{verified_timestamp}>", inline=False)
+            embed.add_field(name="Action By", value=interaction.user.mention, inline=False)
+        else:
+            embed = discord.Embed(
+                title="⚠️ Confirm Account Unbind",
+                description="Are you sure you want to unbind your account? This action cannot be undone.",
+                color=discord.Color.yellow()
+            )
+            embed.add_field(name="Discord User", value=f"{interaction.user.mention}\n`{target_username}`", inline=True)
+            embed.add_field(name="Character UID", value=f"`{target_character_uid}`", inline=True)
+            embed.add_field(name="Bound Since", value=f"<t:{verified_timestamp}>", inline=False)
+        
+        view = UnbindConfirmView(
+            target_user_id=target_user_id,
+            target_username=target_username,
+            character_uid=target_character_uid,
+            is_admin_force=is_admin_force,
+            admin_id=interaction.user.id if is_admin_force else None
+        )
+        
+        await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+        logger.info(f"Unbind request initiated by {interaction.user} (admin_force={is_admin_force}) for user_id={target_user_id}")
 
     @app_commands.command(name="setup-verification", description="Start guild verification system setup wizard")
     @app_commands.checks.has_permissions(administrator=True)
@@ -1159,17 +1266,19 @@ class VerifySignatureView(discord.ui.View):
                 )
                 
                 try:
-                    log_channel = interaction.guild.get_channel(1443104374837608529)
-                    if log_channel:
-                        notification_embed = discord.Embed(
-                            title="🔗 Account Bound",
-                            description=f"{interaction.user.mention} has just bound their account.",
-                            color=discord.Color.green()
-                        )
-                        notification_embed.add_field(name="Discord User", value=f"{interaction.user.mention}\n`{self.username}`", inline=True)
-                        notification_embed.add_field(name="Character UID", value=f"`{self.character_uid}`", inline=True)
-                        notification_embed.set_footer(text="WWM Guild Verification System")
-                        await log_channel.send(embed=notification_embed)
+                    mod_channel_id = getattr(settings, 'MOD_CHANNEL_LOG_ID', None)
+                    if mod_channel_id:
+                        log_channel = interaction.guild.get_channel(mod_channel_id)
+                        if log_channel:
+                            notification_embed = discord.Embed(
+                                title="🔗 Account Bound",
+                                description=f"{interaction.user.mention} has just bound their account.",
+                                color=discord.Color.green()
+                            )
+                            notification_embed.add_field(name="Discord User", value=f"{interaction.user.mention}\n`{self.username}`", inline=True)
+                            notification_embed.add_field(name="Character UID", value=f"`{self.character_uid}`", inline=True)
+                            notification_embed.set_footer(text="WWM Guild Verification System")
+                            await log_channel.send(embed=notification_embed)
                 except Exception as e:
                     logger.error(f"Failed to send binding notification: {str(e)}")
                 
@@ -1366,6 +1475,204 @@ class RejectReasonModal(discord.ui.Modal, title="Reject Verification Request"):
                 logger.warning(f"Could not send DM to user {target_user}")
         
         logger.info(f"Verification rejected for {self.username} by {interaction.user} | Reason: {reject_reason}")
+
+
+class UnbindConfirmView(discord.ui.View):
+    """Confirmation view for unbinding accounts - used for both self-service and admin force unbind"""
+    
+    def __init__(self, target_user_id: int, target_username: str, character_uid: str,
+                 is_admin_force: bool = False, admin_id: int = None):
+        super().__init__(timeout=120)
+        self.target_user_id = target_user_id
+        self.target_username = target_username
+        self.character_uid = character_uid
+        self.is_admin_force = is_admin_force
+        self.admin_id = admin_id
+        
+        if is_admin_force:
+            self.confirm_button.label = "Yes, Force Unbind"
+            self.confirm_button.style = ButtonStyle.danger
+        else:
+            self.confirm_button.label = "Yes, Unbind My Account"
+            self.confirm_button.style = ButtonStyle.danger
+    
+    @discord.ui.button(label="Yes, Unbind My Account", style=ButtonStyle.danger, emoji="⚠️")
+    async def confirm_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        # Verify the user clicking has permission
+        if self.is_admin_force:
+            # Admin force: verify the clicking user is the same admin or has admin perms
+            if interaction.user.id != self.admin_id:
+                if not interaction.user.guild_permissions.administrator:
+                    if hasattr(settings, 'GUILD_ADMIN_ROLE_ID'):
+                        admin_role = interaction.guild.get_role(settings.GUILD_ADMIN_ROLE_ID)
+                        if not admin_role or admin_role not in interaction.user.roles:
+                            await interaction.response.send_message("You are not authorized to perform this action.", ephemeral=True)
+                            return
+                    else:
+                        await interaction.response.send_message("You are not authorized to perform this action.", ephemeral=True)
+                        return
+        else:
+            # Self-service: verify the clicking user is the target user
+            if interaction.user.id != self.target_user_id:
+                await interaction.response.send_message("This unbind request is not for you.", ephemeral=True)
+                return
+        
+        await interaction.response.defer(ephemeral=True)
+        
+        # Verify the record still exists (race condition check)
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute("SELECT user_id FROM verified_members WHERE user_id = ?", (self.target_user_id,))
+            existing = await cursor.fetchone()
+            
+            if not existing:
+                await interaction.followup.send(
+                    "❌ This account has already been unbound.",
+                    ephemeral=True
+                )
+                return
+            
+            # Delete from verified_members
+            await conn.execute("DELETE FROM verified_members WHERE user_id = ?", (self.target_user_id,))
+            await conn.commit()
+        
+        # Remove verification-related roles from the member if they're still in the guild
+        guild = interaction.guild
+        target_member = guild.get_member(self.target_user_id)
+        
+        if target_member:
+            roles_to_remove = []
+            if hasattr(settings, 'GUILD_MEMBER_ROLE_ID'):
+                guild_role = guild.get_role(settings.GUILD_MEMBER_ROLE_ID)
+                if guild_role and guild_role in target_member.roles:
+                    roles_to_remove.append(guild_role)
+            if hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID'):
+                community_role = guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
+                if community_role and community_role in target_member.roles:
+                    roles_to_remove.append(community_role)
+            
+            if roles_to_remove:
+                await target_member.remove_roles(*roles_to_remove)
+                logger.info(f"Removed roles {[r.name for r in roles_to_remove]} from {target_member} (unbind)")
+        
+        # Send success response
+        if self.is_admin_force:
+            embed = discord.Embed(
+                title="✅ Account Force Unbound",
+                description=f"The account for {self.target_username} has been successfully unbound.",
+                color=discord.Color.green()
+            )
+            embed.add_field(name="Target User", value=f"<@{self.target_user_id}>", inline=True)
+            embed.add_field(name="Character UID", value=f"`{self.character_uid}`", inline=True)
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            
+            # Notify the unbound user via DM
+            if target_member:
+                try:
+                    await target_member.send(
+                        f"❌ **Your account binding has been removed by staff.**\n\n"
+                        f"If you believe this is an error, please contact the server administrators."
+                    )
+                except:
+                    logger.warning(f"Could not send unbind DM to user {target_member}")
+            
+            logger.info(f"Admin force unbind: {self.target_username} (UID: {self.character_uid}) by {interaction.user}")
+        else:
+            embed = discord.Embed(
+                title="✅ Account Unbound",
+                description=f"Your account has been successfully unbound.\n\n"
+                           f"You can always bind a new account later using the verification system.",
+                color=discord.Color.green()
+            )
+            
+            await interaction.followup.send(embed=embed, ephemeral=True)
+            
+            logger.info(f"Self-service unbind: {self.target_username} (UID: {self.character_uid})")
+        
+        # Log to the binding log channel
+        try:
+            mod_channel_id = getattr(settings, 'MOD_CHANNEL_LOG_ID', None)
+            if mod_channel_id:
+                log_channel = guild.get_channel(mod_channel_id)
+                if log_channel:
+                    if self.is_admin_force:
+                        log_embed = discord.Embed(
+                            title="🔓 Account Unbound (Force)",
+                            description=f"An administrator has force unbound a member's account.",
+                            color=discord.Color.red()
+                        )
+                        log_embed.add_field(name="Target User", value=f"<@{self.target_user_id}>\n`{self.target_username}`", inline=True)
+                        log_embed.add_field(name="Character UID", value=f"`{self.character_uid}`", inline=True)
+                        log_embed.add_field(name="Unbound By", value=interaction.user.mention, inline=False)
+                    else:
+                        log_embed = discord.Embed(
+                            title="🔓 Account Unbound (Self)",
+                            description=f"A member has unbound their own account.",
+                            color=discord.Color.yellow()
+                        )
+                        log_embed.add_field(name="User", value=f"<@{self.target_user_id}>\n`{self.target_username}`", inline=True)
+                        log_embed.add_field(name="Character UID", value=f"`{self.character_uid}`", inline=True)
+                    
+                    log_embed.set_footer(text="WWM Guild Verification System")
+                    await log_channel.send(embed=log_embed)
+        except Exception as e:
+            logger.error(f"Failed to send unbind log: {str(e)}")
+        
+    
+    @discord.ui.button(label="Cancel", style=ButtonStyle.secondary, emoji="❌")
+    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if self.is_admin_force:
+            # Allow the same admin or any admin to cancel
+            if interaction.user.id != self.admin_id:
+                if not interaction.user.guild_permissions.administrator:
+                    if hasattr(settings, 'GUILD_ADMIN_ROLE_ID'):
+                        admin_role = interaction.guild.get_role(settings.GUILD_ADMIN_ROLE_ID)
+                        if not admin_role or admin_role not in interaction.user.roles:
+                            await interaction.response.send_message("You cannot cancel this action.", ephemeral=True)
+                            return
+                    else:
+                        await interaction.response.send_message("You cannot cancel this action.", ephemeral=True)
+                        return
+        else:
+            if interaction.user.id != self.target_user_id:
+                await interaction.response.send_message("This unbind request is not for you.", ephemeral=True)
+                return
+        
+        # Disable all buttons
+        for child in self.children:
+            child.disabled = True
+        
+        if self.is_admin_force:
+            embed = discord.Embed(
+                title="✅ Force Unbind Cancelled",
+                description="The force unbind action has been cancelled.",
+                color=discord.Color.green()
+            )
+        else:
+            embed = discord.Embed(
+                title="✅ Unbind Cancelled",
+                description="Your account unbind has been cancelled.",
+                color=discord.Color.green()
+            )
+        
+        await interaction.response.edit_message(embed=embed, view=self)
+        logger.info(f"Unbind cancelled by {interaction.user} (admin_force={self.is_admin_force})")
+    
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+        
+        # Edit the message to show it timed out if we have a reference
+        try:
+            embed = discord.Embed(
+                title="⏰ Request Expired",
+                description="This unbind request has expired. Please use the command again.",
+                color=discord.Color.greyple()
+            )
+            await self.message.edit(embed=embed, view=self)
+        except:
+            pass
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(GuildVerificationCog(bot))
