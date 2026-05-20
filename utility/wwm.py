@@ -12,7 +12,7 @@ from settings import (
     WWM_FULL_GUILD_URL, WWM_FASHION_PLAN_URL, WWM_CLUB_BY_NAME_URL,
     WWM_CLUB_BRIEF_INFO_BATCH_URL, WWM_CLUB_CHAT_URL,
     WWM_FIND_PEOPLE_BY_NICKNAME_URL, WWM_HOST, logger,
-    WWM_FASHION_SCORE_URL,
+    WWM_FASHION_SCORE_URL, WWM_FILM_PLAN_URL,
 )
 
 # -----------------------------------------------------------------------------
@@ -313,6 +313,19 @@ def get_fashion_score(player_pid: str, hostnum: int = 10403) -> Optional[Dict[st
             "uid": WWM_UID,
             "pid": player_pid,
             "hostnum": hostnum
+        }
+    )
+
+
+def get_film_plan(plan_id: str) -> Optional[Dict[str, Any]]:
+    """Get exhibition/dance video plan details by plan_id"""
+    logger.debug(f"Getting film plan for plan_id: {plan_id}")
+    
+    return _wwm_api_post(
+        WWM_FILM_PLAN_URL,
+        {
+            "plan_id": plan_id,
+            "uid": WWM_UID,
         }
     )
 

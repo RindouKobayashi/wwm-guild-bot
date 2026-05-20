@@ -6,7 +6,7 @@ from typing import Optional, Set
 import discord
 from discord.ext import commands, tasks
 from settings import logger
-from utility.wwm import get_club_chat, get_custom_guild_info, get_bulk_players_info
+from utility.wwm import get_club_chat, get_custom_guild_info, get_bulk_players_info, get_film_plan
 from googletrans import Translator
 
 
@@ -95,8 +95,67 @@ class LiveChatCog(commands.Cog):
                 teamup_channel = self.bot.get_channel(self.TEAMUP_CHANNEL_ID)
                 if channel:
                     for msg in new_messages:
-                        embed = await self.format_message_embed(msg)
-                        await channel.send(embed=embed)
+                        # Check for exhibition video before formatting embed
+                        ext = msg.get('ext', {})
+                        msg_type = ext.get('msg_type', 'msg_normal')
+                        msg_label = msg.get('msg', '').strip()
+                        video_url = None
+                        
+                        if msg_type == 'msg_artwork_card' and msg_label == "[Exhibition]":
+                            artwork_data = ext.get('extra_data', {}).get('artwork_data', {})
+                            plan_id = artwork_data.get('plan_id', '')
+                            if plan_id:
+                                film_data = await asyncio.to_thread(get_film_plan, plan_id)
+                                if film_data and 'result' in film_data:
+                                    video_url = film_data['result'].get('video_url', '')
+                                    # Store film data in ext for format_message_embed to use
+                                    video_name = film_data['result'].get('name', '')
+                                    video_msg = film_data['result'].get('msg', '')
+                                    video_hot = film_data['result'].get('hot', '')
+                                    ext['film_data'] = film_data['result']
+                        
+                        if not video_url:
+                            embed = await self.format_message_embed(msg)
+                        
+                            message = await channel.send(embed=embed)
+                        else:
+                            ts = int(msg.get('ts', 0))
+                            nickname = msg.get('nickname', 'Unknown')
+                            level = msg.get('level', 0)
+                            ext = msg.get('ext', {})
+                            msg_type = ext.get('msg_type', 'msg_normal')
+                            sender_pid = msg.get('from_pid', None)
+
+                            # Determine sender's rank if possible
+                            rank_name = "Unknown"
+                            if sender_pid:
+                                # Get all ranks for sender PID
+                                sender_ranks = []
+                                for rank_id, rank_info in self.ranks.items():
+                                    if sender_pid in rank_info.get('pids', []):
+                                        sender_ranks.append((rank_id, rank_info.get('name', 'Unknown')))
+
+                                if sender_ranks:
+                                    sender_ranks.sort(key=lambda x: int(x[0]), reverse=False)  # Sort by rank ID ascending (assuming lower ID = higher rank)
+                                    # Include some custom ranks like 1 = Guild Leader, 2 = Vice Leader,etc
+                                    custom_rank_names = {
+                                        1: "Guild Leader",
+                                        2: "Vice Leader",
+                                        5: "Command",
+                                        7: "Half Time Performer"
+                                    }
+                                    # Get the highest rank (lowest ID) and use custom name if available
+                                    highest_rank_id, highest_rank_name = sender_ranks[0]
+                                    rank_name = custom_rank_names.get(highest_rank_id, highest_rank_name)
+
+                            message = f"[Exhibition] [{video_name if video_name else 'Unknown'}]({video_url})"
+                            if video_msg:
+                                message += f"\n{video_msg}"
+                            if video_hot:
+                                message += f"| ❤️ {video_hot}"
+
+                            name=f"{nickname} ({rank_name}) (Lv.{level})" if rank_name != "Unknown" else f"{nickname} (Lv.{level})"
+                            message = await channel.send(f"### {name}\n{message}\n\n<t:{ts}:F> (<t:{ts}:R>)")
                         
                         # Check for @teamup keyword in message
                         raw_msg = msg.get('msg', '').strip().lower()
@@ -195,9 +254,32 @@ class LiveChatCog(commands.Cog):
             picture_url = artwork_data.get('picture_url', '')
             artwork_name = artwork_data.get('name', 'Gallery')
             heat_val = artwork_data.get('heat_val', 0)
-            message = f"[Gallery] {artwork_name}"
-            if heat_val:
-                message += f" | ❤️ {heat_val}"
+            plan_id = artwork_data.get('plan_id', '')
+            message_type_label = msg.get('msg', '').strip()
+            
+            # Check if this is an Exhibition (dance video)
+            if message_type_label == "[Exhibition]" and plan_id:
+                # Fetch video details via film plan API
+                film_data = await asyncio.to_thread(get_film_plan, plan_id)
+                if film_data and 'result' in film_data:
+                    video_url = film_data['result'].get('video_url', '')
+                    video_name = film_data['result'].get('name', artwork_name)
+                    video_msg = film_data['result'].get('msg', '')
+                    video_hot = film_data['result'].get('hot', heat_val)
+                    
+                    message = f"[Exhibition] {video_name}"
+                    if video_msg:
+                        message += f"\n{video_msg}"
+                    if video_hot:
+                        message += f" | ❤️ {video_hot}"
+                else:
+                    message = f"[Exhibition] {artwork_name}"
+                    if heat_val:
+                        message += f" | ❤️ {heat_val}"
+            else:
+                message = f"[Gallery] {artwork_name}"
+                if heat_val:
+                    message += f" | ❤️ {heat_val}"
         elif msg_type == 'msg_normal':
             # Translate englsih to chinese and vice versa for normal messages to make it more accessible for all users
             # Check if message contains Chinese characters
@@ -232,7 +314,8 @@ class LiveChatCog(commands.Cog):
             name=f"{nickname} ({rank_name}) (Lv.{level})" if rank_name != "Unknown" else f"{nickname} (Lv.{level})",
         )
         
-        if picture_url:
+        # Add picture if available but do not add if there's video
+        if picture_url and not video_url:
             embed.set_image(url=picture_url)
         return embed
 
