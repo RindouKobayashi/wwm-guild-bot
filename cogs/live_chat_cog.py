@@ -268,6 +268,8 @@ class LiveChatCog(commands.Cog):
         if rank_name != "Unknown":
             description += f" ({rank_name})"
         description += f" (Lv.{level})"
+        if sender_pid:
+            description += f" | PID: {sender_pid}"
         description += " is looking for a team!\n\n"
         description += f"*{raw_message}*"
         if translated:
