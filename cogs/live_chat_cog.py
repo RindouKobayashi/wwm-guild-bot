@@ -25,6 +25,11 @@ class LiveChatCog(commands.Cog):
         self.CHANNEL_ID = None                  # Set via /chatenable command
         self.POLL_INTERVAL = 10                 # Seconds between checks
         self.ranks = None                       # To store rank information
+        # Team-up alert configuration
+        self.TEAMUP_CHANNEL_ID = 1442853064053756028  # General channel for teamup pings
+        self.TEAMUP_ROLE_ID = 1470861369107681587     # Team Up role
+        self.TEAMUP_KEYWORD = "@teamup"               # Trigger keyword
+        self.TEAMUP_EMBED_COLOR = 0xE74C3C            # Red
 
         # Ensure data directory exists
         os.makedirs("data", exist_ok=True)
@@ -87,10 +92,16 @@ class LiveChatCog(commands.Cog):
                 
                 # Post to Discord
                 channel = self.bot.get_channel(self.CHANNEL_ID)
+                teamup_channel = self.bot.get_channel(self.TEAMUP_CHANNEL_ID)
                 if channel:
                     for msg in new_messages:
                         embed = await self.format_message_embed(msg)
                         await channel.send(embed=embed)
+                        
+                        # Check for @teamup keyword in message
+                        raw_msg = msg.get('msg', '').strip().lower()
+                        if self.TEAMUP_KEYWORD in raw_msg:
+                            await self.send_teamup_alert(msg, teamup_channel)
                 
                 # Keep only last 200 message IDs to prevent memory leak
                 if len(self.last_seen_msg_ids) > 500:
@@ -212,6 +223,67 @@ class LiveChatCog(commands.Cog):
         )
         
         return embed
+
+    async def send_teamup_alert(self, msg: dict, teamup_channel: discord.TextChannel):
+        """Send @teamup alert to general channel with role ping"""
+        if not teamup_channel:
+            logger.warning("Team-up channel not found, cannot send alert")
+            return
+
+        ts = int(msg.get('ts', 0))
+        nickname = msg.get('nickname', 'Unknown')
+        level = msg.get('level', 0)
+        sender_pid = msg.get('from_pid', None)
+        raw_message = msg.get('msg', '').strip()
+
+        # Determine sender's rank if possible (reuse self.ranks data)
+        rank_name = "Unknown"
+        if sender_pid and self.ranks:
+            sender_ranks = []
+            for rank_id, rank_info in self.ranks.items():
+                if sender_pid in rank_info.get('pids', []):
+                    sender_ranks.append((rank_id, rank_info.get('name', 'Unknown')))
+            if sender_ranks:
+                sender_ranks.sort(key=lambda x: int(x[0]), reverse=False)
+                custom_rank_names = {
+                    1: "Guild Leader",
+                    2: "Vice Leader",
+                    5: "Command",
+                    7: "Half Time Performer"
+                }
+                highest_rank_id, highest_rank_name = sender_ranks[0]
+                rank_name = custom_rank_names.get(highest_rank_id, highest_rank_name)
+
+        # Translate the message (auto-detect)
+        translated = None
+        if any('\u4e00' <= char <= '\u9fff' for char in raw_message):
+            # Contains Chinese -> translate to English
+            translated = await self.translate_with_retry(raw_message, src='zh-cn', dest='en')
+        else:
+            # No Chinese -> translate to Chinese
+            translated = await self.translate_with_retry(raw_message, src='en', dest='zh-cn')
+
+        # Build embed description
+        description = f"**{nickname}**"
+        if rank_name != "Unknown":
+            description += f" ({rank_name})"
+        description += f" (Lv.{level})"
+        description += " is looking for a team!\n\n"
+        description += f"*{raw_message}*"
+        if translated:
+            description += f"\n\n[Translated] {translated}"
+        description += f"\n\n<t:{ts}:F> (<t:{ts}:R>)"
+
+        embed = discord.Embed(
+            title="🔔 Team Up Request",
+            description=description,
+            color=self.TEAMUP_EMBED_COLOR
+        )
+
+        # Send role ping as a separate text message first, then embed
+        await teamup_channel.send(f"<@&{self.TEAMUP_ROLE_ID}>")
+        await teamup_channel.send(embed=embed)
+        logger.info(f"📢 Team-up alert sent for {nickname} in #{teamup_channel.name}")
 
     def get_avatar_url(self, head_id: int) -> str:
         """Get avatar icon URL for given head ID"""
