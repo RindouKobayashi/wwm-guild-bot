@@ -682,7 +682,7 @@ class WWMCog(commands.Cog):
 
             # Log school ID for mapping purposes
             school_id = base_data.get('school', 0)
-            logger.info(f"[PLAYER SEARCH] {player_nickname} (PID: {player_pid}) — School ID: {school_id}")
+            logger.debug(f"[PLAYER SEARCH] {player_nickname} (PID: {player_pid}) — School ID: {school_id}")
             
             embed.add_field(name="📛 Nickname", value=f"`{player_nickname}`", inline=True)
             embed.add_field(name="🏆 Level", value=f"`{base_data.get('level', 0)}`", inline=True)
@@ -727,28 +727,50 @@ class WWMCog(commands.Cog):
                 embed.add_field(name="🌍 Region", value=f"`{base_data.get('oversea_tag', 'N/A')}`", inline=True)
                 embed.add_field(name="⌛ Total Online Time", value=f"`{round(base_data.get('online_time', 0) / 3600, 1)} hours`", inline=True)
             else:
-                embed.set_footer(text="🔗 Bind your account to view full stats, combat power and details. Go to #1501139237594992780 to link your game account.")
+                embed.description = f"{embed.description}\n\n🔗 **Bind your account** in <#1469961307154288703> to view full stats, combat power and details."
 
-            status_lines = []
-            is_invisible = base_data.get('invisible', False)
-            is_online = base_data.get('is_online', 0)
-            if not is_invisible:
-                if is_online == 1:
-                    status_lines.append("`🟢 ONLINE NOW`")
-                else:
-                    status_lines.append("`🔴 Offline`")
+            if is_verified:
+                # ---- Online Status ----
+                is_invisible = base_data.get('invisible', False)
+                is_online = base_data.get('is_online', 0)
+                if not is_invisible:
+                    if is_online == 1:
+                        embed.add_field(name="🟢 Online Status", value="`ONLINE NOW`", inline=True)
+                    else:
+                        embed.add_field(name="🔴 Online Status", value="`Offline`", inline=True)
+                
+                # ---- 1v1 Arena Rank (lunjian) ----
+                lunjian = data.get('lunjian', {})
+                if lunjian and 'grade' in lunjian:
+                    arena_grade = lunjian['grade']
+                    arena_small_grade = lunjian.get('small_grade', 0)
+                    
+                    GRADE_NAMES = {
+                        1: "Beginner", 2: "Novice", 3: "Silver", 4: "Adept",
+                        5: "Expert", 6: "Veteran", 7: "Master", 8: "Grandmaster",
+                        9: "Legend", 10: "Mythic",
+                    }
+                    
+                    SMALL_GRADE_SUFFIXES = {0: "", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
+                    
+                    grade_name = GRADE_NAMES.get(arena_grade, f"Unknown ({arena_grade})")
+                    small_suffix = SMALL_GRADE_SUFFIXES.get(arena_small_grade, str(arena_small_grade))
+                    if small_suffix:
+                        rank_display = f"{grade_name} {small_suffix}"
+                    else:
+                        rank_display = grade_name
+                    
+                    embed.add_field(name="⚔️ 1v1 Arena Rank", value=f"`{rank_display}`", inline=True)
+                
+                # ---- PvP Score ----
+                gameplay = data.get('gameplay_trail', {})
+                played = gameplay.get('played', [])
+                for match in played:
+                    if 'score' in match:
+                        embed.add_field(name="🏆 PvP Score", value=f"`{match['score']}`", inline=True)
+                        break
             
-            gameplay = data.get('gameplay_trail', {})
-            played = gameplay.get('played', [])
-            for match in played:
-                if 'grade' in match and 'score' in match:
-                    status_lines.append(f"⚔️ PvP Grade: `{match['grade']}` | Score: `{match['score']}`")
-                    break
-            
-            if status_lines:
-                embed.add_field(name="📋 Status", value="\n".join(status_lines), inline=False)
-            
-            if player_pid:
+            if player_pid and is_verified:
                 try:
                     await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...\n🏰 Checking guild info...")
                     club_data = get_club_hostnums(player_pid)
@@ -773,14 +795,13 @@ class WWMCog(commands.Cog):
                             guild_base = guild_full_data.get('result', {}).get('base', {})
                             guild_name = guild_base.get('name', 'Unknown Guild')
                         
-                        if player_club_id == CLUB_ID:
-                            member_status = f"✅ **Guild Member**"
-                            embed.color = discord.Color.green()
-                        else:
-                            member_status = "❌ Not In Our Guild"
+                    if player_club_id == CLUB_ID:
+                        embed.add_field(name="✅ Guild Member", value="`Yes`", inline=True)
+                        embed.color = discord.Color.green()
+                    else:
+                        embed.add_field(name="❌ Guild Member", value="`No`", inline=True)
                     
-                    status_text = f"{member_status}\n🏰 Guild: `{guild_name}`"
-                    embed.add_field(name="👥 Member Status", value=status_text, inline=False)
+                    embed.add_field(name="🏰 Guild", value=f"`{guild_name}`", inline=True)
                     
                 except Exception as club_err:
                     logger.warning(f"Failed to get club info: {str(club_err)}")

@@ -30,7 +30,8 @@ DEFAULT_HEADERS = {
 DEFAULT_FIELDS = [
     "base", "team", "head", "name_card", "club",
     "kongfu", "ride", "mentor", "jieyuan_info", "jieyi",
-    "jieyi_misc", "gameplay_trail", "pvp_battle", "attr"
+    "jieyi_misc", "gameplay_trail", "pvp_battle", "attr",
+    "lunjian"
 ]
 
 # Complete list of ALL known fields (kept for reference / debugging)
