@@ -159,6 +159,7 @@ class LiveChatCog(commands.Cog):
         
         # Determine message content based on type
         message = msg.get('msg', '').strip()
+        picture_url = None
         
         if not message:
             # Handle msg_common_share with empty text (e.g. activity cards, team invites)
@@ -188,6 +189,15 @@ class LiveChatCog(commands.Cog):
             reward_no = hongbao.get('reward_no', '')
             if reward_no:
                 message += f" ({reward_no} coins)"
+        elif msg_type == 'msg_artwork_card':
+            # Display gallery artwork image
+            artwork_data = ext.get('extra_data', {}).get('artwork_data', {})
+            picture_url = artwork_data.get('picture_url', '')
+            artwork_name = artwork_data.get('name', 'Gallery')
+            heat_val = artwork_data.get('heat_val', 0)
+            message = f"[Gallery] {artwork_name}"
+            if heat_val:
+                message += f" | ❤️ {heat_val}"
         elif msg_type == 'msg_normal':
             # Translate englsih to chinese and vice versa for normal messages to make it more accessible for all users
             # Check if message contains Chinese characters
@@ -222,6 +232,8 @@ class LiveChatCog(commands.Cog):
             name=f"{nickname} ({rank_name}) (Lv.{level})" if rank_name != "Unknown" else f"{nickname} (Lv.{level})",
         )
         
+        if picture_url:
+            embed.set_image(url=picture_url)
         return embed
 
     async def send_teamup_alert(self, msg: dict, teamup_channel: discord.TextChannel):
