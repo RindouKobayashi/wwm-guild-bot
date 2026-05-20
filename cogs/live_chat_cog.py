@@ -6,7 +6,7 @@ from typing import Optional, Set
 import discord
 from discord.ext import commands, tasks
 from settings import logger
-from utility.wwm import get_club_chat, get_custom_guild_info
+from utility.wwm import get_club_chat, get_custom_guild_info, get_bulk_players_info
 from googletrans import Translator
 
 
@@ -27,7 +27,7 @@ class LiveChatCog(commands.Cog):
         self.ranks = None                       # To store rank information
         # Team-up alert configuration
         self.TEAMUP_CHANNEL_ID = 1442853064053756028  # General channel for teamup pings
-        self.TEAMUP_ROLE_ID = 1488830429686665246     # Team Up role
+        self.TEAMUP_ROLE_ID = 1488835215949434891     # Team Up role
         self.TEAMUP_KEYWORD = "@teamup"               # Trigger keyword
         self.TEAMUP_EMBED_COLOR = 0xE74C3C            # Red
 
@@ -254,6 +254,19 @@ class LiveChatCog(commands.Cog):
                 highest_rank_id, highest_rank_name = sender_ranks[0]
                 rank_name = custom_rank_names.get(highest_rank_id, highest_rank_name)
 
+        # Fetch Number ID (long account ID) using the PID
+        number_id = None
+        if sender_pid:
+            try:
+                bulk_data = await asyncio.to_thread(get_bulk_players_info, [sender_pid], ["base"])
+                if bulk_data and 'result' in bulk_data:
+                    # Result is keyed by PID, extract number_id from player's base info
+                    player_info = bulk_data['result'].get(str(sender_pid), {})
+                    if player_info:
+                        number_id = player_info.get('base', {}).get('number_id')
+            except Exception as e:
+                logger.error(f"Failed to fetch Number ID for PID {sender_pid}: {e}")
+
         # Translate the message (auto-detect)
         translated = None
         if any('\u4e00' <= char <= '\u9fff' for char in raw_message):
@@ -270,6 +283,8 @@ class LiveChatCog(commands.Cog):
         description += f" (Lv.{level})"
         if sender_pid:
             description += f" | PID: {sender_pid}"
+        if number_id:
+            description += f" | ID: {number_id}"
         description += " is looking for a team!\n\n"
         description += f"*{raw_message}*"
         if translated:
