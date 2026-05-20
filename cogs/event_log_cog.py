@@ -17,7 +17,7 @@ from utility.wwm import _wwm_api_post
 DB_PATH = BASE_DIR / "data" / "event_log.db"
 
 # -----------------------------------------------------------------------------
-# Event type constants (shared with test script)
+# Event type constants
 # -----------------------------------------------------------------------------
 BOSS_NAMES = {
     1: "The Void King", 2: "Ye Wanshan", 3: "Lucky Seventeen",
@@ -42,10 +42,6 @@ LADDER_RANKS = {10000, 10001, 10002, 10003}
 ASSIGNMENT_RANKS = {1, 2, 5, 7, 10004, 10005}
 
 GMT8 = timezone(timedelta(hours=8))
-
-
-def format_timestamp(ts: int) -> str:
-    return datetime.fromtimestamp(ts, tz=GMT8).strftime("%Y-%m-%d %H:%M:%S")
 
 
 def get_boss_name(bid: int) -> str:
@@ -79,7 +75,13 @@ def decode_event_type(cat: int, ev: int) -> str:
     return overrides.get((cat, ev), names.get(cat, f"Type {cat}"))
 
 
+def timestamp_line(ts: int) -> str:
+    """Discord timestamp formatting: full datetime + relative."""
+    return f"\n<t:{ts}:F> (<t:{ts}:R>)"
+
+
 def decode_extra(cat: int, ev: int, extra: list) -> str:
+    """Decode extra data into human-readable text (fallback for unknown events)."""
     if not extra:
         return ""
     if cat == 4 and ev == 15 and len(extra) >= 4:
@@ -124,7 +126,7 @@ def decode_extra(cat: int, ev: int, extra: list) -> str:
 
 
 # -----------------------------------------------------------------------------
-# Helper: fetch club event log from API using the configured full guild URL
+# Helper: fetch club event log from API
 # -----------------------------------------------------------------------------
 def fetch_event_log_raw() -> Optional[Dict[str, Any]]:
     """Call the game API and return the full response dict, or None on failure."""
@@ -141,16 +143,11 @@ PLAYER_INFO_URL = WWM_REDIS_PLAYER_URL
 
 
 def resolve_player_name_sync(pid: str, hostnum: int = 10403) -> Optional[str]:
-    """
-    Fetch a player's nickname by PID using the correct hostnum.
-    The 16-char IDs are PIDs that go into hostnum2pids with the player's hostnum.
-    """
+    """Fetch a player's nickname by PID using the correct hostnum."""
     try:
         payload = {
             "fields": ["base"],
-            "hostnum2pids": {
-                hostnum: [pid]
-            },
+            "hostnum2pids": {hostnum: [pid]},
         }
         data = _wwm_api_post(PLAYER_INFO_URL, payload)
         if data and 'result' in data and pid in data['result']:
@@ -158,8 +155,6 @@ def resolve_player_name_sync(pid: str, hostnum: int = 10403) -> Optional[str]:
             name = base.get('nickname')
             if name:
                 return name
-            level = base.get('level', '?')
-            return f"{truncate_pid(pid)}:Lv{level}"
     except Exception as e:
         logger.debug(f"Name resolution failed for {truncate_pid(pid)}@{hostnum}: {e}")
     return None
@@ -175,25 +170,6 @@ async def init_db():
             CREATE TABLE IF NOT EXISTS config (
                 key TEXT PRIMARY KEY,
                 value TEXT NOT NULL
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS classified_events (
-                timestamp INTEGER NOT NULL,
-                category_id INTEGER NOT NULL,
-                event_id INTEGER NOT NULL,
-                classification TEXT NOT NULL,
-                classified_by INTEGER,
-                classified_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                PRIMARY KEY (timestamp, category_id, event_id)
-            )
-        """)
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS pending_classifications (
-                message_id INTEGER PRIMARY KEY,
-                event_timestamp INTEGER NOT NULL,
-                category_id INTEGER NOT NULL,
-                event_id INTEGER NOT NULL
             )
         """)
         await db.commit()
@@ -224,125 +200,6 @@ async def get_last_timestamp() -> int:
 
 async def set_last_timestamp(ts: int):
     await set_config("last_timestamp", str(ts))
-
-
-async def is_event_classified(ts: int, cat: int, ev: int) -> Optional[str]:
-    async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute(
-            "SELECT classification FROM classified_events WHERE timestamp = ? AND category_id = ? AND event_id = ?",
-            (ts, cat, ev),
-        )
-        row = await cursor.fetchone()
-        return row[0] if row else None
-
-
-async def save_classification(ts: int, cat: int, ev: int, classification: str, user_id: int = 0):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "INSERT OR REPLACE INTO classified_events (timestamp, category_id, event_id, classification, classified_by) VALUES (?, ?, ?, ?, ?)",
-            (ts, cat, ev, classification, user_id),
-        )
-        await db.commit()
-
-
-async def save_pending(msg_id: int, ts: int, cat: int, ev: int):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "INSERT OR REPLACE INTO pending_classifications (message_id, event_timestamp, category_id, event_id) VALUES (?, ?, ?, ?)",
-            (msg_id, ts, cat, ev),
-        )
-        await db.commit()
-
-
-async def get_pending_event_key(msg_id: int) -> Optional[Tuple[int, int, int]]:
-    async with aiosqlite.connect(DB_PATH) as db:
-        cursor = await db.execute(
-            "SELECT event_timestamp, category_id, event_id FROM pending_classifications WHERE message_id = ?",
-            (msg_id,),
-        )
-        row = await cursor.fetchone()
-        return row if row else None
-
-
-async def remove_pending(msg_id: int):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("DELETE FROM pending_classifications WHERE message_id = ?", (msg_id,))
-        await db.commit()
-
-
-# -----------------------------------------------------------------------------
-# Persistent Views for Classification
-# -----------------------------------------------------------------------------
-class EventConfirmView(discord.ui.View):
-    """Confirmation dialog shown after selecting a classification."""
-
-    def __init__(self, cog, original_msg_id: int, event_ts: int, event_cat: int, event_ev: int, classification: str):
-        super().__init__(timeout=300)
-        self.cog = cog
-        self.original_msg_id = original_msg_id
-        self.event_ts = event_ts
-        self.event_cat = event_cat
-        self.event_ev = event_ev
-        self.classification = classification
-
-    @discord.ui.button(label="✅ Confirm", style=discord.ButtonStyle.green, custom_id="ev_confirm_yes")
-    async def confirm_yes(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not interaction.user.guild_permissions.administrator:
-            await interaction.response.send_message("❌ Admin only", ephemeral=True)
-            return
-        await save_classification(self.event_ts, self.event_cat, self.event_ev, self.classification, interaction.user.id)
-        # Update original message
-        try:
-            msg = await interaction.channel.fetch_message(self.original_msg_id)
-            embed = msg.embeds[0]
-            embed.add_field(name="✅ Classified", value=f"**{self.classification}**", inline=False)
-            embed.color = discord.Color.green()
-            await msg.edit(embed=embed, view=None)
-        except Exception as e:
-            logger.warning(f"Could not update classification message: {e}")
-        await interaction.response.send_message(f"✅ Saved as: **{self.classification}**", ephemeral=True)
-        await remove_pending(self.original_msg_id)
-        self.stop()
-
-    @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.red, custom_id="ev_confirm_no")
-    async def confirm_no(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if not interaction.user.guild_permissions.administrator:
-            await interaction.response.send_message("❌ Admin only", ephemeral=True)
-            return
-        await interaction.response.send_message("Cancelled.", ephemeral=True)
-        self.stop()
-
-
-class EventClassificationView(discord.ui.View):
-    """Persistent View for classifying unknown player interaction events."""
-
-    def __init__(self, cog=None):
-        super().__init__(timeout=None)
-        self.cog = cog
-
-    @discord.ui.button(label="✅ Approved Join", style=ButtonStyle.primary, emoji="✅", custom_id="evclass_approve")
-    async def btn_approve_join(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self._handle_choice(interaction, "Approved Join (approve application)")
-
-    @discord.ui.button(label="📥 Invited + Joined", style=ButtonStyle.primary, emoji="📥", custom_id="evclass_invite")
-    async def btn_invite_join(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self._handle_choice(interaction, "Invited + Joined (invited and they accepted)")
-
-    @discord.ui.button(label="🚫 Kicked", style=ButtonStyle.danger, emoji="🚫", custom_id="evclass_kick")
-    async def btn_kicked(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await self._handle_choice(interaction, "Kicked (removed from guild)")
-
-    async def _handle_choice(self, interaction: discord.Interaction, classification: str):
-        if not interaction.user.guild_permissions.administrator:
-            await interaction.response.send_message("❌ Admin only", ephemeral=True)
-            return
-        event_key = await get_pending_event_key(interaction.message.id)
-        if not event_key:
-            await interaction.response.send_message("❌ This event is no longer pending classification.", ephemeral=True)
-            return
-        ts, cat, ev = event_key
-        view2 = EventConfirmView(self.cog, interaction.message.id, ts, cat, ev, classification)
-        await interaction.response.send_message(f"Classify as **{classification}**?", view=view2, ephemeral=True)
 
 
 # -----------------------------------------------------------------------------
@@ -444,6 +301,7 @@ class EventLogCog(commands.Cog):
         if not new_events:
             return 0
 
+        # Process events in chronological order
         for event in new_events:
             try:
                 await self._post_event(channel, event)
@@ -455,159 +313,151 @@ class EventLogCog(commands.Cog):
         return len(new_events)
 
     async def _post_event(self, channel: discord.TextChannel, event: Dict):
-        cat, ev, ts, extra = event["category_id"], event["event_id"], event["timestamp"], event["extra"]
-        time_str = format_timestamp(ts)
+        """Route event to the appropriate handler based on category."""
+        cat, ev, ts = event["category_id"], event["event_id"], event["timestamp"]
 
         if cat == 1:
             await self._post_player_event(channel, event)
-            return
-
-        if cat == 2:
+        elif cat == 2:
             await self._post_rank_event(channel, event)
-            return
-
-        # For category 4 events (schedule changes, party time, showdown), resolve the actor name
-        if cat == 4 and extra and len(extra) >= 2 and isinstance(extra[0], str):
-            actor_pid = extra[0]
-            actor_hostnum = extra[1]
-            resolved = await self._resolve_name(actor_pid, actor_hostnum)
-            if resolved:
-                description = f"👤 **{resolved}** changed "
-                if ev == 13:
-                    hour = extra[2][0] if len(extra) > 2 and isinstance(extra[2], list) and len(extra[2]) >= 1 else "?"
-                    description += f"🎉 Guild Party time to **{hour}:00**"
-                elif ev == 14:
-                    desc_parts = []
-                    for i in range(2, len(extra)):
-                        item = extra[i]
-                        if isinstance(item, list) and len(item) == 3:
-                            desc_parts.append(f"📅 {format_schedule_day(item)}")
-                    description += f"🎪 Showdown to " + " and ".join(desc_parts)
-                elif ev == 15:
-                    desc_parts = []
-                    for i in range(2, len(extra) - 1, 2):
-                        bid = extra[i]
-                        sched = extra[i + 1]
-                        if isinstance(bid, int) and isinstance(sched, list) and len(sched) == 3:
-                            desc_parts.append(f"{get_boss_name(bid)} ({format_schedule_day(sched)})")
-                    description += " | ".join(desc_parts)
-                else:
-                    description = decode_extra(cat, ev, extra)
-            else:
-                description = decode_extra(cat, ev, extra)
         else:
-            description = decode_extra(cat, ev, extra) if extra else "(no data)"
+            await self._post_other_event(channel, event)
 
-        embed = discord.Embed(
-            title=f"📋 {decode_event_type(cat, ev)}",
-            description=description,
-            color=discord.Color.blue(),
-            timestamp=datetime.fromtimestamp(ts, tz=GMT8),
-        )
-        embed.set_footer(text=f"UTC+8 • {time_str}")
-        await channel.send(embed=embed)
+    # --- Category 1: Player Events (join, leave, kick, approve, invite) ---
 
     async def _post_player_event(self, channel: discord.TextChannel, event: Dict):
         cat, ev, ts, extra = event["category_id"], event["event_id"], event["timestamp"], event["extra"]
-        time_str = format_timestamp(ts)
+        ts_str = timestamp_line(ts)
 
+        # Player left (ev=2): [pid, hostnum]
         if ev == 2 and len(extra) >= 2:
             pid, hostnum = extra[0], extra[1]
             name = await self._resolve_name(pid, hostnum)
             embed = discord.Embed(
                 title="👋 Player Left Guild",
-                description=f"**{name}**",
+                description=f"**{name}**{ts_str}",
                 color=discord.Color.orange(),
-                timestamp=datetime.fromtimestamp(ts, tz=GMT8),
             )
-            embed.set_footer(text=f"UTC+8 • {time_str}")
             await channel.send(embed=embed)
             return
 
+        # Two-player interactions: [actor_pid, actor_hostnum, target_pid, target_hostnum]
         if ev in (3, 4, 5) and len(extra) >= 4:
-            actor, actor_hostnum, target, target_hostnum = extra[0], extra[1], extra[2], extra[3]
-            existing = await is_event_classified(ts, cat, ev)
-            actor_name = await self._resolve_name(actor, actor_hostnum)
-            target_name = await self._resolve_name(target, target_hostnum)
+            actor, actor_hn, target, target_hn = extra[0], extra[1], extra[2], extra[3]
+            actor_name = await self._resolve_name(actor, actor_hn)
+            target_name = await self._resolve_name(target, target_hn)
 
-            if existing:
-                embed = discord.Embed(
-                    title=f"👥 {existing}",
-                    description=f"**{actor_name}** → **{target_name}**",
-                    color=discord.Color.green(),
-                    timestamp=datetime.fromtimestamp(ts, tz=GMT8),
-                )
-                embed.set_footer(text=f"UTC+8 • {time_str}")
-                embed.add_field(name="✅ Classified", value=existing, inline=False)
-                await channel.send(embed=embed)
-            else:
-                embed = discord.Embed(
-                    title="❓ Unknown Player Interaction",
-                    description=f"**{actor_name}**\n→\n**{target_name}**",
-                    color=discord.Color.yellow(),
-                    timestamp=datetime.fromtimestamp(ts, tz=GMT8),
-                )
-                embed.set_footer(text=f"UTC+8 • {time_str}")
-                embed.add_field(
-                    name="What happened?",
-                    value="An admin needs to classify this event using the buttons below.",
-                    inline=False,
-                )
-                view = EventClassificationView(self)
-                msg = await channel.send(embed=embed, view=view)
-                await save_pending(msg.id, ts, cat, ev)
+            if ev == 3:
+                title = "🚫 Player Kicked"
+                desc = f"**{actor_name}** kicked **{target_name}**{ts_str}"
+                color = discord.Color.red()
+            elif ev == 4:
+                title = "✅ Join Approved"
+                desc = f"**{actor_name}** approved **{target_name}**'s application{ts_str}"
+                color = discord.Color.green()
+            else:  # ev == 5
+                title = "📥 Invited + Joined"
+                desc = f"**{actor_name}** invited **{target_name}** (they joined){ts_str}"
+                color = discord.Color.blue()
+
+            embed = discord.Embed(title=title, description=desc, color=color)
+            await channel.send(embed=embed)
             return
 
+        # Fallback for unknown category 1
         embed = discord.Embed(
             title="👤 Player Event",
-            description=f"event_id={ev}, extra={extra}",
+            description=f"event_id={ev}, extra={extra}{ts_str}",
             color=discord.Color.light_gray(),
-            timestamp=datetime.fromtimestamp(ts, tz=GMT8),
         )
-        embed.set_footer(text=f"UTC+8 • {time_str}")
         await channel.send(embed=embed)
+
+    # --- Category 2: Rank Management ---
 
     async def _post_rank_event(self, channel: discord.TextChannel, event: Dict):
         ev, ts, extra = event["event_id"], event["timestamp"], event["extra"]
-        time_str = format_timestamp(ts)
+        ts_str = timestamp_line(ts)
 
+        # Transfer (ev=8): [from_pid, from_hn, to_pid, to_hn]
         if ev == 8 and len(extra) >= 4:
-            from_pid, from_hostnum, to_pid, to_hostnum = extra[0], extra[1], extra[2], extra[3]
-            from_name = await self._resolve_name(from_pid, from_hostnum)
-            to_name = await self._resolve_name(to_pid, to_hostnum)
-            if from_name and to_name:
-                desc = f"**{from_name}** → **{to_name}**"
-            else:
-                desc = f"**{from_name or truncate_pid(from_pid)}** → **{to_name or truncate_pid(to_pid)}**"
-            embed = discord.Embed(
-                title="🔄 Guild Transfer",
-                description=desc,
-                color=discord.Color.purple(),
-                timestamp=datetime.fromtimestamp(ts, tz=GMT8),
-            )
-            embed.set_footer(text=f"UTC+8 • {time_str}")
+            from_pid, from_hn, to_pid, to_hn = extra[0], extra[1], extra[2], extra[3]
+            from_name = await self._resolve_name(from_pid, from_hn)
+            to_name = await self._resolve_name(to_pid, to_hn)
+            desc = f"**{from_name}** → **{to_name}**{ts_str}"
+            embed = discord.Embed(title="🔄 Guild Transfer", description=desc, color=discord.Color.purple())
             await channel.send(embed=embed)
             return
 
+        # Promote (ev=6) / Demote (ev=7): [actor_pid, actor_hn, target_pid, target_hn, rank_code]
         if ev in (6, 7) and len(extra) >= 5:
-            actor, actor_hostnum, target, target_hostnum, rank_code = extra[0], extra[1], extra[2], extra[3], extra[4]
+            actor, actor_hn, target, target_hn, rank_code = extra[0], extra[1], extra[2], extra[3], extra[4]
             role_name = get_role_name(rank_code)
-            actor_name, target_name = await self._resolve_name(actor, actor_hostnum), await self._resolve_name(target, target_hostnum)
+            actor_name = await self._resolve_name(actor, actor_hn)
+            target_name = await self._resolve_name(target, target_hn)
 
             if rank_code in LADDER_RANKS:
-                title, desc = ("⬆️ Promotion", f"**{actor_name}** promoted **{target_name}** → 🏅 {role_name}") if ev == 6 else ("⬇️ Demotion", f"**{actor_name}** demoted **{target_name}** (was 🏅 {role_name})")
+                if ev == 6:
+                    title, desc = "⬆️ Promotion", f"**{actor_name}** promoted **{target_name}** → 🏅 {role_name}"
+                else:
+                    title, desc = "⬇️ Demotion", f"**{actor_name}** demoted **{target_name}** (was 🏅 {role_name})"
             elif rank_code in ASSIGNMENT_RANKS:
-                title, desc = ("📝 Role Mark", f"**{actor_name}** marked **{target_name}** as 🏅 {role_name}") if ev == 6 else ("🗑️ Role Unmark", f"**{actor_name}** unmarked **{target_name}** (was 🏅 {role_name})")
+                if ev == 6:
+                    title, desc = "📝 Role Mark", f"**{actor_name}** marked **{target_name}** as 🏅 {role_name}"
+                else:
+                    title, desc = "🗑️ Role Unmark", f"**{actor_name}** unmarked **{target_name}** (was 🏅 {role_name})"
             else:
                 title, desc = "🎖️ Rank Change", f"**{actor_name}** changed **{target_name}** → 🏅 {role_name}"
 
-            embed = discord.Embed(title=title, description=desc, color=discord.Color.gold(), timestamp=datetime.fromtimestamp(ts, tz=GMT8))
-            embed.set_footer(text=f"UTC+8 • {time_str}")
+            desc += ts_str
+            embed = discord.Embed(title=title, description=desc, color=discord.Color.gold())
             await channel.send(embed=embed)
             return
 
-        embed = discord.Embed(title=f"🎖️ {decode_event_type(2, ev)}", description=str(extra), color=discord.Color.blue(), timestamp=datetime.fromtimestamp(ts, tz=GMT8))
-        embed.set_footer(text=f"UTC+8 • {time_str}")
+        # Fallback for unknown rank events
+        embed = discord.Embed(
+            title=f"🎖️ {decode_event_type(2, ev)}",
+            description=f"{str(extra)}{ts_str}",
+            color=discord.Color.blue(),
+        )
+        await channel.send(embed=embed)
+
+    # --- Other Categories (3, 4, 5, etc.) ---
+
+    async def _post_other_event(self, channel: discord.TextChannel, event: Dict):
+        cat, ev, ts, extra = event["category_id"], event["event_id"], event["timestamp"], event["extra"]
+        ts_str = timestamp_line(ts)
+
+        # Category 4 events (schedule/party/showdown changes) — resolve actor name
+        if cat == 4 and extra and len(extra) >= 2 and isinstance(extra[0], str):
+            actor_pid, actor_hn = extra[0], extra[1]
+            resolved = await self._resolve_name(actor_pid, actor_hn)
+            if resolved:
+                if ev == 13:
+                    hour = extra[2][0] if len(extra) > 2 and isinstance(extra[2], list) and len(extra[2]) >= 1 else "?"
+                    desc = f"👤 **{resolved}** changed 🎉 Guild Party time to **{hour}:00**"
+                elif ev == 14:
+                    parts = [f"📅 {format_schedule_day(extra[i])}" for i in range(2, len(extra)) if isinstance(extra[i], list) and len(extra[i]) == 3]
+                    desc = f"👤 **{resolved}** changed 🎪 Showdown to " + " and ".join(parts)
+                elif ev == 15:
+                    parts = []
+                    for i in range(2, len(extra) - 1, 2):
+                        bid, sched = extra[i], extra[i + 1]
+                        if isinstance(bid, int) and isinstance(sched, list) and len(sched) == 3:
+                            parts.append(f"{get_boss_name(bid)} ({format_schedule_day(sched)})")
+                    desc = f"👤 **{resolved}** changed | " + " | ".join(parts)
+                else:
+                    desc = decode_extra(cat, ev, extra)
+            else:
+                desc = decode_extra(cat, ev, extra)
+            desc += ts_str
+        else:
+            desc = (decode_extra(cat, ev, extra) if extra else "(no data)") + ts_str
+
+        embed = discord.Embed(
+            title=f"📋 {decode_event_type(cat, ev)}",
+            description=desc,
+            color=discord.Color.blue(),
+        )
         await channel.send(embed=embed)
 
     # --- Name Resolution ---
