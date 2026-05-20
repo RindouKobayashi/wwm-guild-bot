@@ -26,7 +26,7 @@ class LiveChatCog(commands.Cog):
         self.POLL_INTERVAL = 10                 # Seconds between checks
         self.ranks = None                       # To store rank information
         # Team-up alert configuration
-        self.TEAMUP_CHANNEL_ID = 1442853064053756028  # General channel for teamup pings
+        self.TEAMUP_CHANNEL_ID = 1488830429686665246  # General channel for teamup pings
         self.TEAMUP_ROLE_ID = 1470861369107681587     # Team Up role
         self.TEAMUP_KEYWORD = "@teamup"               # Trigger keyword
         self.TEAMUP_EMBED_COLOR = 0xE74C3C            # Red
