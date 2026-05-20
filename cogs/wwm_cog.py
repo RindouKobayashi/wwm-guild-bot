@@ -1,4 +1,5 @@
 import discord
+import datetime
 from discord import app_commands
 from discord.ext import commands, tasks
 import logging
@@ -947,6 +948,19 @@ class WWMCog(commands.Cog):
         lines.append("╚═════════════════════════════════════════╝")
         lines.append("```")
 
+        # Calculate current schedule week start (Monday 5:00 AM GMT+8)
+        now_utc_ts = int(discord.utils.utcnow().timestamp())
+        GMT8_OFFSET = 8 * 3600
+        gmt8_now_ts = now_utc_ts + GMT8_OFFSET
+        gmt8_dt = datetime.datetime.fromtimestamp(gmt8_now_ts, tz=datetime.timezone.utc)
+        # Shift back by 5 hours so 5 AM becomes midnight for day calculation
+        adjusted_dt = gmt8_dt - datetime.timedelta(hours=5)
+        # Roll back to Monday
+        monday_dt = adjusted_dt - datetime.timedelta(days=adjusted_dt.weekday())
+        # Set to 5:00 AM GMT+8 (which is midnight in the adjusted space)
+        week_start_gmt8 = monday_dt.replace(hour=5, minute=0, second=0, microsecond=0)
+        week_start_ts = int(week_start_gmt8.timestamp() - GMT8_OFFSET)
+
         weekly_leaderboard = []
         
         if players_data is not None:
@@ -962,12 +976,25 @@ class WWMCog(commands.Cog):
                     if 'nickname' in base_data:
                         nickname = base_data.get('nickname', nickname)
                 
+                # Use last_online_ts from the guild member list (always available)
+                last_online = member.get('last_online_ts', 0)
+                
+                # Skip players who haven't logged in since this week started
+                if last_online < week_start_ts:
+                    continue
+                
                 weekly_leaderboard.append( (-weekly_points, nickname, weekly_points) )
         else:
             for pid, member in member_list.items():
                 nickname = member.get('nickname', 'Unknown')
                 club_data = member.get('club', {})
                 weekly_points = club_data.get('liveness', 0)
+                last_online = member.get('last_online_ts', 0)
+                
+                # Skip players who haven't logged in since this week started
+                if last_online < week_start_ts:
+                    continue
+                
                 weekly_leaderboard.append( (-weekly_points, nickname, weekly_points) )
 
         weekly_leaderboard.sort()
