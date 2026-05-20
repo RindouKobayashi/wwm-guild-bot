@@ -11,7 +11,8 @@ from settings import (
     WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL,
     WWM_FULL_GUILD_URL, WWM_FASHION_PLAN_URL, WWM_CLUB_BY_NAME_URL,
     WWM_CLUB_BRIEF_INFO_BATCH_URL, WWM_CLUB_CHAT_URL,
-    WWM_FIND_PEOPLE_BY_NICKNAME_URL, WWM_HOST, logger
+    WWM_FIND_PEOPLE_BY_NICKNAME_URL, WWM_HOST, logger,
+    WWM_FASHION_SCORE_URL,
 )
 
 # -----------------------------------------------------------------------------
@@ -301,6 +302,19 @@ def get_fashion_plan(player_pid: str, hostnum: int = 10403, uid: Optional[str] =
         raw_payload=packed
     )
 
+
+def get_fashion_score(player_pid: str, hostnum: int = 10403) -> Optional[Dict[str, Any]]:
+    """Get player fashion score (elegance rating)"""
+    logger.debug(f"Getting fashion score for PID: {player_pid} | hostnum: {hostnum}")
+    
+    return _wwm_api_post(
+        WWM_FASHION_SCORE_URL,
+        {
+            "uid": WWM_UID,
+            "pid": player_pid,
+            "hostnum": hostnum
+        }
+    )
 
 
 def get_club_brief_info_batch(club_ids: List[str], hostnums: List[int]) -> Optional[List[Dict]]:

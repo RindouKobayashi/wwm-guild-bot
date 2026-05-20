@@ -9,7 +9,7 @@ from collections import defaultdict
 from deepdiff import DeepDiff
 
 import settings
-from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid
+from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 from utility.api_constants import SCHOOL_NAMES
 
@@ -714,6 +714,17 @@ class WWMCog(commands.Cog):
                 if school_id in SCHOOL_NAMES:
                     embed.add_field(name="🏛️ Sect", value=f"`{SCHOOL_NAMES[school_id]}`", inline=True)
 
+                # ---- Elegance (Fashion Score) ----
+                try:
+                    fashion_score_data = get_fashion_score(player_pid, hostnum=player_hostnum)
+                    if fashion_score_data and 'result' in fashion_score_data:
+                        score = fashion_score_data['result']
+                        if isinstance(score, dict):
+                            score = score.get('score', 0)
+                        embed.add_field(name="💃 Elegance", value=f"`{score}`", inline=True)
+                except Exception as fashion_score_err:
+                    logger.warning(f"Failed to get fashion score: {str(fashion_score_err)}")
+
                 attr = data.get('attr', {})
                 embed.add_field(name="⚔️ Martial Mastery", value=f"`{round(attr.get('XIUWEI_KUNGFU', 0), 1)}`", inline=True)
                 embed.add_field(name="📚 Scholar Mastery", value=f"`{round(attr.get('XIUWEI_TRADE3', 0), 1)}`", inline=True)
@@ -726,10 +737,7 @@ class WWMCog(commands.Cog):
                 embed.add_field(name="🔰 Defense", value=f"`{round(attr.get('AGI', 0), 1)}`", inline=True)
                 embed.add_field(name="🌍 Region", value=f"`{base_data.get('oversea_tag', 'N/A')}`", inline=True)
                 embed.add_field(name="⌛ Total Online Time", value=f"`{round(base_data.get('online_time', 0) / 3600, 1)} hours`", inline=True)
-            else:
-                embed.description = f"{embed.description}\n\n🔗 **Bind your account** in <#1469961307154288703> to view full stats, combat power and details."
 
-            if is_verified:
                 # ---- Online Status ----
                 is_invisible = base_data.get('invisible', False)
                 is_online = base_data.get('is_online', 0)
@@ -769,6 +777,8 @@ class WWMCog(commands.Cog):
                     if 'score' in match:
                         embed.add_field(name="🏆 PvP Score", value=f"`{match['score']}`", inline=True)
                         break
+            else:
+                embed.description = f"{embed.description}\n\n🔗 **Bind your account** in <#1469961307154288703> to view full stats, combat power and details."
             
             if player_pid and is_verified:
                 try:
