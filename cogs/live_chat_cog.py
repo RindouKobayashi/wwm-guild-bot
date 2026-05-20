@@ -27,7 +27,7 @@ class LiveChatCog(commands.Cog):
         self.ranks = None                       # To store rank information
         # Team-up alert configuration
         self.TEAMUP_CHANNEL_ID = 1442853064053756028  # General channel for teamup pings
-        self.TEAMUP_ROLE_ID = 1488835215949434891     # Team Up role
+        self.TEAMUP_ROLE_ID = 1470861369107681587     # Team Up role
         self.TEAMUP_KEYWORD = "@teamup"               # Trigger keyword
         self.TEAMUP_EMBED_COLOR = 0xE74C3C            # Red
 
@@ -281,8 +281,6 @@ class LiveChatCog(commands.Cog):
         if rank_name != "Unknown":
             description += f" ({rank_name})"
         description += f" (Lv.{level})"
-        if sender_pid:
-            description += f" | PID: {sender_pid}"
         if number_id:
             description += f" | ID: {number_id}"
         description += " is looking for a team!\n\n"
