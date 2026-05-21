@@ -147,7 +147,7 @@ SCHOOL_NAMES = {
     1: "Well of Heaven",
     2: "Masked Troupe",
     3: "Raging Tides",
-    4: "Silver Neddle",
+    4: "Silver Needle",
     6: "Midnight Blades",
     11: "Nine Mortal Ways",
     12: "Velvet Shade",
