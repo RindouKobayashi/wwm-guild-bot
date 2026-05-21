@@ -7,6 +7,7 @@ import discord
 from discord.ext import commands, tasks
 from settings import logger
 from utility.wwm import get_club_chat, get_custom_guild_info, get_bulk_players_info, get_film_plan, get_teams_info
+from utility.api_constants import get_kongfu_ids_from_player, format_kongfu_display
 from googletrans import Translator
 
 
@@ -81,7 +82,7 @@ class LiveChatCog(commands.Cog):
                 self.last_seen_msg_ids.add(msg_id)
             
             if new_messages:
-                logger.info(f"🔔 Found {len(new_messages)} new chat messages")
+                logger.debug(f"🔔 Found {len(new_messages)} new chat messages")
 
                 # Call guild api so that we can get rank of sender and other info that might not be included in chat message data
                 self.ranks = await asyncio.to_thread(get_custom_guild_info, self.CLUB_ID, self.HOSTNUM, {'members': ['custom_posts']})
@@ -300,16 +301,19 @@ class LiveChatCog(commands.Cog):
                         if m_hostnum and m_pid:
                             hostnum_pids.setdefault(m_hostnum, []).append(m_pid)
                     
-                    # Fetch nickname and level for all members
+                    # Fetch nickname, level and kongfu for all members
                     member_info = {}
                     for m_hostnum, pids in hostnum_pids.items():
-                        bulk_result = await asyncio.to_thread(get_bulk_players_info, pids, ["base"], m_hostnum)
+                        bulk_result = await asyncio.to_thread(get_bulk_players_info, pids, ["base", "kongfu"], m_hostnum)
                         if bulk_result and 'result' in bulk_result:
                             for pid_key, player_data in bulk_result['result'].items():
                                 base_info = player_data.get('base', {})
+                                weapon_ids = get_kongfu_ids_from_player(player_data)
+                                weapon_display = format_kongfu_display(weapon_ids) if weapon_ids else ""
                                 member_info[pid_key] = {
                                     'nickname': base_info.get('nickname', 'Unknown'),
                                     'level': base_info.get('level', '?'),
+                                    'weapons': weapon_display,
                                 }
                     
                     # Build team objective text
@@ -328,7 +332,11 @@ class LiveChatCog(commands.Cog):
                         info = member_info.get(m_pid, {})
                         m_nickname = info.get('nickname', 'Unknown')
                         m_level = info.get('level', '?')
-                        member_lines.append(f"{idx}. {m_nickname} (Lv.{m_level})")
+                        m_weapons = info.get('weapons', '')
+                        line = f"{idx}. {m_nickname} (Lv.{m_level})"
+                        if m_weapons:
+                            line += f"\n   {m_weapons}"
+                        member_lines.append(line)
                     
                     header = " ".join(objective_parts) if objective_parts else "Team Invitation"
                     message = f"[Team] {header}\n\n" + "\n".join(member_lines)
@@ -436,16 +444,19 @@ class LiveChatCog(commands.Cog):
                                         if m_hostnum and m_pid:
                                             hostnum_pids.setdefault(m_hostnum, []).append(m_pid)
                                     
-                                    # Fetch nickname and level for all members
+                                    # Fetch nickname, level and kongfu for all members
                                     member_info = {}
                                     for m_hostnum, pids in hostnum_pids.items():
-                                        bulk_result = await asyncio.to_thread(get_bulk_players_info, pids, ["base"], m_hostnum)
+                                        bulk_result = await asyncio.to_thread(get_bulk_players_info, pids, ["base", "kongfu"], m_hostnum)
                                         if bulk_result and 'result' in bulk_result:
                                             for pid_key, player_data in bulk_result['result'].items():
                                                 base_info = player_data.get('base', {})
+                                                weapon_ids = get_kongfu_ids_from_player(player_data)
+                                                weapon_display = format_kongfu_display(weapon_ids) if weapon_ids else ""
                                                 member_info[pid_key] = {
                                                     'nickname': base_info.get('nickname', 'Unknown'),
                                                     'level': base_info.get('level', '?'),
+                                                    'weapons': weapon_display,
                                                 }
                                     
                                     # Build member list
@@ -453,7 +464,11 @@ class LiveChatCog(commands.Cog):
                                     for idx, member in enumerate(members_data, 1):
                                         m_pid = member.get('pid', '')
                                         info = member_info.get(m_pid, {})
-                                        member_lines.append(f"{idx}. {info.get('nickname', 'Unknown')} (Lv.{info.get('level', '?')})")
+                                        line = f"{idx}. {info.get('nickname', 'Unknown')} (Lv.{info.get('level', '?')})"
+                                        m_weapons = info.get('weapons', '')
+                                        if m_weapons:
+                                            line += f"\n   {m_weapons}"
+                                        member_lines.append(line)
                                     
                                     team_info_str = "\n\n👥 **Current Team:**\n" + "\n".join(member_lines)
             except Exception as e:
