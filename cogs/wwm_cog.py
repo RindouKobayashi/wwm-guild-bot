@@ -2,6 +2,7 @@ import discord
 import datetime
 from discord import app_commands
 from discord.ext import commands, tasks
+from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow
 import logging
 import aiosqlite
 import json
@@ -9,66 +10,231 @@ from collections import defaultdict
 from deepdiff import DeepDiff
 
 import settings
-from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid
+from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
-from utility.api_constants import SCHOOL_NAMES
+from utility.api_constants import SCHOOL_NAMES, get_kongfu_ids_from_player, format_kongfu_display, classify_kongfu_role
 
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 SCHEDULE_DB_PATH = BASE_DIR / "data" / "schedule.db"
 
+BLURPLE = 0x5865F2
+ORANGE = 0xE67E22
 
-class OnlinePlayersButton(discord.ui.View):
-    def __init__(self, cog):
+class OnlinePlayersResultView(LayoutView):
+    """Components V2 LayoutView for displaying online players result."""
+    def __init__(self, online_players: list):
+        super().__init__(timeout=120)
+        
+        # Build compact player lines — rank, nickname, level, and role only
+        player_lines = []
+        for p in online_players:
+            rank_str = f"[{p['rank_name']}] " if p['rank_name'] else ""
+            lv_str = f"Lv.{p['level']}"
+            role_str = f" | {p['role']}" if p['role'] else ""
+            line = f"{rank_str}**{p['nickname']}** ({lv_str}){role_str}"
+            player_lines.append(line)
+
+        players_text = "\n".join(player_lines)
+        
+        inner_items = []
+        inner_items.append(TextDisplay(f"# 🟢 Online Players ({len(online_players)})\n\n{players_text}"))
+        
+        container = Container(*inner_items, accent_color=0x2ECC71)
+        self.add_item(container)
+
+
+class GuildStatusBoard(LayoutView):
+    """Components V2 LayoutView for the guild live status board."""
+    
+    def __init__(self, cog, guild_name: str, guild_level: int, member_count: int,
+                 apprentice_count: int, funds: int, total_fame: int, week_fame: int,
+                 gvg_points: int, online_count: int, weekly_leaderboard: list,
+                 pending_apps: int, now_ts: int, next_update_ts: int):
         super().__init__(timeout=None)
         self.cog = cog
-    
-    @discord.ui.button(label="Check Online Players", style=discord.ButtonStyle.green, emoji="🟢", custom_id="online_players_button")
-    async def check_online(self, interaction: discord.Interaction, button: discord.ui.Button):
-        # ALWAYS DEFER FIRST - Discord only gives 3 seconds to respond
+        self.guild_name = guild_name
+        self.online_count = online_count
+        self.member_count = member_count
+        self.pending_apps = pending_apps
+
+        # ── Build section texts ──
+        # Identity section
+        identity_text = (
+            f"📛 **Name:** __**{guild_name}**__\n"
+            f"⭐ **Level:** __**{guild_level}**__  👥 **Members:** __**{member_count}/100**__\n"
+            f"🎓 **Apprentices:** __**{apprentice_count}**__"
+        )
+
+        # Leadership section (currently not gathered — skipped)
+        leadership_text = None
+        # Finances section
+        finances_text = (
+            f"💰 **Funds:** __**{funds:,}**__    📈 **Fame:** __**{total_fame:,}**__\n"
+            f"🔥 **Weekly:** __**{week_fame:,}**__    ⚔️ **GvG:** __**{gvg_points:,}**__"
+        )
+
+        # Online status section
+        status_text = (
+            f"🟢 **Online Now:** __**{online_count}/{member_count}**__"
+        )
+
+        # Weekly Activity section
+        leaderboard_lines = []
+        for rank, (name, points) in enumerate(weekly_leaderboard[:10], 1):
+            if rank == 1:
+                prefix = "🥇"
+            elif rank == 2:
+                prefix = "🥈"
+            elif rank == 3:
+                prefix = "🥉"
+            else:
+                prefix = f"{rank}."
+            leaderboard_lines.append(f"{prefix} **{name}:** __**{points:,}**__")
+
+        activity_text = "\n".join(leaderboard_lines) if leaderboard_lines else "*No activity this week*"
+
+        # Footer text
+        footer_lines = []
+        if pending_apps > 0:
+            footer_lines.append(f"📋 **Pending Applications:** __**{pending_apps}**__")
+        footer_lines.append(f"⏱️ <t:{now_ts}:R>  •  🔄 <t:{next_update_ts}:R>")
+        footer_text = "  ".join(footer_lines)
+
+        # ── Single master Container with all inner components ──
+        inner_items = []
+
+        # Header + Identity
+        inner_items.append(TextDisplay(f"# 🏰 Guild Live Status\n\n{identity_text}"))
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Leadership (if available)
+        if leadership_text:
+            inner_items.append(TextDisplay(leadership_text))
+            inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Finances
+        inner_items.append(TextDisplay(finances_text))
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Status (Online)
+        inner_items.append(TextDisplay(status_text))
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Weekly Activity
+        inner_items.append(TextDisplay(f"🔥 **Weekly Activity — Top 10**\n\n{activity_text}"))
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Footer (time info)
+        inner_items.append(TextDisplay(footer_text))
+
+        # Button action row
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+        button_row = ActionRow()
+        button = discord.ui.Button(
+            label="Check Online Players",
+            style=discord.ButtonStyle.green,
+            emoji="🟢",
+            custom_id="online_players_button",
+        )
+        button.callback = self._handle_check_online
+        button_row.add_item(button)
+        inner_items.append(button_row)
+
+        # Wrap everything in a single Container
+        master_container = Container(*inner_items, accent_color=BLURPLE)
+        self.add_item(master_container)
+
+    async def _handle_check_online(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
-        
-        # Check if user has the guild member role
+
         GUILD_MEMBER_ROLE_ID = settings.GUILD_MEMBER_ROLE_ID
-        
         member_role = discord.utils.get(interaction.user.roles, id=GUILD_MEMBER_ROLE_ID)
         if not member_role:
             await interaction.followup.send("❌ You are not guild member", ephemeral=True)
             return
-        
+
         loading_msg = await interaction.followup.send("🔄 Getting player list...", ephemeral=True, wait=True)
-        
+
         try:
             if not self.cog.last_guild_state:
                 await loading_msg.edit(content="❌ Guild data not initialized, please try again shortly")
                 return
-            
+
             result = self.cog.last_guild_state.get('result', {})
             members = result.get('members', {})
             member_list = members.get('members', {})
-            
-            from utility.wwm import get_bulk_players_info
+
             all_pids = list(member_list.keys())
-            bulk_data = get_bulk_players_info(all_pids, fields=["base"])
-            
-            online_player_names = []
+
+            # Fetch rank info (custom posts) from guild
+            ranks_data = {}
+            try:
+                guild_ranks = get_custom_guild_info(
+                    settings.CLUB_ID, 10103, {'members': ['custom_posts']}
+                )
+                if guild_ranks and 'result' in guild_ranks:
+                    ranks_data = guild_ranks['result'].get('members', {}).get('custom_posts', {})
+            except Exception as rank_err:
+                logger.warning(f"Failed to fetch guild ranks: {rank_err}")
+
+            # Custom rank name mapping (from live_chat_cog.py)
+            custom_rank_names = {
+                1: "Guild Leader",
+                2: "Vice Leader",
+                5: "Command",
+                7: "Half Time Performer",
+            }
+
+            def get_player_rank_name(pid: str) -> str:
+                """Get the highest rank name for a player PID."""
+                player_ranks = []
+                for rank_id_str, rank_info in ranks_data.items():
+                    if pid in rank_info.get('pids', []):
+                        player_ranks.append((int(rank_id_str), rank_info.get('name', 'Unknown')))
+                if player_ranks:
+                    player_ranks.sort(key=lambda x: x[0])
+                    rid, rname = player_ranks[0]
+                    return custom_rank_names.get(rid, rname)
+                return None
+
+            # Fetch player data with base + kongfu fields
+            bulk_data = get_bulk_players_info(all_pids, fields=["base", "kongfu"])
+
+            online_players = []
             if bulk_data and bulk_data.get('code') == 0:
                 players = bulk_data.get('result', {})
                 for pid, player_data in players.items():
                     player_base = player_data.get('base', {})
                     if player_base.get('is_online', 0) == 1:
-                        online_player_names.append(player_base.get('nickname', 'Unknown'))
-            
-            if online_player_names:
-                lines = []
-                lines.append(f"### 🟢 ONLINE PLAYERS ({len(online_player_names)}):")
-                lines.append("```")
-                for name in sorted(online_player_names):
-                    lines.append(f"✅ {name}")
-                lines.append("```")
-                await loading_msg.edit(content="\n".join(lines))
+                        nickname = player_base.get('nickname', 'Unknown')
+                        level = player_base.get('level', 0)
+                        # Rank
+                        rank_name = get_player_rank_name(pid)
+                        # Kungfu role classification
+                        weapon_ids = get_kongfu_ids_from_player(player_data)
+                        role = classify_kongfu_role(weapon_ids) if weapon_ids else ""
+                        online_players.append({
+                            'pid': pid,
+                            'nickname': nickname,
+                            'level': level,
+                            'rank_name': rank_name,
+                            'role': role,
+                        })
+
+            if online_players:
+                # Sort: ranked players first (by rank ID), then by name
+                def sort_key(p):
+                    rank_priority = {"Guild Leader": 0, "Vice Leader": 1, "Command": 2, "Half Time Performer": 3}
+                    rp = rank_priority.get(p['rank_name'], 99) if p['rank_name'] else 99
+                    return (rp, p['nickname'].lower())
+                online_players.sort(key=sort_key)
+
+                # Send result as a Components V2 LayoutView
+                result_view = OnlinePlayersResultView(online_players)
+                await loading_msg.edit(content=None, view=result_view)
             else:
                 await loading_msg.edit(content="🔴 No players are currently online")
-                
+
         except Exception as e:
             logger.error(f"Failed to fetch online players: {str(e)}")
             await loading_msg.edit(content="❌ Failed to retrieve online players list")
@@ -479,7 +645,6 @@ class WWMCog(commands.Cog):
         self.monitor_enabled = False
         self.check_interval_minutes = 2
         self.monitor_message = None
-        self.online_button_view = OnlinePlayersButton(self)
         self.db_path = BASE_DIR / "data" / "guild_monitor.db"
         self.last_known_applications = {}
         self.pending_apps_channel_id = 1443104374837608529
@@ -841,19 +1006,40 @@ class WWMCog(commands.Cog):
                 logger.warning("Guild check returned no data")
                 return
             
-            status_message, embeds, online_count, member_count, players_data = self._build_status_board(guild_data)
+            board_data = self._gather_status_data(guild_data)
+            if not board_data:
+                return
+            
+            now_ts = int(discord.utils.utcnow().timestamp())
+            
+            # Build the LayoutView board
+            view = GuildStatusBoard(
+                cog=self,
+                guild_name=board_data['guild_name'],
+                guild_level=board_data['guild_level'],
+                member_count=board_data['member_count'],
+                apprentice_count=board_data['apprentice_count'],
+                funds=board_data['funds'],
+                total_fame=board_data['total_fame'],
+                week_fame=board_data['week_fame'],
+                gvg_points=board_data['gvg_points'],
+                online_count=board_data['online_count'],
+                weekly_leaderboard=board_data['weekly_leaderboard'],
+                pending_apps=board_data['pending_apps'],
+                now_ts=now_ts,
+                next_update_ts=now_ts + 60,
+            )
             
             try:
-                now_ts = int(discord.utils.utcnow().timestamp())
                 async with aiosqlite.connect(self.db_path) as db:
                     await db.execute(
                         "INSERT OR IGNORE INTO guild_player_counts (ts, total_members, online_count, guild_week_fame) VALUES (?, ?, ?, ?)",
-                        (now_ts, member_count, online_count, guild_data.get('result', {}).get('base', {}).get('week_fame', 0))
+                        (now_ts, board_data['member_count'], board_data['online_count'], board_data['week_fame'])
                     )
                     
-                    if players_data is not None:
+                    if board_data['players_data'] is not None:
                         snapshot = []
-                        for pid, player_data in players_data.items():
+                        for pid, player_data in board_data['players_data'].items():
                             base = player_data.get('base', {})
                             club = player_data.get('club', {})
                             player_entry = {
@@ -884,10 +1070,11 @@ class WWMCog(commands.Cog):
             except Exception as e:
                 logger.warning(f"Failed to record player count: {e}")
             
-            await self.monitor_message.edit(content=status_message, embeds=embeds, view=self.online_button_view)
+            # Edit the existing message with the new LayoutView (clear legacy fields)
+            await self.monitor_message.edit(content=None, embeds=[], attachments=[], view=view)
             logger.debug("Guild status message updated successfully")
             
-            # Notify about new pending applications to the designated channel
+            # Notify about new pending applications
             applys = guild_data.get('result', {}).get('applys', {}).get('apply_dict', {})
             if applys:
                 new_applications = {}
@@ -930,11 +1117,15 @@ class WWMCog(commands.Cog):
         except Exception as e:
             logger.error(f"Guild monitor task failed: {str(e)}", exc_info=True)
 
-    def _build_status_board(self, guild_data):
+    def _gather_status_data(self, guild_data):
+        """Extract structured status data from guild API response.
+        
+        Returns a dict with all fields needed to build the GuildStatusBoard,
+        or None if data is invalid.
+        """
         result = guild_data.get('result', {})
         base = result.get('base', {})
         members = result.get('members', {})
-        activity = result.get('activity', {})
         play = result.get('play', {})
         
         member_list = members.get('members', {})
@@ -943,12 +1134,10 @@ class WWMCog(commands.Cog):
         now = discord.utils.utcnow().timestamp()
         
         online = 0
-        online_player_names = []
         players_data = None
         
         all_pids = list(member_list.keys())
         
-        from utility.wwm import get_bulk_players_info
         try:
             bulk_data = get_bulk_players_info(all_pids, fields=["base", "club"])
             if bulk_data and bulk_data.get('code') == 0:
@@ -957,40 +1146,20 @@ class WWMCog(commands.Cog):
                     player_base = player_data.get('base', {})
                     if player_base.get('is_online', 0) == 1:
                         online += 1
-                        online_player_names.append(player_base.get('nickname', 'Unknown'))
         except Exception as e:
             logger.warning(f"Failed to get bulk player data, falling back to estimate: {e}")
             for pid, member in member_list.items():
                 last_online = member.get('last_online_ts', 0)
                 if now - last_online < 7200:
                     online += 1
-        
-        lines = []
-        lines.append("## 🏰 **GUILD LIVE STATUS**")
-        lines.append("```ansi")
-        lines.append("╔═════════════════════════════════════════╗")
-        lines.append(f"║ 📛 Name: {base.get('name', 'Unknown'):<40}")
-        lines.append(f"║ ⭐ Guild Level: {base.get('level', 0):<40}")
-        lines.append(f"║ 👥 Members: {member_count}/100{' ':<32}")
-        lines.append(f"║ 🎓 Apprentices: {members.get('apprentice_num', 0):<34}")
-        lines.append(f"║ 💰 Guild Funds: {result.get('base', {}).get('fund', 0):,}{' ':<25}")
-        lines.append(f"║ 📈 Total Fame: {result.get('base', {}).get('fame', 0):,}{' ':<28}")
-        lines.append(f"║ 🔥 Weekly Activity: {result.get('base', {}).get('week_fame', 0):,}{' ':<23}")
-        lines.append(f"║ ⚔️ GvG Points: {play.get('pk_match_info', {}).get('battle_score', 0):<32}")
-        lines.append(f"║ 🟢 Online Now: {online}/{member_count}{' ':<30}")
-        lines.append("╚═════════════════════════════════════════╝")
-        lines.append("```")
 
         # Calculate current schedule week start (Monday 5:00 AM GMT+8)
         now_utc_ts = int(discord.utils.utcnow().timestamp())
         GMT8_OFFSET = 8 * 3600
         gmt8_now_ts = now_utc_ts + GMT8_OFFSET
         gmt8_dt = datetime.datetime.fromtimestamp(gmt8_now_ts, tz=datetime.timezone.utc)
-        # Shift back by 5 hours so 5 AM becomes midnight for day calculation
         adjusted_dt = gmt8_dt - datetime.timedelta(hours=5)
-        # Roll back to Monday
         monday_dt = adjusted_dt - datetime.timedelta(days=adjusted_dt.weekday())
-        # Set to 5:00 AM GMT+8 (which is midnight in the adjusted space)
         week_start_gmt8 = monday_dt.replace(hour=5, minute=0, second=0, microsecond=0)
         week_start_ts = int(week_start_gmt8.timestamp() - GMT8_OFFSET)
 
@@ -1009,55 +1178,40 @@ class WWMCog(commands.Cog):
                     if 'nickname' in base_data:
                         nickname = base_data.get('nickname', nickname)
                 
-                # Use last_online_ts from the guild member list (always available)
                 last_online = member.get('last_online_ts', 0)
-                
-                # Skip players who haven't logged in since this week started
                 if last_online < week_start_ts:
                     continue
                 
-                weekly_leaderboard.append( (-weekly_points, nickname, weekly_points) )
+                weekly_leaderboard.append((nickname, weekly_points))
         else:
             for pid, member in member_list.items():
                 nickname = member.get('nickname', 'Unknown')
                 club_data = member.get('club', {})
                 weekly_points = club_data.get('liveness', 0)
                 last_online = member.get('last_online_ts', 0)
-                
-                # Skip players who haven't logged in since this week started
                 if last_online < week_start_ts:
                     continue
-                
-                weekly_leaderboard.append( (-weekly_points, nickname, weekly_points) )
+                weekly_leaderboard.append((nickname, weekly_points))
 
-        weekly_leaderboard.sort()
-
-        lines.append("\n## 🔥 WEEKLY ACTIVITY POINTS - TOP 10")
-        lines.append("```")
-        
-        for rank, (neg_points, name, points) in enumerate(weekly_leaderboard[:10], 1):
-            if rank == 1:
-                rank_text = "🥇"
-            elif rank == 2:
-                rank_text = "🥈"
-            elif rank == 3:
-                rank_text = "🥉"
-            else:
-                rank_text = f"{rank}."
-            lines.append(f"{rank_text} {name}: {points:,}")
-        
-        lines.append("```")
-
-        embeds = []
+        # Sort by points descending
+        weekly_leaderboard.sort(key=lambda x: x[1], reverse=True)
 
         applys = result.get('applys', {}).get('apply_dict', {})
-        if len(applys) > 0:
-            lines.append(f"\n### 📋 **PENDING APPLICATIONS: {len(applys)}**")
-        
-        lines.append(f"⏱️ Last Updated: <t:{int(now)}:R>")
-        lines.append(f"🔄 Next Update: <t:{int(now) + 60}:R>")
-        
-        return "\n".join(lines), embeds, online, member_count, players_data
+
+        return {
+            'guild_name': base.get('name', 'Unknown'),
+            'guild_level': base.get('level', 0),
+            'member_count': member_count,
+            'apprentice_count': members.get('apprentice_num', 0),
+            'funds': base.get('fund', 0),
+            'total_fame': base.get('fame', 0),
+            'week_fame': base.get('week_fame', 0),
+            'gvg_points': play.get('pk_match_info', {}).get('battle_score', 0),
+            'online_count': online,
+            'weekly_leaderboard': weekly_leaderboard,
+            'pending_apps': len(applys),
+            'players_data': players_data,
+        }
     
     async def _process_changes(self, diff, new_data):
         changes = []
@@ -1112,12 +1266,31 @@ class WWMCog(commands.Cog):
                 try:
                     self.monitor_message = await self.monitor_channel.fetch_message(int(row[0]))
                 except:
+                    # Message not found or other error — create fresh V2 message
                     guild_data = get_full_guild_info(CLUB_ID)
                     if guild_data:
-                        status_message, embeds, _, _, _ = self._build_status_board(guild_data)
-                        self.monitor_message = await self.monitor_channel.send(content=status_message, embeds=embeds, view=self.online_button_view)
-                        await self._save_config()
-                        self.last_guild_state = guild_data
+                        board_data = self._gather_status_data(guild_data)
+                        if board_data:
+                            now_ts = int(discord.utils.utcnow().timestamp())
+                            view = GuildStatusBoard(
+                                cog=self,
+                                guild_name=board_data['guild_name'],
+                                guild_level=board_data['guild_level'],
+                                member_count=board_data['member_count'],
+                                apprentice_count=board_data['apprentice_count'],
+                                funds=board_data['funds'],
+                                total_fame=board_data['total_fame'],
+                                week_fame=board_data['week_fame'],
+                                gvg_points=board_data['gvg_points'],
+                                online_count=board_data['online_count'],
+                                weekly_leaderboard=board_data['weekly_leaderboard'],
+                                pending_apps=board_data['pending_apps'],
+                                now_ts=now_ts,
+                                next_update_ts=now_ts + 60,
+                            )
+                            self.monitor_message = await self.monitor_channel.send(content=None, embeds=[], view=view)
+                            await self._save_config()
+                            self.last_guild_state = guild_data
     
     @guild_group.command(name="set-channel", description="Set channel for guild monitor notifications")
     @app_commands.checks.has_permissions(administrator=True)
@@ -1126,9 +1299,27 @@ class WWMCog(commands.Cog):
         
         guild_data = get_full_guild_info(CLUB_ID)
         if guild_data:
-            status_message, embeds, _, _, _ = self._build_status_board(guild_data)
-            self.monitor_message = await channel.send(content=status_message, embeds=embeds, view=self.online_button_view)
-            self.last_guild_state = guild_data
+            board_data = self._gather_status_data(guild_data)
+            if board_data:
+                now_ts = int(discord.utils.utcnow().timestamp())
+                view = GuildStatusBoard(
+                    cog=self,
+                    guild_name=board_data['guild_name'],
+                    guild_level=board_data['guild_level'],
+                    member_count=board_data['member_count'],
+                    apprentice_count=board_data['apprentice_count'],
+                    funds=board_data['funds'],
+                    total_fame=board_data['total_fame'],
+                    week_fame=board_data['week_fame'],
+                    gvg_points=board_data['gvg_points'],
+                    online_count=board_data['online_count'],
+                    weekly_leaderboard=board_data['weekly_leaderboard'],
+                    pending_apps=board_data['pending_apps'],
+                    now_ts=now_ts,
+                    next_update_ts=now_ts + 60,
+                )
+                self.monitor_message = await channel.send(content=None, embeds=[], view=view)
+                self.last_guild_state = guild_data
         
         await self._save_config()
         await interaction.response.send_message(f"✅ Guild monitor channel set to {channel.mention}. Status board created.", ephemeral=True)
@@ -1649,7 +1840,6 @@ class WWMCog(commands.Cog):
                     ax.xaxis.set_major_locator(mdates.HourLocator(interval=4))
                     ax.xaxis.set_minor_locator(mdates.HourLocator(interval=2))
                 
-                # We need max_y here; in by_region we can take max across all regions
                 max_y = max(max(region_online_series[tag]) for tag in sorted_regions) if sorted_regions else 0
                 for ev_name, ev_ts in schedule_events:
                     ev_date = dt.datetime.fromtimestamp(ev_ts, tz=dt.timezone.utc)
