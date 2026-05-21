@@ -393,6 +393,7 @@ class GuildSearchSelectView(discord.ui.View):
             base = result.get('base', {})
             members = result.get('members', {})
             play = result.get('play', {})
+            create_ts = base.get('create_ts', 0)
             
             embed = discord.Embed(
                 title="🏰 Guild Profile",
@@ -403,6 +404,7 @@ class GuildSearchSelectView(discord.ui.View):
             
             embed.add_field(name="📛 Guild Name", value=f"`{base.get('name', 'Unknown')}`", inline=True)
             embed.add_field(name="⭐ Level", value=f"`{base.get('level', 0)}`", inline=True)
+            embed.add_field(name="📅 Creation Date", value=f"<t:{create_ts}:R>" if create_ts else "Unknown", inline=True)
             embed.add_field(name="👥 Members", value=f"`{members.get('member_num', 0)} / 100`", inline=True)
             embed.add_field(name="💰 Guild Funds", value=f"`{base.get('fund', 0):,}`", inline=True)
             embed.add_field(name="📈 Total Fame", value=f"`{base.get('fame', 0):,}`", inline=True)
@@ -1265,11 +1267,13 @@ class WWMCog(commands.Cog):
             base = result.get('base', {})
             members = result.get('members', {})
             play = result.get('play', {})
+            create_ts = base.get('create_ts', 0)
 
             embed = discord.Embed(title="🏰 Guild Profile", color=discord.Color.og_blurple())
             embed.description = f"**{base.get('name', 'Unknown Guild')}**"
             embed.add_field(name="📛 Guild Name", value=f"`{base.get('name', 'Unknown')}`", inline=True)
             embed.add_field(name="⭐ Level", value=f"`{base.get('level', 0)}`", inline=True)
+            embed.add_field(name="📅 Creation Date", value=f"<t:{create_ts}:R>" if create_ts else "Unknown", inline=True)
             embed.add_field(name="👥 Members", value=f"`{members.get('member_num', 0)} / 100`", inline=True)
             embed.add_field(name="💰 Guild Funds", value=f"`{base.get('fund', 0):,}`", inline=True)
             embed.add_field(name="📈 Total Fame", value=f"`{base.get('fame', 0):,}`", inline=True)
