@@ -61,6 +61,7 @@ WWM_HOST = os.getenv("WWM_HOST")
 WWM_REDIS_PLAYER_URL = os.getenv("WWM_REDIS_PLAYER_URL")
 WWM_FASHION_SCORE_URL = os.getenv("WWM_FASHION_SCORE_URL")
 WWM_FILM_PLAN_URL = os.getenv("WWM_FILM_PLAN_URL")
+WWM_TEAMS_INFO_URL = os.getenv("WWM_TEAMS_INFO_URL")
 
 # Activity Tracking Settings
 ACTIVITY_LEADER_ROLE_ID = 1488837755189461132  # The role ID for "Most Active" member

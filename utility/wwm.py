@@ -12,7 +12,7 @@ from settings import (
     WWM_FULL_GUILD_URL, WWM_FASHION_PLAN_URL, WWM_CLUB_BY_NAME_URL,
     WWM_CLUB_BRIEF_INFO_BATCH_URL, WWM_CLUB_CHAT_URL,
     WWM_FIND_PEOPLE_BY_NICKNAME_URL, WWM_HOST, logger,
-    WWM_FASHION_SCORE_URL, WWM_FILM_PLAN_URL,
+    WWM_FASHION_SCORE_URL, WWM_FILM_PLAN_URL, WWM_TEAMS_INFO_URL
 )
 
 # -----------------------------------------------------------------------------
@@ -326,6 +326,24 @@ def get_film_plan(plan_id: str) -> Optional[Dict[str, Any]]:
         {
             "plan_id": plan_id,
             "uid": WWM_UID,
+        }
+    )
+
+def get_teams_info(team_hostnum: int, team_id: str) -> Optional[Dict[str, Any]]:
+    """Get team info including members pid, hostnum and oversea_tag"""
+    logger.debug(f"Getting team info for team_id: {team_id} | hostnum: {team_hostnum}")
+    
+    return _wwm_api_post(
+        WWM_TEAMS_INFO_URL,
+        {
+            "hostnum2tids": {
+                team_hostnum: [team_id]
+            },
+            "uid": WWM_UID,
+            "fields": [
+                "members",
+                "base",
+            ]
         }
     )
 

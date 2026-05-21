@@ -6,7 +6,7 @@ from typing import Optional, Set
 import discord
 from discord.ext import commands, tasks
 from settings import logger
-from utility.wwm import get_club_chat, get_custom_guild_info, get_bulk_players_info, get_film_plan
+from utility.wwm import get_club_chat, get_custom_guild_info, get_bulk_players_info, get_film_plan, get_teams_info
 from googletrans import Translator
 
 
@@ -27,7 +27,7 @@ class LiveChatCog(commands.Cog):
         self.ranks = None                       # To store rank information
         # Team-up alert configuration
         self.TEAMUP_CHANNEL_ID = 1442853064053756028  # General channel for teamup pings
-        self.TEAMUP_ROLE_ID = 1470861369107681587     # Team Up role
+        self.TEAMUP_ROLE_ID = 1488830429686665246     # Team Up role
         self.TEAMUP_KEYWORD = "@teamup"               # Trigger keyword
         self.TEAMUP_EMBED_COLOR = 0xE74C3C            # Red
 
@@ -219,6 +219,7 @@ class LiveChatCog(commands.Cog):
         # Determine message content based on type
         message = msg.get('msg', '').strip()
         picture_url = None
+        video_url = None
         
         if not message:
             # Handle msg_common_share with empty text (e.g. activity cards, team invites)
@@ -280,6 +281,61 @@ class LiveChatCog(commands.Cog):
                 message = f"[Gallery] {artwork_name}"
                 if heat_val:
                     message += f" | ❤️ {heat_val}"
+
+        elif msg_type == 'msg_common_share': # sharing of team invite
+            extra_data = ext.get('extra_data', {})
+            team_id = extra_data.get('team_id')
+            team_hostnum = extra_data.get('team_hostnum')
+            if team_id and team_hostnum:
+                # Fetch team details via teams info API
+                team_data = await asyncio.to_thread(get_teams_info, team_hostnum, team_id)
+                if team_data and 'result' in team_data and team_id in team_data['result']:
+                    members_data = team_data['result'][team_id].get('members', {}).get('members', [])
+                    
+                    # Group member PIDs by hostnum for bulk lookup
+                    hostnum_pids = {}
+                    for member in members_data:
+                        m_hostnum = member.get('hostnum')
+                        m_pid = member.get('pid')
+                        if m_hostnum and m_pid:
+                            hostnum_pids.setdefault(m_hostnum, []).append(m_pid)
+                    
+                    # Fetch nickname and level for all members
+                    member_info = {}
+                    for m_hostnum, pids in hostnum_pids.items():
+                        bulk_result = await asyncio.to_thread(get_bulk_players_info, pids, ["base"], m_hostnum)
+                        if bulk_result and 'result' in bulk_result:
+                            for pid_key, player_data in bulk_result['result'].items():
+                                base_info = player_data.get('base', {})
+                                member_info[pid_key] = {
+                                    'nickname': base_info.get('nickname', 'Unknown'),
+                                    'level': base_info.get('level', '?'),
+                                }
+                    
+                    # Build team objective text
+                    share_text_info = ext.get('share_text_info') or extra_data.get('share_text_info', [])
+                    recruit_info = ext.get('recruit_info', '')
+                    objective_parts = []
+                    if recruit_info:
+                        objective_parts.append(f"[{recruit_info}]")
+                    if share_text_info:
+                        objective_parts.append(", ".join(share_text_info))
+                    
+                    # Build member list
+                    member_lines = []
+                    for idx, member in enumerate(members_data, 1):
+                        m_pid = member.get('pid', '')
+                        info = member_info.get(m_pid, {})
+                        m_nickname = info.get('nickname', 'Unknown')
+                        m_level = info.get('level', '?')
+                        member_lines.append(f"{idx}. {m_nickname} (Lv.{m_level})")
+                    
+                    header = " ".join(objective_parts) if objective_parts else "Team Invitation"
+                    message = f"[Team] {header}\n\n" + "\n".join(member_lines)
+                else:
+                    message = "[Team Invitation]"
+            else:
+                message = "[Team Invitation]"
         elif msg_type == 'msg_normal':
             # Translate englsih to chinese and vice versa for normal messages to make it more accessible for all users
             # Check if message contains Chinese characters
@@ -349,18 +405,59 @@ class LiveChatCog(commands.Cog):
                 highest_rank_id, highest_rank_name = sender_ranks[0]
                 rank_name = custom_rank_names.get(highest_rank_id, highest_rank_name)
 
-        # Fetch Number ID (long account ID) using the PID
+        # Fetch Number ID (long account ID) and team info using the PID
         number_id = None
+        team_info_str = ""
         if sender_pid:
             try:
-                bulk_data = await asyncio.to_thread(get_bulk_players_info, [sender_pid], ["base"])
+                sender_hostnum = msg.get('hostnum', 10595)
+                bulk_data = await asyncio.to_thread(get_bulk_players_info, [sender_pid], ["base", "team"], sender_hostnum)
                 if bulk_data and 'result' in bulk_data:
-                    # Result is keyed by PID, extract number_id from player's base info
                     player_info = bulk_data['result'].get(str(sender_pid), {})
                     if player_info:
-                        number_id = player_info.get('base', {}).get('number_id')
+                        base_info = player_info.get('base', {})
+                        number_id = base_info.get('number_id')
+                        
+                        # Check if sender is in a team
+                        team_data = player_info.get('team', {})
+                        team_id = team_data.get('team_id')
+                        team_hostnum = team_data.get('hostnum')
+                        
+                        if team_id and team_hostnum:
+                            team_result = await asyncio.to_thread(get_teams_info, team_hostnum, team_id)
+                            if team_result and 'result' in team_result and team_id in team_result['result']:
+                                members_data = team_result['result'][team_id].get('members', {}).get('members', [])
+                                if members_data:
+                                    # Group member PIDs by hostnum for bulk lookup
+                                    hostnum_pids = {}
+                                    for member in members_data:
+                                        m_hostnum = member.get('hostnum')
+                                        m_pid = member.get('pid')
+                                        if m_hostnum and m_pid:
+                                            hostnum_pids.setdefault(m_hostnum, []).append(m_pid)
+                                    
+                                    # Fetch nickname and level for all members
+                                    member_info = {}
+                                    for m_hostnum, pids in hostnum_pids.items():
+                                        bulk_result = await asyncio.to_thread(get_bulk_players_info, pids, ["base"], m_hostnum)
+                                        if bulk_result and 'result' in bulk_result:
+                                            for pid_key, player_data in bulk_result['result'].items():
+                                                base_info = player_data.get('base', {})
+                                                member_info[pid_key] = {
+                                                    'nickname': base_info.get('nickname', 'Unknown'),
+                                                    'level': base_info.get('level', '?'),
+                                                }
+                                    
+                                    # Build member list
+                                    member_lines = []
+                                    for idx, member in enumerate(members_data, 1):
+                                        m_pid = member.get('pid', '')
+                                        info = member_info.get(m_pid, {})
+                                        member_lines.append(f"{idx}. {info.get('nickname', 'Unknown')} (Lv.{info.get('level', '?')})")
+                                    
+                                    team_info_str = "\n\n👥 **Current Team:**\n" + "\n".join(member_lines)
             except Exception as e:
-                logger.error(f"Failed to fetch Number ID for PID {sender_pid}: {e}")
+                logger.error(f"Failed to fetch player/team info for PID {sender_pid}: {e}")
 
         # Translate the message (auto-detect)
         translated = None
@@ -382,6 +479,7 @@ class LiveChatCog(commands.Cog):
         description += f"*{raw_message}*"
         if translated:
             description += f"\n\n[Translated] {translated}"
+        description += team_info_str
         description += f"\n\n<t:{ts}:F> (<t:{ts}:R>)"
 
         embed = discord.Embed(
