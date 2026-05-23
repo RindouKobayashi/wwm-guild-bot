@@ -16,9 +16,23 @@ from utility.api_constants import SCHOOL_NAMES, get_kongfu_ids_from_player, form
 
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 SCHEDULE_DB_PATH = BASE_DIR / "data" / "schedule.db"
+BIRTHDAY_ROLE_ID = 1469960226294730753
 
 BLURPLE = 0x5865F2
 ORANGE = 0xE67E22
+
+MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+def _ordinal(n: int) -> str:
+    """Return ordinal string for a number: 1 -> '1st', 2 -> '2nd', 3 -> '3rd', etc."""
+    if 11 <= n % 100 <= 13:
+        return f"{n}th"
+    return {1: "1st", 2: "2nd", 3: "3rd"}.get(n % 10, f"{n}th")
+
+def _format_birthday(month: int, day: int) -> str:
+    """Format month/day as a human-readable string, e.g. '3rd Feb'."""
+    return f"{_ordinal(day)} {MONTH_NAMES[month - 1]}" if 1 <= month <= 12 else f"{month}/{day}"
 
 class OnlinePlayersResultView(LayoutView):
     """Components V2 LayoutView for displaying online players result."""
@@ -49,13 +63,15 @@ class GuildStatusBoard(LayoutView):
     def __init__(self, cog, guild_name: str, guild_level: int, member_count: int,
                  apprentice_count: int, funds: int, total_fame: int, week_fame: int,
                  gvg_points: int, online_count: int, weekly_leaderboard: list,
-                 pending_apps: int, now_ts: int, next_update_ts: int):
+                 pending_apps: int, now_ts: int, next_update_ts: int,
+                 birthdays_this_week: list = None):
         super().__init__(timeout=None)
         self.cog = cog
         self.guild_name = guild_name
         self.online_count = online_count
         self.member_count = member_count
         self.pending_apps = pending_apps
+        self.birthdays_this_week = birthdays_this_week or []
 
         # ── Build section texts ──
         # Identity section
@@ -93,6 +109,18 @@ class GuildStatusBoard(LayoutView):
 
         activity_text = "\n".join(leaderboard_lines) if leaderboard_lines else "*No activity this week*"
 
+        # Birthdays this week section
+        birthdays_text = None
+        if self.birthdays_this_week:
+            bday_lines = []
+            for entry in self.birthdays_this_week:
+                if len(entry) == 5:
+                    nickname, month, day, _, _ = entry
+                else:
+                    nickname, month, day = entry[:3]
+                bday_lines.append(f"🎂 **{nickname}** — {_format_birthday(month, day)}")
+            birthdays_text = "\n".join(bday_lines)
+
         # Footer text
         footer_lines = []
         if pending_apps > 0:
@@ -119,6 +147,11 @@ class GuildStatusBoard(LayoutView):
         # Status (Online)
         inner_items.append(TextDisplay(status_text))
         inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Birthdays This Week
+        if birthdays_text:
+            inner_items.append(TextDisplay(f"🎂 **Birthdays This Week**\n\n{birthdays_text}"))
+            inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
 
         # Weekly Activity
         inner_items.append(TextDisplay(f"🔥 **Weekly Activity — Top 10**\n\n{activity_text}"))
@@ -866,6 +899,16 @@ class WWMCog(commands.Cog):
                 if create_time:
                     embed.add_field(name="📅 Account Created", value=f"<t:{int(create_time)}:R>", inline=True)
 
+                # ---- Birthday ----
+                birthday_data = data.get('birthday', {})
+                if birthday_data and isinstance(birthday_data, dict):
+                    visible_flag = birthday_data.get('visible', 0)
+                    if visible_flag == 0:
+                        month = birthday_data.get('month', 0)
+                        day = birthday_data.get('day', 0)
+                        if month > 0 and day > 0:
+                            embed.add_field(name="🎂 Birthday", value=f"`{_format_birthday(month, day)}`", inline=True)
+
                 # ---- Sworn Cohort (Jieyi) ----
                 jieyi = data.get('jieyi', {})
                 jieyi_name = jieyi.get('jieyi_name')
@@ -1028,6 +1071,7 @@ class WWMCog(commands.Cog):
                 pending_apps=board_data['pending_apps'],
                 now_ts=now_ts,
                 next_update_ts=now_ts + 60,
+                birthdays_this_week=board_data['birthdays_this_week'],
             )
             
             try:
@@ -1070,6 +1114,10 @@ class WWMCog(commands.Cog):
             except Exception as e:
                 logger.warning(f"Failed to record player count: {e}")
             
+            # Assign birthday roles to verified Discord members
+            birthday_pids = [entry[4] for entry in board_data['birthdays_this_week'] if len(entry) >= 5]
+            await self._assign_birthday_roles(birthday_pids)
+
             # Edit the existing message with the new LayoutView (clear legacy fields)
             await self.monitor_message.edit(content=None, embeds=[], attachments=[], view=view)
             logger.debug("Guild status message updated successfully")
@@ -1117,6 +1165,41 @@ class WWMCog(commands.Cog):
         except Exception as e:
             logger.error(f"Guild monitor task failed: {str(e)}", exc_info=True)
 
+    async def _assign_birthday_roles(self, birthday_pids: list):
+        """Assign birthday role to verified Discord members whose characters have birthdays this week."""
+        if not birthday_pids:
+            return
+        try:
+            async with aiosqlite.connect(DB_PATH) as conn:
+                placeholders = ','.join('?' * len(birthday_pids))
+                cursor = await conn.execute(
+                    f"SELECT user_id, player_pid FROM verified_members WHERE player_pid IN ({placeholders})",
+                    birthday_pids
+                )
+                verified_rows = await cursor.fetchall()
+
+            guild = self.bot.get_guild(settings.DISCORD_SERVER_ID) if hasattr(settings, 'DISCORD_SERVER_ID') else None
+            if not guild:
+                return
+
+            birthday_role = guild.get_role(BIRTHDAY_ROLE_ID)
+            if not birthday_role:
+                logger.warning(f"Birthday role {BIRTHDAY_ROLE_ID} not found in guild")
+                return
+
+            for user_id, player_pid in verified_rows:
+                member = guild.get_member(user_id)
+                if not member:
+                    continue
+                try:
+                    if birthday_role not in member.roles:
+                        await member.add_roles(birthday_role)
+                        logger.info(f"🎂 Assigned birthday role to {member} (PID: {player_pid})")
+                except Exception as e:
+                    logger.error(f"Failed to assign birthday role to {member}: {e}")
+        except Exception as e:
+            logger.error(f"Birthday role assignment failed: {e}")
+
     def _gather_status_data(self, guild_data):
         """Extract structured status data from guild API response.
         
@@ -1139,7 +1222,7 @@ class WWMCog(commands.Cog):
         all_pids = list(member_list.keys())
         
         try:
-            bulk_data = get_bulk_players_info(all_pids, fields=["base", "club"])
+            bulk_data = get_bulk_players_info(all_pids, fields=["base", "club", "birthday"])
             if bulk_data and bulk_data.get('code') == 0:
                 players_data = bulk_data.get('result', {})
                 for pid, player_data in players_data.items():
@@ -1198,6 +1281,59 @@ class WWMCog(commands.Cog):
 
         applys = result.get('applys', {}).get('apply_dict', {})
 
+        # ---- Birthday This Week ----
+        # Calculate schedule week boundaries (Monday 5:00 AM GMT+8 → next Monday 5:00 AM GMT+8)
+        today_dt = gmt8_dt.replace(hour=0, minute=0, second=0, microsecond=0)
+        week_end_gmt8 = week_start_gmt8 + datetime.timedelta(days=7)
+        current_year = gmt8_dt.year
+        birthdays_this_week = []
+
+        def birthday_in_week(b_month, b_day, week_start, week_end):
+            """Check if month/day falls within the schedule week date range (handles year wrap)."""
+            for yr in (current_year, current_year + 1):
+                try:
+                    bd = datetime.datetime(yr, b_month, b_day, tzinfo=datetime.timezone.utc)
+                except ValueError:
+                    continue
+                if week_start <= bd < week_end:
+                    return True
+            return False
+
+        def days_until_birthday(b_month, b_day):
+            """Calculate days until the next occurrence of month/day from today (for display)."""
+            for yr in (current_year, current_year + 1):
+                try:
+                    bd = datetime.datetime(yr, b_month, b_day, tzinfo=datetime.timezone.utc)
+                except ValueError:
+                    continue
+                now_utc = datetime.datetime.now(datetime.timezone.utc)
+                if bd >= now_utc:
+                    return (bd - now_utc).days
+            return 9999
+
+        birthdays_this_week = []
+        birthday_pids = []
+        if players_data is not None:
+            for pid, player_data in players_data.items():
+                birthday_data = player_data.get('birthday', {})
+                if not isinstance(birthday_data, dict):
+                    continue
+                visible_flag = birthday_data.get('visible', 0)
+                if visible_flag != 0:
+                    continue
+                month = birthday_data.get('month', 0)
+                day = birthday_data.get('day', 0)
+                if month <= 0 or day <= 0:
+                    continue
+                if birthday_in_week(month, day, week_start_gmt8, week_end_gmt8):
+                    nickname = player_data.get('base', {}).get('nickname', member_list.get(pid, {}).get('nickname', 'Unknown'))
+                    days = days_until_birthday(month, day)
+                    birthdays_this_week.append((nickname, month, day, days, pid))
+                    birthday_pids.append(pid)
+
+            # Sort by days then month/day
+            birthdays_this_week.sort(key=lambda x: (x[3], x[1], x[2]))
+
         return {
             'guild_name': base.get('name', 'Unknown'),
             'guild_level': base.get('level', 0),
@@ -1211,6 +1347,7 @@ class WWMCog(commands.Cog):
             'weekly_leaderboard': weekly_leaderboard,
             'pending_apps': len(applys),
             'players_data': players_data,
+            'birthdays_this_week': birthdays_this_week,
         }
     
     async def _process_changes(self, diff, new_data):
@@ -1287,6 +1424,7 @@ class WWMCog(commands.Cog):
                                 pending_apps=board_data['pending_apps'],
                                 now_ts=now_ts,
                                 next_update_ts=now_ts + 60,
+                                birthdays_this_week=board_data['birthdays_this_week'],
                             )
                             self.monitor_message = await self.monitor_channel.send(content=None, embeds=[], view=view)
                             await self._save_config()
@@ -1317,6 +1455,7 @@ class WWMCog(commands.Cog):
                     pending_apps=board_data['pending_apps'],
                     now_ts=now_ts,
                     next_update_ts=now_ts + 60,
+                    birthdays_this_week=board_data['birthdays_this_week'],
                 )
                 self.monitor_message = await channel.send(content=None, embeds=[], view=view)
                 self.last_guild_state = guild_data

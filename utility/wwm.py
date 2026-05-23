@@ -32,7 +32,7 @@ DEFAULT_FIELDS = [
     "base", "team", "head", "name_card", "club",
     "kongfu", "ride", "mentor", "jieyuan_info", "jieyi",
     "jieyi_misc", "gameplay_trail", "pvp_battle", "attr",
-    "lunjian"
+    "lunjian", "birthday"
 ]
 
 # Complete list of ALL known fields (kept for reference / debugging)
