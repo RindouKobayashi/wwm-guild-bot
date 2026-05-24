@@ -34,18 +34,21 @@ LEADERBOARD_COLORS = {
     "elegance": 0xFF69B4,
     "martial_mastery": 0xE74C3C,
     "exploration_mastery": 0x2ECC71,
+    "playtime": 0x3498DB,
 }
 
 LEADERBOARD_EMOJIS = {
     "elegance": "💃",
     "martial_mastery": "⚔️",
     "exploration_mastery": "🗺️",
+    "playtime": "⌛",
 }
 
 LB_API_FIELDS = {
     "elegance":         (["fashion", "base"], 10403),
     "martial_mastery":   (["attr", "base"], 10595),
     "exploration_mastery": (["attr", "base"], 10595),
+    "playtime":          (["base"], 10595),
 }
 
 
@@ -56,6 +59,11 @@ def _extract_score(lb_type: str, player_data: dict) -> float:
         if isinstance(fashion, dict):
             return fashion.get("score", 0) or 0
         return float(fashion) if isinstance(fashion, (int, float)) else 0
+
+    if lb_type == "playtime":
+        base = player_data.get("base", {})
+        online_seconds = base.get("online_time", 0) or 0
+        return round(online_seconds / 3600, 1)  # convert to hours
 
     attr_map = {
         "martial_mastery": "XIUWEI_KUNGFU",
@@ -448,6 +456,8 @@ class _TypeSelect(discord.ui.Select):
                                      value="martial_mastery", emoji="⚔️"),
                 discord.SelectOption(label="Exploration Mastery", description="XIUWEI_EXPLORE",
                                      value="exploration_mastery", emoji="🗺️"),
+                discord.SelectOption(label="Playtime", description="Total online time in hours",
+                                     value="playtime", emoji="⌛"),
             ],
         )
 
