@@ -2296,5 +2296,14 @@ class WWMCog(commands.Cog):
             await interaction.followup.send(f"❌ Failed to display guild regions: `{str(e)}`")
 
 
+from cogs.view_registry import register
+
+# Self-register persistent views for restart recovery
+register(GuildStatusBoard, cog=None, guild_name="", guild_level=0, member_count=0,
+         apprentice_count=0, funds=0, total_fame=0, week_fame=0,
+         gvg_points=0, online_count=0, weekly_leaderboard=[],
+         pending_apps=0, now_ts=0, next_update_ts=0)
+
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(WWMCog(bot))

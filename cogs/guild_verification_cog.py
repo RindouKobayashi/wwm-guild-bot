@@ -1674,5 +1674,12 @@ class UnbindConfirmView(discord.ui.View):
             pass
 
 
+from cogs.view_registry import register
+
+# Self-register persistent views for restart recovery
+register(VerificationStartView)
+register(VerificationAdminView)
+
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(GuildVerificationCog(bot))

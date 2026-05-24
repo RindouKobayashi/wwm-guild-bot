@@ -16,24 +16,11 @@ bot = commands.Bot(
 
 @bot.event
 async def setup_hook():
-    # ✅ CORRECT PLACE TO REGISTER PERSISTENT VIEWS - BEFORE BOT STARTS
-    # This is the official documented way from discord.py examples
-    from cogs.guild_verification_cog import VerificationStartView, VerificationAdminView
-    bot.add_view(VerificationStartView())
-    bot.add_view(VerificationAdminView())
-    
-    # Register the GuildStatusBoard persistent view (Components V2 LayoutView)
-    # The cog is loaded later in on_ready, so we add a placeholder view here
-    # that will be replaced by the actual dynamic view during the monitor loop.
-    # This registration ensures the button's custom_id is recognised after restart.
-    from cogs.wwm_cog import GuildStatusBoard
-    # Create a minimal instance just for registration
-    # The actual view data will be filled in by the guild monitor task
-    bot.add_view(GuildStatusBoard(cog=None, guild_name="", guild_level=0, member_count=0,
-                 apprentice_count=0, funds=0, total_fame=0, week_fame=0,
-                 gvg_points=0, online_count=0, weekly_leaderboard=[],
-                 pending_apps=0, now_ts=0, next_update_ts=0))
-    
+    # Register all persistent views via the central registry.
+    # Each cog self-registers its views at import time using
+    # cogs.view_registry.register() so no manual edits needed here.
+    from cogs.view_registry import register_all_views
+    register_all_views(bot)
     logger.info("Registered persistent views in setup_hook")
 
 @bot.event
