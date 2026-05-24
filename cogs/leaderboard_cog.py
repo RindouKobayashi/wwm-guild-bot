@@ -96,7 +96,7 @@ class LeaderboardView(LayoutView):
         for i, e in enumerate(self.entries[:15], 1):
             prefix = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, f"{i}.")
             score_str = f"{e['score']:,}" if isinstance(e['score'], int) else str(e['score'])
-            lines.append(f"{prefix} **{e['nickname']}** — `{score_str}` {emoji}")
+            lines.append(f"{prefix} **{e['nickname']}** — `{score_str}`")
         rankings = "\n".join(lines) if lines else "*No data yet*"
         inner.append(TextDisplay(rankings))
 
@@ -528,7 +528,7 @@ class _ChannelSelectView(discord.ui.View):
         # Create the new instance
         inst = _LeaderboardInstance(new_config, self.cog)
         inst.channel = self.guild.get_channel(channel_id)
-        ok = await inst.resolve(self.bot)
+        ok = await inst.resolve(self.cog.bot)
         if not ok:
             await interaction.edit_original_response(
                 content="❌ Could not resolve the selected channel.", embed=None, view=None)
