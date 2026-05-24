@@ -1,14 +1,16 @@
 """
 Leaderboard Cog — Components V2 leaderboard with auto-refresh.
-Supports multiple leaderboard types:
+Supports MULTIPLE simultaneous leaderboards of different types.
+
+Supports leaderboard types:
   - elegance: fashion score (from "fashion" API field)
   - martial_mastery: XIUWEI_KUNGFU (from "attr" API field)
   - exploration_mastery: XIUWEI_EXPLORE (from "attr" API field)
 
 Architecture:
   - Admin posts a leaderboard to a channel with /leaderboard command
-  - JSON file stores {channel_id, message_id, type} for persistence across restarts
-  - A background task refreshes the data every 60 seconds
+  - JSON file stores a list [{channel_id, message_id, type, guild_id}, ...]
+  - A single background task refreshes ALL active leaderboards every 60 seconds
   - A "Check My Rank" button lets users see their position even if off-screen
 """
 import discord
@@ -29,9 +31,9 @@ DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 CONFIG_PATH = BASE_DIR / "data" / "leaderboard_config.json"
 
 LEADERBOARD_COLORS = {
-    "elegance": 0xFF69B4,           # hot pink
-    "martial_mastery": 0xE74C3C,    # red
-    "exploration_mastery": 0x2ECC71,# green
+    "elegance": 0xFF69B4,
+    "martial_mastery": 0xE74C3C,
+    "exploration_mastery": 0x2ECC71,
 }
 
 LEADERBOARD_EMOJIS = {
@@ -40,12 +42,12 @@ LEADERBOARD_EMOJIS = {
     "exploration_mastery": "🗺️",
 }
 
-# API field requirements per leaderboard type
 LB_API_FIELDS = {
-    "elegance":         (["fashion", "base"], 10403),   # (fields, hostnum)
+    "elegance":         (["fashion", "base"], 10403),
     "martial_mastery":   (["attr", "base"], 10595),
     "exploration_mastery": (["attr", "base"], 10595),
 }
+
 
 def _extract_score(lb_type: str, player_data: dict) -> float:
     """Pull the correct score value from player_data for a given leaderboard type."""
@@ -87,11 +89,9 @@ class LeaderboardView(LayoutView):
         emoji = LEADERBOARD_EMOJIS.get(self.lb_type, "🏆")
         display_name = self.lb_type.replace("_", " ").title()
 
-        # ── header ──
         inner.append(TextDisplay(f"# {emoji} {display_name} Leaderboard\nTop players who have bound their accounts"))
         inner.append(Separator(spacing=discord.SeparatorSpacing.small))
 
-        # ── ranking rows (top 15) ──
         lines = []
         for i, e in enumerate(self.entries[:15], 1):
             prefix = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, f"{i}.")
@@ -102,12 +102,10 @@ class LeaderboardView(LayoutView):
 
         inner.append(Separator(spacing=discord.SeparatorSpacing.small))
 
-        # ── footer ──
         inner.append(TextDisplay(
             f"🏆 **{self.total_players}** players tracked  •  ⏱️ <t:{self.timestamp}:R>"
         ))
 
-        # ── interactive button row ──
         row = ActionRow()
         btn = discord.ui.Button(
             label="🔍 Check My Rank",
@@ -118,17 +116,12 @@ class LeaderboardView(LayoutView):
         row.add_item(btn)
         inner.append(row)
 
-        # wrap everything in a single container
         color = LEADERBOARD_COLORS.get(self.lb_type, 0x5865F2)
         self.add_item(Container(*inner, accent_color=color))
 
-    # ------------------------------------------------------------------
-    # "Check My Rank" handler  (ephemeral response)
-    # ------------------------------------------------------------------
     async def _on_check_rank(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
-        # 1 – Look up bound PID
         async with aiosqlite.connect(DB_PATH) as conn:
             cur = await conn.execute(
                 "SELECT player_pid FROM verified_members WHERE user_id = ?",
@@ -146,7 +139,6 @@ class LeaderboardView(LayoutView):
 
         user_pid = row[0]
 
-        # 2 – Try to find the user in the *already cached* entries (fast path)
         matched = [e for e in self.entries if e["pid"] == user_pid]
         entry = matched[0] if matched else None
 
@@ -155,7 +147,6 @@ class LeaderboardView(LayoutView):
             await self._send_rank_result(interaction, entry, rank)
             return
 
-        # 3 – User is not in cached entries → fetch their individual score
         try:
             fields, hostnum = LB_API_FIELDS.get(self.lb_type, (["attr", "base"], 10595))
             resp = _wwm_api_post(
@@ -176,7 +167,6 @@ class LeaderboardView(LayoutView):
             score = _extract_score(self.lb_type, player_data)
             nickname = player_data.get("base", {}).get("nickname", "Unknown")
 
-            # calculate rank against the total list
             rank = 1
             for e in self.entries:
                 if score >= e["score"]:
@@ -195,7 +185,6 @@ class LeaderboardView(LayoutView):
     async def _send_rank_result(self, interaction: discord.Interaction,
                                 entry: dict, rank: int,
                                 total: Optional[int] = None):
-        """Build & send the ephemeral rank embed."""
         total = total or self.total_players
         color = LEADERBOARD_COLORS.get(self.lb_type, 0x5865F2)
         emoji = LEADERBOARD_EMOJIS.get(self.lb_type, "🏆")
@@ -207,7 +196,6 @@ class LeaderboardView(LayoutView):
         embed.add_field(name="Score",  value=f"`{score_str}`", inline=True)
         embed.add_field(name="Rank",   value=f"**#{rank} / {total}**", inline=True)
 
-        # Show 5 above / 5 below
         idx = rank - 1
         start = max(0, idx - 5)
         end   = min(len(self.entries), idx + 6)
@@ -228,71 +216,107 @@ class LeaderboardView(LayoutView):
 
 
 # ---------------------------------------------------------------------------
+# Internal model for a single leaderboard instance
+# ---------------------------------------------------------------------------
+class _LeaderboardInstance:
+    """Tracks one active leaderboard message + channel + type."""
+    def __init__(self, config: dict, cog: "LeaderboardCog"):
+        self.config = config
+        self.cog = cog
+        self.guild_id: int = int(config["guild_id"])
+        self.channel_id: int = int(config["channel_id"])
+        self.lb_type: str = config.get("leaderboard_type", "elegance")
+        self.message_id: Optional[int] = int(config["message_id"]) if config.get("message_id") else None
+        self.channel: Optional[discord.TextChannel] = None
+        self.message: Optional[discord.Message] = None
+
+    async def resolve(self, bot: commands.Bot):
+        """Resolve channel & message objects from IDs."""
+        guild = bot.get_guild(self.guild_id)
+        if not guild:
+            return False
+        self.channel = guild.get_channel(self.channel_id)
+        if not self.channel:
+            return False
+        if self.message_id:
+            try:
+                self.message = await self.channel.fetch_message(self.message_id)
+            except Exception:
+                self.message = None
+        return True
+
+
+# ---------------------------------------------------------------------------
 # Main Cog
 # ---------------------------------------------------------------------------
 class LeaderboardCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        self.config: dict = {}
-        self.monitor_channel: Optional[discord.TextChannel] = None
-        self.monitor_message: Optional[discord.Message] = None
+        self.instances: List[_LeaderboardInstance] = []
         os.makedirs(BASE_DIR / "data", exist_ok=True)
 
-    # ── lifecycle ──────────────────────────────────────────────────────
     async def cog_load(self):
         self._load_config()
-        if not self.config:
+        if not self.instances:
             return
 
-        guild = self.bot.get_guild(int(self.config.get("guild_id", settings.DISCORD_SERVER_ID)))
-        if not guild:
-            logger.warning("Leaderboard: guild not found from saved config")
-            return
+        # Resolve all saved instances
+        valid = []
+        for inst in self.instances:
+            ok = await inst.resolve(self.bot)
+            if ok:
+                valid.append(inst)
+            else:
+                logger.warning(f"Leaderboard: discarding orphan config {inst.config}")
+        self.instances = valid
 
-        self.monitor_channel = guild.get_channel(int(self.config["channel_id"]))
-        if not self.monitor_channel:
-            logger.warning("Leaderboard: channel not found from saved config")
-            return
-
-        msg_id = self.config.get("message_id")
-        if msg_id:
-            try:
-                self.monitor_message = await self.monitor_channel.fetch_message(int(msg_id))
-            except Exception:
-                self.monitor_message = None
-
-        self.refresh_task.start()
+        if self.instances:
+            self.refresh_task.start()
 
     def cog_unload(self):
         if self.refresh_task.is_running():
             self.refresh_task.cancel()
 
-    # ── config persistence ─────────────────────────────────────────────
+    def _to_config_list(self) -> list:
+        return [inst.config for inst in self.instances]
+
     def _load_config(self):
         try:
             if os.path.exists(CONFIG_PATH):
                 with open(CONFIG_PATH) as f:
-                    self.config = json.load(f)
-                logger.info(f"Leaderboard config loaded: {self.config}")
+                    raw = json.load(f)
+                if isinstance(raw, list):
+                    self.instances = [_LeaderboardInstance(c, self) for c in raw]
+                elif isinstance(raw, dict) and raw:
+                    # migrate old single-instance format
+                    self.instances = [_LeaderboardInstance(raw, self)]
+                else:
+                    self.instances = []
+                logger.info(f"Leaderboard config loaded: {len(self.instances)} instance(s)")
         except Exception as e:
             logger.error(f"Failed to load leaderboard config: {e}")
-            self.config = {}
+            self.instances = []
 
     def _save_config(self):
         try:
             with open(CONFIG_PATH, "w") as f:
-                json.dump(self.config, f, indent=2)
-            logger.info(f"Leaderboard config saved: {self.config}")
+                json.dump(self._to_config_list(), f, indent=2)
+            logger.info(f"Leaderboard config saved: {len(self.instances)} instance(s)")
         except Exception as e:
             logger.error(f"Failed to save leaderboard config: {e}")
 
+    def _find_entry(self, config: dict) -> Tuple[Optional[_LeaderboardInstance], int]:
+        """Return (instance, index) for a matching config."""
+        for idx, inst in enumerate(self.instances):
+            if (inst.channel_id == int(config["channel_id"]) and
+                    inst.lb_type == config["leaderboard_type"]):
+                return inst, idx
+        return None, -1
+
     # ── data fetching ──────────────────────────────────────────────────
-    async def _fetch_data(self) -> Tuple[List[dict], int]:
-        """Return (sorted_entries, total_verified_players)."""
-        lb_type = self.config.get("leaderboard_type", "elegance")
+    async def _fetch_data(self, lb_type: str) -> Tuple[List[dict], int]:
         fields, hostnum = LB_API_FIELDS.get(lb_type, (["attr", "base"], 10595))
 
-        # get all PIDs
         async with aiosqlite.connect(DB_PATH) as conn:
             cur = await conn.execute(
                 "SELECT player_pid FROM verified_members WHERE player_pid IS NOT NULL"
@@ -305,17 +329,13 @@ class LeaderboardCog(commands.Cog):
 
         entries_raw: List[dict] = []
 
-        # batch in groups of 50 to keep payload reasonable
         BATCH = 50
         for i in range(0, len(all_pids), BATCH):
             batch = all_pids[i:i + BATCH]
             try:
                 resp = _wwm_api_post(
                     WWM_REDIS_PLAYER_URL,
-                    {
-                        "fields": fields,
-                        "hostnum2pids": {hostnum: batch},
-                    }
+                    {"fields": fields, "hostnum2pids": {hostnum: batch}},
                 )
                 if not resp or "result" not in resp:
                     continue
@@ -339,45 +359,40 @@ class LeaderboardCog(commands.Cog):
         entries_raw.sort(key=lambda x: x["score"], reverse=True)
         return entries_raw, len(all_pids)
 
-    # ── build-and-send (or edit) the message ──────────────────────────
-    async def _publish(self):
-        entries, total = await self._fetch_data()
+    # ── publish / refresh a single instance ────────────────────────────
+    async def _publish_one(self, inst: _LeaderboardInstance):
+        entries, total = await self._fetch_data(inst.lb_type)
         now_ts = int(discord.utils.utcnow().timestamp())
-        lb_type = self.config.get("leaderboard_type", "elegance")
 
-        view = LeaderboardView(self, lb_type, entries, total, now_ts)
+        view = LeaderboardView(self, inst.lb_type, entries, total, now_ts)
 
-        if self.monitor_message:
+        if inst.message:
             try:
-                await self.monitor_message.edit(
-                    content=None, embeds=[], attachments=[], view=view
-                )
+                await inst.message.edit(content=None, embeds=[], attachments=[], view=view)
+                return
             except discord.NotFound:
-                self.monitor_message = None
+                inst.message = None
             except Exception as e:
                 logger.error(f"Failed to edit leaderboard message: {e}")
                 return
 
-        if not self.monitor_message:
-            try:
-                self.monitor_message = await self.monitor_channel.send(
-                    content=None, embeds=[], view=view
-                )
-                self.config["message_id"] = str(self.monitor_message.id)
-                self._save_config()
-            except Exception as e:
-                logger.error(f"Failed to send leaderboard message: {e}")
+        # No existing message → send new one
+        try:
+            inst.message = await inst.channel.send(content=None, embeds=[], view=view)
+            inst.config["message_id"] = str(inst.message.id)
+            self._save_config()
+        except Exception as e:
+            logger.error(f"Failed to send leaderboard message: {e}")
 
     # ── background refresh loop ────────────────────────────────────────
     @tasks.loop(seconds=60)
     async def refresh_task(self):
-        if not self.monitor_channel:
-            return
-        try:
-            await self._publish()
-            logger.debug("Leaderboard refreshed")
-        except Exception as e:
-            logger.error(f"Leaderboard refresh failed: {e}", exc_info=True)
+        for inst in self.instances:
+            try:
+                await self._publish_one(inst)
+            except Exception as e:
+                logger.error(f"Leaderboard refresh failed for {inst.lb_type}: {e}")
+        logger.debug(f"Leaderboard refreshed ({len(self.instances)} instances)")
 
     @refresh_task.before_loop
     async def _before_refresh(self):
@@ -427,24 +442,12 @@ class _TypeSelect(discord.ui.Select):
         super().__init__(
             placeholder="Select leaderboard type…",
             options=[
-                discord.SelectOption(
-                    label="Elegance",
-                    description="Fashion score leaderboard",
-                    value="elegance",
-                    emoji="💃",
-                ),
-                discord.SelectOption(
-                    label="Martial Mastery",
-                    description="XIUWEI_KUNGFU — combat mastery leaderboard",
-                    value="martial_mastery",
-                    emoji="⚔️",
-                ),
-                discord.SelectOption(
-                    label="Exploration Mastery",
-                    description="XIUWEI_EXPLORE — exploration mastery leaderboard",
-                    value="exploration_mastery",
-                    emoji="🗺️",
-                ),
+                discord.SelectOption(label="Elegance", description="Fashion score leaderboard",
+                                     value="elegance", emoji="💃"),
+                discord.SelectOption(label="Martial Mastery", description="XIUWEI_KUNGFU",
+                                     value="martial_mastery", emoji="⚔️"),
+                discord.SelectOption(label="Exploration Mastery", description="XIUWEI_EXPLORE",
+                                     value="exploration_mastery", emoji="🗺️"),
             ],
         )
 
@@ -458,9 +461,7 @@ class _CancelButton(discord.ui.Button):
         super().__init__(label="Cancel", style=discord.ButtonStyle.danger)
 
     async def callback(self, interaction: discord.Interaction):
-        await interaction.response.edit_message(
-            content="❌ Setup cancelled.", embed=None, view=None
-        )
+        await interaction.response.edit_message(content="❌ Setup cancelled.", embed=None, view=None)
 
 
 class _ChannelSelectView(discord.ui.View):
@@ -480,12 +481,8 @@ class _ChannelSelectView(discord.ui.View):
         if page_ch:
             sel = discord.ui.Select(
                 placeholder=f"Channel (page {page+1}/{(len(channels)-1)//25+1})…",
-                options=[
-                    discord.SelectOption(
-                        label=f"#{c.name}"[:100],
-                        value=str(c.id),
-                    ) for c in page_ch
-                ],
+                options=[discord.SelectOption(label=f"#{c.name}"[:100], value=str(c.id))
+                         for c in page_ch],
             )
             sel.callback = self._on_select
             self.add_item(sel)
@@ -502,47 +499,64 @@ class _ChannelSelectView(discord.ui.View):
 
     async def _prev(self, interaction: discord.Interaction):
         await interaction.response.edit_message(
-            view=_ChannelSelectView(self.cog, self.config, self.guild, self.page - 1)
-        )
+            view=_ChannelSelectView(self.cog, self.config, self.guild, self.page - 1))
 
     async def _next(self, interaction: discord.Interaction):
         await interaction.response.edit_message(
-            view=_ChannelSelectView(self.cog, self.config, self.guild, self.page + 1)
-        )
+            view=_ChannelSelectView(self.cog, self.config, self.guild, self.page + 1))
 
     async def _on_select(self, interaction: discord.Interaction):
         await interaction.response.defer()
 
-        self.config["channel_id"] = interaction.data["values"][0]
-        self.config["guild_id"] = str(self.guild.id)
+        channel_id = int(interaction.data["values"][0])
+        guild_id = str(self.guild.id)
 
-        # stop any running refresh loop
-        if self.cog.refresh_task.is_running():
-            self.cog.refresh_task.cancel()
+        # Check if an instance with same (channel, type) already exists
+        for inst in self.cog.instances:
+            if inst.channel_id == channel_id and inst.lb_type == self.config["leaderboard_type"]:
+                await interaction.edit_original_response(
+                    content="⚠️ A leaderboard of this type already exists in that channel!",
+                    embed=None, view=None)
+                return
 
-        self.cog.config = dict(self.config)
-        self.cog.monitor_channel = self.guild.get_channel(int(self.config["channel_id"]))
-        self.cog.monitor_message = None
-        self.cog._save_config()
+        new_config = {
+            "channel_id": str(channel_id),
+            "guild_id": guild_id,
+            "leaderboard_type": self.config["leaderboard_type"],
+        }
 
-        # publish first message
-        await self.cog._publish()
+        # Create the new instance
+        inst = _LeaderboardInstance(new_config, self.cog)
+        inst.channel = self.guild.get_channel(channel_id)
+        ok = await inst.resolve(self.bot)
+        if not ok:
+            await interaction.edit_original_response(
+                content="❌ Could not resolve the selected channel.", embed=None, view=None)
+            return
 
-        # start the loop
+        # Start the refresh loop if not already running
         if not self.cog.refresh_task.is_running():
             self.cog.refresh_task.start()
 
+        # Publish the first message
+        await self.cog._publish_one(inst)
+
+        # Add to instances list and save
+        self.cog.instances.append(inst)
+        self.cog._save_config()
+
         embed = discord.Embed(
-            title="✅ Leaderboard Setup Complete!",
+            title="✅ Leaderboard Added!",
             description=(
-                f"**Type:** {self.config['leaderboard_type'].replace('_',' ').title()}\n"
-                f"**Channel:** <#{self.config['channel_id']}>\n\n"
+                f"**Type:** {inst.lb_type.replace('_', ' ').title()}\n"
+                f"**Channel:** <#{channel_id}>\n\n"
+                f"Active leaderboards: **{len(self.cog.instances)}**\n"
                 "Auto-refreshes every 60 seconds."
             ),
             color=discord.Color.green(),
         )
         await interaction.edit_original_response(content=None, embed=embed, view=None)
-        logger.info(f"Leaderboard setup by {interaction.user}: {self.config}")
+        logger.info(f"Leaderboard added by {interaction.user}: {new_config}")
 
 
 # ---------------------------------------------------------------------------
