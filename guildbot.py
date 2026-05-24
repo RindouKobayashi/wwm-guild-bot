@@ -16,10 +16,12 @@ bot = commands.Bot(
 
 @bot.event
 async def setup_hook():
-    # Register all persistent views via the central registry.
-    # Each cog self-registers its views at import time using
-    # cogs.view_registry.register() so no manual edits needed here.
+    # Import cog modules that have persistent views so their module-level
+    # register() calls execute BEFORE register_all_views is called.
     from cogs.view_registry import register_all_views
+    import cogs.guild_verification_cog  # noqa: F401 — registers VerificationStartView, VerificationAdminView
+    import cogs.leaderboard_cog         # noqa: F401 — registers LeaderboardView
+    import cogs.wwm_cog                 # noqa: F401 — registers GuildStatusBoard
     register_all_views(bot)
     logger.info("Registered persistent views in setup_hook")
 
