@@ -15,6 +15,7 @@ class LiveChatCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.last_seen_msg_ids: Set[str] = set()
+        self._last_seen_npc_ts = 0.0
         self.is_running = False
         self.translator = Translator()
         self._translate_retry_delay = 2.0
@@ -40,10 +41,10 @@ class LiveChatCog(commands.Cog):
         
         # Only start poller if already enabled in config
         if self.is_running and self.CHANNEL_ID:
-            # Reset running flag to force proper initialization on first poll
+            # Reset running flag so first poll processes new messages (with persisted _last_seen_npc_ts)
             self.is_running = False
             self.chat_poller.start()
-            logger.debug("✅ Live chat auto-started from saved configuration")
+            logger.debug(f"✅ Live chat auto-started. Last NPC ts: {self._last_seen_npc_ts}")
 
     def cog_unload(self):
         self.chat_poller.cancel()
@@ -51,6 +52,7 @@ class LiveChatCog(commands.Cog):
 
     @tasks.loop(seconds=10)
     async def chat_poller(self):
+        self._poll_counter = getattr(self, '_poll_counter', 0) + 1
         if not self.bot.is_ready():
             return
             
@@ -64,22 +66,71 @@ class LiveChatCog(commands.Cog):
                 
             chat_messages = chat_result['result']['chat']['chat_history']
             
-            # First run: just mark all messages as seen
+            # Track the max NPC timestamp for dedup, initialized from persisted value
+            max_npc_ts = self._last_seen_npc_ts
+            new_messages = []  # Will hold any new messages found
+            
+            # On first run, catch up on ALL messages missed during downtime
             if not self.is_running:
                 self.is_running = True
-                self.last_seen_msg_ids = {msg['msg_id'] for msg in chat_messages if 'msg_id' in msg}
-                logger.debug(f"✅ Live chat monitoring started. Tracked {len(self.last_seen_msg_ids)} existing messages.")
-                return
-            
-            # Process new messages
-            new_messages = []
-            for msg in chat_messages:
-                msg_id = msg.get('msg_id')
-                if not msg_id or msg_id in self.last_seen_msg_ids:
-                    continue
+                new_messages = []
+                
+                # If we have saved state, diff against it to catch missed messages
+                if self.last_seen_msg_ids or self._last_seen_npc_ts > 0:
+                    for msg in chat_messages:
+                        msg_id = msg.get('msg_id')
+                        if msg_id:
+                            if msg_id not in self.last_seen_msg_ids:
+                                new_messages.append(msg)
+                                self.last_seen_msg_ids.add(msg_id)
+                        else:
+                            # NPC message — track by timestamp
+                            msg_ts = msg.get('ts', 0)
+                            if msg_ts > max_npc_ts:
+                                new_messages.append(msg)
+                                if msg_ts > max_npc_ts:
+                                    max_npc_ts = msg_ts
                     
-                new_messages.append(msg)
-                self.last_seen_msg_ids.add(msg_id)
+                    if new_messages:
+                        logger.info(f"↩️ Caught up {len(new_messages)} missed messages from downtime")
+                    else:
+                        logger.debug(f"✅ Live chat monitoring resumed. No missed messages.")
+                else:
+                    # Fresh start (no saved state) — just record current state, don't process
+                    self.last_seen_msg_ids = {msg['msg_id'] for msg in chat_messages if 'msg_id' in msg}
+                    max_npc_ts = max((msg.get('ts', 0) for msg in chat_messages if 'msg_id' not in msg), default=0)
+                    logger.debug(f"✅ Live chat monitoring started. Tracking {len(self.last_seen_msg_ids)} existing messages.")
+                
+                self._last_seen_npc_ts = max_npc_ts
+                
+                # If fresh start with no history, skip processing
+                if not new_messages and not self.last_seen_msg_ids:
+                    return
+                # If no new messages to process, return
+                if not new_messages and self.last_seen_msg_ids:
+                    return
+            
+            # Regular polling: find new messages (skipped if first run already found some)
+            if not new_messages:
+                new_messages = []
+                for msg in chat_messages:
+                    msg_id = msg.get('msg_id')
+                    if msg_id:
+                        if msg_id in self.last_seen_msg_ids:
+                            continue
+                        new_messages.append(msg)
+                        self.last_seen_msg_ids.add(msg_id)
+                    else:
+                        # NPC system messages (no msg_id) — track by timestamp
+                        msg_ts = msg.get('ts', 0)
+                        if msg_ts > max_npc_ts:
+                            new_messages.append(msg)
+                            if msg_ts > max_npc_ts:
+                                max_npc_ts = msg_ts
+                
+                # Update the persisted NPC timestamp
+                if max_npc_ts > self._last_seen_npc_ts:
+                    self._last_seen_npc_ts = max_npc_ts
             
             if new_messages:
                 logger.debug(f"🔔 Found {len(new_messages)} new chat messages")
@@ -90,6 +141,18 @@ class LiveChatCog(commands.Cog):
                 #logger.info(f"Ranks data: {self.ranks}")
                 # Sort messages by timestamp (oldest first)
                 new_messages.sort(key=lambda x: x.get('ts', 0))
+                
+                # Process system NPC messages first (Breaking Army timing, etc.)
+                for msg in new_messages:
+                    ext = msg.get('ext', {})
+                    npc_msg_no = ext.get('npc_msg_no')
+                    if npc_msg_no == 1082:
+                        npc_args = ext.get('npc_msg_args', [])
+                        if len(npc_args) >= 2:
+                            nickname = str(npc_args[0])
+                            seconds = float(npc_args[1])
+                            timestamp = msg.get('ts', 0)
+                            self.bot.dispatch('breaking_army_timing', nickname, seconds, timestamp)
                 
                 # Post to Discord
                 channel = self.bot.get_channel(self.CHANNEL_ID)
@@ -166,9 +229,12 @@ class LiveChatCog(commands.Cog):
                 # Keep only last 200 message IDs to prevent memory leak
                 if len(self.last_seen_msg_ids) > 500:
                     self.last_seen_msg_ids = set(list(self.last_seen_msg_ids)[-300:])
-                
+        
         except Exception as e:
             logger.error(f"Error in chat poller: {str(e)}", exc_info=True)
+        
+        # Save config every 10 seconds to persist tracking state (runs even if no new messages)
+        self.save_config()
 
     async def translate_with_retry(self, text: str, src: str, dest: str) -> str:
         """Translate with automatic retry on failure."""
@@ -222,6 +288,29 @@ class LiveChatCog(commands.Cog):
         picture_url = None
         video_url = None
         
+        # Handle NPC system messages (Breaking Army timing, etc.)
+        npc_msg_no = ext.get('npc_msg_no')
+        if npc_msg_no and not message:
+            if npc_msg_no == 1082:
+                npc_args = ext.get('npc_msg_args', [])
+                if len(npc_args) >= 2:
+                    player_name = str(npc_args[0])
+                    seconds = float(npc_args[1])
+                    minutes_val = int(seconds) // 60
+                    secs_val = int(seconds) % 60
+                    if minutes_val > 0:
+                        time_str = f"{minutes_val}m {secs_val}s"
+                    else:
+                        time_str = f"{secs_val}s"
+                    message = f"⚔️ **Breaking Army** — **{player_name}** cleared in `{time_str}`"
+                    # Override color to the BA purple color
+                    ba_color = 0xBB8FCE
+                    embed = discord.Embed(description=f"{message}\n\n<t:{ts}:F> (<t:{ts}:R>)", color=ba_color)
+                    embed.set_author(name="Guild Steward")
+                    return embed
+            else:
+                message = f"[System Message #{npc_msg_no}]"
+
         if not message:
             # Handle msg_common_share with empty text (e.g. activity cards, team invites)
             share_text = ext.get('share_text_info') or ext.get('extra_data', {}).get('share_text_info')
@@ -565,7 +654,8 @@ class LiveChatCog(commands.Cog):
                     self.CHANNEL_ID = config.get('channel_id')
                     self.is_running = config.get('enabled', False)
                     self.last_seen_msg_ids = set(config.get('last_msg_ids', []))
-                logger.debug(f"Loaded live chat config: enabled={self.is_running}, channel={self.CHANNEL_ID}")
+                    self._last_seen_npc_ts = config.get('last_npc_ts', 0)
+                logger.debug(f"Loaded live chat config: enabled={self.is_running}, channel={self.CHANNEL_ID}, last_npc_ts={self._last_seen_npc_ts}")
             except Exception as e:
                 logger.error(f"Failed to load live chat config: {str(e)}")
 
@@ -575,7 +665,8 @@ class LiveChatCog(commands.Cog):
             config = {
                 'channel_id': self.CHANNEL_ID,
                 'enabled': self.is_running,
-                'last_msg_ids': list(self.last_seen_msg_ids)[-300:]
+                'last_msg_ids': list(self.last_seen_msg_ids)[-300:],
+                'last_npc_ts': self._last_seen_npc_ts,
             }
             with open(self.CONFIG_FILE, 'w') as f:
                 json.dump(config, f, indent=4)
