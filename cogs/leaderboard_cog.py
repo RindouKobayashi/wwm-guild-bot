@@ -10,7 +10,7 @@ Supports leaderboard types:
 Architecture:
   - Admin posts a leaderboard to a channel with /leaderboard command
   - JSON file stores a list [{channel_id, message_id, type, guild_id}, ...]
-  - A single background task refreshes ALL active leaderboards every 180 seconds
+  - A single background task refreshes ALL active leaderboards every 60 seconds
   - A "Check My Rank" button lets users see their position even if off-screen
 """
 import discord
@@ -393,11 +393,13 @@ class LeaderboardCog(commands.Cog):
             logger.error(f"Failed to send leaderboard message: {e}")
 
     # ── background refresh loop ────────────────────────────────────────
-    @tasks.loop(seconds=180)
+    @tasks.loop(seconds=60)
     async def refresh_task(self):
         for inst in self.instances:
             try:
                 await self._publish_one(inst)
+                # Wait a bit between refreshes to avoid hitting rate limits if there are many instances
+                await discord.utils.sleep_until(discord.utils.utcnow() + discord.timedelta(seconds=5))
             except Exception as e:
                 logger.error(f"Leaderboard refresh failed for {inst.lb_type}: {e}")
         logger.debug(f"Leaderboard refreshed ({len(self.instances)} instances)")
@@ -561,7 +563,7 @@ class _ChannelSelectView(discord.ui.View):
                 f"**Type:** {inst.lb_type.replace('_', ' ').title()}\n"
                 f"**Channel:** <#{channel_id}>\n\n"
                 f"Active leaderboards: **{len(self.cog.instances)}**\n"
-                "Auto-refreshes every 180 seconds."
+                "Auto-refreshes every 60 seconds."
             ),
             color=discord.Color.green(),
         )
