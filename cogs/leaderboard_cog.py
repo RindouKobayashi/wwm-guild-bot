@@ -13,6 +13,8 @@ Architecture:
   - A single background task refreshes ALL active leaderboards every 60 seconds
   - A "Check My Rank" button lets users see their position even if off-screen
 """
+import asyncio
+
 import discord
 import json
 import os
@@ -399,7 +401,7 @@ class LeaderboardCog(commands.Cog):
             try:
                 await self._publish_one(inst)
                 # Wait a bit between refreshes to avoid hitting rate limits if there are many instances
-                await discord.utils.sleep_until(discord.utils.utcnow() + discord.timedelta(seconds=5))
+                await asyncio.sleep(5)
             except Exception as e:
                 logger.error(f"Leaderboard refresh failed for {inst.lb_type}: {e}")
         logger.debug(f"Leaderboard refreshed ({len(self.instances)} instances)")
