@@ -8,7 +8,7 @@ import msgpack
 import json
 from typing import Dict, Any, Optional, List
 from settings import (
-    WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL,
+    WWM_TOPICS_LIKES_URL, WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL,
     WWM_FULL_GUILD_URL, WWM_FASHION_PLAN_URL, WWM_CLUB_BY_NAME_URL,
     WWM_CLUB_BRIEF_INFO_BATCH_URL, WWM_CLUB_CHAT_URL,
     WWM_FIND_PEOPLE_BY_NICKNAME_URL, WWM_HOST, logger,
@@ -32,7 +32,7 @@ DEFAULT_FIELDS = [
     "base", "team", "head", "name_card", "club",
     "kongfu", "ride", "mentor", "jieyuan_info", "jieyi",
     "jieyi_misc", "gameplay_trail", "pvp_battle", "attr",
-    "lunjian", "birthday"
+    "lunjian", "birthday", "school"
 ]
 
 # Complete list of ALL known fields (kept for reference / debugging)
@@ -41,7 +41,10 @@ ALL_KNOWN_FIELDS = [
     "name_card", "club", "chat_room_sync", "disease", "kongfu",
     "ride", "mentor", "jieyuan_info", "jieyi", "jieyi_misc",
     "longmen", "gameplay_trail", "settings", "pvp_battle", "homeland",
-    "attr"
+    "common_score_data", "school", "lunjian", "story_prop", "birthday",
+    "attr", "dungeon", "merit_stele", "title_prop", "msd_see_insight",
+    "school", "track", "xs", "space_room", "player_recommend",
+    "big_world", "homeworld_data", "_account_", "weapons", "identity", "fashion"
 ]
 
 # -----------------------------------------------------------------------------
@@ -138,7 +141,7 @@ def _wwm_api_post(
 # -----------------------------------------------------------------------------
 # Public API Functions
 # -----------------------------------------------------------------------------
-def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[str] = None, api_url: Optional[str] = None) -> Optional[Dict[str, Any]]:
+def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[str] = None, api_url: Optional[str] = None, fields: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
     """
     Get full player info by Number ID (two step lookup)
     1. Resolve Number ID to PID
@@ -171,7 +174,7 @@ def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[s
     redis_data = _wwm_api_post(
         WWM_CLUB_HOSTNUMS_URL,
         {
-            "fields": DEFAULT_FIELDS,
+            "fields": fields if fields else DEFAULT_FIELDS,
             "hostnum2pids": {
                 10595: [player_pid]
             },
@@ -236,6 +239,27 @@ def get_custom_guild_info(club_id: int, hostnum: int = 10103, fields: Optional[D
             "uid": WWM_UID,
             "field_info": fields,
             "hostnum": hostnum
+        }
+    )
+
+def get_topics_likes(target_uuid: str, target_hostnum: int) -> Optional[Dict[str, Any]]:
+    """Get likes/unlikes count for a player's topics"""
+    logger.debug(f"Getting topics likes for UUID: {target_uuid} | Hostnum: {target_hostnum}")
+    
+    return _wwm_api_post(
+        WWM_TOPICS_LIKES_URL,
+        {
+            "group_number": 10001, # Assuming a default group number
+            "uid": WWM_UID,
+            "uuid": target_uuid,
+            "hostnum": target_hostnum,
+            "fromid": '',
+            "topic_ids": [
+                101, 102, 103, 152, 104, 105,
+                106, 107, 111, 112, 113, 114,
+                10008, 120, 121, 122, 124, 132,
+                133, 139, 140, 142,
+            ]
         }
     )
 
@@ -491,7 +515,8 @@ def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
     print(f"\n🔍 Looking up player with number_id: {number_id}")
     
     # Step 1: Get player info
-    player_data = get_player_info(number_id)
+    # call with all available fields to get hostnum and club info in one go
+    player_data = get_player_info(number_id, fields=ALL_KNOWN_FIELDS)
     player = player_data.get('result', {}) if player_data else {}
     player_pid = player.get('id')
     
@@ -539,7 +564,7 @@ def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     # CONFIG: Just change this number_id to lookup any player
-    TARGET_NUMBER_ID = "4036668451"
+    TARGET_NUMBER_ID = "4036668451" # 4036668451 | 4033283420 | 1069034222
     
     combined_data = get_full_player_and_club(TARGET_NUMBER_ID)
     

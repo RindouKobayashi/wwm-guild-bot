@@ -10,9 +10,9 @@ from collections import defaultdict
 from deepdiff import DeepDiff
 
 import settings
-from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info
+from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
-from utility.api_constants import SCHOOL_NAMES, get_kongfu_ids_from_player, format_kongfu_display, classify_kongfu_role
+from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, format_kongfu_display, classify_kongfu_role
 
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 SCHEDULE_DB_PATH = BASE_DIR / "data" / "schedule.db"
@@ -858,7 +858,21 @@ class WWMCog(commands.Cog):
 
             logger.debug(f"API Response received for PID: {player_pid}")
 
-            embed = discord.Embed(title="👤 Player Profile", color=discord.Color.og_blurple())
+            # Check if targeted player is verified by cross-referencing with our verified members database.
+            discord_user_id = None
+            async with aiosqlite.connect(DB_PATH) as conn:
+                cursor = await conn.execute("SELECT user_id FROM verified_members WHERE player_pid = ?", (player_pid,))
+                row = await cursor.fetchone()
+                discord_user_id = row[0] if row else None
+            base_data = data.get('base', {})
+            school_data = data.get('school', {})
+            if isinstance(base_data, list) and len(base_data) > 0:
+                base_data = base_data[0]
+            if not base_data and 'nickname' in data:
+                base_data = data
+            player_nickname = base_data.get('nickname', data.get('nickname', nickname or 'Unknown'))
+            embed = discord.Embed(title=f"{player_nickname} | {base_data.get('number_id', number_id or 'N/A')}", color=discord.Color.og_blurple())
+            embed.description = f"### <@{discord_user_id}>'s profile" if discord_user_id else ""
             
             try:
                 if player_pid:
@@ -871,28 +885,15 @@ class WWMCog(commands.Cog):
             except Exception as fashion_err:
                 logger.warning(f"Failed to get fashion cover image: {str(fashion_err)}")
 
-            base_data = data.get('base', {})
-            if isinstance(base_data, list) and len(base_data) > 0:
-                base_data = base_data[0]
-            if not base_data and 'nickname' in data:
-                base_data = data
-            
-            player_nickname = base_data.get('nickname', data.get('nickname', nickname or 'Unknown'))
-            embed.description = f"**{player_nickname}**"
-
-            # Log school ID for mapping purposes
-            school_id = base_data.get('school', 0)
-            logger.debug(f"[PLAYER SEARCH] {player_nickname} (PID: {player_pid}) — School ID: {school_id}")
-            
-            embed.add_field(name="📛 Nickname", value=f"`{player_nickname}`", inline=True)
-            embed.add_field(name="🏆 Level", value=f"`{base_data.get('level', 0)}`", inline=True)
-            embed.add_field(name="🆔 Number ID", value=f"`{base_data.get('number_id', number_id or 'N/A')}`", inline=True)
-
             name_card = data.get('name_card', {})
             player_signature = name_card.get('sign', None)
             if player_signature and player_signature.strip():
-                embed.add_field(name="✍️ Player Signature", value=f"`{player_signature}`", inline=False)
-
+                embed.description += f"\n\n*{player_signature}*"
+        
+            # Log school ID for mapping purposes
+            school_id = base_data.get('school', 0)
+            logger.debug(f"[PLAYER SEARCH] {player_nickname} (PID: {player_pid}) — School ID: {school_id}")
+            embed.add_field(name="🏆 Level", value=f"{base_data.get('level', 0)}", inline=True)
             if is_verified:
                 # ---- Account Creation Time ----
                 create_time = base_data.get('create_time', 0)
@@ -907,7 +908,7 @@ class WWMCog(commands.Cog):
                         month = birthday_data.get('month', 0)
                         day = birthday_data.get('day', 0)
                         if month > 0 and day > 0:
-                            embed.add_field(name="🎂 Birthday", value=f"`{_format_birthday(month, day)}`", inline=True)
+                            embed.add_field(name="🎂 Birthday", value=f"{_format_birthday(month, day)}", inline=True)
 
                 # ---- Sworn Cohort (Jieyi) ----
                 jieyi = data.get('jieyi', {})
@@ -916,13 +917,19 @@ class WWMCog(commands.Cog):
                 if jieyi_name:
                     cohort_display = jieyi_name
                     if jieyi_text:
-                        cohort_display += f" {jieyi_text}"
-                    embed.add_field(name="🤝 Sworn Cohort", value=f"`{cohort_display}`", inline=True)
+                        cohort_display += f"\n{jieyi_text}"
+                    embed.add_field(name="🤝 Sworn Cohort", value=f"{cohort_display}", inline=True)
 
                 # ---- Sect (School) ----
                 school_id = base_data.get('school', 0)
                 if school_id in SCHOOL_NAMES:
-                    embed.add_field(name="🏛️ Sect", value=f"`{SCHOOL_NAMES[school_id]}`", inline=True)
+                    school_display = SCHOOL_NAMES[school_id]
+                    # Get ranking within the sect
+                    school_status = school_data.get('status', 0)
+                    logger.debug(f"Player {player_nickname} (PID: {player_pid}) — Sect ID: {school_id}, Sect Status: {school_status}")
+                    if school_status in SCHOOL_RANKING:
+                        school_display += f"\n{SCHOOL_RANKING[school_status]}"
+                    embed.add_field(name=f"{SCHOOL_EMOTES.get(school_id, '')} Sect", value=f"{school_display}", inline=True)
 
                 # ---- Elegance (Fashion Score) ----
                 try:
@@ -931,31 +938,41 @@ class WWMCog(commands.Cog):
                         score = fashion_score_data['result']
                         if isinstance(score, dict):
                             score = score.get('score', 0)
-                        embed.add_field(name="💃 Elegance", value=f"`{score}`", inline=True)
+                        embed.add_field(name="💃 Elegance", value=f"{score}", inline=True)
                 except Exception as fashion_score_err:
                     logger.warning(f"Failed to get fashion score: {str(fashion_score_err)}")
 
+                # ---- Get likes count ----
+                try:
+                    likes_data = get_topics_likes(target_uuid=player_pid, target_hostnum=player_hostnum)
+                    if likes_data and 'result' in likes_data:
+                        likes_data = likes_data['result']
+                        likes_count = sum(topic.get('n_likes', 0) for topic in likes_data.values())
+                        embed.add_field(name="❤️ Likes Received", value=f"{likes_count}", inline=True)
+                except Exception as likes_err:
+                    logger.warning(f"Failed to get topics likes: {str(likes_err)}")
+
                 attr = data.get('attr', {})
-                embed.add_field(name="⚔️ Martial Mastery", value=f"`{round(attr.get('XIUWEI_KUNGFU', 0), 1)}`", inline=True)
-                embed.add_field(name="📚 Scholar Mastery", value=f"`{round(attr.get('XIUWEI_TRADE3', 0), 1)}`", inline=True)
-                embed.add_field(name="💚 Healer Mastery", value=f"`{round(attr.get('XIUWEI_TRADE4', 0), 1)}`", inline=True)
-                embed.add_field(name="🗺️ Exploration Mastery", value=f"`{round(attr.get('XIUWEI_EXPLORE', 0), 1)}`", inline=True)
-                embed.add_field(name="🥊 Power", value=f"`{round(attr.get('STR', 0), 1)}`", inline=True)
-                embed.add_field(name="🛡️ Body", value=f"`{round(attr.get('CON', 0), 1)}`", inline=True)
-                embed.add_field(name="⚡ Momentum", value=f"`{round(attr.get('BAS', 0), 1)}`", inline=True)
-                embed.add_field(name="💨 Agility", value=f"`{round(attr.get('CRI', 0), 1)}`", inline=True)
-                embed.add_field(name="🔰 Defense", value=f"`{round(attr.get('AGI', 0), 1)}`", inline=True)
-                embed.add_field(name="🌍 Region", value=f"`{base_data.get('oversea_tag', 'N/A')}`", inline=True)
-                embed.add_field(name="⌛ Total Online Time", value=f"`{round(base_data.get('online_time', 0) / 3600, 1)} hours`", inline=True)
+                embed.add_field(name="⚔️ Martial Mastery", value=f"{round(attr.get('XIUWEI_KUNGFU', 0), 1)}", inline=True)
+                embed.add_field(name="📚 Scholar Mastery", value=f"{round(attr.get('XIUWEI_TRADE3', 0), 1)}", inline=True)
+                embed.add_field(name="💚 Healer Mastery", value=f"{round(attr.get('XIUWEI_TRADE4', 0), 1)}", inline=True)
+                embed.add_field(name="🗺️ Exploration Mastery", value=f"{round(attr.get('XIUWEI_EXPLORE', 0), 1)}", inline=True)
+                embed.add_field(name="🥊 Power", value=f"{round(attr.get('STR', 0), 1)}", inline=True)
+                embed.add_field(name="🛡️ Body", value=f"{round(attr.get('CON', 0), 1)}", inline=True)
+                embed.add_field(name="⚡ Momentum", value=f"{round(attr.get('BAS', 0), 1)}", inline=True)
+                embed.add_field(name="💨 Agility", value=f"{round(attr.get('CRI', 0), 1)}", inline=True)
+                embed.add_field(name="🔰 Defense", value=f"{round(attr.get('AGI', 0), 1)}", inline=True)
+                embed.add_field(name="🌍 Region", value=f"{base_data.get('oversea_tag', 'N/A')}", inline=True)
+                embed.add_field(name="⌛ Total Online Time", value=f"{round(base_data.get('online_time', 0) / 3600, 1)} hours", inline=True)
 
                 # ---- Online Status ----
                 is_invisible = base_data.get('invisible', False)
                 is_online = base_data.get('is_online', 0)
                 if not is_invisible:
                     if is_online == 1:
-                        embed.add_field(name="🟢 Online Status", value="`ONLINE NOW`", inline=True)
+                        embed.add_field(name="🟢 Online Status", value="ONLINE NOW", inline=True)
                     else:
-                        embed.add_field(name="🔴 Online Status", value="`Offline`", inline=True)
+                        embed.add_field(name="🔴 Online Status", value="Offline", inline=True)
                 
                 # ---- 1v1 Arena Rank (lunjian) ----
                 lunjian = data.get('lunjian', {})
@@ -978,14 +995,14 @@ class WWMCog(commands.Cog):
                     else:
                         rank_display = grade_name
                     
-                    embed.add_field(name="⚔️ 1v1 Arena Rank", value=f"`{rank_display}`", inline=True)
+                    embed.add_field(name="⚔️ 1v1 Arena Rank", value=f"{rank_display}", inline=True)
                 
                 # ---- PvP Score ----
                 gameplay = data.get('gameplay_trail', {})
                 played = gameplay.get('played', [])
                 for match in played:
                     if 'score' in match:
-                        embed.add_field(name="🏆 PvP Score", value=f"`{match['score']}`", inline=True)
+                        embed.add_field(name="🏆 PvP Score", value=f"{match['score']}", inline=True)
                         break
             else:
                 embed.description = f"{embed.description}\n\n🔗 **Bind your account** in <#1469961307154288703> to view full stats, combat power and details."
@@ -1016,12 +1033,12 @@ class WWMCog(commands.Cog):
                             guild_name = guild_base.get('name', 'Unknown Guild')
                         
                     if player_club_id == CLUB_ID:
-                        embed.add_field(name="✅ Guild Member", value="`Yes`", inline=True)
+                        embed.add_field(name="✅ Guild Member", value="Yes", inline=True)
                         embed.color = discord.Color.green()
                     else:
-                        embed.add_field(name="❌ Guild Member", value="`No`", inline=True)
+                        embed.add_field(name="❌ Guild Member", value="No", inline=True)
                     
-                    embed.add_field(name="🏰 Guild", value=f"`{guild_name}`", inline=True)
+                    embed.add_field(name="🏰 Guild", value=f"{guild_name}", inline=True)
                     
                 except Exception as club_err:
                     logger.warning(f"Failed to get club info: {str(club_err)}")

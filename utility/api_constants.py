@@ -3,6 +3,7 @@ WWM API Constants and Field Definitions
 Central place to store all API field names, constants, and common requests
 """
 
+from settings import branch
 # ==============================================
 # BULK PLAYER API FIELDS
 # ==============================================
@@ -152,6 +153,71 @@ SCHOOL_NAMES = {
     11: "Nine Mortal Ways",
     12: "Velvet Shade",
     100: "Sectless",
+}
+
+if branch == "main":
+    SCHOOL_EMOTES = {
+        1: "<:WellOfHeaven:1508516903726088273>",
+        2: "<:MaskedTroupe:1508517146794262749>",
+        3: "<:RagingTides:1508517349412573284>",
+        4: "<:SilverNeedle:1508517548142886942>",
+        6: "<:MidnightBlades:1508517668729257984>",
+        11: "<:NineMortalWays:1508517811004248134>",
+        12: "<:VelvetShade:1508517976356425769>"
+    }
+else:
+    SCHOOL_EMOTES = {
+        1: "<:WellOfHeaven:1508518909345796218>",
+        2: "<:MaskedTroupe:1508518907630063757>",
+        3: "<:RagingTides:1508518905927438496>",
+        4: "<:SilverNeedle:1508518903976956097>",
+        6: "<:MidnightBlades:1508518902429257759>",
+        11: "<:NineMortalWays:1508518900567117834>",
+        12: "<:VelvetShade:1508518898188812369>"
+    }
+
+
+SCHOOL_RANKING = {
+    "1_1": "Average Brother",
+    "1_2": "Ironclad Buddy",
+    "1_3": "Good Pal",
+    "1_4": "Deputy Master",
+    "1_5": "Hall Master",
+
+    "2_1": "Understudy",
+    "2_2": "Performer",
+    "2_3": "Principal Artist",
+    "2_4": "Stage Master",
+    "2_5": "Stage Director",
+
+    "3_1": "Solider",
+    "3_2": "Squad Leader",
+    "3_3": "Platoon Leader",
+    "3_4": "Brigade Commander",
+    "3_5": "Division General",
+
+    "4_1": "Keeper",
+    "4_2": "Physician",
+    "4_3": "Chief Physician",
+    "4_4": "Medical Scholar",
+    "4_5": "Divine Healer",
+
+    "6_1": "Novice Cultivator",
+    "6_2": "Truth Walker",
+    "6_3": "Sufferer",
+    "6_4": "Chief Elder",
+
+    "11_1": "Outer Prentice",
+    "11_2": "Inner Disciple",
+    "11_3": "Core Prentice",
+    "11_4": "Faction Master",
+    "11_5": "Clan Master",
+
+    "12_1": "First Crimson Blossom",
+    "12_2": "Twin Lotuses",
+    "12_3": "Charming Trio",
+    "12_4": "Four-Fragrance",
+    "12_5": "Flower Messenger",
 }
 
 CLUB_CHAT_MESSAGE_FIELDS = {
