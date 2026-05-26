@@ -16,6 +16,7 @@ class LiveChatCog(commands.Cog):
         self.bot = bot
         self.last_seen_msg_ids: Set[str] = set()
         self._last_seen_npc_ts = 0.0
+        self._last_seen_max_ts = 0.0
         self.is_running = False
         self.translator = Translator()
         self._translate_retry_delay = 2.0
@@ -41,10 +42,10 @@ class LiveChatCog(commands.Cog):
         
         # Only start poller if already enabled in config
         if self.is_running and self.CHANNEL_ID:
-            # Reset running flag so first poll processes new messages (with persisted _last_seen_npc_ts)
+            # Reset running flag so first poll processes new messages (with persisted timestamps)
             self.is_running = False
             self.chat_poller.start()
-            logger.debug(f"✅ Live chat auto-started. Last NPC ts: {self._last_seen_npc_ts}")
+            logger.debug(f"✅ Live chat auto-started. Last max ts: {self._last_seen_max_ts}")
 
     def cog_unload(self):
         self.chat_poller.cancel()
@@ -66,8 +67,9 @@ class LiveChatCog(commands.Cog):
                 
             chat_messages = chat_result['result']['chat']['chat_history']
             
-            # Track the max NPC timestamp for dedup, initialized from persisted value
+            # Track the max timestamps for dedup, initialized from persisted values
             max_npc_ts = self._last_seen_npc_ts
+            max_all_ts = self._last_seen_max_ts
             new_messages = []  # Will hold any new messages found
             
             # On first run, catch up on ALL messages missed during downtime
@@ -79,13 +81,18 @@ class LiveChatCog(commands.Cog):
                 if self.last_seen_msg_ids or self._last_seen_npc_ts > 0:
                     for msg in chat_messages:
                         msg_id = msg.get('msg_id')
+                        msg_ts = msg.get('ts', 0)
+                        # Skip messages older than our maximum seen timestamp (secondary dedup)
+                        if msg_ts <= max_all_ts:
+                            if msg_id:
+                                self.last_seen_msg_ids.add(msg_id)
+                            continue
                         if msg_id:
                             if msg_id not in self.last_seen_msg_ids:
                                 new_messages.append(msg)
                                 self.last_seen_msg_ids.add(msg_id)
                         else:
                             # NPC message — track by timestamp
-                            msg_ts = msg.get('ts', 0)
                             if msg_ts > max_npc_ts:
                                 new_messages.append(msg)
                                 if msg_ts > max_npc_ts:
@@ -99,6 +106,7 @@ class LiveChatCog(commands.Cog):
                     # Fresh start (no saved state) — just record current state, don't process
                     self.last_seen_msg_ids = {msg['msg_id'] for msg in chat_messages if 'msg_id' in msg}
                     max_npc_ts = max((msg.get('ts', 0) for msg in chat_messages if 'msg_id' not in msg), default=0)
+                    max_all_ts = max((msg.get('ts', 0) for msg in chat_messages), default=0)
                     logger.debug(f"✅ Live chat monitoring started. Tracking {len(self.last_seen_msg_ids)} existing messages.")
                 
                 self._last_seen_npc_ts = max_npc_ts
@@ -115,6 +123,7 @@ class LiveChatCog(commands.Cog):
                 new_messages = []
                 for msg in chat_messages:
                     msg_id = msg.get('msg_id')
+                    msg_ts = msg.get('ts', 0)
                     if msg_id:
                         if msg_id in self.last_seen_msg_ids:
                             continue
@@ -122,7 +131,6 @@ class LiveChatCog(commands.Cog):
                         self.last_seen_msg_ids.add(msg_id)
                     else:
                         # NPC system messages (no msg_id) — track by timestamp
-                        msg_ts = msg.get('ts', 0)
                         if msg_ts > max_npc_ts:
                             new_messages.append(msg)
                             if msg_ts > max_npc_ts:
@@ -132,6 +140,12 @@ class LiveChatCog(commands.Cog):
                 if max_npc_ts > self._last_seen_npc_ts:
                     self._last_seen_npc_ts = max_npc_ts
             
+            # Update the universal max timestamp from all messages in this poll cycle
+            if chat_messages:
+                cycle_max = max(msg.get('ts', 0) for msg in chat_messages)
+                if cycle_max > self._last_seen_max_ts:
+                    self._last_seen_max_ts = cycle_max
+
             if new_messages:
                 logger.debug(f"🔔 Found {len(new_messages)} new chat messages")
 
@@ -655,7 +669,8 @@ class LiveChatCog(commands.Cog):
                     self.is_running = config.get('enabled', False)
                     self.last_seen_msg_ids = set(config.get('last_msg_ids', []))
                     self._last_seen_npc_ts = config.get('last_npc_ts', 0)
-                logger.debug(f"Loaded live chat config: enabled={self.is_running}, channel={self.CHANNEL_ID}, last_npc_ts={self._last_seen_npc_ts}")
+                    self._last_seen_max_ts = config.get('last_max_ts', 0)
+                logger.debug(f"Loaded live chat config: enabled={self.is_running}, channel={self.CHANNEL_ID}, last_max_ts={self._last_seen_max_ts}")
             except Exception as e:
                 logger.error(f"Failed to load live chat config: {str(e)}")
 
@@ -667,6 +682,7 @@ class LiveChatCog(commands.Cog):
                 'enabled': self.is_running,
                 'last_msg_ids': list(self.last_seen_msg_ids)[-300:],
                 'last_npc_ts': self._last_seen_npc_ts,
+                'last_max_ts': self._last_seen_max_ts,
             }
             with open(self.CONFIG_FILE, 'w') as f:
                 json.dump(config, f, indent=4)
