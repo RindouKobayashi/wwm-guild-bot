@@ -1929,7 +1929,7 @@ class WWMCog(commands.Cog):
                 region_labels = {
                     "": "Unknown", "CN": "CN (Mainland China)", "AS": "AS (Asia)",
                     "EU": "EU (Europe)", "HMT": "HMT (HK/Macau/Taiwan)", "JP": "JP (Japan)",
-                    "KR": "KR (South Korea)", "NA": "NA (North America)", "NAW": "NAW (North America West)",
+                    "KR": "KR (South Korea)", "NA": "NA (North America)",
                     "SA": "SA (South America)", "SEA": "SEA (Southeast Asia)", "OC": "OC (Oceania)", "OTHER": "Other",
                 }
                 
@@ -1944,6 +1944,8 @@ class WWMCog(commands.Cog):
                     for p in snapshot:
                         if p.get('is_online', False):
                             tag = str(p.get('oversea_tag', ''))
+                            if tag == "NAW":
+                                tag = "NA"
                             all_region_tags.add(tag)
                 
                 for row in rows:
@@ -1952,6 +1954,8 @@ class WWMCog(commands.Cog):
                     for p in snapshot:
                         if p.get('is_online', False):
                             tag = str(p.get('oversea_tag', ''))
+                            if tag == "NAW":
+                                tag = "NA"
                             region_online[tag] += 1
                     for tag in all_region_tags:
                         region_online_series[tag].append(region_online.get(tag, 0))
