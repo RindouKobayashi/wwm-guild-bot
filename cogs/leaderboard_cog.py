@@ -4,7 +4,7 @@ Supports MULTIPLE simultaneous leaderboards of different types.
 
 Supports leaderboard types:
   - elegance: fashion score (from "fashion" API field)
-  - martial_mastery: XIUWEI_KUNGFU (from "attr" API field)
+  - martial_mastery: max_xiuwei_kungfu (from "base" API field)
   - exploration_mastery: XIUWEI_EXPLORE (from "attr" API field)
 
 Architecture:
@@ -88,7 +88,7 @@ LEADERBOARD_EMOJIS = {
 
 LB_API_FIELDS = {
     "elegance":         (["fashion", "base"], 10403),
-    "martial_mastery":   (["attr", "base"], 10595),
+    "martial_mastery":   (["base"], 10595),
     "exploration_mastery": (["attr", "base"], 10595),
     "playtime":          (["base"], 10595),
 }
@@ -108,13 +108,19 @@ def _extract_score(lb_type: str, player_data: dict) -> float:
         return round(online_seconds / 3600, 1)  # convert to hours
 
     attr_map = {
-        "martial_mastery": "XIUWEI_KUNGFU",
         "exploration_mastery": "XIUWEI_EXPLORE",
     }
     key = attr_map.get(lb_type)
     if key:
         attr = player_data.get("attr", {})
         return round(float(attr.get(key, 0)), 1)
+
+    logger.debug(f"Testing martial mastery extraction for player {player_data.get('base', {}).get('nickname', 'Unknown')}")
+
+    if lb_type == "martial_mastery":
+        logger.debug(f"Extracting martial mastery score for player {player_data.get('base', {}).get('nickname', 'Unknown')}")
+        base = player_data.get("base", {})
+        return base.get("max_xiuwei_kungfu", 0) or 0
     return 0
 
 
@@ -1088,7 +1094,7 @@ class _TypeSelect(discord.ui.Select):
             options=[
                 discord.SelectOption(label="Elegance", description="Fashion score leaderboard",
                                      value="elegance", emoji="💃"),
-                discord.SelectOption(label="Martial Mastery", description="XIUWEI_KUNGFU",
+                discord.SelectOption(label="Martial Mastery", description="Max XIUWEI_KUNGFU",
                                      value="martial_mastery", emoji="⚔️"),
                 discord.SelectOption(label="Exploration Mastery", description="XIUWEI_EXPLORE",
                                      value="exploration_mastery", emoji="🗺️"),
