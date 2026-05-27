@@ -181,10 +181,13 @@ def _fetch_ba_schedule() -> Dict[str, Any]:
             logger.warning("BA schedule: no schedule_infos found in play type 13")
             return {}
         result = {}
-        for session_key in ("1", "2"):
-            info = schedule_infos.get(session_key)
+        logger.debug(f"BA schedule: raw schedule_infos: {schedule_infos}")
+        for session_key_int in (1, 2):
+            info = schedule_infos.get(session_key_int)
+            session_key_str = str(session_key_int)
+            logger.debug(f"BA schedule: session {session_key_str} info: {info}")
             if info:
-                result[session_key] = {
+                result[session_key_str] = {
                     "weekday": info.get("weekday", 0),
                     "start_time": info.get("start_time", [0, 0]),
                     "boss_id": info.get("boss_id", 0),
