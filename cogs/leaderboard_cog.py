@@ -187,8 +187,12 @@ def _fetch_ba_schedule() -> Dict[str, Any]:
             session_key_str = str(session_key_int)
             logger.debug(f"BA schedule: session {session_key_str} info: {info}")
             if info:
+                # API weekday = 1=Mon, 2=Tue, 3=Wed, ..., 7=Sun
+                # Python weekday = 0=Mon, 1=Tue, 2=Wed, ..., 6=Sun
+                api_weekday = info.get("weekday", 0)
+                py_weekday = (api_weekday - 1) % 7
                 result[session_key_str] = {
-                    "weekday": info.get("weekday", 0),
+                    "weekday": py_weekday,
                     "start_time": info.get("start_time", [0, 0]),
                     "boss_id": info.get("boss_id", 0),
                     "play_space_id": info.get("play_space_id", ""),
