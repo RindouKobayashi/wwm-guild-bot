@@ -204,20 +204,19 @@ def _fetch_ba_schedule() -> Dict[str, Any]:
         return {}
 
 
-def _compute_next_session_ts(schedule_entry: dict) -> Tuple[float, float]:
+def _compute_session_ts(schedule_entry: dict) -> Tuple[float, float, float, float]:
     """
-    Compute (start_ts, end_ts) for the *next* occurrence of this session.
-    start_ts / end_ts are UTC Unix timestamps.
+    Compute both this week's occurrence and next week's occurrence timestamps.
+    Returns (this_week_start, this_week_end, next_week_start, next_week_end).
+    All UTC Unix timestamps.
     """
     weekday = schedule_entry["weekday"]
     hour, minute = schedule_entry["start_time"]
     start_ts = _weekday_start_ts(weekday, hour, minute)
-    # If start is more than 2 hours in the past, bump to next week
-    now_ts = datetime.datetime.now(datetime.timezone.utc).timestamp()
-    while start_ts + 7200 < now_ts:
-        start_ts += 7 * 86400
     end_ts = start_ts + 7200  # 2 hours duration
-    return start_ts, end_ts
+    next_start = start_ts + 7 * 86400
+    next_end = end_ts + 7 * 86400
+    return start_ts, end_ts, next_start, next_end
 
 
 def _get_ba_state(schedule: dict) -> Dict[str, Any]:
@@ -229,6 +228,7 @@ def _get_ba_state(schedule: dict) -> Dict[str, Any]:
       - sessions: { "1": {state, start_ts, end_ts, boss_id, boss_name, ...}, "2": {...} }
       - week_start_ts: approximate Monday 5AM GMT+8 ts (for grouping)
     """
+    NOW_BUFFER = 120  # 2 min grace period after end
     now_ts = datetime.datetime.now(datetime.timezone.utc).timestamp()
     sessions = {}
     for session_key in ("1", "2"):
@@ -236,26 +236,48 @@ def _get_ba_state(schedule: dict) -> Dict[str, Any]:
         if not entry:
             sessions[session_key] = {"state": "unknown", "boss_name": "Unknown"}
             continue
-        start_ts, end_ts = _compute_next_session_ts(entry)
         boss_id = entry.get("boss_id", 0)
         boss_name = BOSS_NAMES.get(int(boss_id), f"Boss #{boss_id}")
         weekday = entry["weekday"]
         hour, minute = entry["start_time"]
-        # Determine state
-        if now_ts < start_ts:
-            time_until_start = start_ts - now_ts
-            if time_until_start <= 3600:
-                state = "upcoming_soon"  # within 1 hour
+
+        # Compute this week's occurrence
+        this_start, this_end, next_start, next_end = _compute_session_ts(entry)
+
+        # Determine state using this week's timestamps, not next week's
+        if now_ts < this_start:
+            # Haven't started this week yet
+            display_start = this_start
+            display_end = this_end
+            time_until = this_start - now_ts
+            if time_until <= 3600:
+                state = "upcoming_soon"
             else:
                 state = "upcoming"
-        elif now_ts <= end_ts:
+        elif now_ts <= this_end:
+            # Currently active
+            display_start = this_start
+            display_end = this_end
             state = "active"
         else:
-            state = "finalized"
+            # This week's session is over.
+            # Stay finalized until 1 hour before NEXT week's session
+            time_until_next = next_start - now_ts
+            if time_until_next <= 3600:
+                # Less than 1 hour until next week's BA — show upcoming
+                display_start = next_start
+                display_end = next_end
+                state = "upcoming_soon" if time_until_next > 0 else "upcoming"
+            else:
+                # Show finalized results from this week
+                display_start = this_start
+                display_end = this_end
+                state = "finalized"
+
         sessions[session_key] = {
             "state": state,
-            "start_ts": int(start_ts),
-            "end_ts": int(end_ts),
+            "start_ts": int(display_start),
+            "end_ts": int(display_end),
             "boss_id": int(boss_id),
             "boss_name": boss_name,
             "weekday": weekday,
@@ -817,11 +839,13 @@ class LeaderboardCog(commands.Cog):
             entry = schedule.get(session_key)
             if not entry:
                 continue
-            start_ts, end_ts = _compute_next_session_ts(entry)
+            this_start, this_end, next_start, next_end = _compute_session_ts(entry)
             # Check if this session's time window contains the timestamp
             # (handle cases where the BA ended recently, use <= end_ts with some grace)
-            if start_ts <= timestamp <= end_ts + 120:  # 2 min grace period
-                active_sessions.append((session_key, entry, start_ts, end_ts))
+            if this_start <= timestamp <= this_end + 120:  # 2 min grace period
+                active_sessions.append((session_key, entry, this_start, this_end))
+            elif next_start <= timestamp <= next_end + 120:
+                active_sessions.append((session_key, entry, next_start, next_end))
 
         if not active_sessions:
             logger.debug(f"BA timing: no active session at timestamp {timestamp} for {nickname}")
