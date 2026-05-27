@@ -12,8 +12,18 @@ Architecture:
   - JSON file stores a list [{channel_id, message_id, type, guild_id}, ...]
   - A single background task refreshes ALL active leaderboards every 60 seconds
   - A "Check My Rank" button lets users see their position even if off-screen
+
+Breaking Army Leaderboard:
+  - Displays the two weekly Breaking Army sessions (schedule_infos "1" and "2" from play type 13)
+  - Each session has a boss, start time, and lasts 2 hours
+  - Tracks: best_time (seconds), attempts count per player per session
+  - Lifecycle:
+    - "upcoming"    — more than 1 hour before start → show next BA info, clear old data
+    - "active"      — within the 2-hour window → collect timings in real-time
+    - "finalized"   — after 2 hours have elapsed → lock results, show final standings
 """
 import asyncio
+import datetime
 
 import discord
 import json
@@ -25,18 +35,47 @@ from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow
 from typing import Optional, List, Tuple, Dict, Any
 
 import settings
-from settings import logger, BASE_DIR, WWM_UID, WWM_REDIS_PLAYER_URL
+from settings import logger, BASE_DIR, WWM_UID, WWM_REDIS_PLAYER_URL, CLUB_ID, WWM_FULL_GUILD_URL
 from utility.wwm import _wwm_api_post
 from cogs.view_registry import register
 
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 CONFIG_PATH = BASE_DIR / "data" / "leaderboard_config.json"
+BA_TIMINGS_PATH = BASE_DIR / "data" / "breaking_army_timings.json"
+BA_SCHEDULE_PATH = BASE_DIR / "data" / "breaking_army_schedule.json"
+
+# ── Boss ID to Name mapping ──────────────────────────────────────────
+BOSS_NAMES = {
+    1: "The Void King",
+    2: "Ye Wanshan",
+    3: "Lucky Seventeen",
+    4: "Heartseeker",
+    5: "Snaker Doctor",
+    6: "Puppeteer",
+    7: "Earth Fiend Deity",
+    8: "Yi Dao",
+    9: "Dao Lord",
+    10: "Lion Dance",
+    13: "Coffin Master",
+    14: "Zheng E",
+    15: "Drunk Martial Artist",
+    16: "Ghost Master",
+    17: "Nameless General",
+    18: "Wolf Maiden",
+    20: "Grand Protector of Anxi",
+    21: "Moongazing Maiden",
+    22: "Everdeer",
+    25: "Sentinel Howlion",
+    26: "Pocketrupt Circus",
+    27: "Snowplum Requiem",
+}
 
 LEADERBOARD_COLORS = {
     "elegance": 0xFF69B4,
     "martial_mastery": 0xE74C3C,
     "exploration_mastery": 0x2ECC71,
     "playtime": 0x3498DB,
+    "breaking_army": 0xBB8FCE,
 }
 
 LEADERBOARD_EMOJIS = {
@@ -44,6 +83,7 @@ LEADERBOARD_EMOJIS = {
     "martial_mastery": "⚔️",
     "exploration_mastery": "🗺️",
     "playtime": "⌛",
+    "breaking_army": "💀",
 }
 
 LB_API_FIELDS = {
@@ -78,8 +118,421 @@ def _extract_score(lb_type: str, player_data: dict) -> float:
     return 0
 
 
+# ── Breaking Army helper utilities ───────────────────────────────────
+def _gmt8_now() -> datetime.datetime:
+    """Return current time as timezone-aware datetime in GMT+8."""
+    now_utc = datetime.datetime.now(datetime.timezone.utc)
+    return now_utc + datetime.timedelta(hours=8)
+
+
+def _weekday_start_ts(weekday: int, hour: int, minute: int) -> float:
+    """
+    Given a weekday (0=Mon..6=Sun), hour, minute in GMT+8,
+    return the Unix timestamp (UTC) of the most recent occurrence
+    of that weekday+time that is <= current GMT+8 time.
+    """
+    gmt8_now = _gmt8_now()
+    target = gmt8_now.replace(hour=hour, minute=minute, second=0, microsecond=0)
+    days_ahead = (weekday - target.weekday()) % 7
+    target += datetime.timedelta(days=days_ahead)
+    if target > gmt8_now:
+        target -= datetime.timedelta(days=7)
+    # Convert back to UTC timestamp
+    utc_target = target - datetime.timedelta(hours=8)
+    return utc_target.timestamp()
+
+
+def _weekday_name(weekday: int) -> str:
+    """Map 0=Mon..6=Sun to short name."""
+    return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][weekday]
+
+
+# ── BA Schedule & State ──────────────────────────────────────────────
+# Tested working endpoint for club play info
+CLUB_INFO_URL = WWM_FULL_GUILD_URL
+
+# Play type 13 = Breaking Army
+BA_PLAY_TYPE = 13
+
+
+def _fetch_ba_schedule() -> Dict[str, Any]:
+    """
+    Fetch the guild club info and extract Breaking Army (play type 13) schedule.
+    Returns dict with session "1" and "2" schedule info + boss_id, or empty dict on failure.
+    """
+    payload = {
+        "club_id": CLUB_ID,
+        "uid": WWM_UID,
+        "field_info": {
+            "member": [],
+            "play": []
+        },
+        "hostnum": 10103
+    }
+    try:
+        response = _wwm_api_post(CLUB_INFO_URL, payload)
+        if not response or 'result' not in response:
+            logger.warning("BA schedule: failed to fetch club info")
+            return {}
+        plays = response['result'].get('play', {}).get('plays', {})
+        ba_play = plays.get(int(BA_PLAY_TYPE), {})
+        schedule_infos = ba_play.get('schedule_infos', {})
+        if not schedule_infos:
+            logger.warning("BA schedule: no schedule_infos found in play type 13")
+            return {}
+        result = {}
+        for session_key in ("1", "2"):
+            info = schedule_infos.get(session_key)
+            if info:
+                result[session_key] = {
+                    "weekday": info.get("weekday", 0),
+                    "start_time": info.get("start_time", [0, 0]),
+                    "boss_id": info.get("boss_id", 0),
+                    "play_space_id": info.get("play_space_id", ""),
+                    "transport_id": info.get("transport_id", 0),
+                }
+        return result
+    except Exception as e:
+        logger.error(f"BA schedule fetch error: {e}")
+        return {}
+
+
+def _compute_next_session_ts(schedule_entry: dict) -> Tuple[float, float]:
+    """
+    Compute (start_ts, end_ts) for the *next* occurrence of this session.
+    start_ts / end_ts are UTC Unix timestamps.
+    """
+    weekday = schedule_entry["weekday"]
+    hour, minute = schedule_entry["start_time"]
+    start_ts = _weekday_start_ts(weekday, hour, minute)
+    # If start is more than 2 hours in the past, bump to next week
+    now_ts = datetime.datetime.now(datetime.timezone.utc).timestamp()
+    while start_ts + 7200 < now_ts:
+        start_ts += 7 * 86400
+    end_ts = start_ts + 7200  # 2 hours duration
+    return start_ts, end_ts
+
+
+def _get_ba_state(schedule: dict) -> Dict[str, Any]:
+    """
+    Given a fetched BA schedule (dict with keys "1", "2"),
+    compute the current state of each session.
+
+    Returns dict with keys:
+      - sessions: { "1": {state, start_ts, end_ts, boss_id, boss_name, ...}, "2": {...} }
+      - week_start_ts: approximate Monday 5AM GMT+8 ts (for grouping)
+    """
+    now_ts = datetime.datetime.now(datetime.timezone.utc).timestamp()
+    sessions = {}
+    for session_key in ("1", "2"):
+        entry = schedule.get(session_key)
+        if not entry:
+            sessions[session_key] = {"state": "unknown", "boss_name": "Unknown"}
+            continue
+        start_ts, end_ts = _compute_next_session_ts(entry)
+        boss_id = entry.get("boss_id", 0)
+        boss_name = BOSS_NAMES.get(int(boss_id), f"Boss #{boss_id}")
+        weekday = entry["weekday"]
+        hour, minute = entry["start_time"]
+        # Determine state
+        if now_ts < start_ts:
+            time_until_start = start_ts - now_ts
+            if time_until_start <= 3600:
+                state = "upcoming_soon"  # within 1 hour
+            else:
+                state = "upcoming"
+        elif now_ts <= end_ts:
+            state = "active"
+        else:
+            state = "finalized"
+        sessions[session_key] = {
+            "state": state,
+            "start_ts": int(start_ts),
+            "end_ts": int(end_ts),
+            "boss_id": int(boss_id),
+            "boss_name": boss_name,
+            "weekday": weekday,
+            "hour": hour,
+            "minute": minute,
+            "weekday_name": _weekday_name(weekday),
+        }
+    # Compute the week start (Monday 5AM GMT+8) from session 1's start
+    week_start_ts = None
+    for s in sessions.values():
+        if s.get("state") != "unknown" and "start_ts" in s:
+            # Align to the Monday 5AM of that start
+            gmt8_start = datetime.datetime.fromtimestamp(s["start_ts"] + 8 * 3600, tz=datetime.timezone.utc)
+            adjusted = gmt8_start - datetime.timedelta(hours=5)
+            monday = adjusted - datetime.timedelta(days=adjusted.weekday())
+            monday_5am = monday.replace(hour=5, minute=0, second=0, microsecond=0)
+            week_start_ts = int(monday_5am.timestamp() - 8 * 3600)
+            break
+    if week_start_ts is None:
+        week_start_ts = 0
+    return {"sessions": sessions, "week_start_ts": week_start_ts}
+
+
+# ── BA Timings Storage ───────────────────────────────────────────────
+def _load_ba_timings() -> dict:
+    """Load BA timings from JSON file."""
+    try:
+        if os.path.exists(BA_TIMINGS_PATH):
+            with open(BA_TIMINGS_PATH) as f:
+                return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load BA timings: {e}")
+    return {}
+
+
+def _save_ba_timings(data: dict):
+    """Save BA timings to JSON file."""
+    try:
+        os.makedirs(BASE_DIR / "data", exist_ok=True)
+        with open(BA_TIMINGS_PATH, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        logger.error(f"Failed to save BA timings: {e}")
+
+
+def _load_ba_schedule_cache() -> dict:
+    """Load cached BA schedule."""
+    try:
+        if os.path.exists(BA_SCHEDULE_PATH):
+            with open(BA_SCHEDULE_PATH) as f:
+                return json.load(f)
+    except Exception as e:
+        logger.error(f"Failed to load BA schedule cache: {e}")
+    return {}
+
+
+def _save_ba_schedule_cache(data: dict):
+    """Save BA schedule to cache file."""
+    try:
+        os.makedirs(BASE_DIR / "data", exist_ok=True)
+        with open(BA_SCHEDULE_PATH, "w") as f:
+            json.dump(data, f, indent=2)
+    except Exception as e:
+        logger.error(f"Failed to save BA schedule cache: {e}")
+
+
+# ── BA Timings Data Builder ─────────────────────────────────────────
+def _build_ba_leaderboard_data() -> Tuple[List[dict], int, dict]:
+    """
+    Build the leaderboard entries for Breaking Army.
+    Returns (entries, total_players, session_info) where:
+      - entries: list of dicts with pid, nickname, score (best_time), attempts, session_key
+      - total_players: total unique players across both sessions
+      - session_info: dict with current BA state info
+    """
+    schedule = _load_ba_schedule_cache()
+    state = _get_ba_state(schedule)
+    timings = _load_ba_timings()
+    week_start_ts = state.get("week_start_ts", 0)
+    sessions = state.get("sessions", {})
+
+    entries = []
+    all_pids = set()
+
+    # Check if we need to clear old data (when transitioning to upcoming state with different week)
+    stored_week = timings.get("week_start_ts", 0)
+    if week_start_ts and stored_week and week_start_ts > stored_week:
+        # New week detected — check if any session is upcoming_soon or active
+        # If all are "upcoming" (more than 1h away) and it's a new week, clear old data
+        should_clear = True
+        for s in sessions.values():
+            if s.get("state") in ("upcoming_soon", "active"):
+                should_clear = False
+                break
+        if should_clear:
+            logger.info(f"BA: new week detected, clearing old timings (week {stored_week} -> {week_start_ts})")
+            timings = {}
+            timings["week_start_ts"] = week_start_ts
+            _save_ba_timings(timings)
+
+    # For each session, gather player timings
+    for session_key in ("1", "2"):
+        session_timings = timings.get(f"session_{session_key}", {}).get("players", {})
+        session_info = sessions.get(session_key, {})
+        boss_name = session_info.get("boss_name", "Unknown")
+        for pid, data in session_timings.items():
+            all_pids.add(pid)
+            entries.append({
+                "pid": pid,
+                "nickname": data.get("nickname", "Unknown"),
+                "score": data.get("best_time", 0),  # score = best_time (lower is better)
+                "attempts": data.get("attempts", 0),
+                "session_key": session_key,
+                "boss_name": boss_name,
+            })
+
+    # Sort: session 1 first (sorted by time ascending), then session 2
+    entries.sort(key=lambda e: (0 if e["session_key"] == "1" else 1, e["score"]))
+
+    return entries, len(all_pids), state
+
+
+# ── Breaking Army Persistent View ────────────────────────────────────
+class BreakingArmyView(LayoutView):
+    """The auto-refreshing Breaking Army leaderboard with Components V2."""
+
+    def __init__(self, cog: "LeaderboardCog", entries: list,
+                 total_players: int, timestamp: int, session_state: dict):
+        super().__init__(timeout=None)
+        self.cog = cog
+        self.entries = entries
+        self.total_players = total_players
+        self.timestamp = timestamp
+        self.session_state = session_state
+        self._build()
+
+    def _build(self):
+        inner: list = []
+        color = LEADERBOARD_COLORS["breaking_army"]
+        sessions = self.session_state.get("sessions", {})
+
+        inner.append(TextDisplay(
+            "# 💀 Breaking Army Leaderboard\n"
+            "Fastest clear times for each session"
+        ))
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        for session_key in ("1", "2"):
+            info = sessions.get(session_key, {})
+            state = info.get("state", "unknown")
+            boss_name = info.get("boss_name", "Unknown")
+            weekday_name = info.get("weekday_name", "?")
+            hour = info.get("hour", 0)
+            minute = info.get("minute", 0)
+            start_ts = info.get("start_ts", 0)
+            end_ts = info.get("end_ts", 0)
+            boss_id = info.get("boss_id", 0)
+
+            # Header line
+            time_str = f"{weekday_name} {hour:02d}:{minute:02d} GMT+8"
+            header = f"**── Session {session_key} ──**\n🐺 **Boss:** {boss_name}"
+
+            if state == "unknown":
+                header += "\n*Schedule not available*"
+            elif state == "upcoming":
+                delta = int(start_ts - self.timestamp)
+                hours = delta // 3600
+                minutes = (delta % 3600) // 60
+                if hours > 0:
+                    header += f"\n🕐 {time_str}\n⏳ Starts in **{hours}h {minutes}m**"
+                else:
+                    header += f"\n🕐 {time_str}\n⏳ Starts in **{minutes}m**"
+            elif state == "upcoming_soon":
+                delta = int(start_ts - self.timestamp)
+                minutes = max(1, delta // 60)
+                header += f"\n🕐 {time_str}\n🔔 Starts in **{minutes}m** — Preparing..."
+            elif state == "active":
+                remaining = int(end_ts - self.timestamp)
+                mins = remaining // 60
+                secs = remaining % 60
+                header += f"\n🕐 {time_str}\n🟢 **ACTIVE** — {mins}m {secs}s remaining"
+            elif state == "finalized":
+                header += f"\n🕐 {time_str}\n🔒 **Finalized**"
+
+            inner.append(TextDisplay(header))
+            inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+            # Player rankings for this session
+            session_entries = [e for e in self.entries if e["session_key"] == session_key]
+            lines = []
+            for i, e in enumerate(session_entries[:10], 1):
+                prefix = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, f"{i}.")
+                time_val = int(e["score"])
+                mins = time_val // 60
+                secs = time_val % 60
+                if mins > 0:
+                    time_str_display = f"{mins}m {secs}s"
+                else:
+                    time_str_display = f"{secs}s"
+                attempts = e.get("attempts", 1)
+                lines.append(
+                    f"{prefix} **{e['nickname']}** — `{time_str_display}` "
+                    f"(⚔️ {attempts} attempt{'s' if attempts != 1 else ''})"
+                )
+
+            if lines:
+                inner.append(TextDisplay("\n".join(lines)))
+            else:
+                if state == "active":
+                    inner.append(TextDisplay("*Waiting for timing results...*"))
+                elif state in ("upcoming", "upcoming_soon"):
+                    inner.append(TextDisplay("*No data yet — session hasn't started*"))
+                else:
+                    inner.append(TextDisplay("*No data recorded*"))
+
+            inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Footer
+        footer_parts = [f"👥 **{self.total_players}** players tracked"]
+        if self.timestamp:
+            footer_parts.append(f"⏱️ <t:{self.timestamp}:R>")
+        inner.append(TextDisplay("  •  ".join(footer_parts)))
+
+        # Button row
+        row = ActionRow()
+        btn = discord.ui.Button(
+            label="🔍 Check My Rank",
+            style=discord.ButtonStyle.primary,
+            custom_id="ba_leaderboard_check_rank",
+        )
+        btn.callback = self._on_check_rank
+        row.add_item(btn)
+        inner.append(row)
+
+        self.add_item(Container(*inner, accent_color=color))
+
+    async def _on_check_rank(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cur = await conn.execute(
+                "SELECT player_pid FROM verified_members WHERE user_id = ?",
+                (interaction.user.id,)
+            )
+            row = await cur.fetchone()
+        if not row or not row[0]:
+            await interaction.followup.send(
+                "❌ You haven't bound your account yet.\n"
+                "Bind it in the verification channel first to see your rank!",
+                ephemeral=True
+            )
+            return
+        user_pid = row[0]
+        user_entries = [e for e in self.entries if e["pid"] == user_pid]
+        if not user_entries:
+            await interaction.followup.send(
+                "❌ You don't have any Breaking Army records yet.\n"
+                "Participate in BA and your times will appear here!",
+                ephemeral=True
+            )
+            return
+        embed = discord.Embed(
+            title="💀 Your Breaking Army Rankings",
+            color=LEADERBOARD_COLORS["breaking_army"]
+        )
+        for ue in user_entries:
+            time_val = int(ue["score"])
+            mins = time_val // 60
+            secs = time_val % 60
+            time_display = f"{mins}m {secs}s" if mins > 0 else f"{secs}s"
+            rank = next(i for i, e in enumerate(self.entries, 1)
+                        if e["session_key"] == ue["session_key"] and e["pid"] == user_pid)
+            total_in_session = sum(1 for e in self.entries if e["session_key"] == ue["session_key"])
+            embed.add_field(
+                name=f"Session {ue['session_key']} — {ue.get('boss_name', '?')}",
+                value=f"**Time:** `{time_display}`\n"
+                      f"**Attempts:** {ue.get('attempts', 1)}\n"
+                      f"**Rank:** #{rank} / {total_in_session}",
+                inline=False
+            )
+        await interaction.followup.send(embed=embed, ephemeral=True)
+
+
 # ---------------------------------------------------------------------------
-# Persistent Components V2 LayoutView — the leaderboard message itself
+# Persistent Components V2 LayoutView — the standard leaderboard message itself
 # ---------------------------------------------------------------------------
 class LeaderboardView(LayoutView):
     """The auto-refreshing leaderboard rendered with Components V2 containers."""
@@ -98,6 +551,10 @@ class LeaderboardView(LayoutView):
         inner: list = []
         emoji = LEADERBOARD_EMOJIS.get(self.lb_type, "🏆")
         display_name = self.lb_type.replace("_", " ").title()
+
+        if self.lb_type == "breaking_army":
+            # Use the dedicated BA view instead
+            return
 
         inner.append(TextDisplay(f"# {emoji} {display_name} Leaderboard\nTop players who have bound their accounts"))
         inner.append(Separator(spacing=discord.SeparatorSpacing.small))
@@ -264,6 +721,8 @@ class LeaderboardCog(commands.Cog):
         self.bot = bot
         self.instances: List[_LeaderboardInstance] = []
         os.makedirs(BASE_DIR / "data", exist_ok=True)
+        # BA timing tracking
+        self._last_ba_schedule_refresh = 0.0
 
     async def cog_load(self):
         self._load_config()
@@ -323,8 +782,146 @@ class LeaderboardCog(commands.Cog):
                 return inst, idx
         return None, -1
 
+    # ── Breaking Army: Listen for timing events ───────────────────────
+    @commands.Cog.listener()
+    async def on_breaking_army_timing(self, nickname: str, seconds: float, timestamp: float):
+        """
+        Listener for the 'breaking_army_timing' event dispatched by live_chat_cog.
+        Records the timing result into the appropriate session.
+        """
+        # Determine which BA session is active at this timestamp
+        schedule = _load_ba_schedule_cache()
+        if not schedule:
+            logger.warning("BA timing: no schedule available, refreshing...")
+            schedule = _fetch_ba_schedule()
+            if not schedule:
+                logger.error("BA timing: cannot determine active session without schedule")
+                return
+            _save_ba_schedule_cache(schedule)
+
+        # Check which session was active at the timestamp of the message
+        timings = _load_ba_timings()
+
+        gmt8_ts = timestamp + 8 * 3600
+        gmt8_dt = datetime.datetime.fromtimestamp(gmt8_ts, tz=datetime.timezone.utc)
+
+        active_sessions = []
+        for session_key in ("1", "2"):
+            entry = schedule.get(session_key)
+            if not entry:
+                continue
+            start_ts, end_ts = _compute_next_session_ts(entry)
+            # Check if this session's time window contains the timestamp
+            # (handle cases where the BA ended recently, use <= end_ts with some grace)
+            if start_ts <= timestamp <= end_ts + 120:  # 2 min grace period
+                active_sessions.append((session_key, entry, start_ts, end_ts))
+
+        if not active_sessions:
+            logger.debug(f"BA timing: no active session at timestamp {timestamp} for {nickname}")
+            return
+
+        # Use the first matching session
+        session_key, entry, start_ts, end_ts = active_sessions[0]
+        boss_id = entry.get("boss_id", 0)
+        boss_name = BOSS_NAMES.get(int(boss_id), f"Boss #{boss_id}")
+
+        # Build the week_start_ts from the schedule
+        state = _get_ba_state(schedule)
+        week_start_ts = state.get("week_start_ts", 0)
+        if not timings.get("week_start_ts"):
+            timings["week_start_ts"] = week_start_ts
+
+        # Get or create session data
+        session_data = timings.setdefault(f"session_{session_key}", {
+            "boss_id": int(boss_id),
+            "boss_name": boss_name,
+            "start_ts": int(start_ts),
+            "end_ts": int(end_ts),
+            "players": {},
+        })
+
+        # Update boss info if it changed (new week)
+        if session_data.get("boss_id") != int(boss_id):
+            session_data["boss_id"] = int(boss_id)
+            session_data["boss_name"] = boss_name
+        session_data["start_ts"] = int(start_ts)
+        session_data["end_ts"] = int(end_ts)
+
+        players = session_data.setdefault("players", {})
+
+        # Resolve PID from nickname — check existing players first
+        pid = None
+        for p, pdata in players.items():
+            if pdata.get("nickname") == nickname:
+                pid = p
+                break
+
+
+        if pid is None:
+            # Try to find the pid from recent BA schedule members or just use a temp key
+            # We'll attempt to look up by nickname from the bulk API
+            try:
+                from utility.wwm import find_people_by_nickname
+                result = await asyncio.to_thread(find_people_by_nickname, nickname)
+                if result and 'result' in result:
+                    pid = result['result'].get('id')
+            except Exception as e:
+                logger.warning(f"BA timing: could not resolve PID for {nickname}: {e}")
+
+        if pid is None:
+            # Fallback: store by nickname as key (less ideal but functional)
+            logger.warning(f"BA timing: no PID for {nickname}, storing by nickname")
+            pid = f"__{nickname}__"
+
+        # Update timing
+        player_entry = players.setdefault(pid, {
+            "nickname": nickname,
+            "best_time": float('inf'),
+            "attempts": 0,
+            "last_ts": 0,
+        })
+        player_entry["nickname"] = nickname
+        player_entry["attempts"] = player_entry.get("attempts", 0) + 1
+        player_entry["last_ts"] = max(player_entry.get("last_ts", 0), int(timestamp))
+
+        best = player_entry.get("best_time", float('inf'))
+        if seconds < best:
+            player_entry["best_time"] = seconds
+            logger.info(f"🏆 BA {session_key} ({boss_name}): {nickname} new best {seconds}s "
+                        f"(attempt {player_entry['attempts']})")
+
+        _save_ba_timings(timings)
+
+        # Trigger a refresh of any BA leaderboard instances
+        for inst in self.instances:
+            if inst.lb_type == "breaking_army":
+                try:
+                    await self._publish_one(inst)
+                except Exception as e:
+                    logger.error(f"BA timing: failed to refresh leaderboard: {e}")
+
+    # ── BA Schedule Refresh ───────────────────────────────────────────
+    def _refresh_ba_schedule_if_needed(self):
+        """Fetch BA schedule from API if cache is stale (every 5 minutes)."""
+        now = datetime.datetime.now(datetime.timezone.utc).timestamp()
+        if now - self._last_ba_schedule_refresh > 300:  # 5 min
+            schedule = _fetch_ba_schedule()
+            if schedule:
+                _save_ba_schedule_cache(schedule)
+            self._last_ba_schedule_refresh = now
+            return schedule
+        return None
+
     # ── data fetching ──────────────────────────────────────────────────
     async def _fetch_data(self, lb_type: str) -> Tuple[List[dict], int]:
+        if lb_type == "breaking_army":
+            # Refresh BA schedule periodically
+            self._refresh_ba_schedule_if_needed()
+            entries, total, state = _build_ba_leaderboard_data()
+            # Store session_state for publishing
+            self._ba_session_state = state
+            return entries, total
+
         fields, hostnum = LB_API_FIELDS.get(lb_type, (["attr", "base"], 10595))
 
         async with aiosqlite.connect(DB_PATH) as conn:
@@ -374,7 +971,11 @@ class LeaderboardCog(commands.Cog):
         entries, total = await self._fetch_data(inst.lb_type)
         now_ts = int(discord.utils.utcnow().timestamp())
 
-        view = LeaderboardView(self, inst.lb_type, entries, total, now_ts)
+        if inst.lb_type == "breaking_army":
+            session_state = getattr(self, '_ba_session_state', {"sessions": {}})
+            view = BreakingArmyView(self, entries, total, now_ts, session_state)
+        else:
+            view = LeaderboardView(self, inst.lb_type, entries, total, now_ts)
 
         if inst.message:
             try:
@@ -462,6 +1063,8 @@ class _TypeSelect(discord.ui.Select):
                                      value="exploration_mastery", emoji="🗺️"),
                 discord.SelectOption(label="Playtime", description="Total online time in hours",
                                      value="playtime", emoji="⌛"),
+                discord.SelectOption(label="Breaking Army", description="BA fastest clear times",
+                                     value="breaking_army", emoji="💀"),
             ],
         )
 
@@ -578,6 +1181,8 @@ class _ChannelSelectView(discord.ui.View):
 # ---------------------------------------------------------------------------
 register(LeaderboardView, cog=None, lb_type="elegance",
          entries=[], total_players=0, timestamp=0)
+register(BreakingArmyView, cog=None, entries=[],
+         total_players=0, timestamp=0, session_state={"sessions": {}})
 
 
 # ---------------------------------------------------------------------------
