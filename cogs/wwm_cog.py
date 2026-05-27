@@ -761,16 +761,31 @@ class WWMCog(commands.Cog):
     async def player_search(self, interaction: discord.Interaction, number_id: str = None, nickname: str = None):
         await interaction.response.send_message("🔍 Searching for player...")
 
-        # Validate exactly one parameter is provided
+        # If no parameters provided, try to look up the caller's own account
         if number_id is None and nickname is None:
-            embed = discord.Embed(
-                title="❌ Missing Arguments",
-                description="You must provide either a **Number ID** or a **nickname** to search by.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
-        
+            async with aiosqlite.connect(DB_PATH) as conn:
+                cursor = await conn.execute(
+                    "SELECT character_uid FROM verified_members WHERE user_id = ?",
+                    (interaction.user.id,)
+                )
+                row = await cursor.fetchone()
+
+            if row is None:
+                embed = discord.Embed(
+                    title="❌ Missing Arguments",
+                    description="You must provide either a **Number ID** or a **nickname** to search by, "
+                                "or bind your account first in <#1469961307154288703> to look up yourself.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
+
+            # User is verified — use their own character_uid (Number ID)
+            number_id = row[0]
+            self_lookup = True
+        else:
+            self_lookup = False
+
         if number_id is not None and nickname is not None:
             embed = discord.Embed(
                 title="❌ Too Many Arguments",
