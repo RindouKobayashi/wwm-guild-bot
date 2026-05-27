@@ -35,7 +35,7 @@ from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow
 from typing import Optional, List, Tuple, Dict, Any
 
 import settings
-from settings import logger, BASE_DIR, WWM_UID, WWM_REDIS_PLAYER_URL, CLUB_ID, WWM_FULL_GUILD_URL
+from settings import logger, BASE_DIR, WWM_UID, WWM_REDIS_PLAYER_URL, CLUB_ID, WWM_FULL_GUILD_URL, DISCORD_SERVER_ID
 from utility.wwm import _wwm_api_post
 from cogs.view_registry import register
 
@@ -1003,10 +1003,118 @@ class LeaderboardCog(commands.Cog):
         entries_raw.sort(key=lambda x: x["score"], reverse=True)
         return entries_raw, len(all_pids)
 
+    # ── Elegance top-3 role assignment ──────────────────────────────────
+    async def _assign_elegance_roles(self, entries: list):
+        """
+        Assign #1, #2, #3 elegance roles to the top 3 players.
+        Only runs if settings.LEADERBOARD_ROLES is defined (main branch only).
+        Removes roles from players who dropped out of the top 3.
+        """
+        leaderboard_roles = getattr(settings, "LEADERBOARD_ROLES", None)
+        if leaderboard_roles is None:
+            return  # Not on main branch — no role config
+
+        rank_role_keys = ["elegance_1", "elegance_2", "elegance_3"]
+        role_ids = [leaderboard_roles[k] for k in rank_role_keys]
+
+        guild = self.bot.get_guild(DISCORD_SERVER_ID)
+        if not guild:
+            logger.warning("Cannot assign elegance roles: guild not found")
+            return
+
+        # Map the top 3 entry PIDs → Discord user_ids
+        new_top3_pids = set()
+        new_top3_user_ids = set()
+        rank_for_pid = {}
+        for rank, entry in enumerate(entries[:3], 1):
+            pid = entry["pid"]
+            new_top3_pids.add(pid)
+            rank_for_pid[pid] = rank
+            # Resolve Discord user_id from DB
+            async with aiosqlite.connect(DB_PATH) as conn:
+                cur = await conn.execute(
+                    "SELECT user_id FROM verified_members WHERE player_pid = ?",
+                    (pid,)
+                )
+                row = await cur.fetchone()
+            if row:
+                user_id = row[0]
+                new_top3_user_ids.add(user_id)
+
+        # Store current top 3 PIDs for delta tracking next cycle
+        self._prev_elegance_top3 = list(new_top3_pids)
+
+        # Determine role objects
+        roles = [guild.get_role(rid) for rid in role_ids]
+        roles = [r for r in roles if r is not None]
+
+        # Remove roles from users who are no longer top 3 (but still have the role)
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cur = await conn.execute(
+                "SELECT user_id FROM verified_members WHERE player_pid IS NOT NULL"
+            )
+            all_verified = await cur.fetchall()
+
+        for (uid,) in all_verified:
+            member = guild.get_member(uid)
+            if not member:
+                continue
+            # Check if they have any elegance role but are NOT in new top 3
+            user_has_role = any(r in member.roles for r in roles)
+            if user_has_role and uid not in new_top3_user_ids:
+                for role in roles:
+                    if role in member.roles:
+                        try:
+                            await member.remove_roles(role, reason="Elegance rank lost (dropped out of top 3)")
+                            logger.info(f"Removed elegance role {role.name} from {member} (uid={uid})")
+                        except Exception as e:
+                            logger.error(f"Failed to remove elegance role from {member}: {e}")
+
+        # Assign roles to top 3
+        for rank, entry in enumerate(entries[:3], 1):
+            pid = entry["pid"]
+            async with aiosqlite.connect(DB_PATH) as conn:
+                cur = await conn.execute(
+                    "SELECT user_id FROM verified_members WHERE player_pid = ?",
+                    (pid,)
+                )
+                row = await cur.fetchone()
+            if not row:
+                continue
+            user_id = row[0]
+            member = guild.get_member(user_id)
+            if not member:
+                logger.warning(f"Cannot assign elegance role: member {user_id} not in guild")
+                continue
+            role = roles[rank - 1]
+            if role not in member.roles:
+                try:
+                    await member.add_roles(role, reason=f"Elegance rank #{rank}")
+                    logger.info(f"Assigned {role.name} to {member} (rank #{rank})")
+                except Exception as e:
+                    logger.error(f"Failed to assign elegance role to {member}: {e}")
+
+            # Remove lower elegance roles if they have them (e.g. #1 shouldn't also have #2 or #3)
+            for lower_rank in range(rank, 3):  # rank is 1-indexed, so lower_rank=rank..3
+                lower_role = roles[lower_rank]
+                if lower_role in member.roles:
+                    try:
+                        await member.remove_roles(lower_role, reason="Elegance rank upgraded")
+                        logger.info(f"Removed lower elegance role {lower_role.name} from {member}")
+                    except Exception as e:
+                        logger.error(f"Failed to remove lower elegance role from {member}: {e}")
+
     # ── publish / refresh a single instance ────────────────────────────
     async def _publish_one(self, inst: _LeaderboardInstance):
         entries, total = await self._fetch_data(inst.lb_type)
         now_ts = int(discord.utils.utcnow().timestamp())
+
+        # Assign elegance roles if applicable (main branch only)
+        if inst.lb_type == "elegance":
+            try:
+                await self._assign_elegance_roles(entries)
+            except Exception as e:
+                logger.error(f"Failed to assign elegance roles: {e}")
 
         if inst.lb_type == "breaking_army":
             session_state = getattr(self, '_ba_session_state', {"sessions": {}})
