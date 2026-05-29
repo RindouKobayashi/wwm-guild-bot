@@ -257,6 +257,7 @@ KONGFU_WEAPON_MAP = {
     20701: "Mortal Rope Dart",
     20702: "Unfettered Rope Dart",
     20801: "Snowparting Blade",
+    20900: "Gaunlet (?)"
 }
 
 HEALER_WEAPONS = {10301, 20602}
