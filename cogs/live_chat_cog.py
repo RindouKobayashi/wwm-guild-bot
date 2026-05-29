@@ -173,11 +173,56 @@ class LiveChatCog(commands.Cog):
                 teamup_channel = self.bot.get_channel(self.TEAMUP_CHANNEL_ID)
                 if channel:
                     for msg in new_messages:
-                        # Check for exhibition video before formatting embed
+                        # Check for emotion/emote messages before formatting embed
                         ext = msg.get('ext', {})
                         msg_type = ext.get('msg_type', 'msg_normal')
                         msg_label = msg.get('msg', '').strip()
                         video_url = None
+                        
+                        # Handle emotion messages (custom emotes with images)
+                        if msg_type == 'msg_emotion':
+                            emotion_id = ext.get('emotion_id')
+                            if emotion_id:
+                                emotion_path = f"data/emotion/{emotion_id}.png"
+                                if os.path.exists(emotion_path):
+                                    ts = int(msg.get('ts', 0))
+                                    nickname = msg.get('nickname', 'Unknown')
+                                    level = msg.get('level', 0)
+                                    sender_pid = msg.get('from_pid', None)
+                                    
+                                    # Determine sender's rank if possible
+                                    rank_name = "Unknown"
+                                    if sender_pid:
+                                        sender_ranks = []
+                                        for rank_id, rank_info in self.ranks.items():
+                                            if sender_pid in rank_info.get('pids', []):
+                                                sender_ranks.append((rank_id, rank_info.get('name', 'Unknown')))
+                                        if sender_ranks:
+                                            sender_ranks.sort(key=lambda x: int(x[0]), reverse=False)
+                                            custom_rank_names = {
+                                                1: "Guild Leader",
+                                                2: "Vice Leader",
+                                                5: "Command",
+                                                7: "Half Time Performer"
+                                            }
+                                            highest_rank_id, highest_rank_name = sender_ranks[0]
+                                            rank_name = custom_rank_names.get(highest_rank_id, highest_rank_name)
+                                    
+                                    name = f"{nickname} ({rank_name}) (Lv.{level})" if rank_name != "Unknown" else f"{nickname} (Lv.{level})"
+                                    
+                                    embed = discord.Embed(description=f"<t:{ts}:F> (<t:{ts}:R>)")
+                                    embed.set_author(name=name)
+                                    file = discord.File(emotion_path, filename=f"{emotion_id}.png")
+                                    embed.set_image(url=f"attachment://{emotion_id}.png")
+                                    
+                                    message = await channel.send(embed=embed, file=file)
+                                    
+                                    # Check for @teamup keyword in message
+                                    raw_msg = msg.get('msg', '').strip().lower()
+                                    if self.TEAMUP_KEYWORD in raw_msg:
+                                        await self.send_teamup_alert(msg, teamup_channel)
+                                    
+                                    continue  # Skip the rest of the loop for this message
                         
                         if msg_type == 'msg_artwork_card' and msg_label == "[Exhibition]":
                             artwork_data = ext.get('extra_data', {}).get('artwork_data', {})
