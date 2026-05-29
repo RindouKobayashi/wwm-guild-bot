@@ -28,7 +28,8 @@ def _ordinal(n: int) -> str:
     """Return ordinal string for a number: 1 -> '1st', 2 -> '2nd', 3 -> '3rd', etc."""
     if 11 <= n % 100 <= 13:
         return f"{n}th"
-    return {1: "1st", 2: "2nd", 3: "3rd"}.get(n % 10, f"{n}th")
+    suffix = {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
+    return f"{n}{suffix}"
 
 def _format_birthday(month: int, day: int) -> str:
     """Format month/day as a human-readable string, e.g. '3rd Feb'."""
@@ -118,7 +119,9 @@ class GuildStatusBoard(LayoutView):
                     nickname, month, day, _, _ = entry
                 else:
                     nickname, month, day = entry[:3]
-                bday_lines.append(f"🎂 **{nickname}** — {_format_birthday(month, day)}")
+                formatted = _format_birthday(month, day)
+                logger.debug(f"BIRTHDAY_FORMATTED: nickname={nickname} month={month} day={day} formatted={formatted}")
+                bday_lines.append(f"🎂 **{nickname}** — {formatted}")
             birthdays_text = "\n".join(bday_lines)
 
         # Footer text
@@ -1087,6 +1090,10 @@ class WWMCog(commands.Cog):
             
             now_ts = int(discord.utils.utcnow().timestamp())
             
+            # Debug: trace the exact birthdays_this_week data being passed to the view
+            for bday_entry in board_data['birthdays_this_week']:
+                logger.debug(f"BIRTHDAY_VIEW_DATA: entry={bday_entry}")
+
             # Build the LayoutView board
             view = GuildStatusBoard(
                 cog=self,
