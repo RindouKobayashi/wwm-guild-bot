@@ -1,14 +1,18 @@
 import asyncio
 import json
 import os
+import aiosqlite
 from datetime import datetime
 from typing import Optional, Set
 import discord
 from discord.ext import commands, tasks
-from settings import logger
+from settings import BASE_DIR, logger
 from utility.wwm import get_club_chat, get_custom_guild_info, get_bulk_players_info, get_film_plan, get_teams_info
 from utility.api_constants import get_kongfu_ids_from_player, format_kongfu_display
 from googletrans import Translator
+
+
+VERIFICATION_DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 
 
 class LiveChatCog(commands.Cog):
@@ -21,6 +25,7 @@ class LiveChatCog(commands.Cog):
         self.translator = Translator()
         self._translate_retry_delay = 2.0
         self._translate_max_retries = 2
+        self.pid_to_discord_user: dict[str, int] = {}  # player_pid -> discord user_id
         # Configuration
         self.CONFIG_FILE = "data/live_chat_config.json"
         self.CLUB_ID = "aRvTyiPA8WMSXrRj"      # Your guild ID
@@ -153,6 +158,8 @@ class LiveChatCog(commands.Cog):
                 self.ranks = await asyncio.to_thread(get_custom_guild_info, self.CLUB_ID, self.HOSTNUM, {'members': ['custom_posts']})
                 self.ranks = self.ranks.get('result', {}).get('members', {}).get('custom_posts', {}) if self.ranks else {}
                 #logger.info(f"Ranks data: {self.ranks}")
+                # Load PID -> Discord user mapping from guild verification database
+                await self._load_verified_mapping()
                 # Sort messages by timestamp (oldest first)
                 new_messages.sort(key=lambda x: x.get('ts', 0))
                 
@@ -208,9 +215,14 @@ class LiveChatCog(commands.Cog):
                                             highest_rank_id, highest_rank_name = sender_ranks[0]
                                             rank_name = custom_rank_names.get(highest_rank_id, highest_rank_name)
                                     
+                                    # Check if sender has a bound Discord account
+                                    discord_mention = self._get_discord_mention(sender_pid)
                                     name = f"{nickname} ({rank_name}) (Lv.{level})" if rank_name != "Unknown" else f"{nickname} (Lv.{level})"
+                                    desc = f"<t:{ts}:F> (<t:{ts}:R>)"
+                                    if discord_mention:
+                                        desc += f"\n{discord_mention}"
                                     
-                                    embed = discord.Embed(description=f"<t:{ts}:F> (<t:{ts}:R>)")
+                                    embed = discord.Embed(description=desc)
                                     embed.set_author(name=name)
                                     file = discord.File(emotion_path, filename=f"{emotion_id}.png")
                                     embed.set_image(url=f"attachment://{emotion_id}.png")
@@ -277,7 +289,11 @@ class LiveChatCog(commands.Cog):
                             if video_hot:
                                 message += f"| ❤️ {video_hot}"
 
+                            # Check if sender has a bound Discord account
+                            discord_mention = self._get_discord_mention(sender_pid)
                             name=f"{nickname} ({rank_name}) (Lv.{level})" if rank_name != "Unknown" else f"{nickname} (Lv.{level})"
+                            if discord_mention:
+                                name += f" — {discord_mention}"
                             message = await channel.send(f"### {name}\n{message}\n\n<t:{ts}:F> (<t:{ts}:R>)")
                         
                         # Check for @teamup keyword in message
@@ -516,13 +532,18 @@ class LiveChatCog(commands.Cog):
             "private": 0x9B59B6         # Purple
         }
         
+        # Check if sender has a bound Discord account
+        discord_mention = self._get_discord_mention(sender_pid)
+        desc = f"{message}\n\n<t:{ts}:F> (<t:{ts}:R>)"
+        if discord_mention:
+            desc += f"\n{discord_mention}"
+        
         embed = discord.Embed(
-            description=f"{message}\n\n<t:{ts}:F> (<t:{ts}:R>)",
+            description=desc,
             color=channel_colors.get(channel_type, 0x3498DB)
         )
         
         embed.set_author(
-            # If rank_name is "Unknown", it will just show nickname without rank
             name=f"{nickname} ({rank_name}) (Lv.{level})" if rank_name != "Unknown" else f"{nickname} (Lv.{level})",
         )
         
@@ -631,11 +652,15 @@ class LiveChatCog(commands.Cog):
             # No Chinese -> translate to Chinese
             translated = await self.translate_with_retry(raw_message, src='en', dest='zh-cn')
 
+        # Check if sender has a bound Discord account
+        discord_mention = self._get_discord_mention(sender_pid)
         # Build embed description
         description = f"**{nickname}**"
         if rank_name != "Unknown":
             description += f" ({rank_name})"
         description += f" (Lv.{level})"
+        if discord_mention:
+            description += f" — {discord_mention}"
         if number_id:
             description += f" | ID: {number_id}"
         description += " is looking for a team!\n\n"
@@ -655,6 +680,12 @@ class LiveChatCog(commands.Cog):
         await teamup_channel.send(f"<@&{self.TEAMUP_ROLE_ID}>")
         await teamup_channel.send(embed=embed)
         logger.info(f"📢 Team-up alert sent for {nickname} in #{teamup_channel.name}")
+
+    def _get_discord_mention(self, sender_pid: str) -> str:
+        """Return a Discord mention string if the sender PID is bound to a Discord user"""
+        if sender_pid and sender_pid in self.pid_to_discord_user:
+            return f"<@{self.pid_to_discord_user[sender_pid]}>"
+        return ""
 
     def get_avatar_url(self, head_id: int) -> str:
         """Get avatar icon URL for given head ID"""
@@ -734,6 +765,21 @@ class LiveChatCog(commands.Cog):
             logger.debug("Saved live chat configuration")
         except Exception as e:
             logger.error(f"Failed to save live chat config: {str(e)}")
+
+    async def _load_verified_mapping(self):
+        """Load the player_pid -> discord_user_id mapping from guild_verification.db"""
+        try:
+            if not VERIFICATION_DB_PATH.exists():
+                logger.debug("Verification DB not found, skipping PID mapping load")
+                return
+            async with aiosqlite.connect(str(VERIFICATION_DB_PATH)) as conn:
+                cursor = await conn.execute("SELECT player_pid, user_id FROM verified_members WHERE player_pid IS NOT NULL")
+                rows = await cursor.fetchall()
+            self.pid_to_discord_user = {str(pid): uid for pid, uid in rows}
+            if rows:
+                logger.debug(f"Loaded {len(rows)} PID -> Discord user mappings from verification DB")
+        except Exception as e:
+            logger.error(f"Failed to load verified mapping: {e}")
 
 
 async def setup(bot: commands.Bot):
