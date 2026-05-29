@@ -68,6 +68,7 @@ BOSS_NAMES = {
     25: "Sentinel Howlion",
     26: "Pocketrupt Circus",
     27: "Snowplum Requiem",
+    28: "Veiled Lady"
 }
 
 LEADERBOARD_COLORS = {
