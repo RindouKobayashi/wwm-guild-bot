@@ -14,6 +14,31 @@ from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info,
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, format_kongfu_display, classify_kongfu_role
 
+
+def admin_or_staff():
+    """Check if the user is an administrator OR has any of the staff roles defined in settings.
+    
+    On the dev branch (where STAFF_ROLES is not defined), only administrators pass the check.
+    On the main branch, both administrators and staff role holders pass.
+    """
+    async def predicate(interaction: discord.Interaction) -> bool:
+        if interaction.user.guild_permissions.administrator:
+            return True
+        # On the dev branch, STAFF_ROLES is not defined — only admins are allowed.
+        # On the main branch, check if the user has any staff role.
+        # Import inside the function to avoid ImportError on dev branch at module load time.
+        try:
+            from settings import STAFF_ROLES
+            staff_role_ids = set(STAFF_ROLES.values())
+        except (ImportError, AttributeError):
+            # Dev branch — STAFF_ROLES not defined, admin-only
+            raise app_commands.MissingPermissions(["administrator"])
+        member_role_ids = {r.id for r in interaction.user.roles}
+        if staff_role_ids & member_role_ids:
+            return True
+        raise app_commands.MissingPermissions(["administrator"])
+    return app_commands.check(predicate)
+
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 SCHEDULE_DB_PATH = BASE_DIR / "data" / "schedule.db"
 BIRTHDAY_ROLE_ID = 1469960226294730753
@@ -1205,18 +1230,9 @@ class WWMCog(commands.Cog):
             logger.error(f"Guild monitor task failed: {str(e)}", exc_info=True)
 
     async def _assign_birthday_roles(self, birthday_pids: list):
-        """Assign birthday role to verified Discord members whose characters have birthdays this week."""
-        if not birthday_pids:
-            return
+        """Assign birthday role to verified Discord members whose characters have birthdays this week,
+        and remove the role from members who no longer have a birthday this week."""
         try:
-            async with aiosqlite.connect(DB_PATH) as conn:
-                placeholders = ','.join('?' * len(birthday_pids))
-                cursor = await conn.execute(
-                    f"SELECT user_id, player_pid FROM verified_members WHERE player_pid IN ({placeholders})",
-                    birthday_pids
-                )
-                verified_rows = await cursor.fetchall()
-
             guild = self.bot.get_guild(settings.DISCORD_SERVER_ID) if hasattr(settings, 'DISCORD_SERVER_ID') else None
             if not guild:
                 return
@@ -1226,16 +1242,39 @@ class WWMCog(commands.Cog):
                 logger.warning(f"Birthday role {BIRTHDAY_ROLE_ID} not found in guild")
                 return
 
-            for user_id, player_pid in verified_rows:
-                member = guild.get_member(user_id)
-                if not member:
-                    continue
-                try:
-                    if birthday_role not in member.roles:
-                        await member.add_roles(birthday_role)
-                        logger.info(f"🎂 Assigned birthday role to {member} (PID: {player_pid})")
-                except Exception as e:
-                    logger.error(f"Failed to assign birthday role to {member}: {e}")
+            # Gather the set of Discord user IDs that should keep the role this week
+            verified_user_ids = set()
+            if birthday_pids:
+                async with aiosqlite.connect(DB_PATH) as conn:
+                    placeholders = ','.join('?' * len(birthday_pids))
+                    cursor = await conn.execute(
+                        f"SELECT user_id, player_pid FROM verified_members WHERE player_pid IN ({placeholders})",
+                        birthday_pids
+                    )
+                    verified_rows = await cursor.fetchall()
+
+                # Assign role to verified members whose characters have birthdays this week
+                for user_id, player_pid in verified_rows:
+                    verified_user_ids.add(user_id)
+                    member = guild.get_member(user_id)
+                    if not member:
+                        continue
+                    try:
+                        if birthday_role not in member.roles:
+                            await member.add_roles(birthday_role)
+                            logger.info(f"🎂 Assigned birthday role to {member} (PID: {player_pid})")
+                    except Exception as e:
+                        logger.error(f"Failed to assign birthday role to {member}: {e}")
+
+            # Remove the birthday role from any member who currently has it but
+            # should NOT have it this week (previous weeks' birthdays, left guild, etc.)
+            for member in guild.members:
+                if birthday_role in member.roles and member.id not in verified_user_ids:
+                    try:
+                        await member.remove_roles(birthday_role)
+                        logger.info(f"🗑️ Removed birthday role from {member} (no birthday this week)")
+                    except Exception as e:
+                        logger.error(f"Failed to remove birthday role from {member}: {e}")
         except Exception as e:
             logger.error(f"Birthday role assignment failed: {e}")
 
@@ -1470,7 +1509,7 @@ class WWMCog(commands.Cog):
                             self.last_guild_state = guild_data
     
     @guild_group.command(name="set-channel", description="Set channel for guild monitor notifications")
-    @app_commands.checks.has_permissions(administrator=True)
+    @admin_or_staff()
     async def set_monitor_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         self.monitor_channel = channel
         
@@ -1504,7 +1543,7 @@ class WWMCog(commands.Cog):
         logger.info(f"Guild monitor channel set to {channel.id} by {interaction.user}")
     
     @guild_group.command(name="toggle", description="Enable or disable guild monitoring")
-    @app_commands.checks.has_permissions(administrator=True)
+    @admin_or_staff()
     async def toggle_monitor(self, interaction: discord.Interaction):
         self.monitor_enabled = not self.monitor_enabled
         
@@ -1522,7 +1561,7 @@ class WWMCog(commands.Cog):
         logger.info(f"Guild monitor toggled to {self.monitor_enabled} by {interaction.user}")
     
     @guild_group.command(name="force-check", description="Run an immediate guild check")
-    @app_commands.checks.has_permissions(administrator=True)
+    @admin_or_staff()
     async def force_guild_check(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         
@@ -1785,7 +1824,7 @@ class WWMCog(commands.Cog):
             await interaction.followup.send(embed=embed)
 
     @guild_group.command(name="stats", description="Display graphs of guild statistics over time")
-    @app_commands.checks.has_permissions(administrator=True)
+    @admin_or_staff()
     @app_commands.describe(type="Type of graph to display", period="Time range for the graph")
     @app_commands.choices(type=[
         app_commands.Choice(name="🟢 Online Players", value="online"),
@@ -2241,7 +2280,7 @@ class WWMCog(commands.Cog):
             await interaction.followup.send(f"❌ Failed to generate graph: `{str(e)}`")
 
     @guild_group.command(name="region", description="Sort and display guild members grouped by region (admin only)")
-    @app_commands.checks.has_permissions(administrator=True)
+    @admin_or_staff()
     @app_commands.describe(name="Optional guild name to search for (leave empty to use our guild)")
     async def guild_region(self, interaction: discord.Interaction, name: str = None):
         await interaction.response.defer()

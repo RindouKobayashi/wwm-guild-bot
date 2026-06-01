@@ -24,6 +24,13 @@ if branch == "main":
         "elegance_2": 1509137714426155028,
         "elegance_3": 1509137824199217223,
     }
+    STAFF_ROLES = {
+        "Management": 1442858847688462377,
+        "Staff": 1505498616150888619,
+        "Guild Staff": 1505497643990782003,
+        "Discord Staff": 1502551268676337704,
+        "Trial Mod": 1503003722492678286,
+    }
 else:
     DISCORD_API_TOKEN = os.getenv("DISCORD_API_TOKEN_DEV")
     AUTO_TRANSLATE_CHANNELS = {
