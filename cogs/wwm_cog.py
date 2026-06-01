@@ -2381,7 +2381,6 @@ class WWMCog(commands.Cog):
             logger.error(f"Guild region command failed: {str(e)}", exc_info=True)
             await interaction.followup.send(f"❌ Failed to display guild regions: `{str(e)}`")
 
-
 from cogs.view_registry import register
 
 # Self-register persistent views for restart recovery

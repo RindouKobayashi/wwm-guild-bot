@@ -385,26 +385,5 @@ class CustomRolesCog(commands.Cog):
         await user_special_role.edit(name=new_name)
         await interaction.response.send_message(f"Role name changed from `{old_name}` to `{new_name}`.")
 
-    @app_commands.command(name="help", description="Get help information about custom role commands")
-    async def help(self, interaction: discord.Interaction):
-        help_text = (
-            "Here are the available custom role commands:\n\n"
-            "**/change_color**: Change the color of your special role.\n"
-            "  - Random: Set a random color\n"
-            "  - Hex Code: Provide your own hex color (e.g., #FF5733)\n"
-            "  - Preset: Use a saved preset (auto-complete available)\n\n"
-            "**/preset save**: Save a color preset for quick access.\n"
-            "  Example: `/preset save name:black hex_code:#010B13`\n\n"
-            "**/preset delete**: Delete a saved preset.\n\n"
-            "**/preset list**: List all your saved presets.\n\n"
-            "**/set_role_icon**: Set an icon for your role.\n"
-            "  - Image: Upload a PNG/JPEG image (max 128KB)\n"
-            "  - Emoji: Use a server emoji\n"
-            "  - Requires server Boost Level 2\n\n"
-            "**/change_role_name**: Change the name of your special role.\n\n"
-            "**/help**: Show this help message."
-        )
-        await interaction.response.send_message(help_text, ephemeral=True)
-
 async def setup(bot: commands.Bot):
     await bot.add_cog(CustomRolesCog(bot))
