@@ -220,6 +220,20 @@ SCHOOL_RANKING = {
     "12_5": "Flower Messenger",
 }
 
+BOSS_NAMES = {
+    1: "The Void King", 2: "Ye Wanshan", 3: "Lucky Seventeen",
+    4: "Heartseeker", 5: "Snaker Doctor", 6: "Puppeteer",
+    7: "Earth Fiend Deity", 8: "Yi Dao", 9: "Dao Lord",
+    10: "Lion Dance", 11: "*BLANK*", 12: "*BLANK*",
+    13: "Coffin Master", 14: "Zheng E", 15: "Drunk Martial Artist",
+    16: "Ghost Master", 17: "Nameless General", 18: "Wolf Maiden",
+    19: "*BLANK*", 20: "Grand Protector of Anxi", 21: "Moongazing Maiden",
+    22: "Everdeer", 23: "*BLANK*", 24: "*BLANK*",
+    25: "Sentinel Howlion", 26: "Pocketrupt Circus", 27: "Snowplum Requiem",
+    28: "Veiled Lady", 29: "Moonlight Master"
+
+}
+
 CLUB_CHAT_MESSAGE_FIELDS = {
     "from_pid",
     "nickname",

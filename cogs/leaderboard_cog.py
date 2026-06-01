@@ -38,39 +38,12 @@ import settings
 from settings import logger, BASE_DIR, WWM_UID, WWM_REDIS_PLAYER_URL, CLUB_ID, WWM_FULL_GUILD_URL, DISCORD_SERVER_ID
 from utility.wwm import _wwm_api_post
 from cogs.view_registry import register
+from utility.api_constants import BOSS_NAMES
 
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 CONFIG_PATH = BASE_DIR / "data" / "leaderboard_config.json"
 BA_TIMINGS_PATH = BASE_DIR / "data" / "breaking_army_timings.json"
 BA_SCHEDULE_PATH = BASE_DIR / "data" / "breaking_army_schedule.json"
-
-# ── Boss ID to Name mapping ──────────────────────────────────────────
-BOSS_NAMES = {
-    1: "The Void King",
-    2: "Ye Wanshan",
-    3: "Lucky Seventeen",
-    4: "Heartseeker",
-    5: "Snaker Doctor",
-    6: "Puppeteer",
-    7: "Earth Fiend Deity",
-    8: "Yi Dao",
-    9: "Dao Lord",
-    10: "Lion Dance",
-    13: "Coffin Master",
-    14: "Zheng E",
-    15: "Drunk Martial Artist",
-    16: "Ghost Master",
-    17: "Nameless General",
-    18: "Wolf Maiden",
-    20: "Grand Protector of Anxi",
-    21: "Moongazing Maiden",
-    22: "Everdeer",
-    25: "Sentinel Howlion",
-    26: "Pocketrupt Circus",
-    27: "Snowplum Requiem",
-    28: "Veiled Lady",
-    29: "Moonlight Master"
-}
 
 LEADERBOARD_COLORS = {
     "elegance": 0xFF69B4,

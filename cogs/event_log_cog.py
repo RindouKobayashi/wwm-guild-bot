@@ -10,6 +10,7 @@ from typing import Dict, List, Any, Optional, Set, Tuple
 from collections import defaultdict
 from settings import logger, BASE_DIR, WWM_UID, WWM_FULL_GUILD_URL, CLUB_ID, WWM_REDIS_PLAYER_URL
 from utility.wwm import _wwm_api_post
+from utility.api_constants import BOSS_NAMES
 
 # -----------------------------------------------------------------------------
 # Database path
@@ -19,19 +20,7 @@ DB_PATH = BASE_DIR / "data" / "event_log.db"
 # -----------------------------------------------------------------------------
 # Event type constants
 # -----------------------------------------------------------------------------
-BOSS_NAMES = {
-    1: "The Void King", 2: "Ye Wanshan", 3: "Lucky Seventeen",
-    4: "Heartseeker", 5: "Snaker Doctor", 6: "Puppeteer",
-    7: "Earth Fiend Deity", 8: "Yi Dao", 9: "Dao Lord",
-    10: "Lion Dance", 11: "*BLANK*", 12: "*BLANK*",
-    13: "Coffin Master", 14: "Zheng E", 15: "Drunk Martial Artist",
-    16: "Ghost Master", 17: "Nameless General", 18: "Wolf Maiden",
-    19: "*BLANK*", 20: "Grand Protector of Anxi", 21: "Moongazing Maiden",
-    22: "Everdeer", 23: "*BLANK*", 24: "*BLANK*",
-    25: "Sentinel Howlion", 26: "Pocketrupt Circus", 27: "Snowplum Requiem",
-    28: "Veiled Lady", 29: "Moonlight Master"
 
-}
 
 ROLE_NAMES = {
     1: "Guild Leader", 2: "Vice Leader", 5: "Command",
