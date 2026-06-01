@@ -200,10 +200,14 @@ def _compute_session_ts(schedule_entry: dict) -> Tuple[float, float, float, floa
     return start_ts, end_ts, next_start, next_end
 
 
-def _get_ba_state(schedule: dict) -> Dict[str, Any]:
+def _get_ba_state(schedule: dict, timings: Optional[dict] = None) -> Dict[str, Any]:
     """
     Given a fetched BA schedule (dict with keys "1", "2"),
     compute the current state of each session.
+
+    If timings dict is provided, finalized sessions will use the boss info
+    from stored timings instead of the current schedule (to avoid displaying
+    a new boss name with old data when the boss changes between weeks).
 
     Returns dict with keys:
       - sessions: { "1": {state, start_ts, end_ts, boss_id, boss_name, ...}, "2": {...} }
@@ -254,6 +258,16 @@ def _get_ba_state(schedule: dict) -> Dict[str, Any]:
                 display_start = this_start
                 display_end = this_end
                 state = "finalized"
+
+                # Use boss info from stored timings (not current schedule)
+                # to prevent showing a new week's boss name with old data
+                if timings:
+                    stored_session = timings.get(f"session_{session_key}", {})
+                    stored_boss_id = stored_session.get("boss_id")
+                    stored_boss_name = stored_session.get("boss_name")
+                    if stored_boss_id is not None:
+                        boss_id = int(stored_boss_id)
+                        boss_name = stored_boss_name or BOSS_NAMES.get(boss_id, f"Boss #{boss_id}")
 
         sessions[session_key] = {
             "state": state,
@@ -335,8 +349,8 @@ def _build_ba_leaderboard_data() -> Tuple[List[dict], int, dict]:
       - session_info: dict with current BA state info
     """
     schedule = _load_ba_schedule_cache()
-    state = _get_ba_state(schedule)
     timings = _load_ba_timings()
+    state = _get_ba_state(schedule, timings)
     week_start_ts = state.get("week_start_ts", 0)
     sessions = state.get("sessions", {})
 
@@ -418,30 +432,18 @@ class BreakingArmyView(LayoutView):
             boss_id = info.get("boss_id", 0)
 
             # Header line
-            time_str = f"{weekday_name} {hour:02d}:{minute:02d} GMT+8"
             header = f"**── Session {session_key} ──**\n🐺 **Boss:** {boss_name}"
 
             if state == "unknown":
                 header += "\n*Schedule not available*"
             elif state == "upcoming":
-                delta = int(start_ts - self.timestamp)
-                hours = delta // 3600
-                minutes = (delta % 3600) // 60
-                if hours > 0:
-                    header += f"\n🕐 {time_str}\n⏳ Starts in **{hours}h {minutes}m**"
-                else:
-                    header += f"\n🕐 {time_str}\n⏳ Starts in **{minutes}m**"
+                header += f"\n🕐 <t:{start_ts}:F>\n⏳ <t:{start_ts}:R>"
             elif state == "upcoming_soon":
-                delta = int(start_ts - self.timestamp)
-                minutes = max(1, delta // 60)
-                header += f"\n🕐 {time_str}\n🔔 Starts in **{minutes}m** — Preparing..."
+                header += f"\n🕐 <t:{start_ts}:F>\n🔔 <t:{start_ts}:R> — Preparing..."
             elif state == "active":
-                remaining = int(end_ts - self.timestamp)
-                mins = remaining // 60
-                secs = remaining % 60
-                header += f"\n🕐 {time_str}\n🟢 **ACTIVE** — {mins}m {secs}s remaining"
+                header += f"\n🕐 <t:{start_ts}:F>\n🟢 **ACTIVE** — <t:{end_ts}:R> remaining"
             elif state == "finalized":
-                header += f"\n🕐 {time_str}\n🔒 **Finalized**"
+                header += f"\n🕐 <t:{start_ts}:F>\n🔒 **Finalized** — Ended <t:{end_ts}:R>"
 
             inner.append(TextDisplay(header))
             inner.append(Separator(spacing=discord.SeparatorSpacing.small))
