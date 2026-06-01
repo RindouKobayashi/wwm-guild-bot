@@ -1017,28 +1017,35 @@ class WWMCog(commands.Cog):
                     else:
                         embed.add_field(name="🔴 Online Status", value="Offline", inline=True)
                 
+                # ---- Rank naming maps ----
+                GRADE_NAMES = {
+                    1: "Beginner", 2: "Novice", 3: "Silver", 4: "Adept",
+                    5: "Expert", 6: "Veteran", 7: "Master", 8: "Grandmaster",
+                    9: "Legend", 10: "Mythic",
+                }
+                
+                SMALL_GRADE_SUFFIXES = {0: "", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
+
+                def _format_rank(grade: int, small_grade: int) -> str:
+                    """Format a grade + small_grade into a rank string like 'Mythic III'."""
+                    grade_name = GRADE_NAMES.get(grade, f"Unknown ({grade})")
+                    small_suffix = SMALL_GRADE_SUFFIXES.get(small_grade, str(small_grade))
+                    return f"{grade_name} {small_suffix}" if small_suffix else grade_name
+
                 # ---- 1v1 Arena Rank (lunjian) ----
                 lunjian = data.get('lunjian', {})
                 if lunjian and 'grade' in lunjian:
-                    arena_grade = lunjian['grade']
-                    arena_small_grade = lunjian.get('small_grade', 0)
-                    
-                    GRADE_NAMES = {
-                        1: "Beginner", 2: "Novice", 3: "Silver", 4: "Adept",
-                        5: "Expert", 6: "Veteran", 7: "Master", 8: "Grandmaster",
-                        9: "Legend", 10: "Mythic",
-                    }
-                    
-                    SMALL_GRADE_SUFFIXES = {0: "", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
-                    
-                    grade_name = GRADE_NAMES.get(arena_grade, f"Unknown ({arena_grade})")
-                    small_suffix = SMALL_GRADE_SUFFIXES.get(arena_small_grade, str(arena_small_grade))
-                    if small_suffix:
-                        rank_display = f"{grade_name} {small_suffix}"
-                    else:
-                        rank_display = grade_name
-                    
-                    embed.add_field(name="⚔️ 1v1 Arena Rank", value=f"{rank_display}", inline=True)
+                    embed.add_field(name="⚔️ 1v1 Arena Rank", value=_format_rank(lunjian['grade'], lunjian.get('small_grade', 0)), inline=True)
+
+                # ---- 3v3 Arena Rank (lunjian3v3_prop) ----
+                lunjian3v3 = data.get('lunjian3v3_prop', {})
+                if lunjian3v3 and 'grade' in lunjian3v3:
+                    embed.add_field(name="⚔️ 3v3 Arena Rank", value=_format_rank(lunjian3v3['grade'], lunjian3v3.get('small_grade', 0)), inline=True)
+
+                # ---- Group Strategy (fight_shoulder) ----
+                fight_shoulder = data.get('fight_shoulder', {})
+                if fight_shoulder and 'score' in fight_shoulder:
+                    embed.add_field(name="📋 Group Strategy", value=f"{fight_shoulder['score']}", inline=True)
                 
                 # ---- PvP Score ----
                 gameplay = data.get('gameplay_trail', {})
