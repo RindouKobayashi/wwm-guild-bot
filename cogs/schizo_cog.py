@@ -12,7 +12,7 @@ class SchizoCog(commands.Cog):
 
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        if message.channel.id in [414234388776353828]:
+        if message.channel.id in [414234388776353828, 1442853064053756028]:
             if message.author == self.bot.user:
                 return
             roll = random.random()
