@@ -30,6 +30,7 @@ class BasicCog(commands.Cog):
     async def logs(self, interaction: discord.Interaction, lines: int = 20):
         """Shows the last N lines of the log file."""
         logger.info(f"Command /logs invoked by {interaction.user} for {lines} lines.")
+        logger.debug(f"Checking authorization for user {interaction.user.id}")
         if interaction.user.id != BOT_OWNER_ID:
             await interaction.response.send_message("You are not authorized to use this command.", ephemeral=True)
             return
@@ -62,6 +63,29 @@ class BasicCog(commands.Cog):
         except Exception as e:
             logger.error(f"Error reading log file: {e}")
             await interaction.response.send_message(f"An error occurred while reading the log file: {e}", ephemeral=True)
+
+    @app_commands.command(name="delete_message_after", description="Delete messages after a certain message ID.")
+    @app_commands.describe(message_id="The ID of the message after which to delete")
+    async def delete_message_after(self, interaction: discord.Interaction, message_id: str):
+        """Delete messages after a certain message ID."""
+        logger.info(f"Command /delete_message_after invoked by {interaction.user} for message ID {message_id}.")
+        logger.debug(f"Checking authorization for user {interaction.user.id}")
+        await interaction.response.defer(ephemeral=True) # Defer the response to allow for longer processing time
+        if interaction.user.id != BOT_OWNER_ID:
+            await interaction.followup.send("You are not authorized to use this command.", ephemeral=True)
+            return
+        
+        try:
+            message = await interaction.channel.fetch_message(int(message_id))
+            if message:
+                # Make sure to not delete the interaction response message itself if it happens to be in the same channel
+                deleted = await interaction.channel.purge(after=message, reason=f"Requested by {interaction.user}")
+                await interaction.followup.send(f"Deleted {len(deleted)} messages after message ID {message_id}.", ephemeral=True)
+            else:
+                await interaction.followup.send(f"Message with ID {message_id} not found.", ephemeral=True)
+        except Exception as e:
+            logger.error(f"Error deleting messages: {e}")
+            await interaction.followup.send(f"An error occurred while deleting messages: {e}", ephemeral=True)
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(BasicCog(bot))
