@@ -1000,11 +1000,11 @@ class WWMCog(commands.Cog):
                 embed.add_field(name="📚 Scholar Mastery", value=f"{round(attr.get('XIUWEI_TRADE3', 0), 1)}", inline=True)
                 embed.add_field(name="💚 Healer Mastery", value=f"{round(attr.get('XIUWEI_TRADE4', 0), 1)}", inline=True)
                 embed.add_field(name="🗺️ Exploration Mastery", value=f"{round(attr.get('XIUWEI_EXPLORE', 0), 1)}", inline=True)
-                embed.add_field(name="🥊 Power", value=f"{round(attr.get('STR', 0), 1)}", inline=True)
-                embed.add_field(name="🛡️ Body", value=f"{round(attr.get('CON', 0), 1)}", inline=True)
-                embed.add_field(name="⚡ Momentum", value=f"{round(attr.get('BAS', 0), 1)}", inline=True)
-                embed.add_field(name="💨 Agility", value=f"{round(attr.get('CRI', 0), 1)}", inline=True)
-                embed.add_field(name="🔰 Defense", value=f"{round(attr.get('AGI', 0), 1)}", inline=True)
+                #embed.add_field(name="🥊 Power", value=f"{round(attr.get('STR', 0), 1)}", inline=True)
+                #embed.add_field(name="🛡️ Body", value=f"{round(attr.get('CON', 0), 1)}", inline=True)
+                #embed.add_field(name="⚡ Momentum", value=f"{round(attr.get('BAS', 0), 1)}", inline=True)
+                #embed.add_field(name="💨 Agility", value=f"{round(attr.get('CRI', 0), 1)}", inline=True)
+                #embed.add_field(name="🔰 Defense", value=f"{round(attr.get('AGI', 0), 1)}", inline=True)
                 embed.add_field(name="🌍 Region", value=f"{base_data.get('oversea_tag', 'N/A')}", inline=True)
                 embed.add_field(name="⌛ Total Online Time", value=f"{round(base_data.get('online_time', 0) / 3600, 1)} hours", inline=True)
 
@@ -1046,6 +1046,11 @@ class WWMCog(commands.Cog):
                 fight_shoulder = data.get('fight_shoulder', {})
                 if fight_shoulder and 'score' in fight_shoulder:
                     embed.add_field(name="📋 Group Strategy", value=f"{fight_shoulder['score']}", inline=True)
+
+                # ---- Assist Points (coop_score) ----
+                coop_score = data.get('coop_score', {})
+                if coop_score and 'score' in coop_score:
+                    embed.add_field(name="🤝 Assist Points", value=f"{coop_score['score']}", inline=True)
                 
                 # ---- PvP Score ----
                 gameplay = data.get('gameplay_trail', {})

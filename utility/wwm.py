@@ -32,7 +32,7 @@ DEFAULT_FIELDS = [
     "base", "team", "head", "name_card", "club",
     "kongfu", "ride", "mentor", "jieyuan_info", "jieyi",
     "jieyi_misc", "gameplay_trail", "pvp_battle", "attr",
-    "lunjian", "birthday", "school"
+    "lunjian", "birthday", "school", "lunjian3v3_prop", "fight_shoulder", "coop_score",
 ]
 
 # Complete list of ALL known fields (kept for reference / debugging)
@@ -44,7 +44,10 @@ ALL_KNOWN_FIELDS = [
     "common_score_data", "school", "lunjian", "story_prop", "birthday",
     "attr", "dungeon", "merit_stele", "title_prop", "msd_see_insight",
     "school", "track", "xs", "space_room", "player_recommend",
-    "big_world", "homeworld_data", "_account_", "weapons", "identity", "fashion"
+    "big_world", "homeworld_data", "_account_", "weapons", "identity", "fashion",
+    "coop_score", "ququs", "baiye_season_simple_statics", "region_collect_prop",
+    "fight_shoulder", "lunjian2v2_prop", "lunjian3v3_prop", "chiji", "huiwu",
+    "skill_sets", "combat_plan"
 ]
 
 # -----------------------------------------------------------------------------
@@ -113,7 +116,7 @@ def _wwm_api_post(
                         strict_map_key=False
                     )
                 except UnicodeDecodeError:
-                    logger.warning("Response contains non-UTF8 binary data, falling back to raw mode")
+                    logger.debug("Response contains non-UTF8 binary data, falling back to raw mode")
                     raw_result = msgpack.unpackb(
                         response.content,
                         raw=True,
