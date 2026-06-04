@@ -1073,11 +1073,12 @@ class Inactive(LayoutView):
         self.active_tab = "last_week"  # or "this_week" or "both"
 
         # Compute "failed both" — members appearing in BOTH lists (same nickname)
-        last_week_names = {nickname for nickname, _, _, _, _ in inactive_last_week}
-        self.inactive_both = [
-            entry for entry in inactive_this_week
-            if entry[0] in last_week_names
-        ]
+        # Build a lookup of last week's points by nickname
+        last_week_pts = {nickname: points for nickname, points, _, _, _ in inactive_last_week}
+        self.inactive_both = []
+        for nickname, this_pts, logout, number_id, has_absent_role in inactive_this_week:
+            if nickname in last_week_pts:
+                self.inactive_both.append((nickname, last_week_pts[nickname], this_pts, logout, number_id, has_absent_role))
 
         self._rebuild()
 
@@ -1086,6 +1087,8 @@ class Inactive(LayoutView):
     def _current_list(self) -> list:
         if self.active_tab == "this_week":
             return self.inactive_this_week
+        elif self.active_tab == "both":
+            return self.inactive_both
         return self.inactive_last_week
 
     def _rebuild(self):
@@ -1106,15 +1109,19 @@ class Inactive(LayoutView):
             TextDisplay(
                 f"Members inactive last week: **{len(self.inactive_last_week)}**\n"
                 f"Members inactive this week: **{len(self.inactive_this_week)}**\n"
-                f"Members that failed both weeks: **{len(self.inactive_both)}**"
+                f"Members failed both weeks: **{len(self.inactive_both)}**"
             ),
             Separator(spacing=discord.SeparatorSpacing.small),
             TextDisplay(f"### Inactive {tab_label} (page {self.page + 1}/{total_pages}):"),
         ]
 
         if page_items:
-            for nickname, points, logout, number_id, has_absent_role in page_items:
-                inner_items.append(TextDisplay(f"• **{nickname} ({number_id})**: {points} points, last logout <t:{logout:.0f}:R>" + (" [Absent]" if has_absent_role else "")))
+            if self.active_tab == "both":
+                for nickname, last_pts, this_pts, logout, number_id, has_absent_role in page_items:
+                    inner_items.append(TextDisplay(f"• **{nickname} ({number_id})**: last week **{last_pts}** pts, this week **{this_pts}** pts, logout <t:{logout:.0f}:R>" + (" [Absent]" if has_absent_role else "")))
+            else:
+                for nickname, points, logout, number_id, has_absent_role in page_items:
+                    inner_items.append(TextDisplay(f"• **{nickname} ({number_id})**: **{points}** points, last logout <t:{logout:.0f}:R>" + (" [Absent]" if has_absent_role else "")))
         else:
             inner_items.append(TextDisplay("*No inactive members to display.*"))
 
@@ -3028,7 +3035,7 @@ class WWMCog(commands.Cog):
             bulk_data = get_bulk_players_info(all_pids, fields=["club", "base"])
             if bulk_data and bulk_data.get('code') == 0:
                 players_result = bulk_data.get('result', {})
-                logger.info(f"Fetched club info for {len(players_result)} players in bulk")
+                logger.debug(f"Fetched club info for {len(players_result)} players in bulk")
                 inactive_last_week = []
                 inactive_this_week = []
                 for pid, data in players_result.items():
