@@ -2,7 +2,7 @@ import discord
 import datetime
 from discord import app_commands
 from discord.ext import commands, tasks
-from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow
+from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow, Thumbnail, Section, MediaGallery
 import logging
 import aiosqlite
 import json
@@ -698,6 +698,367 @@ class GuildSearchSelectView(discord.ui.View):
             child.disabled = True
 
 
+class PlayerProfileView(LayoutView):
+    """Components V2 LayoutView for player profile with stat category buttons."""
+    
+    GRADE_NAMES = {
+        1: "Beginner", 2: "Novice", 3: "Silver", 4: "Adept",
+        5: "Expert", 6: "Veteran", 7: "Master", 8: "Grandmaster",
+        9: "Legend", 10: "Mythic",
+    }
+    
+    SMALL_GRADE_SUFFIXES = {0: "", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
+    
+    def __init__(
+        self,
+        player_nickname: str,
+        number_id: str,
+        discord_user_id: int = None,
+        level: int = 0,
+        is_online: bool = False,
+        is_invisible: bool = False,
+        oversea_tag: str = "N/A",
+        online_hours: float = 0,
+        create_time: int = 0,
+        player_signature: str = None,
+        cover_img: str = None,
+        # Social
+        birthday_str: str = None,
+        jieyi_name: str = None,
+        jieyi_text: str = None,
+        likes_count: int = 0,
+        # Masteries
+        martial_mastery: float = 0,
+        scholar_mastery: float = 0,
+        healer_mastery: float = 0,
+        explore_mastery: float = 0,
+        # Attributes
+        attr_str: float = 0,
+        attr_con: float = 0,
+        attr_bas: float = 0,
+        attr_cri: float = 0,
+        attr_agi: float = 0,
+        # Sect
+        school_emoji: str = "",
+        school_name: str = None,
+        school_rank: str = None,
+        # Fashion / Elegance
+        fashion_score: int = 0,
+        # Combat
+        arena_1v1_rank: str = None,
+        arena_3v3_rank: str = None,
+        pvp_score: int = 0,
+        group_strategy: int = 0,
+        assist_points: int = 0,
+        # Guild
+        guild_name: str = None,
+        is_our_guild: bool = False,
+        guild_level: int = 0,
+        guild_leader: str = None,
+        guild_vice_leader: str = None,
+        guild_members: int = 0,
+        guild_funds: int = 0,
+        guild_fame: int = 0,
+        guild_announcement: str = None,
+        # Kongfu
+        kongfu_main: str = None,
+        kongfu_sub: str = None,
+        kongfu_role: str = None,
+        is_verified: bool = False,
+    ):
+        super().__init__(timeout=180)
+        
+        # Store all data
+        self.player_nickname = player_nickname
+        self.number_id = number_id
+        self.discord_user_id = discord_user_id
+        self.level = level
+        self.is_online = is_online
+        self.is_invisible = is_invisible
+        self.oversea_tag = oversea_tag
+        self.online_hours = online_hours
+        self.create_time = create_time
+        self.player_signature = player_signature
+        self.cover_img = cover_img
+        self.birthday_str = birthday_str
+        self.jieyi_name = jieyi_name
+        self.jieyi_text = jieyi_text
+        self.likes_count = likes_count
+        self.martial_mastery = martial_mastery
+        self.scholar_mastery = scholar_mastery
+        self.healer_mastery = healer_mastery
+        self.explore_mastery = explore_mastery
+        self.attr_str = attr_str
+        self.attr_con = attr_con
+        self.attr_bas = attr_bas
+        self.attr_cri = attr_cri
+        self.attr_agi = attr_agi
+        self.school_emoji = school_emoji
+        self.school_name = school_name
+        self.school_rank = school_rank
+        self.fashion_score = fashion_score
+        self.arena_1v1_rank = arena_1v1_rank
+        self.arena_3v3_rank = arena_3v3_rank
+        self.pvp_score = pvp_score
+        self.group_strategy = group_strategy
+        self.assist_points = assist_points
+        self.guild_name = guild_name
+        self.is_our_guild = is_our_guild
+        self.guild_level = guild_level
+        self.guild_leader = guild_leader
+        self.guild_vice_leader = guild_vice_leader
+        self.guild_members = guild_members
+        self.guild_funds = guild_funds
+        self.guild_fame = guild_fame
+        self.guild_announcement = guild_announcement
+        self.kongfu_main = kongfu_main
+        self.kongfu_sub = kongfu_sub
+        self.kongfu_role = kongfu_role
+        self.is_verified = is_verified
+        
+        self._build_overview()
+    
+    def _build_header_text(self) -> str:
+        """Build the persistent header text (name, core stats, social, sect)."""
+        lines = []
+        
+        # Title line
+        title = f"# {self.player_nickname} | {self.number_id}"
+        if self.discord_user_id:
+            title += f"\n### <@{self.discord_user_id}>'s profile"
+        lines.append(title)
+        
+        # Signature
+        if self.player_signature:
+            lines.append(f"\n*{self.player_signature}*")
+        
+        lines.append("")
+        
+        # Core stats
+        if not self.is_invisible:
+            online_str = "🟢 **ONLINE NOW**" if self.is_online else "🔴 **Offline**"
+        else:
+            online_str = "⚫ **Invisible**"
+        
+        lines.append(f"🏆 **Level:** {self.level}    {online_str}")
+        
+        # Always show these (moved from social/sect buttons)
+        if self.create_time:
+            lines.append(f"📅 **Account:** <t:{int(self.create_time)}:R>")
+        if self.birthday_str:
+            lines.append(f"🎂 **Birthday:** {self.birthday_str}")
+        
+        lines.append(f"🌍 **Region:** {self.oversea_tag}")
+        lines.append(f"⌛ **Online:** {self.online_hours}h")
+        
+        if self.is_verified:
+            lines.append(f"💃 **Elegance:** {int(self.fashion_score):,}" if int(self.fashion_score or 0) else "")
+            lines.append(f"❤️ **Likes:** {int(self.likes_count):,}" if int(self.likes_count or 0) else "")
+            lines.append(f"🤝 **Assist Points:** {int(self.assist_points):,}" if int(self.assist_points or 0) else "")
+            
+            # Sworn Cohort (moved from social button)
+            if self.jieyi_name:
+                cohort_line = f"🤝 **Sworn Cohort:** {self.jieyi_name}"
+                if self.jieyi_text:
+                    cohort_line += f" — *{self.jieyi_text}*"
+                lines.append(cohort_line)
+        
+        # Sect info (always shown now)
+        if self.school_name:
+            sect_line = f"{self.school_emoji} **Sect:** {self.school_name}"
+            if self.school_rank:
+                sect_line += f" — {self.school_rank}"
+            lines.append(sect_line)
+        
+        # Guild info
+        if self.guild_name:
+            guild_icon = "✅" if self.is_our_guild else "🏰"
+            lines.append(f"{guild_icon} **Guild:** {self.guild_name}")
+        
+        # Online stats always
+        lines.append(f"")
+        
+        # Non-verified hint
+        if not self.is_verified:
+            lines.append("🔗 **Bind your account** in <#1469961307154288703> to view full stats.")
+        
+        return "\n".join(filter(None, lines))
+    
+    def _build_container(self, detail_items: list = None) -> Container:
+        """Build a single Container: header + optional detail."""
+        inner = []
+        
+        # Header: MediaGallery first if available
+        if self.cover_img:
+            gallery = MediaGallery()
+            gallery.add_item(media=self.cover_img, description="Fashion Cover")
+            inner.append(gallery)
+        
+        # Header: text display
+        inner.append(TextDisplay(self._build_header_text()))
+        
+        # Separator
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+        
+        if detail_items:
+            # Detail view: supplied items (TextDisplay + Separator + back button)
+            inner.extend(detail_items)
+        else:
+            # Overview: buttons
+            row1 = ActionRow()
+            btn_combat = discord.ui.Button(label="Combat", emoji="⚔️", style=discord.ButtonStyle.primary, custom_id="player_combat")
+            btn_combat.callback = self._handle_combat
+            row1.add_item(btn_combat)
+            btn_masteries = discord.ui.Button(label="Masteries", emoji="🎓", style=discord.ButtonStyle.primary, custom_id="player_masteries")
+            btn_masteries.callback = self._handle_masteries
+            row1.add_item(btn_masteries)
+            btn_attributes = discord.ui.Button(label="Attributes", emoji="📊", style=discord.ButtonStyle.primary, custom_id="player_attributes")
+            btn_attributes.callback = self._handle_attributes
+            row1.add_item(btn_attributes)
+            btn_kongfu = discord.ui.Button(label="Kongfu & Role", emoji="🔧", style=discord.ButtonStyle.primary, custom_id="player_kongfu")
+            btn_kongfu.callback = self._handle_kongfu
+            row1.add_item(btn_kongfu)
+            inner.append(row1)
+            
+            row2 = ActionRow()
+            btn_guild = discord.ui.Button(label="Guild Profile", emoji="🏰", style=discord.ButtonStyle.secondary, custom_id="player_guild")
+            btn_guild.callback = self._handle_guild
+            row2.add_item(btn_guild)
+            inner.append(row2)
+        
+        return Container(*inner, accent_color=BLURPLE)
+    
+    def _build_overview(self):
+        """Build the default overview (single Container with header + buttons)."""
+        self.clear_items()
+        self.add_item(self._build_container())
+    
+    def _show_detail(self, title: str, stat_lines: list, accent: int):
+        """Show a detail view: single Container with header + detail + back button."""
+        inner = []
+        inner.append(TextDisplay(f"# {title}\n\n" + "\n".join(stat_lines)))
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+        back_row = ActionRow()
+        back_btn = discord.ui.Button(label="🔙 Overview", style=discord.ButtonStyle.secondary, custom_id="player_back")
+        back_btn.callback = self._handle_back
+        back_row.add_item(back_btn)
+        inner.append(back_row)
+        
+        self.clear_items()
+        self.add_item(self._build_container(detail_items=inner))
+    
+    @staticmethod
+    def _format_rank(grade: int, small_grade: int) -> str:
+        grade_name = PlayerProfileView.GRADE_NAMES.get(grade, f"Unknown ({grade})")
+        small_suffix = PlayerProfileView.SMALL_GRADE_SUFFIXES.get(small_grade, str(small_grade))
+        return f"{grade_name} {small_suffix}" if small_suffix else grade_name
+    
+    async def _handle_back(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        self._build_overview()
+        await interaction.edit_original_response(view=self)
+    
+    async def _handle_combat(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        lines = []
+        if self.arena_1v1_rank:
+            lines.append(f"⚔️ **1v1 Arena Rank:** {self.arena_1v1_rank}")
+        if self.arena_3v3_rank:
+            lines.append(f"⚔️ **3v3 Arena Rank:** {self.arena_3v3_rank}")
+        if self.pvp_score:
+            lines.append(f"🏆 **PvP Score:** {int(self.pvp_score):,}")
+        if self.group_strategy:
+            lines.append(f"📋 **Group Strategy:** {self.group_strategy}")
+        if self.assist_points:
+            lines.append(f"🤝 **Assist Points:** {int(self.assist_points):,}")
+        if not lines:
+            lines.append("*No combat data available*")
+        
+        self._show_detail("⚔️ Combat & Arena", lines, accent=0xE74C3C)
+        await interaction.edit_original_response(view=self)
+    
+    async def _handle_masteries(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        lines = []
+        lines.append(f"⚔️ **Martial Mastery:** {self.martial_mastery}")
+        lines.append(f"📚 **Scholar Mastery:** {self.scholar_mastery}")
+        lines.append(f"💚 **Healer Mastery:** {self.healer_mastery}")
+        lines.append(f"🗺️ **Exploration Mastery:** {self.explore_mastery}")
+        
+        self._show_detail("🎓 Masteries", lines, accent=0x2ECC71)
+        await interaction.edit_original_response(view=self)
+    
+    async def _handle_attributes(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        lines = []
+        lines.append(f"🥊 **Power (STR):** {self.attr_str}")
+        lines.append(f"🛡️ **Body (CON):** {self.attr_con}")
+        lines.append(f"⚡ **Momentum (BAS):** {self.attr_bas}")
+        lines.append(f"💨 **Agility (CRI):** {self.attr_cri}")
+        lines.append(f"🔰 **Defense (AGI):** {self.attr_agi}")
+        
+        self._show_detail("📊 Base Attributes", lines, accent=0x3498DB)
+        await interaction.edit_original_response(view=self)
+    
+    async def _handle_kongfu(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        lines = []
+        if self.kongfu_main:
+            lines.append(f"🗡️ **Main Weapon:** {self.kongfu_main}")
+        if self.kongfu_sub:
+            lines.append(f"🗡️ **Sub Weapon:** {self.kongfu_sub}")
+        if self.kongfu_role:
+            lines.append(f"🎯 **Role:** {self.kongfu_role}")
+        if not lines:
+            lines.append("*No kongfu data available*")
+        
+        self._show_detail("🔧 Kongfu & Role", lines, accent=0x1ABC9C)
+        await interaction.edit_original_response(view=self)
+    
+    async def on_timeout(self):
+        """Disable all buttons when the view times out."""
+        for child in self.children:
+            if isinstance(child, ActionRow):
+                for item in child.children:
+                    if isinstance(item, discord.ui.Button):
+                        item.disabled = True
+            elif isinstance(child, Container):
+                for sub in child.children:
+                    if isinstance(sub, ActionRow):
+                        for item in sub.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
+        self.stop()
+    
+    async def _handle_guild(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        lines = []
+        if self.guild_name:
+            lines.append(f"🏰 **Guild:** {self.guild_name}")
+            if self.is_our_guild:
+                lines.append("✅ **Our Guild Member**")
+            if self.guild_level:
+                lines.append(f"⭐ **Level:** {self.guild_level}")
+            if self.guild_members:
+                lines.append(f"👥 **Members:** {self.guild_members}/100")
+            if self.guild_leader:
+                lines.append(f"👑 **Leader:** {self.guild_leader}")
+            if self.guild_vice_leader:
+                lines.append(f"⚔️ **Vice Leader:** {self.guild_vice_leader}")
+            if self.guild_funds:
+                lines.append(f"💰 **Funds:** {int(self.guild_funds):,}")
+            if self.guild_fame:
+                lines.append(f"📈 **Fame:** {int(self.guild_fame):,}")
+            if self.guild_announcement:
+                lines.append("")
+                lines.append(f"📢 **Announcement:** {self.guild_announcement}")
+        else:
+            lines.append("*No guild info available*")
+        
+        self._show_detail("🏰 Guild Profile", lines, accent=BLURPLE)
+        await interaction.edit_original_response(view=self)
+
+
 class WWMCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -914,36 +1275,39 @@ class WWMCog(commands.Cog):
             if not base_data and 'nickname' in data:
                 base_data = data
             player_nickname = base_data.get('nickname', data.get('nickname', nickname or 'Unknown'))
-            embed = discord.Embed(title=f"{player_nickname} | {base_data.get('number_id', number_id or 'N/A')}", color=discord.Color.og_blurple())
-            embed.description = f"### <@{discord_user_id}>'s profile" if discord_user_id else ""
             
+            # ── Fetch extra data: fashion plan, fashion score, likes ──
+            cover_img = None
             try:
                 if player_pid:
                     fashion_data = get_fashion_plan(player_pid, hostnum=player_hostnum)
                     if fashion_data:
                         if fashion_data.get('code') == 0 and 'result' in fashion_data:
                             cover_img = fashion_data['result'].get('cover_img')
-                            if cover_img:
-                                embed.set_image(url=cover_img)
             except Exception as fashion_err:
                 logger.warning(f"Failed to get fashion cover image: {str(fashion_err)}")
 
             name_card = data.get('name_card', {})
             player_signature = name_card.get('sign', None)
-            if player_signature and player_signature.strip():
-                embed.description += f"\n\n*{player_signature}*"
-        
-            # Log school ID for mapping purposes
+            
             school_id = base_data.get('school', 0)
             logger.debug(f"[PLAYER SEARCH] {player_nickname} (PID: {player_pid}) — School ID: {school_id}")
-            embed.add_field(name="🏆 Level", value=f"{base_data.get('level', 0)}", inline=True)
+            
+            # ── Extract all view data ──
+            
+            # Basic
+            lv = base_data.get('level', 0)
+            is_invisible = base_data.get('invisible', False)
+            is_online = base_data.get('is_online', 0) == 1
+            oversea_tag = base_data.get('oversea_tag', 'N/A')
+            online_hours = round(base_data.get('online_time', 0) / 3600, 1)
+            create_time = base_data.get('create_time', 0)
+            
+            # Birthday
+            birthday_str = None
+            jieyi_name = None
+            jieyi_text = None
             if is_verified:
-                # ---- Account Creation Time ----
-                create_time = base_data.get('create_time', 0)
-                if create_time:
-                    embed.add_field(name="📅 Account Created", value=f"<t:{int(create_time)}:R>", inline=True)
-
-                # ---- Birthday ----
                 birthday_data = data.get('birthday', {})
                 if birthday_data and isinstance(birthday_data, dict):
                     visible_flag = birthday_data.get('visible', 0)
@@ -951,124 +1315,138 @@ class WWMCog(commands.Cog):
                         month = birthday_data.get('month', 0)
                         day = birthday_data.get('day', 0)
                         if month > 0 and day > 0:
-                            embed.add_field(name="🎂 Birthday", value=f"{_format_birthday(month, day)}", inline=True)
-
-                # ---- Sworn Cohort (Jieyi) ----
+                            birthday_str = _format_birthday(month, day)
+                
                 jieyi = data.get('jieyi', {})
                 jieyi_name = jieyi.get('jieyi_name')
                 jieyi_text = jieyi.get('jieyi_text')
-                if jieyi_name:
-                    cohort_display = jieyi_name
-                    if jieyi_text:
-                        cohort_display += f"\n{jieyi_text}"
-                    embed.add_field(name="🤝 Sworn Cohort", value=f"{cohort_display}", inline=True)
-
-                # ---- Sect (School) ----
-                school_id = base_data.get('school', 0)
-                if school_id in SCHOOL_NAMES:
-                    school_display = SCHOOL_NAMES[school_id]
-                    # Get ranking within the sect
-                    school_status = school_data.get('status', 0)
-                    logger.debug(f"Player {player_nickname} (PID: {player_pid}) — Sect ID: {school_id}, Sect Status: {school_status}")
-                    if school_status in SCHOOL_RANKING:
-                        school_display += f"\n{SCHOOL_RANKING[school_status]}"
-                    embed.add_field(name=f"{SCHOOL_EMOTES.get(school_id, '')} Sect", value=f"{school_display}", inline=True)
-
-                # ---- Elegance (Fashion Score) ----
+            
+            # Sect / School
+            school_emoji = ""
+            school_name = None
+            school_rank = None
+            if school_id in SCHOOL_NAMES:
+                school_emoji = SCHOOL_EMOTES.get(school_id, "")
+                school_name = SCHOOL_NAMES[school_id]
+                school_status = school_data.get('status', 0)
+                logger.debug(f"Player {player_nickname} (PID: {player_pid}) — Sect ID: {school_id}, Sect Status: {school_status}")
+                if school_status in SCHOOL_RANKING:
+                    school_rank = SCHOOL_RANKING[school_status]
+            
+            # Elegance / Fashion Score
+            fashion_score = 0
+            if is_verified:
                 try:
                     fashion_score_data = get_fashion_score(player_pid, hostnum=player_hostnum)
                     if fashion_score_data and 'result' in fashion_score_data:
                         score = fashion_score_data['result']
                         if isinstance(score, dict):
                             score = score.get('score', 0)
-                        embed.add_field(name="💃 Elegance", value=f"{score}", inline=True)
-                except Exception as fashion_score_err:
-                    logger.warning(f"Failed to get fashion score: {str(fashion_score_err)}")
-
-                # ---- Get likes count ----
+                        fashion_score = score
+                except Exception:
+                    pass
+            
+            # Likes
+            likes_count = 0
+            if is_verified:
                 try:
                     likes_data = get_topics_likes(target_uuid=player_pid, target_hostnum=player_hostnum)
                     if likes_data and 'result' in likes_data:
-                        likes_data = likes_data['result']
-                        likes_count = sum(topic.get('n_likes', 0) for topic in likes_data.values())
-                        embed.add_field(name="❤️ Likes Received", value=f"{likes_count}", inline=True)
-                except Exception as likes_err:
-                    logger.warning(f"Failed to get topics likes: {str(likes_err)}")
-
-                attr = data.get('attr', {})
-                embed.add_field(name="⚔️ Martial Mastery", value=f"{round(attr.get('XIUWEI_KUNGFU', 0), 1)}", inline=True)
-                embed.add_field(name="📚 Scholar Mastery", value=f"{round(attr.get('XIUWEI_TRADE3', 0), 1)}", inline=True)
-                embed.add_field(name="💚 Healer Mastery", value=f"{round(attr.get('XIUWEI_TRADE4', 0), 1)}", inline=True)
-                embed.add_field(name="🗺️ Exploration Mastery", value=f"{round(attr.get('XIUWEI_EXPLORE', 0), 1)}", inline=True)
-                #embed.add_field(name="🥊 Power", value=f"{round(attr.get('STR', 0), 1)}", inline=True)
-                #embed.add_field(name="🛡️ Body", value=f"{round(attr.get('CON', 0), 1)}", inline=True)
-                #embed.add_field(name="⚡ Momentum", value=f"{round(attr.get('BAS', 0), 1)}", inline=True)
-                #embed.add_field(name="💨 Agility", value=f"{round(attr.get('CRI', 0), 1)}", inline=True)
-                #embed.add_field(name="🔰 Defense", value=f"{round(attr.get('AGI', 0), 1)}", inline=True)
-                embed.add_field(name="🌍 Region", value=f"{base_data.get('oversea_tag', 'N/A')}", inline=True)
-                embed.add_field(name="⌛ Total Online Time", value=f"{round(base_data.get('online_time', 0) / 3600, 1)} hours", inline=True)
-
-                # ---- Online Status ----
-                is_invisible = base_data.get('invisible', False)
-                is_online = base_data.get('is_online', 0)
-                if not is_invisible:
-                    if is_online == 1:
-                        embed.add_field(name="🟢 Online Status", value="ONLINE NOW", inline=True)
-                    else:
-                        embed.add_field(name="🔴 Online Status", value="Offline", inline=True)
-                
-                # ---- Rank naming maps ----
-                GRADE_NAMES = {
-                    1: "Beginner", 2: "Novice", 3: "Silver", 4: "Adept",
-                    5: "Expert", 6: "Veteran", 7: "Master", 8: "Grandmaster",
-                    9: "Legend", 10: "Mythic",
-                }
-                
-                SMALL_GRADE_SUFFIXES = {0: "", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
-
-                def _format_rank(grade: int, small_grade: int) -> str:
-                    """Format a grade + small_grade into a rank string like 'Mythic III'."""
-                    grade_name = GRADE_NAMES.get(grade, f"Unknown ({grade})")
-                    small_suffix = SMALL_GRADE_SUFFIXES.get(small_grade, str(small_grade))
-                    return f"{grade_name} {small_suffix}" if small_suffix else grade_name
-
-                # ---- 1v1 Arena Rank (lunjian) ----
-                lunjian = data.get('lunjian', {})
-                if lunjian and 'grade' in lunjian:
-                    embed.add_field(name="⚔️ 1v1 Arena Rank", value=_format_rank(lunjian['grade'], lunjian.get('small_grade', 0)), inline=True)
-
-                # ---- 3v3 Arena Rank (lunjian3v3_prop) ----
-                lunjian3v3 = data.get('lunjian3v3_prop', {})
-                if lunjian3v3 and 'grade' in lunjian3v3:
-                    embed.add_field(name="⚔️ 3v3 Arena Rank", value=_format_rank(lunjian3v3['grade'], lunjian3v3.get('small_grade', 0)), inline=True)
-
-                # ---- Group Strategy (fight_shoulder) ----
-                fight_shoulder = data.get('fight_shoulder', {})
-                if fight_shoulder and 'score' in fight_shoulder:
-                    embed.add_field(name="📋 Group Strategy", value=f"{fight_shoulder['score']}", inline=True)
-
-                # ---- Assist Points (coop_score) ----
-                coop_score = data.get('coop_score', {})
-                if coop_score and 'score' in coop_score:
-                    embed.add_field(name="🤝 Assist Points", value=f"{coop_score['score']}", inline=True)
-                
-                # ---- PvP Score ----
-                gameplay = data.get('gameplay_trail', {})
-                played = gameplay.get('played', [])
-                for match in played:
-                    if 'score' in match:
-                        embed.add_field(name="🏆 PvP Score", value=f"{match['score']}", inline=True)
-                        break
-            else:
-                embed.description = f"{embed.description}\n\n🔗 **Bind your account** in <#1469961307154288703> to view full stats, combat power and details."
+                        likes_data_res = likes_data['result']
+                        likes_count = sum(topic.get('n_likes', 0) for topic in likes_data_res.values())
+                except Exception:
+                    pass
+            
+            # Attributes
+            attr = data.get('attr', {})
+            martial_mastery = round(attr.get('XIUWEI_KUNGFU', 0), 1)
+            scholar_mastery = round(attr.get('XIUWEI_TRADE3', 0), 1)
+            healer_mastery = round(attr.get('XIUWEI_TRADE4', 0), 1)
+            explore_mastery = round(attr.get('XIUWEI_EXPLORE', 0), 1)
+            attr_str = round(attr.get('STR', 0), 1)
+            attr_con = round(attr.get('CON', 0), 1)
+            attr_bas = round(attr.get('BAS', 0), 1)
+            attr_cri = round(attr.get('CRI', 0), 1)
+            attr_agi = round(attr.get('AGI', 0), 1)
+            
+            # Combat
+            GRADE_NAMES = {
+                1: "Beginner", 2: "Novice", 3: "Silver", 4: "Adept",
+                5: "Expert", 6: "Veteran", 7: "Master", 8: "Grandmaster",
+                9: "Legend", 10: "Mythic",
+            }
+            SMALL_GRADE_SUFFIXES = {0: "", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
+            
+            def _fmt_rank(grade: int, small_grade: int) -> str:
+                grade_name = GRADE_NAMES.get(grade, f"Unknown ({grade})")
+                small_suffix = SMALL_GRADE_SUFFIXES.get(small_grade, str(small_grade))
+                return f"{grade_name} {small_suffix}" if small_suffix else grade_name
+            
+            arena_1v1_rank = None
+            arena_3v3_rank = None
+            pvp_score = 0
+            group_strategy = 0
+            assist_points = 0
+            
+            lunjian = data.get('lunjian', {})
+            if lunjian and 'grade' in lunjian:
+                arena_1v1_rank = _fmt_rank(lunjian['grade'], lunjian.get('small_grade', 0))
+            
+            lunjian3v3 = data.get('lunjian3v3_prop', {})
+            if lunjian3v3 and 'grade' in lunjian3v3:
+                arena_3v3_rank = _fmt_rank(lunjian3v3['grade'], lunjian3v3.get('small_grade', 0))
+            
+            fight_shoulder = data.get('fight_shoulder', {})
+            if fight_shoulder and 'score' in fight_shoulder:
+                group_strategy = fight_shoulder['score']
+            
+            coop_score = data.get('coop_score', {})
+            if coop_score and 'score' in coop_score:
+                assist_points = coop_score['score']
+            
+            gameplay = data.get('gameplay_trail', {})
+            played = gameplay.get('played', [])
+            for match in played:
+                if 'score' in match:
+                    pvp_score = match['score']
+                    break
+            
+            # Kongfu data
+            kongfu_main = None
+            kongfu_sub = None
+            kongfu_role = None
+            try:
+                kongfu_data = data.get('kongfu', {})
+                if kongfu_data:
+                    from utility.api_constants import KONGFU_WEAPON_MAP
+                    main_id = kongfu_data.get('kongfu_main')
+                    sub_id = kongfu_data.get('kongfu_sub')
+                    if main_id:
+                        kongfu_main = KONGFU_WEAPON_MAP.get(main_id, f"Unknown ({main_id})")
+                    if sub_id:
+                        kongfu_sub = KONGFU_WEAPON_MAP.get(sub_id, f"Unknown ({sub_id})")
+                    weapon_ids = get_kongfu_ids_from_player(data)
+                    if weapon_ids:
+                        kongfu_role = classify_kongfu_role(weapon_ids) if weapon_ids else ""
+            except Exception as kongfu_err:
+                logger.warning(f"Failed to parse kongfu data: {kongfu_err}")
+            
+            # ── Guild Info ──
+            guild_name = None
+            is_our_guild = False
+            guild_level = 0
+            guild_leader = None
+            guild_vice_leader = None
+            guild_members = 0
+            guild_funds = 0
+            guild_fame = 0
+            guild_announcement = None
             
             if player_pid and is_verified:
                 try:
                     await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...\n🏰 Checking guild info...")
                     club_data = get_club_hostnums(player_pid)
                     
-                    guild_name = "No Guild"
-                    member_status = "❌ Not Guild Member"
                     player_club_id = None
                     club_hostnum = 10103
                     
@@ -1084,21 +1462,98 @@ class WWMCog(commands.Cog):
                         guild_full_data = get_full_guild_info(player_club_id, hostnum=club_hostnum)
                         
                         if guild_full_data:
-                            guild_base = guild_full_data.get('result', {}).get('base', {})
+                            guild_result = guild_full_data.get('result', {})
+                            guild_base = guild_result.get('base', {})
                             guild_name = guild_base.get('name', 'Unknown Guild')
-                        
-                    if player_club_id == CLUB_ID:
-                        embed.add_field(name="✅ Guild Member", value="Yes", inline=True)
-                        embed.color = discord.Color.green()
-                    else:
-                        embed.add_field(name="❌ Guild Member", value="No", inline=True)
+                            guild_level = guild_base.get('level', 0)
+                            guild_members = guild_base.get('member_num', 0)
+                            guild_funds = guild_base.get('fund', 0)
+                            guild_fame = guild_base.get('fame', 0)
+                            guild_announcement = guild_result.get('gonggao_info', {}).get('msg', None)
+                            
+                            # Get leadership
+                            member_list = guild_result.get('members', {}).get('members', {})
+                            leader_pid = None
+                            vice_leader_pid = None
+                            for pid, member in member_list.items():
+                                post_list = member.get('post', [])
+                                if 1 in post_list:
+                                    leader_pid = pid
+                                if 2 in post_list:
+                                    vice_leader_pid = pid
+                            
+                            pids_to_fetch = []
+                            if leader_pid:
+                                pids_to_fetch.append(leader_pid)
+                            if vice_leader_pid:
+                                pids_to_fetch.append(vice_leader_pid)
+                            
+                            if pids_to_fetch:
+                                bulk_lookup = get_bulk_players_info(pids_to_fetch, fields=["base"])
+                                if bulk_lookup and bulk_lookup.get('code') == 0:
+                                    players = bulk_lookup.get('result', {})
+                                    if leader_pid and leader_pid in players:
+                                        guild_leader = players[leader_pid].get('base', {}).get('nickname', 'Unknown')
+                                    if vice_leader_pid and vice_leader_pid in players:
+                                        guild_vice_leader = players[vice_leader_pid].get('base', {}).get('nickname', 'Unknown')
                     
-                    embed.add_field(name="🏰 Guild", value=f"{guild_name}", inline=True)
+                    if player_club_id == CLUB_ID:
+                        is_our_guild = True
                     
                 except Exception as club_err:
                     logger.warning(f"Failed to get club info: {str(club_err)}")
             
-            await interaction.edit_original_response(content=None, embed=embed)
+            # ── Build and send PlayerProfileView ──
+            view = PlayerProfileView(
+                player_nickname=player_nickname,
+                number_id=base_data.get('number_id', number_id or 'N/A'),
+                discord_user_id=discord_user_id,
+                level=lv,
+                is_online=is_online,
+                is_invisible=is_invisible,
+                oversea_tag=oversea_tag,
+                online_hours=online_hours,
+                create_time=create_time,
+                player_signature=player_signature,
+                cover_img=cover_img,
+                birthday_str=birthday_str,
+                jieyi_name=jieyi_name,
+                jieyi_text=jieyi_text,
+                likes_count=likes_count,
+                martial_mastery=float(martial_mastery) if is_verified else 0,
+                scholar_mastery=float(scholar_mastery) if is_verified else 0,
+                healer_mastery=float(healer_mastery) if is_verified else 0,
+                explore_mastery=float(explore_mastery) if is_verified else 0,
+                attr_str=float(attr_str) if is_verified else 0,
+                attr_con=float(attr_con) if is_verified else 0,
+                attr_bas=float(attr_bas) if is_verified else 0,
+                attr_cri=float(attr_cri) if is_verified else 0,
+                attr_agi=float(attr_agi) if is_verified else 0,
+                school_emoji=school_emoji,
+                school_name=school_name,
+                school_rank=school_rank,
+                fashion_score=fashion_score,
+                arena_1v1_rank=arena_1v1_rank,
+                arena_3v3_rank=arena_3v3_rank,
+                pvp_score=pvp_score,
+                group_strategy=group_strategy,
+                assist_points=assist_points,
+                guild_name=guild_name,
+                is_our_guild=is_our_guild,
+                guild_level=guild_level,
+                guild_leader=guild_leader,
+                guild_vice_leader=guild_vice_leader,
+                guild_members=guild_members,
+                guild_funds=guild_funds,
+                guild_fame=guild_fame,
+                guild_announcement=guild_announcement,
+                kongfu_main=kongfu_main,
+                kongfu_sub=kongfu_sub,
+                kongfu_role=kongfu_role,
+                is_verified=is_verified,
+            )
+            
+            await interaction.edit_original_response(content=None, embed=None, view=view)
 
         except Exception as e:
             logger.error(f"Player search failed: {str(e)}")
