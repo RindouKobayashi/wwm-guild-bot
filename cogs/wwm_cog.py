@@ -2,7 +2,7 @@ import discord
 import datetime
 from discord import app_commands
 from discord.ext import commands, tasks
-from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow, Thumbnail, Section, MediaGallery, Button
+from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow, Thumbnail, Section, MediaGallery, Button, Select
 import logging
 import aiosqlite
 import json
@@ -1071,6 +1071,7 @@ class Inactive(LayoutView):
         self.point_threshold = point_threshold
         self.page = 0
         self.active_tab = "last_week"  # or "this_week" or "both"
+        self.sort_by = "points_asc"  # points_asc, points_desc, name_az, logout_newest, logout_oldest, absent_first
 
         # Compute "failed both" — members appearing in BOTH lists (same nickname)
         # Build a lookup of last week's points by nickname
@@ -1085,11 +1086,49 @@ class Inactive(LayoutView):
     # ── helpers ──────────────────────────────────────────────────────
 
     def _current_list(self) -> list:
+        """Return a shallow copy of the current tab's list, then sort it."""
         if self.active_tab == "this_week":
-            return self.inactive_this_week
+            current = list(self.inactive_this_week)
         elif self.active_tab == "both":
-            return self.inactive_both
-        return self.inactive_last_week
+            current = list(self.inactive_both)
+        else:
+            current = list(self.inactive_last_week)
+        
+        # Apply sort
+        if self.sort_by == "points_asc":
+            # Last week / this week: sort by points (index 1) asc
+            # Both: sort by this week pts (index 2) asc
+            if self.active_tab == "both":
+                current.sort(key=lambda x: x[1] + x[2])
+            else:
+                current.sort(key=lambda x: x[1])
+        elif self.sort_by == "points_desc":
+            if self.active_tab == "both":
+                current.sort(key=lambda x: x[1] + x[2], reverse=True)
+            else:
+                current.sort(key=lambda x: x[1], reverse=True)
+        elif self.sort_by == "name_az":
+            current.sort(key=lambda x: x[0].lower())
+        elif self.sort_by == "logout_newest":
+            # Most recently logged out first (newest timestamp first)
+            if self.active_tab == "both":
+                current.sort(key=lambda x: x[3], reverse=True)
+            else:
+                current.sort(key=lambda x: x[2], reverse=True)
+        elif self.sort_by == "logout_oldest":
+            # Longest offline first (oldest timestamp first)
+            if self.active_tab == "both":
+                current.sort(key=lambda x: x[3])
+            else:
+                current.sort(key=lambda x: x[2])
+        elif self.sort_by == "absent_first":
+            # Members with absent role first, then by points ascending
+            if self.active_tab == "both":
+                current.sort(key=lambda x: (not x[5], x[2]))
+            else:
+                current.sort(key=lambda x: (not x[4], x[1]))
+        
+        return current
 
     def _rebuild(self):
         """Rebuild the single Container based on the active tab and page."""
@@ -1155,6 +1194,31 @@ class Inactive(LayoutView):
         tab_row.add_item(both_btn)
         inner_items.append(tab_row)
 
+        # ── Sort Select menu ──
+        sort_options = [
+            discord.SelectOption(label="Points (Low → High)", value="points_asc", emoji="⬆️"),
+            discord.SelectOption(label="Points (High → Low)", value="points_desc", emoji="⬇️"),
+            discord.SelectOption(label="Nickname (A → Z)", value="name_az", emoji="🔤"),
+            discord.SelectOption(label="Last Logout (Newest)", value="logout_newest", emoji="🆕"),
+            discord.SelectOption(label="Last Logout (Oldest)", value="logout_oldest", emoji="⏰"),
+            discord.SelectOption(label="Absent First", value="absent_first", emoji="🚫"),
+        ]
+        sort_row = ActionRow()
+        sort_select = Select(
+            placeholder="Sort by...",
+            options=sort_options,
+            custom_id="inactive_sort",
+        )
+        # Set the default to show the currently active sort
+        current_label = next(
+            (opt.label for opt in sort_options if opt.value == self.sort_by),
+            "Sort by..."
+        )
+        sort_select.default_values = [discord.SelectOption(label=current_label, value=self.sort_by)]
+        sort_select.callback = self._handle_sort
+        sort_row.add_item(sort_select)
+        inner_items.append(sort_row)
+
         # ── Pagination buttons ──
         nav_row = ActionRow()
         prev_btn = Button(
@@ -1209,6 +1273,14 @@ class Inactive(LayoutView):
         if self.page < total_pages - 1:
             self.page += 1
             self._rebuild()
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_sort(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        selected = interaction.data.get("values", ["points_asc"])
+        self.sort_by = selected[0]
+        self.page = 0
+        self._rebuild()
         await interaction.edit_original_response(view=self)
 
     async def _handle_prev(self, interaction: discord.Interaction):
