@@ -687,10 +687,6 @@ class LiveChatCog(commands.Cog):
             return f"<@{self.pid_to_discord_user[sender_pid]}>"
         return ""
 
-    def get_avatar_url(self, head_id: int) -> str:
-        """Get avatar icon URL for given head ID"""
-        return f"https://h72static.easebar.com/head/{head_id}.png"
-
     @chat_poller.before_loop
     async def before_chat_poller(self):
         await self.bot.wait_until_ready()
