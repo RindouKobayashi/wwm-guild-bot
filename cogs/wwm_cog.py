@@ -2,7 +2,7 @@ import discord
 import datetime
 from discord import app_commands
 from discord.ext import commands, tasks
-from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow, Thumbnail, Section, MediaGallery
+from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow, Thumbnail, Section, MediaGallery, Button
 import logging
 import aiosqlite
 import json
@@ -1056,6 +1056,159 @@ class PlayerProfileView(LayoutView):
             lines.append("*No guild info available*")
         
         self._show_detail("🏰 Guild Profile", lines, accent=BLURPLE)
+        await interaction.edit_original_response(view=self)
+
+class Inactive(LayoutView):
+    """LayoutView displaying guild members below an activity-point threshold,
+    with tab switching (Last Week / This Week) and pagination (10 per page)."""
+
+    ITEMS_PER_PAGE = 10
+
+    def __init__(self, inactive_last_week: list, inactive_this_week: list, point_threshold: int):
+        super().__init__(timeout=180)
+        self.inactive_last_week = inactive_last_week
+        self.inactive_this_week = inactive_this_week
+        self.point_threshold = point_threshold
+        self.page = 0
+        self.active_tab = "last_week"  # or "this_week" or "both"
+
+        # Compute "failed both" — members appearing in BOTH lists (same nickname)
+        last_week_names = {nickname for nickname, _, _, _, _ in inactive_last_week}
+        self.inactive_both = [
+            entry for entry in inactive_this_week
+            if entry[0] in last_week_names
+        ]
+
+        self._rebuild()
+
+    # ── helpers ──────────────────────────────────────────────────────
+
+    def _current_list(self) -> list:
+        if self.active_tab == "this_week":
+            return self.inactive_this_week
+        return self.inactive_last_week
+
+    def _rebuild(self):
+        """Rebuild the single Container based on the active tab and page."""
+        self.clear_items()
+
+        current = self._current_list()
+        total_pages = max(1, -(-len(current) // self.ITEMS_PER_PAGE))  # ceil div
+        start = self.page * self.ITEMS_PER_PAGE
+        end = start + self.ITEMS_PER_PAGE
+        page_items = current[start:end]
+
+        tab_label = "Last Week" if self.active_tab == "last_week" else "This Week"
+
+        inner_items = [
+            TextDisplay(f"# Guild Members Below {self.point_threshold} Activity Points"),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay(
+                f"Members inactive last week: **{len(self.inactive_last_week)}**\n"
+                f"Members inactive this week: **{len(self.inactive_this_week)}**\n"
+                f"Members that failed both weeks: **{len(self.inactive_both)}**"
+            ),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay(f"### Inactive {tab_label} (page {self.page + 1}/{total_pages}):"),
+        ]
+
+        if page_items:
+            for nickname, points, logout, number_id, has_absent_role in page_items:
+                inner_items.append(TextDisplay(f"• **{nickname} ({number_id})**: {points} points, last logout <t:{logout:.0f}:R>" + (" [Absent]" if has_absent_role else "")))
+        else:
+            inner_items.append(TextDisplay("*No inactive members to display.*"))
+
+        # ── Tab buttons ──
+        tab_row = ActionRow()
+        last_week_btn = Button(
+            style=discord.ButtonStyle.secondary if self.active_tab == "last_week" else discord.ButtonStyle.primary,
+            label=f"Inactive Last Week ({len(self.inactive_last_week)})",
+            custom_id="inactive_last_week",
+            disabled=self.active_tab == "last_week",
+        )
+        last_week_btn.callback = self._handle_last_week
+        tab_row.add_item(last_week_btn)
+
+        this_week_btn = Button(
+            style=discord.ButtonStyle.secondary if self.active_tab == "this_week" else discord.ButtonStyle.primary,
+            label=f"Inactive This Week ({len(self.inactive_this_week)})",
+            custom_id="inactive_this_week",
+            disabled=self.active_tab == "this_week",
+        )
+        this_week_btn.callback = self._handle_this_week
+        tab_row.add_item(this_week_btn)
+
+        both_btn = Button(
+            style=discord.ButtonStyle.danger if self.active_tab == "both" else discord.ButtonStyle.secondary,
+            label=f"Failed Both ({len(self.inactive_both)})",
+            custom_id="inactive_both",
+            disabled=self.active_tab == "both",
+        )
+        both_btn.callback = self._handle_both
+        tab_row.add_item(both_btn)
+        inner_items.append(tab_row)
+
+        # ── Pagination buttons ──
+        nav_row = ActionRow()
+        prev_btn = Button(
+            style=discord.ButtonStyle.secondary,
+            label="⬅ Previous",
+            custom_id="inactive_prev",
+            disabled=self.page <= 0,
+        )
+        prev_btn.callback = self._handle_prev
+        nav_row.add_item(prev_btn)
+
+        next_btn = Button(
+            style=discord.ButtonStyle.secondary,
+            label="Next ➡",
+            custom_id="inactive_next",
+            disabled=self.page >= total_pages - 1,
+        )
+        next_btn.callback = self._handle_next
+        nav_row.add_item(next_btn)
+        inner_items.append(nav_row)
+
+        container = Container(*inner_items, accent_color=ORANGE)
+        self.add_item(container)
+
+    # ── button callbacks ─────────────────────────────────────────────
+
+    async def _handle_last_week(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        self.active_tab = "last_week"
+        self.page = 0
+        self._rebuild()
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_this_week(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        self.active_tab = "this_week"
+        self.page = 0
+        self._rebuild()
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_both(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        self.active_tab = "both"
+        self.page = 0
+        self._rebuild()
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_next(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        current = self._current_list()
+        total_pages = max(1, -(-len(current) // self.ITEMS_PER_PAGE))
+        if self.page < total_pages - 1:
+            self.page += 1
+            self._rebuild()
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_prev(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        if self.page > 0:
+            self.page -= 1
+            self._rebuild()
         await interaction.edit_original_response(view=self)
 
 
@@ -2847,6 +3000,93 @@ class WWMCog(commands.Cog):
         except Exception as e:
             logger.error(f"Guild region command failed: {str(e)}", exc_info=True)
             await interaction.followup.send(f"❌ Failed to display guild regions: `{str(e)}`")
+
+    def get_weekly_reset_ts(self):
+        now = datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=8)))
+
+        # Monday of the current week at 5:00 AM GMT+8
+        monday_5am = (now - datetime.timedelta(days=now.weekday())).replace(hour=5, minute=0, second=0, microsecond=0)
+        if now < monday_5am:
+            monday_5am -= datetime.timedelta(days=7)
+
+        return int(monday_5am.timestamp())
+    
+    @guild_group.command(name="inactive", description="List guild members that did not meet the minimum activity requirement in the past week (admin only)")
+    @admin_or_staff()
+    async def guild_inactive(self, interaction: discord.Interaction, point_threshold: int = 1500):
+        await interaction.response.defer()
+        try:
+            guild_data = get_full_guild_info(CLUB_ID)
+            if not guild_data or 'result' not in guild_data:
+                await interaction.followup.send("❌ Failed to fetch guild data")
+                return
+            result = guild_data.get('result', {})
+            members = result.get('members', {})
+            member_list = members.get('members', {})
+            all_pids = list(member_list.keys())
+
+            bulk_data = get_bulk_players_info(all_pids, fields=["club", "base"])
+            if bulk_data and bulk_data.get('code') == 0:
+                players_result = bulk_data.get('result', {})
+                logger.info(f"Fetched club info for {len(players_result)} players in bulk")
+                inactive_last_week = []
+                inactive_this_week = []
+                for pid, data in players_result.items():
+                    data_club = data.get('club', {})
+                    data_base = data.get('base', {})
+                    nickname = data_base.get('nickname', 'Unknown')
+                    number_id = data_base.get('number_id', 0)
+                    is_online = data_base.get('is_online', 0)
+                    logout_time = data_base.get('logout_time', 0)
+                    post = data_club.get('post', [])
+                    # Check if player has absent role (10005)
+                    if post and isinstance(post, list):
+                        has_absent_role = (True if 10005 in post else False)
+                        logger.debug(f"Player {nickname} (PID: {pid}) has post data, absent role: {has_absent_role}")
+                    else:
+                        has_absent_role = False
+
+                    # If the player is online or has logged out within this week (using day1 5am gmt+8 as cutoff)
+                    # find reset time for the current week (every Monday 5am GMT+8) and compare with logout_time to determine if they were active last week or this week
+                    
+                    if is_online or logout_time >= self.get_weekly_reset_ts():
+                        liveness = data_club.get('liveness', 0)
+                        last_liveness = data_club.get('last_liveness', 0)
+                        if last_liveness < point_threshold:
+                            inactive_last_week.append((nickname, last_liveness, logout_time, number_id, has_absent_role))
+                        if liveness < point_threshold:
+                            inactive_this_week.append((nickname, liveness, logout_time, number_id, has_absent_role))
+                    # elif check if logout last week but not this week
+                    elif logout_time >= self.get_weekly_reset_ts() - 7*24*3600:
+                        # If they logged out last week but not this week, last_liveness = liveness, and their liveness = 0
+                        last_liveness = data_club.get('liveness', 0)
+                        liveness = 0
+                        if last_liveness < point_threshold:
+                            inactive_last_week.append((nickname, last_liveness, logout_time, number_id, has_absent_role))
+                        if liveness < point_threshold:
+                            inactive_this_week.append((nickname, liveness, logout_time, number_id, has_absent_role))
+                    else:
+                        # If they logged out more than 2 weeks ago, we can consider them inactive for both weeks
+                        last_liveness = 0
+                        liveness = 0
+                        if last_liveness < point_threshold:
+                            inactive_last_week.append((nickname, last_liveness, logout_time, number_id, has_absent_role))
+                        if liveness < point_threshold:
+                            inactive_this_week.append((nickname, liveness, logout_time, number_id, has_absent_role))
+                inactive_last_week.sort(key=lambda x: x[1], reverse=True)
+                inactive_this_week.sort(key=lambda x: x[1], reverse=True)
+                # use container to send the list, pageinate if necessary
+
+
+                view = Inactive(inactive_last_week, inactive_this_week, point_threshold)
+                await interaction.followup.send(content="", view=view)
+
+
+        except Exception as e:
+            logger.error(f"Failed to fetch guild or player data: {str(e)}", exc_info=True)
+            await interaction.followup.send("❌ Failed to fetch guild or player data")
+            return
+
 
 from cogs.view_registry import register
 
