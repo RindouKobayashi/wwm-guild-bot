@@ -452,50 +452,97 @@ class AvatarPickerView(LayoutView):
             pass
 
     async def _on_prev(self, interaction: discord.Interaction):
+        # If this view was already stopped (closed/timed out) the buttons
+        # no longer exist on Discord's side — acknowledge silently.
+        if self.is_finished():
+            try:
+                await interaction.response.defer()
+            except Exception:
+                pass
+            return
+        # Defer immediately so we don't hit Discord's 3-second interaction
+        # token expiry (animated .webp files can be slow to upload).
+        try:
+            await interaction.response.defer()
+        except Exception:
+            pass
         if self.page > 0:
             self.page -= 1
             self._build()
-        # Re-upload the new page's PNGs so the rebuilt MediaGallery's
+        # Re-upload the new page's images so the rebuilt MediaGallery's
         # `attachment://picker_<page>_<file>.png` URLs resolve.
-        # `InteractionResponse.edit_message` uses `attachments=` (not `files=`)
-        # to pass new uploads.
-        await interaction.response.edit_message(
-            view=self,
-            attachments=self._files,
-        )
+        try:
+            await interaction.edit_original_response(
+                view=self,
+                attachments=self._files,
+            )
+        except Exception:
+            pass
 
     async def _on_next(self, interaction: discord.Interaction):
+        # If this view was already stopped (closed/timed out) the buttons
+        # no longer exist on Discord's side — acknowledge silently.
+        if self.is_finished():
+            try:
+                await interaction.response.defer()
+            except Exception:
+                pass
+            return
+        # Defer immediately so we don't hit Discord's 3-second interaction
+        # token expiry (animated .webp files can be slow to upload).
+        try:
+            await interaction.response.defer()
+        except Exception:
+            pass
         total_pages = max(1, -(-len(self.avatar_files) // self.ITEMS_PER_PAGE))
         if self.page < total_pages - 1:
             self.page += 1
             self._build()
-        # See note in _on_prev: use response.edit_message and pass the
-        # new page's files via `attachments=`.
-        await interaction.response.edit_message(
-            view=self,
-            attachments=self._files,
-        )
+        # Re-upload the new page's images so the rebuilt MediaGallery's
+        # `attachment://picker_<page>_<file>.png` URLs resolve.
+        try:
+            await interaction.edit_original_response(
+                view=self,
+                attachments=self._files,
+            )
+        except Exception:
+            pass
 
     async def _on_goto(self, interaction: discord.Interaction):
         """Handle the 'Go to page' select menu."""
+        # If this view was already stopped (closed/timed out) the buttons
+        # no longer exist on Discord's side — acknowledge silently.
+        if self.is_finished():
+            try:
+                await interaction.response.defer()
+            except Exception:
+                pass
+            return
         page_str = interaction.data.get("values", [None])[0]
         if page_str is None:
             return
+        # Defer immediately to avoid 3s token expiry on slow .webp uploads.
+        try:
+            await interaction.response.defer()
+        except Exception:
+            pass
         try:
             target = int(page_str) - 1  # values are 1-based
             total_pages = max(1, -(-len(self.avatar_files) // self.ITEMS_PER_PAGE))
             if 0 <= target < total_pages and target != self.page:
                 self.page = target
                 self._build()
-                await interaction.response.edit_message(
-                    view=self,
-                    attachments=self._files,
-                )
+                try:
+                    await interaction.edit_original_response(
+                        view=self,
+                        attachments=self._files,
+                    )
+                except Exception:
+                    pass
                 return
         except (ValueError, TypeError):
             pass
-        # If we couldn't navigate, just acknowledge the interaction
-        await interaction.response.edit_message(view=self)
+        # If we couldn't navigate, just leave the message as-is
 
     async def _on_close(self, interaction: discord.Interaction):
         for child in self.children:
