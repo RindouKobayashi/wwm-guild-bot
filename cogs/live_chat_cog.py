@@ -22,7 +22,7 @@ VERIFICATION_DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 AVATARS_DIR = BASE_DIR / "data" / "avatars"
 
 # Channel where avatar-mapping approval requests are sent for admins to review
-ADMIN_AVATAR_CHANNEL_ID = 414234388776353828
+ADMIN_AVATAR_CHANNEL_ID = 1500005539256602774
 
 
 # ── Components V2 view classes ──────────────────────────────────────
