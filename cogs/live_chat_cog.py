@@ -1,11 +1,17 @@
 import asyncio
+import io
 import json
 import os
+import shutil
 import aiosqlite
 from datetime import datetime
-from typing import Optional, Set
+from typing import Optional, Set, List
 import discord
 from discord.ext import commands, tasks
+from discord.ui import (
+    LayoutView, Container, TextDisplay, Separator, ActionRow,
+    Button, Thumbnail, MediaGallery, Select, Section,
+)
 from settings import BASE_DIR, logger
 from utility.wwm import get_club_chat, get_custom_guild_info, get_bulk_players_info, get_film_plan, get_teams_info
 from utility.api_constants import get_kongfu_ids_from_player, format_kongfu_display
@@ -13,6 +19,671 @@ from googletrans import Translator
 
 
 VERIFICATION_DB_PATH = BASE_DIR / "data" / "guild_verification.db"
+AVATARS_DIR = BASE_DIR / "data" / "avatars"
+
+# Channel where avatar-mapping approval requests are sent for admins to review
+ADMIN_AVATAR_CHANNEL_ID = 414234388776353828
+
+
+# ── Components V2 view classes ──────────────────────────────────────
+# Defined at module scope so the LiveChatCog below can reference them.
+
+class ChatMessageView(LayoutView):
+    """Components V2 message view for a normal (non-emote, non-artwork) chat message.
+
+    Holds the author, body text (with translation), and footer timestamp.
+    Optionally includes a Thumbnail of the head_id avatar when one exists locally,
+    and a MediaGallery for msg_artwork_card image attachments.
+    """
+
+    def __init__(
+        self,
+        *,
+        author_name: str,
+        body_text: str,
+        ts: int,
+        discord_mention: str = "",
+        head_id = None,
+        head_avatar_path: Optional[str] = None,
+        accent_color: int = 0x2ECC71,
+        image_url: Optional[str] = None,
+        image_files: Optional[List[discord.File]] = None,
+    ):
+        super().__init__(timeout=None)
+        self._files: List[discord.File] = list(image_files) if image_files else []
+
+        container_children: list = []
+
+        if head_avatar_path:
+            # Preserve original extension so animated .webp avatars stay animated
+            thumb_ext = os.path.splitext(head_avatar_path)[1] or ".png"
+            thumb_filename = f"head_{head_id}{thumb_ext}"
+            self._files.append(discord.File(head_avatar_path, filename=thumb_filename))
+            header_text = TextDisplay(f"**{author_name}**")
+            section = Section(accessory=Thumbnail(media=f"attachment://{thumb_filename}"))
+            section.add_item(header_text)
+            container_children.append(section)
+        else:
+            container_children.append(TextDisplay(f"**{author_name}**"))
+
+        container_children.append(TextDisplay(body_text))
+        container_children.append(Separator(spacing=discord.SeparatorSpacing.small))
+        footer = f"<t:{ts}:F> (<t:{ts}:R>)"
+        if discord_mention:
+            footer += f"\n{discord_mention}"
+        container_children.append(TextDisplay(footer))
+
+        if image_url:
+            gallery = MediaGallery()
+            gallery.add_item(media=image_url)
+            container_children.append(gallery)
+
+        container = Container(*container_children, accent_color=accent_color)
+        self.add_item(container)
+
+    def _resolve_files(self) -> List[discord.File]:
+        return list(self._files)
+
+
+class EmotionMessageView(LayoutView):
+    """Components V2 view for an emote (msg_emotion) chat message.
+
+    Shows the emotion PNG and the author/timestamp via a single Container.
+    """
+
+    def __init__(
+        self,
+        *,
+        author_name: str,
+        ts: int,
+        discord_mention: str,
+        emotion_id,
+        emotion_path: str,
+    ):
+        super().__init__(timeout=None)
+        self._files: List[discord.File] = [
+            discord.File(emotion_path, filename=f"{emotion_id}.png")
+        ]
+        gallery = MediaGallery()
+        gallery.add_item(media=f"attachment://{emotion_id}.png", description="Emote")
+
+        footer = f"📅 <t:{ts}:F> (<t:{ts}:R>)"
+        if discord_mention:
+            footer += f"\n{discord_mention}"
+
+        container = Container(
+            TextDisplay(f"**{author_name}**"),
+            gallery,
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay(footer),
+            accent_color=0x9B59B6,
+        )
+        self.add_item(container)
+
+    def _resolve_files(self) -> List[discord.File]:
+        return list(self._files)
+
+
+class ExhibitionMessageView(LayoutView):
+    """Components V2 view for an Exhibition (dance video) message."""
+
+    def __init__(
+        self,
+        *,
+        author_name: str,
+        ts: int,
+        discord_mention: str,
+        video_name: str,
+        video_url: str,
+        video_msg: str,
+        video_hot,
+    ):
+        super().__init__(timeout=None)
+        body_lines = [f"🎬 **[Exhibition] [{video_name or 'Unknown'}]({video_url})**"]
+        if video_msg:
+            body_lines.append(video_msg)
+        if video_hot:
+            body_lines.append(f"❤️ {video_hot}")
+        body_lines.append("")
+        body_lines.append(f"📅 <t:{ts}:F> (<t:{ts}:R>)")
+        if discord_mention:
+            body_lines.append(discord_mention)
+        container = Container(
+            TextDisplay(f"**{author_name}**"),
+            TextDisplay("\n".join(body_lines)),
+            accent_color=0xE67E22,
+        )
+        self.add_item(container)
+
+
+class HeadPickerRequestView(LayoutView):
+    """Wraps a normal chat message and adds a "Set Avatar" button.
+
+    Times out after 180 seconds, after which the button auto-disables.
+    """
+
+    PICKER_TIMEOUT = 180.0  # seconds
+
+    def __init__(self, *, base_view: ChatMessageView, head_id, sender_nickname: str, sender_pid: Optional[str]):
+        super().__init__(timeout=self.PICKER_TIMEOUT)
+        self.base_view = base_view
+        self.head_id = str(head_id) if head_id is not None else ""
+        self.sender_nickname = sender_nickname
+        self.sender_pid = sender_pid
+
+        # Carry over the base view's items (a single Container)
+        for item in list(base_view.children):
+            self.add_item(item)
+
+        action_row = ActionRow()
+        button = Button(
+            label="🖼️ Set Avatar",
+            style=discord.ButtonStyle.primary,
+            custom_id=f"head_picker_open:{self.head_id}",
+        )
+        button.callback = self._on_click
+        action_row.add_item(button)
+        self.add_item(action_row)
+
+        # Carry files across so the avatar thumbnail keeps working
+        self._files: List[discord.File] = list(getattr(base_view, "_files", []))
+
+    def _resolve_files(self) -> List[discord.File]:
+        return list(self._files)
+
+    async def _on_click(self, interaction: discord.Interaction):
+        try:
+            # Lazy imports to avoid circular references at module load
+            from cogs.live_chat_cog import LiveChatCog  # noqa: F401
+        except Exception:
+            pass
+
+        # Resolve the cog instance from the bot
+        cog = interaction.client.get_cog("LiveChatCog")
+        if cog is None:
+            await interaction.response.send_message("❌ LiveChatCog is not loaded.", ephemeral=True)
+            return
+
+        # Mark this head_id as handled so we don't re-prompt on later messages.
+        # We do this when the user clicks (not when the view is first created) so
+        # that if the button times out without interaction, the next message from
+        # this sender still gets a fresh "Set Avatar" button.
+        if self.head_id and cog:
+            cog.seen_head_ids.add(self.head_id)
+            cog.save_config()
+
+        avatar_files = cog._list_avatar_files(force_refresh=True)
+        if not avatar_files:
+            await interaction.response.send_message(
+                "❌ No avatar PNGs are available in `data/avatars/`. "
+                "Add at least one PNG to that folder and try again.",
+                ephemeral=True,
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        view = AvatarPickerView(
+            cog=cog,
+            head_id=self.head_id,
+            avatar_files=avatar_files,
+            suggested_by=interaction.user,
+            sender_nickname=self.sender_nickname,
+            sender_pid=self.sender_pid,
+        )
+        files = view._resolve_files()
+        await interaction.followup.send(
+            content=None,
+            view=view,
+            files=files,
+            ephemeral=True,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+
+    async def on_timeout(self) -> None:
+        # Remove the "Set Avatar" button row entirely (rather than just
+        # disabling the button) so the live message stops showing a dead
+        # control. If we know which channel message this view was attached
+        # to, push the change to Discord so users see the button disappear.
+        rows_to_remove = [
+            child for child in self.children
+            if isinstance(child, ActionRow)
+            and any(isinstance(item, Button) and item.custom_id == f"head_picker_open:{self.head_id}"
+                   for item in child.children)
+        ]
+        for row in rows_to_remove:
+            self.remove_item(row)
+
+        live_msg = getattr(self, "message", None)
+        if live_msg is not None:
+            try:
+                await live_msg.edit(
+                    view=self,
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
+            except Exception:
+                pass
+
+
+class AvatarPickerView(LayoutView):
+    """Ephemeral paginated picker that lets a user choose one of the avatar PNGs.
+
+    Shows up to 9 avatars per page (up to 3x3 grid, Discord's MediaGallery limit) plus pagination + a Select menu.
+    """
+
+    ITEMS_PER_PAGE = 9
+
+    def __init__(
+        self,
+        *,
+        cog: "LiveChatCog",
+        head_id: str,
+        avatar_files: List[str],
+        suggested_by: discord.abc.User,
+        sender_nickname: str,
+        sender_pid: Optional[str],
+    ):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.head_id = head_id
+        self.avatar_files = list(avatar_files)
+        self.suggested_by = suggested_by
+        self.sender_nickname = sender_nickname
+        self.sender_pid = sender_pid
+        self.page = 0
+        self._files: List[discord.File] = []
+        self._build()
+
+    def _resolve_files(self) -> List[discord.File]:
+        return list(self._files)
+
+    def _page_slice(self) -> List[str]:
+        start = self.page * self.ITEMS_PER_PAGE
+        end = start + self.ITEMS_PER_PAGE
+        return self.avatar_files[start:end]
+
+    def _build(self) -> None:
+        self.clear_items()
+        self._files = []
+
+        page_files = self._page_slice()
+        total_pages = max(1, -(-len(self.avatar_files) // self.ITEMS_PER_PAGE))
+
+        inner: list = []
+        inner.append(
+            TextDisplay(
+                f"# 🖼️ Pick an avatar for head_id `{self.head_id}`\n"
+                f"Page **{self.page + 1}** / **{total_pages}** "
+                f"({len(self.avatar_files)} avatars available)\n"
+                "Use the dropdown to choose, then it will be sent to admins for confirmation."
+            )
+        )
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Build a media gallery with the current page of avatars
+        if page_files:
+            gallery = MediaGallery()
+            for filename in page_files:
+                disk_path = AVATARS_DIR / filename
+                if not disk_path.exists():
+                    continue
+                attach_name = f"picker_{self.page}_{filename}"
+                # Re-attach as a fresh file each build
+                self._files.append(discord.File(str(disk_path), filename=attach_name))
+                gallery.add_item(
+                    media=f"attachment://{attach_name}",
+                    description=filename[:80],
+                )
+            inner.append(gallery)
+
+            # Build a Select with one option per avatar on this page
+            select_options = [
+                discord.SelectOption(
+                    label=filename[:95],
+                    description=f"Map head_id {self.head_id} → {filename}"[:95],
+                    value=filename,
+                )
+                for filename in page_files
+            ]
+            select_row = ActionRow()
+            picker_select = Select(
+                placeholder="Choose an avatar for this head_id…",
+                options=select_options,
+                custom_id=f"avatar_picker_select:{self.head_id}",
+            )
+            picker_select.callback = self._on_select
+            select_row.add_item(picker_select)
+            inner.append(select_row)
+        else:
+            inner.append(TextDisplay("No avatars to display on this page."))
+
+        # "Go to page" dropdown row
+        go_row = ActionRow()
+        if total_pages > 1:
+            go_options = [
+                discord.SelectOption(
+                    label=f"Page {i + 1}",
+                    description=f"Go to page {i + 1} of {total_pages}",
+                    value=str(i + 1),
+                    default=(i == self.page),
+                )
+                for i in range(total_pages)
+            ]
+            go_select = Select(
+                placeholder="Go to page…",
+                options=go_options,
+                custom_id="avatar_picker_goto",
+            )
+            go_select.callback = self._on_goto
+            go_row.add_item(go_select)
+            inner.append(go_row)
+
+        # Pagination row
+        nav_row = ActionRow()
+        prev_btn = Button(
+            label="⬅ Prev",
+            style=discord.ButtonStyle.secondary,
+            custom_id="avatar_picker_prev",
+            disabled=self.page <= 0,
+        )
+        prev_btn.callback = self._on_prev
+        nav_row.add_item(prev_btn)
+
+        next_btn = Button(
+            label="Next ➡",
+            style=discord.ButtonStyle.secondary,
+            custom_id="avatar_picker_next",
+            disabled=self.page >= total_pages - 1,
+        )
+        next_btn.callback = self._on_next
+        nav_row.add_item(next_btn)
+
+        close_btn = Button(
+            label="Close",
+            style=discord.ButtonStyle.danger,
+            custom_id="avatar_picker_close",
+        )
+        close_btn.callback = self._on_close
+        nav_row.add_item(close_btn)
+        inner.append(nav_row)
+
+        container = Container(*inner, accent_color=0x3498DB)
+        self.add_item(container)
+
+    async def _on_select(self, interaction: discord.Interaction):
+        chosen = interaction.data.get("values", [None])[0]
+        if not chosen:
+            await interaction.response.send_message("❌ No avatar selected.", ephemeral=True)
+            return
+        # Disable the picker after a selection to prevent double-sends
+        for child in self.children:
+            if isinstance(child, ActionRow):
+                for item in child.children:
+                    if isinstance(item, (Button, Select)):
+                        item.disabled = True
+        await interaction.response.edit_message(view=self)
+
+        # Record this head_id as "handled" so we don't re-prompt on later messages
+        if self.head_id:
+            self.cog.seen_head_ids.add(self.head_id)
+            self.cog.save_config()
+
+        jump_url = None
+        if interaction.message and interaction.message.reference is not None:
+            try:
+                jump_url = interaction.message.reference.jump_url
+            except Exception:
+                jump_url = None
+
+        await self.cog._send_admin_avatar_approval(
+            head_id=self.head_id,
+            chosen_filename=chosen,
+            suggested_by=self.suggested_by,
+            source_message_jump_url=jump_url,
+            sender_nickname=self.sender_nickname,
+            sender_pid=self.sender_pid,
+        )
+
+        try:
+            await interaction.followup.send(
+                f"✅ Sent **{chosen}** to admins for approval for head_id `{self.head_id}`.",
+                ephemeral=True,
+            )
+        except Exception:
+            pass
+
+    async def _on_prev(self, interaction: discord.Interaction):
+        if self.page > 0:
+            self.page -= 1
+            self._build()
+        # Re-upload the new page's PNGs so the rebuilt MediaGallery's
+        # `attachment://picker_<page>_<file>.png` URLs resolve.
+        # `InteractionResponse.edit_message` uses `attachments=` (not `files=`)
+        # to pass new uploads.
+        await interaction.response.edit_message(
+            view=self,
+            attachments=self._files,
+        )
+
+    async def _on_next(self, interaction: discord.Interaction):
+        total_pages = max(1, -(-len(self.avatar_files) // self.ITEMS_PER_PAGE))
+        if self.page < total_pages - 1:
+            self.page += 1
+            self._build()
+        # See note in _on_prev: use response.edit_message and pass the
+        # new page's files via `attachments=`.
+        await interaction.response.edit_message(
+            view=self,
+            attachments=self._files,
+        )
+
+    async def _on_goto(self, interaction: discord.Interaction):
+        """Handle the 'Go to page' select menu."""
+        page_str = interaction.data.get("values", [None])[0]
+        if page_str is None:
+            return
+        try:
+            target = int(page_str) - 1  # values are 1-based
+            total_pages = max(1, -(-len(self.avatar_files) // self.ITEMS_PER_PAGE))
+            if 0 <= target < total_pages and target != self.page:
+                self.page = target
+                self._build()
+                await interaction.response.edit_message(
+                    view=self,
+                    attachments=self._files,
+                )
+                return
+        except (ValueError, TypeError):
+            pass
+        # If we couldn't navigate, just acknowledge the interaction
+        await interaction.response.edit_message(view=self)
+
+    async def _on_close(self, interaction: discord.Interaction):
+        for child in self.children:
+            if isinstance(child, ActionRow):
+                for item in child.children:
+                    if isinstance(item, (Button, Select)):
+                        item.disabled = True
+        # Don't clear attachments — the view isn't rebuilt, so the existing
+        # `attachment://picker_<page>_<file>.png` references are still valid.
+        # Use a LayoutView + Container + TextDisplay (not embed= or content=)
+        # because the original picker was sent with a LayoutView (Components V2)
+        # and Discord rejects `embed=` / `content=` on IS_COMPONENTS_V2 messages.
+        close_container = Container(
+            TextDisplay("Picker closed."),
+            accent_color=0x3498DB,
+        )
+        close_view = LayoutView(timeout=None)
+        close_view.add_item(close_container)
+        await interaction.response.edit_message(
+            view=close_view,
+        )
+        self.stop()
+
+    async def on_timeout(self) -> None:
+        for child in self.children:
+            if isinstance(child, ActionRow):
+                for item in child.children:
+                    if isinstance(item, (Button, Select)):
+                        item.disabled = True
+        self.stop()
+
+
+class AdminConfirmView(LayoutView):
+    """Persistent Components V2 view that admins use to approve or reject a proposed avatar.
+
+    The actual `approve` / `reject` buttons live in `self.action_row` so the parent
+    LayoutView can place them as a separate top-level item in the admin message.
+    """
+
+    def __init__(
+        self,
+        *,
+        cog: "LiveChatCog",
+        head_id: str,
+        head_target_filename: str,
+        chosen_filename: str,
+        suggested_by_id: Optional[int],
+        source_message_jump_url: Optional[str],
+    ):
+        super().__init__(timeout=None)
+        self.cog = cog
+        self.head_id = head_id
+        self.head_target_filename = head_target_filename
+        self.chosen_filename = chosen_filename
+        self.suggested_by_id = suggested_by_id
+        self.source_message_jump_url = source_message_jump_url
+
+        self.action_row = ActionRow()
+        approve_btn = Button(
+            label="✅ Approve",
+            style=discord.ButtonStyle.success,
+            custom_id=f"avatar_admin_approve:{head_id}:{chosen_filename}",
+        )
+        approve_btn.callback = self._on_approve
+        self.action_row.add_item(approve_btn)
+
+        reject_btn = Button(
+            label="❌ Reject",
+            style=discord.ButtonStyle.danger,
+            custom_id=f"avatar_admin_reject:{head_id}",
+        )
+        reject_btn.callback = self._on_reject
+        self.action_row.add_item(reject_btn)
+
+    def _disable(self) -> None:
+        for item in self.action_row.children:
+            if isinstance(item, Button):
+                item.disabled = True
+
+    async def _on_approve(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ Admins only.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=False)
+
+        source_path = AVATARS_DIR / self.chosen_filename
+        mapped_dir = AVATARS_DIR / "mapped"
+        os.makedirs(str(mapped_dir), exist_ok=True)
+        target_path = mapped_dir / self.head_target_filename
+        try:
+            if source_path.resolve() != target_path.resolve():
+                # Copy the file contents to the mapped subfolder. shutil.copy2
+                # only needs read access to the source, which is nearly always
+                # granted even when Explorer/antivirus has a lock on Windows.
+                shutil.copy2(str(source_path), str(target_path))
+                # Write an empty .done_ marker next to the source so the picker
+                # skips it. This works without needing to rename/delete the
+                # locked source file.
+                done_marker = source_path.with_name(f".done_{source_path.name}")
+                try:
+                    done_marker.touch(exist_ok=True)
+                except OSError:
+                    pass
+            # Refresh the in-memory cache so the new file is recognized
+            self.cog._avatar_files_cache = None
+        except Exception as e:
+            logger.error(f"Failed to copy avatar for head_id {self.head_id}: {e}")
+            self._disable()
+            # Use a LayoutView + Container + TextDisplay instead of `content=` or
+            # `embed=` — the original message was sent with a LayoutView (Components
+            # V2), and the Discord API rejects both `content` and `embed` fields on
+            # messages with the IS_COMPONENTS_V2 flag set.
+            err_container = Container(
+                TextDisplay(
+                    f"❌ Failed to copy `{self.chosen_filename}` → "
+                    f"`{self.head_target_filename}`: {e}"
+                ),
+                accent_color=0xE74C3C,
+            )
+            err_view = LayoutView(timeout=None)
+            err_view.add_item(err_container)
+            await interaction.edit_original_response(
+                view=err_view,
+                attachments=[],
+            )
+            return
+
+        # Mark the head_id as mapped so we won't re-prompt
+        if self.head_id:
+            self.cog.seen_head_ids.add(self.head_id)
+            self.cog.save_config()
+
+        # Edit the original admin message to mark the approval, drop the
+        # now-stale proposed-avatar attachment, and remove the buttons entirely.
+        # Use a LayoutView + Container + TextDisplay (not embed= or content=) to
+        # stay compatible with Components V2.
+        try:
+            ok_container = Container(
+                TextDisplay(
+                    f"✅ **Approved** by {interaction.user.mention}\n"
+                    f"head_id `{self.head_id}` → `data/avatars/{self.head_target_filename}`"
+                ),
+                accent_color=0x2ECC71,
+            )
+            ok_view = LayoutView(timeout=None)
+            ok_view.add_item(ok_container)
+            await interaction.edit_original_response(
+                view=ok_view,
+                attachments=[],
+            )
+        except Exception:
+            pass
+
+        logger.info(
+            f"✅ Avatar approved: head_id={self.head_id} → {self.head_target_filename} "
+            f"(renamed from {self.chosen_filename}, by {interaction.user})"
+        )
+
+    async def _on_reject(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ Admins only.", ephemeral=True)
+            return
+        await interaction.response.defer(ephemeral=False)
+        # Edit the original admin message to mark the rejection, drop the
+        # proposed-avatar attachment, and remove the buttons entirely.
+        # Use a LayoutView + Container + TextDisplay (not embed= or content=) to
+        # stay compatible with Components V2.
+        try:
+            reject_container = Container(
+                TextDisplay(
+                    f"❌ **Rejected** by {interaction.user.mention}\n"
+                    f"head_id `{self.head_id}` mapping to `{self.chosen_filename}` was not applied."
+                ),
+                accent_color=0xE74C3C,
+            )
+            reject_view = LayoutView(timeout=None)
+            reject_view.add_item(reject_container)
+            await interaction.edit_original_response(
+                view=reject_view,
+                attachments=[],
+            )
+        except Exception:
+            pass
+        logger.info(
+            f"❌ Avatar rejected: head_id={self.head_id}, file={self.chosen_filename} "
+            f"(by {interaction.user})"
+        )
 
 
 class LiveChatCog(commands.Cog):
@@ -26,6 +697,11 @@ class LiveChatCog(commands.Cog):
         self._translate_retry_delay = 2.0
         self._translate_max_retries = 2
         self.pid_to_discord_user: dict[str, int] = {}  # player_pid -> discord user_id
+        # head_ids we've already prompted the user to map (so we only attach
+        # the "Set Avatar" button once per unknown head_id, per bot lifetime).
+        self.seen_head_ids: Set[str] = set()
+        # Cached list of avatar filenames for the picker UI.
+        self._avatar_files_cache: Optional[List[str]] = None
         # Configuration
         self.CONFIG_FILE = "data/live_chat_config.json"
         self.CLUB_ID = "aRvTyiPA8WMSXrRj"      # Your guild ID
@@ -45,6 +721,9 @@ class LiveChatCog(commands.Cog):
         # Load saved configuration
         self.load_config()
         
+        # Start the avatar cleanup loop (always runs, even if chat is disabled)
+        self.avatar_cleanup.start()
+
         # Only start poller if already enabled in config
         if self.is_running and self.CHANNEL_ID:
             # Reset running flag so first poll processes new messages (with persisted timestamps)
@@ -54,7 +733,13 @@ class LiveChatCog(commands.Cog):
 
     def cog_unload(self):
         self.chat_poller.cancel()
+        self.avatar_cleanup.cancel()
         self.save_config()
+
+    @tasks.loop(seconds=30)
+    async def avatar_cleanup(self):
+        """Periodically try to remove source files that have .done_ markers."""
+        await self._cleanup_done_markers()
 
     @tasks.loop(seconds=10)
     async def chat_poller(self):
@@ -180,127 +865,11 @@ class LiveChatCog(commands.Cog):
                 teamup_channel = self.bot.get_channel(self.TEAMUP_CHANNEL_ID)
                 if channel:
                     for msg in new_messages:
-                        # Check for emotion/emote messages before formatting embed
-                        ext = msg.get('ext', {})
-                        msg_type = ext.get('msg_type', 'msg_normal')
-                        msg_label = msg.get('msg', '').strip()
-                        video_url = None
-                        
-                        # Handle emotion messages (custom emotes with images)
-                        if msg_type == 'msg_emotion':
-                            emotion_id = ext.get('emotion_id')
-                            if emotion_id:
-                                emotion_path = f"data/emotion/{emotion_id}.png"
-                                if os.path.exists(emotion_path):
-                                    ts = int(msg.get('ts', 0))
-                                    nickname = msg.get('nickname', 'Unknown')
-                                    level = msg.get('level', 0)
-                                    sender_pid = msg.get('from_pid', None)
-                                    
-                                    # Determine sender's rank if possible
-                                    rank_name = "Unknown"
-                                    if sender_pid:
-                                        sender_ranks = []
-                                        for rank_id, rank_info in self.ranks.items():
-                                            if sender_pid in rank_info.get('pids', []):
-                                                sender_ranks.append((rank_id, rank_info.get('name', 'Unknown')))
-                                        if sender_ranks:
-                                            sender_ranks.sort(key=lambda x: int(x[0]), reverse=False)
-                                            custom_rank_names = {
-                                                1: "Guild Leader",
-                                                2: "Vice Leader",
-                                                5: "Command",
-                                                7: "Half Time Performer"
-                                            }
-                                            highest_rank_id, highest_rank_name = sender_ranks[0]
-                                            rank_name = custom_rank_names.get(highest_rank_id, highest_rank_name)
-                                    
-                                    # Check if sender has a bound Discord account
-                                    discord_mention = self._get_discord_mention(sender_pid)
-                                    name = f"{nickname} ({rank_name}) (Lv.{level})" if rank_name != "Unknown" else f"{nickname} (Lv.{level})"
-                                    desc = f"<t:{ts}:F> (<t:{ts}:R>)"
-                                    if discord_mention:
-                                        desc += f"\n{discord_mention}"
-                                    
-                                    embed = discord.Embed(description=desc)
-                                    embed.set_author(name=name)
-                                    file = discord.File(emotion_path, filename=f"{emotion_id}.png")
-                                    embed.set_image(url=f"attachment://{emotion_id}.png")
-                                    
-                                    message = await channel.send(embed=embed, file=file)
-                                    
-                                    # Check for @teamup keyword in message
-                                    raw_msg = msg.get('msg', '').strip().lower()
-                                    if self.TEAMUP_KEYWORD in raw_msg:
-                                        await self.send_teamup_alert(msg, teamup_channel)
-                                    
-                                    continue  # Skip the rest of the loop for this message
-                        
-                        if msg_type == 'msg_artwork_card' and msg_label == "[Exhibition]":
-                            artwork_data = ext.get('extra_data', {}).get('artwork_data', {})
-                            plan_id = artwork_data.get('plan_id', '')
-                            if plan_id:
-                                film_data = await asyncio.to_thread(get_film_plan, plan_id)
-                                if film_data and 'result' in film_data:
-                                    video_url = film_data['result'].get('video_url', '')
-                                    # Store film data in ext for format_message_embed to use
-                                    video_name = film_data['result'].get('name', '')
-                                    video_msg = film_data['result'].get('msg', '')
-                                    video_hot = film_data['result'].get('hot', '')
-                                    ext['film_data'] = film_data['result']
-                        
-                        if not video_url:
-                            embed = await self.format_message_embed(msg)
-                        
-                            message = await channel.send(embed=embed)
-                        else:
-                            ts = int(msg.get('ts', 0))
-                            nickname = msg.get('nickname', 'Unknown')
-                            level = msg.get('level', 0)
-                            ext = msg.get('ext', {})
-                            msg_type = ext.get('msg_type', 'msg_normal')
-                            sender_pid = msg.get('from_pid', None)
+                        # Build & post a Components V2 view for this message.
+                        # Handles emotion, exhibition, normal messages, the head_id
+                        # avatar picker, and the @teamup keyword alert.
+                        await self._post_v2_for_message(channel, msg, teamup_channel)
 
-                            # Determine sender's rank if possible
-                            rank_name = "Unknown"
-                            if sender_pid:
-                                # Get all ranks for sender PID
-                                sender_ranks = []
-                                for rank_id, rank_info in self.ranks.items():
-                                    if sender_pid in rank_info.get('pids', []):
-                                        sender_ranks.append((rank_id, rank_info.get('name', 'Unknown')))
-
-                                if sender_ranks:
-                                    sender_ranks.sort(key=lambda x: int(x[0]), reverse=False)  # Sort by rank ID ascending (assuming lower ID = higher rank)
-                                    # Include some custom ranks like 1 = Guild Leader, 2 = Vice Leader,etc
-                                    custom_rank_names = {
-                                        1: "Guild Leader",
-                                        2: "Vice Leader",
-                                        5: "Command",
-                                        7: "Half Time Performer"
-                                    }
-                                    # Get the highest rank (lowest ID) and use custom name if available
-                                    highest_rank_id, highest_rank_name = sender_ranks[0]
-                                    rank_name = custom_rank_names.get(highest_rank_id, highest_rank_name)
-
-                            message = f"[Exhibition] [{video_name if video_name else 'Unknown'}]({video_url})"
-                            if video_msg:
-                                message += f"\n{video_msg}"
-                            if video_hot:
-                                message += f"| ❤️ {video_hot}"
-
-                            # Check if sender has a bound Discord account
-                            discord_mention = self._get_discord_mention(sender_pid)
-                            name=f"{nickname} ({rank_name}) (Lv.{level})" if rank_name != "Unknown" else f"{nickname} (Lv.{level})"
-                            if discord_mention:
-                                name += f" — {discord_mention}"
-                            message = await channel.send(f"### {name}\n{message}\n\n<t:{ts}:F> (<t:{ts}:R>)")
-                        
-                        # Check for @teamup keyword in message
-                        raw_msg = msg.get('msg', '').strip().lower()
-                        if self.TEAMUP_KEYWORD in raw_msg:
-                            await self.send_teamup_alert(msg, teamup_channel)
-                
                 # Keep only last 200 message IDs to prevent memory leak
                 if len(self.last_seen_msg_ids) > 500:
                     self.last_seen_msg_ids = set(list(self.last_seen_msg_ids)[-300:])
@@ -333,6 +902,7 @@ class LiveChatCog(commands.Cog):
         nickname = msg.get('nickname', 'Unknown')
         level = msg.get('level', 0)
         ext = msg.get('ext', {})
+        head_id = msg.get('head_id', None)
         msg_type = ext.get('msg_type', 'msg_normal')
         sender_pid = msg.get('from_pid', None)
         
@@ -380,7 +950,7 @@ class LiveChatCog(commands.Cog):
                     message = f"⚔️ **Breaking Army** — **{player_name}** cleared in `{time_str}`"
                     # Override color to the BA purple color
                     ba_color = 0xBB8FCE
-                    embed = discord.Embed(description=f"{message}\n\n<t:{ts}:F> (<t:{ts}:R>)", color=ba_color)
+                    embed = discord.Embed(description=f"{message}", color=ba_color)
                     embed.set_author(name="Guild Steward")
                     return embed
             else:
@@ -535,8 +1105,6 @@ class LiveChatCog(commands.Cog):
         # Check if sender has a bound Discord account
         discord_mention = self._get_discord_mention(sender_pid)
         desc = f"{message}\n\n<t:{ts}:F> (<t:{ts}:R>)"
-        if discord_mention:
-            desc += f"\n{discord_mention}"
         
         embed = discord.Embed(
             description=desc,
@@ -742,7 +1310,9 @@ class LiveChatCog(commands.Cog):
                     self.last_seen_msg_ids = set(config.get('last_msg_ids', []))
                     self._last_seen_npc_ts = config.get('last_npc_ts', 0)
                     self._last_seen_max_ts = config.get('last_max_ts', 0)
-                logger.debug(f"Loaded live chat config: enabled={self.is_running}, channel={self.CHANNEL_ID}, last_max_ts={self._last_seen_max_ts}")
+                    # head_ids we've already prompted (so we don't keep re-attaching the picker button)
+                    self.seen_head_ids = set(str(h) for h in config.get('seen_head_ids', []))
+                logger.debug(f"Loaded live chat config: enabled={self.is_running}, channel={self.CHANNEL_ID}, last_max_ts={self._last_seen_max_ts}, seen_head_ids={len(self.seen_head_ids)}")
             except Exception as e:
                 logger.error(f"Failed to load live chat config: {str(e)}")
 
@@ -755,6 +1325,7 @@ class LiveChatCog(commands.Cog):
                 'last_msg_ids': list(self.last_seen_msg_ids)[-300:],
                 'last_npc_ts': self._last_seen_npc_ts,
                 'last_max_ts': self._last_seen_max_ts,
+                'seen_head_ids': list(self.seen_head_ids),
             }
             with open(self.CONFIG_FILE, 'w') as f:
                 json.dump(config, f, indent=4)
@@ -776,6 +1347,358 @@ class LiveChatCog(commands.Cog):
                 logger.debug(f"Loaded {len(rows)} PID -> Discord user mappings from verification DB")
         except Exception as e:
             logger.error(f"Failed to load verified mapping: {e}")
+
+    # ── Avatar / head_id helpers ──────────────────────────────────────
+    # ── V2 message posting helper ──────────────────────────────────
+    async def _post_v2_for_message(
+        self,
+        channel: discord.TextChannel,
+        msg: dict,
+        teamup_channel: Optional[discord.TextChannel],
+    ) -> None:
+        """Build and post a Components V2 view for one chat message.
+
+        Also handles the head_id avatar picker (if the head_id has no
+        local PNG yet) and the @teamup alert dispatch.
+        """
+        ext = msg.get("ext", {}) or {}
+        msg_type = ext.get("msg_type", "msg_normal")
+        msg_label = (msg.get("msg", "") or "").strip()
+        ts = int(msg.get("ts", 0) or 0)
+        nickname = msg.get("nickname", "Unknown")
+        level = msg.get("level", 0) or 0
+        sender_pid = msg.get("from_pid", None)
+        head_id = msg.get("head_id", None)
+
+        rank_name = self._get_rank_name(sender_pid)
+        author_name = (
+            f"{nickname} ({rank_name}) (Lv.{level})"
+            if rank_name != "Unknown"
+            else f"{nickname} (Lv.{level})"
+        )
+        discord_mention = self._get_discord_mention(sender_pid)
+        head_avatar_path = self._avatar_path(head_id)
+        channel_type = msg.get("channel", "club_chat")
+        accent_color = {
+            "club_chat": 0x2ECC71,
+            "officer_chat": 0xE67E22,
+            "private": 0x9B59B6,
+        }.get(channel_type, 0x3498DB)
+
+        view: Optional[LayoutView] = None
+        files: List[discord.File] = []
+        handled_separately = False  # True if emotion / exhibition took ownership
+
+        # ── Emotion messages (custom emote PNGs) ──
+        if msg_type == "msg_emotion":
+            emotion_id = ext.get("emotion_id")
+            if emotion_id:
+                emotion_path = f"data/emotion/{emotion_id}.png"
+                if os.path.exists(emotion_path):
+                    view = EmotionMessageView(
+                        author_name=author_name,
+                        ts=ts,
+                        discord_mention=discord_mention,
+                        emotion_id=emotion_id,
+                        emotion_path=emotion_path,
+                    )
+                    files = view._resolve_files()
+                    handled_separately = True
+
+        # ── Exhibition (dance video) messages ──
+        if not handled_separately and msg_type == "msg_artwork_card" and msg_label == "[Exhibition]":
+            artwork_data = ext.get("extra_data", {}).get("artwork_data", {}) or {}
+            plan_id = artwork_data.get("plan_id", "") or ""
+            if plan_id:
+                film_data = await asyncio.to_thread(get_film_plan, plan_id)
+                if film_data and "result" in film_data:
+                    video_url = film_data["result"].get("video_url", "") or ""
+                    if video_url:
+                        view = ExhibitionMessageView(
+                            author_name=author_name,
+                            ts=ts,
+                            discord_mention=discord_mention,
+                            video_name=film_data["result"].get("name", "") or "",
+                            video_url=video_url,
+                            video_msg=film_data["result"].get("msg", "") or "",
+                            video_hot=film_data["result"].get("hot", "") or "",
+                        )
+                        handled_separately = True
+
+        # ── Default: normal / share / location / item / red envelope / etc. ──
+        if not handled_separately and view is None:
+            # Reuse the existing embed builder to get the body text via Embed.description
+            embed = await self.format_message_embed(msg)
+            body_text = (embed.description or "").strip()
+            # Strip the timestamp line that `format_message_embed` appended
+            # to the description — the ChatMessageView footer adds its own
+            # timestamp, so we'd otherwise render it twice.
+            import re as _re
+            body_text = _re.sub(
+                r"<t:\d+:[FRT]>(?:\s*\(?<t:\d+:[FRT]>?\))?",
+                "",
+                body_text,
+            )
+            # Collapse any blank lines left behind after stripping
+            body_text = _re.sub(r"\n{2,}", "\n\n", body_text).strip()
+            picture_url = None
+            if msg_type == "msg_artwork_card":
+                artwork_data = ext.get("extra_data", {}).get("artwork_data", {}) or {}
+                picture_url = artwork_data.get("picture_url", "") or None
+            view = ChatMessageView(
+                author_name=author_name,
+                body_text=body_text,
+                ts=ts,
+                discord_mention=discord_mention,
+                head_id=str(head_id) if head_id is not None else None,
+                head_avatar_path=head_avatar_path,
+                accent_color=accent_color,
+                image_url=picture_url,
+            )
+            files = view._resolve_files()
+
+        if view is None:
+            return
+
+        # ── Offer head_id picker only for non-emote / non-exhibition messages ──
+        if (
+            not handled_separately
+            and head_id is not None
+            and head_avatar_path is None
+            and self._should_offer_avatar_picker(head_id)
+            and isinstance(view, ChatMessageView)
+        ):
+            view = HeadPickerRequestView(
+                base_view=view,
+                head_id=head_id,
+                sender_nickname=nickname,
+                sender_pid=sender_pid,
+            )
+            files = view._resolve_files()
+
+        try:
+            sent_message = await channel.send(
+                view=view,
+                files=files,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+            # Stash a reference to the live message on the head-picker view so
+            # `on_timeout` can push the button-removal update to Discord.
+            if isinstance(view, HeadPickerRequestView):
+                view.message = sent_message
+        except Exception as e:
+            logger.error(f"Failed to send V2 message: {e}", exc_info=True)
+            return
+
+        # Check for @teamup keyword
+        raw_msg = (msg.get("msg", "") or "").strip().lower()
+        if teamup_channel is not None and self.TEAMUP_KEYWORD in raw_msg:
+            await self.send_teamup_alert(msg, teamup_channel)
+
+    def _get_rank_name(self, sender_pid: Optional[str]) -> str:
+        """Look up the highest custom rank name for the given PID."""
+        if not sender_pid or not self.ranks:
+            return "Unknown"
+        sender_ranks = []
+        for rank_id, rank_info in self.ranks.items():
+            if sender_pid in rank_info.get("pids", []):
+                try:
+                    sender_ranks.append((int(rank_id), rank_info.get("name", "Unknown")))
+                except (TypeError, ValueError):
+                    continue
+        if not sender_ranks:
+            return "Unknown"
+        sender_ranks.sort(key=lambda x: x[0])
+        highest_rank_id, highest_rank_name = sender_ranks[0]
+        custom_rank_names = {
+            1: "Guild Leader",
+            2: "Vice Leader",
+            5: "Command",
+            7: "Half Time Performer",
+        }
+        return custom_rank_names.get(highest_rank_id, highest_rank_name)
+
+    def _avatar_path(self, head_id) -> Optional[str]:
+        """Return absolute path to a local avatar for the given head_id, or None.
+
+        Checks for .png first, then .webp in the mapped subfolder.
+        """
+        if head_id is None:
+            return None
+        head_str = str(head_id).strip()
+        if not head_str:
+            return None
+        # Convention: data/avatars/mapped/{head_id}.png or .webp
+        for ext in (".png", ".webp"):
+            candidate = AVATARS_DIR / "mapped" / f"{head_str}{ext}"
+            if candidate.exists() and candidate.is_file():
+                return str(candidate)
+        return None
+
+    def _list_avatar_files(self, force_refresh: bool = False) -> List[str]:
+        """Return a sorted list of PNG/WEBP filenames available in data/avatars/ root (not mapped/)."""
+        if self._avatar_files_cache is not None and not force_refresh:
+            return self._avatar_files_cache
+        try:
+            os.makedirs(str(AVATARS_DIR), exist_ok=True)
+            files = []
+            for f in os.listdir(str(AVATARS_DIR)):
+                name_lower = f.lower()
+                if not (name_lower.endswith('.png') or name_lower.endswith('.webp')):
+                    continue
+                # Skip files that have a .done_ marker (already approved/mapped)
+                if (AVATARS_DIR / f".done_{f}").exists():
+                    continue
+                files.append(f)
+            files.sort(key=str.lower)
+        except Exception as e:
+            logger.error(f"Failed to list avatar files: {e}")
+            files = []
+        self._avatar_files_cache = files
+        return files
+
+    async def _cleanup_done_markers(self):
+        """Background task: try to delete source avatars that have .done_ markers.
+
+        Once the OS releases its file lock (e.g. Explorer finishes indexing),
+        the file can finally be removed. Also tries to remove the marker itself.
+        Runs every 30 seconds.
+        """
+        try:
+            avatars_dir = str(AVATARS_DIR)
+            if not os.path.isdir(avatars_dir):
+                return
+            for f in os.listdir(avatars_dir):
+                if not f.startswith(".done_"):
+                    continue
+                # Derive the original source filename from the marker name
+                source_name = f[6:]  # strip ".done_" prefix
+                source_path = os.path.join(avatars_dir, source_name)
+                done_path = os.path.join(avatars_dir, f)
+                # Try to delete the source first
+                try:
+                    os.remove(source_path)
+                except OSError:
+                    continue  # still locked, try again next cycle
+                # Source gone — remove the marker too
+                try:
+                    os.remove(done_path)
+                except OSError:
+                    pass
+                logger.debug(f"Cleaned up approved avatar: {source_name}")
+        except Exception:
+            pass
+
+    def _should_offer_avatar_picker(self, head_id) -> bool:
+        """True if this is a new (unmapped) head_id worth offering the picker for."""
+        if head_id is None:
+            return False
+        head_str = str(head_id).strip()
+        if not head_str:
+            return False
+        # Already on disk → nothing to do
+        if self._avatar_path(head_str) is not None:
+            return False
+        # Already prompted once → don't keep spamming the button
+        if head_str in self.seen_head_ids:
+            return False
+        return True
+
+    async def _send_admin_avatar_approval(
+        self,
+        *,
+        head_id: str,
+        chosen_filename: str,
+        suggested_by: discord.abc.User,
+        source_message_jump_url: Optional[str],
+        sender_nickname: str,
+        sender_pid: Optional[str],
+    ) -> None:
+        """Send the admin-confirmation LayoutView to the configured mod channel."""
+        channel = self.bot.get_channel(ADMIN_AVATAR_CHANNEL_ID)
+        if channel is None:
+            logger.error(f"Admin avatar channel {ADMIN_AVATAR_CHANNEL_ID} not found")
+            return
+
+        source_path = AVATARS_DIR / chosen_filename
+        if not source_path.exists():
+            logger.error(f"Chosen avatar file missing on disk: {source_path}")
+            try:
+                await channel.send(
+                    f"❌ Avatar approval failed: file `{chosen_filename}` is missing on disk."
+                )
+            except Exception:
+                pass
+            return
+
+        # Determine target extension from source (support .png and animated .webp)
+        target_ext = ".png"
+        if chosen_filename.lower().endswith(".webp"):
+            target_ext = ".webp"
+        head_filename = f"{head_id}{target_ext}"
+        head_target_path = AVATARS_DIR / head_filename
+        # Avoid filename collisions with existing local files
+        copy_source = source_path
+        copy_source_name = chosen_filename
+        # If the source file is *not* already named after the head_id, the approve
+        # action will copy it. We re-attach the original chosen file to the admin
+        # message so admins can see what they're approving.
+
+        confirm_view = AdminConfirmView(
+            cog=self,
+            head_id=head_id,
+            head_target_filename=head_filename,
+            chosen_filename=chosen_filename,
+            suggested_by_id=suggested_by.id if suggested_by else None,
+            source_message_jump_url=source_message_jump_url,
+        )
+
+        # Read the file into a BytesIO so the disk file is closed immediately.
+        # This is important because on Windows the file lock would otherwise
+        # block the copy later in the approve flow.
+        with open(str(source_path), "rb") as _f:
+            file_bytes = _f.read()
+        file = discord.File(io.BytesIO(file_bytes), filename=copy_source_name)
+
+        info_lines = [
+            f"**New head_id avatar request**",
+            f"• `head_id`: **{head_id}**",
+            f"• Suggested by: {suggested_by.mention if suggested_by else 'unknown'}",
+            f"• Sender nickname: **{sender_nickname}**"
+            + (f" (PID: `{sender_pid}`)" if sender_pid else ""),
+        ]
+        if source_message_jump_url:
+            info_lines.append(f"• Original message: {source_message_jump_url}")
+        info_lines.append(
+            f"\n📎 Chosen file: `{chosen_filename}`"
+            f"\n✅ Approve will copy it to `data/avatars/{head_filename}`."
+        )
+
+        container = Container(
+            TextDisplay("\n".join(info_lines)),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay("**Proposed avatar:**"),
+            accent_color=0xE67E22,
+        )
+        container.add_item(MediaGallery())
+        container.children[-1].add_item(media=f"attachment://{copy_source_name}", description=f"Proposed avatar for head_id {head_id}")
+
+        view = LayoutView(timeout=None)
+        view.add_item(container)
+        view.add_item(confirm_view.action_row)
+        view._files = [file]  # attach when sending
+
+        try:
+            await channel.send(
+                view=view,
+                file=file,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+            logger.info(
+                f"📤 Avatar approval request sent to {channel} for head_id={head_id}, file={chosen_filename}"
+            )
+        except Exception as e:
+            logger.error(f"Failed to send admin avatar approval message: {e}")
 
 
 async def setup(bot: commands.Bot):
