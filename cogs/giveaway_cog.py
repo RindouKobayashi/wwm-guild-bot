@@ -123,14 +123,29 @@ async def _select_winners(
     chance_role_id: Optional[int],
     chance_bound_only: bool,
     channel: discord.TextChannel,
+    require_bound: bool = False,
 ) -> Tuple[list, str, list]:
     """
     Select winners using weighted random selection WITHOUT replacement.
     Returns (winners_list, winner_mentions_text, winner_ids).
+
+    If require_bound is True, participants who have since unbounded
+    their account are filtered out before selecting winners.
     """
     total = len(participants)
     if total == 0:
         return [], "No one entered this time. 😢", []
+
+    # Filter out unbound participants if the giveaway is bound-only
+    if require_bound:
+        filtered_participants = []
+        for uid in participants:
+            if await _is_user_bound(uid):
+                filtered_participants.append(uid)
+        participants = filtered_participants
+        total = len(participants)
+        if total == 0:
+            return [], "No eligible participants (no bound accounts). 😢", []
 
     has_multiplier = multiplier is not None and multiplier > 1.0
     weights = []
@@ -529,7 +544,8 @@ class EndedGiveawayView(LayoutView):
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute(
                 "SELECT id, title, prize, winners, sponsor_id, "
-                "chance_multiplier, chance_role_id, chance_for_bound_only, channel_id "
+                "chance_multiplier, chance_role_id, chance_for_bound_only, channel_id, "
+                "require_bound "
                 "FROM giveaways WHERE message_id = ? AND status = 'ended'",
                 (message_id,),
             ) as cursor:
@@ -541,6 +557,7 @@ class EndedGiveawayView(LayoutView):
                     "winners": row[3], "sponsor_id": row[4],
                     "multiplier": row[5], "chance_role_id": row[6],
                     "chance_for_bound_only": row[7], "channel_id": row[8],
+                    "require_bound": bool(row[9]),
                 }
 
     async def _on_reroll(self, interaction: discord.Interaction):
@@ -562,6 +579,7 @@ class EndedGiveawayView(LayoutView):
         winners_list, mentions_text, _ = await _select_winners(
             participants, gw["winners"], gw["multiplier"],
             gw["chance_role_id"], gw["chance_for_bound_only"], interaction.channel,
+            require_bound=gw.get("require_bound", False),
         )
 
         if not winners_list:
@@ -916,7 +934,7 @@ class GiveawayCog(commands.Cog):
             for gw_id in expired_ids:
                 async with db.execute(
                     "SELECT id, channel_id, message_id, title, prize, winners, sponsor_id, "
-                    "chance_multiplier, chance_role_id, chance_for_bound_only "
+                    "chance_multiplier, chance_role_id, chance_for_bound_only, require_bound "
                     "FROM giveaways WHERE id = ?",
                     (gw_id,),
                 ) as cursor:
@@ -926,7 +944,7 @@ class GiveawayCog(commands.Cog):
 
                 (
                     gw_id, chan_id, msg_id, title, prize, winners_count, sponsor_id,
-                    multiplier, chance_role_id, chance_bound_only,
+                    multiplier, chance_role_id, chance_bound_only, require_bound,
                 ) = row
                 channel = self.bot.get_channel(chan_id)
                 if not channel:
@@ -940,7 +958,7 @@ class GiveawayCog(commands.Cog):
 
                 _, winner_mentions_text, winner_ids = await _select_winners(
                     participants, winners_count, multiplier, chance_role_id, chance_bound_only,
-                    channel,
+                    channel, require_bound=bool(require_bound),
                 )
 
                 ended_view = EndedGiveawayView(
@@ -1036,10 +1054,10 @@ class GiveawayCog(commands.Cog):
                 logger.warning(f"Invalid role ID in allowed_roles: '{part}'")
         return ",".join(ids) if ids else None
 
-    # ── Subcommand: giveaway start ──────────────────────────────────────────
+    # ── Command: giveaway start ─────────────────────────────────────────────
 
     @app_commands.command(name="giveaway", description="[ADMIN] Start a new giveaway")
-    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.default_permissions(administrator=True)
     @app_commands.guild_only()
     @app_commands.describe(
         prize="The prize to be won",
@@ -1184,7 +1202,7 @@ class GiveawayCog(commands.Cog):
     # ── Subcommand: giveaway history ────────────────────────────────────────
 
     @app_commands.command(name="giveaway-history", description="[ADMIN] Browse past and present giveaways")
-    @app_commands.checks.has_permissions(administrator=True)
+    @app_commands.default_permissions(administrator=True)
     @app_commands.guild_only()
     async def giveaway_history(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=False)
