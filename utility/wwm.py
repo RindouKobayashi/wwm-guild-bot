@@ -12,7 +12,8 @@ from settings import (
     WWM_FULL_GUILD_URL, WWM_FASHION_PLAN_URL, WWM_CLUB_BY_NAME_URL,
     WWM_CLUB_BRIEF_INFO_BATCH_URL, WWM_CLUB_CHAT_URL,
     WWM_FIND_PEOPLE_BY_NICKNAME_URL, WWM_HOST, logger,
-    WWM_FASHION_SCORE_URL, WWM_FILM_PLAN_URL, WWM_TEAMS_INFO_URL
+    WWM_FASHION_SCORE_URL, WWM_FILM_PLAN_URL, WWM_TEAMS_INFO_URL,
+    WWM_GET_CLUB_BY_NUMBER_ID_URL
 )
 
 # -----------------------------------------------------------------------------
@@ -399,6 +400,34 @@ def get_club_brief_info_batch(club_ids: List[str], hostnums: List[int]) -> Optio
         return data
     
     logger.warning("Failed to fetch club brief info batch")
+    return None
+
+
+def get_club_by_number_id(club_number_id: int) -> Optional[Dict[str, Any]]:
+    """
+    Look up a club/guild directly by its numeric club number_id.
+    Args:
+        club_number_id: The numeric club/guild number_id
+        hostnum: The hostnum (default 10103)
+    Returns:
+        Dict with 'base', 'members', 'club_id', 'hostnum' keys, or None if not found.
+    """
+    logger.debug(f"Looking up club by number_id: '{club_number_id}'")
+    
+    payload = {
+        "number_id": club_number_id,
+        "uid": WWM_UID,
+        "group_number": 10001,
+    }
+    
+    response = _wwm_api_post(WWM_GET_CLUB_BY_NUMBER_ID_URL, payload)
+    
+    if response and 'result' in response and 'data' in response['result']:
+        data = response['result']['data']
+        logger.debug(f"Found club by number_id '{club_number_id}': {data.get('base', {}).get('name', 'Unknown')}")
+        return data
+    
+    logger.warning(f"No club found for number_id: '{club_number_id}'")
     return None
 
 

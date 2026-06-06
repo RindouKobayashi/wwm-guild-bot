@@ -10,7 +10,7 @@ from collections import defaultdict
 from deepdiff import DeepDiff
 
 import settings
-from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes
+from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, format_kongfu_display, classify_kongfu_role
 
@@ -2452,18 +2452,116 @@ class WWMCog(commands.Cog):
             )
             await interaction.followup.send(embed=embed)
 
-    @guild_group.command(name="search-name", description="Search for a guild by name (shows up to 5 results to choose from)")
-    @app_commands.describe(name="The guild name to search for")
-    async def guild_search_name(self, interaction: discord.Interaction, name: str):
+    @guild_group.command(name="search-name", description="Search for a guild by name or guild ID")
+    @app_commands.describe(query="The guild name or numeric guild ID to search for")
+    async def guild_search_name(self, interaction: discord.Interaction, query: str):
         await interaction.response.defer()
         
         try:
-            if not name or len(name.strip()) == 0:
-                embed = discord.Embed(title="❌ Invalid Name", description="Please provide a guild name to search for.", color=discord.Color.red())
+            if not query or len(query.strip()) == 0:
+                embed = discord.Embed(title="❌ Invalid Query", description="Please provide a guild name or guild ID to search for.", color=discord.Color.red())
                 await interaction.followup.send(embed=embed)
                 return
             
-            search_term = name.strip()
+            search_term = query.strip()
+            
+            # ── If the input is purely numeric, treat it as a guild ID ──
+            if search_term.isdigit():
+                await interaction.edit_original_response(content="🔍 Looking up guild by ID...")
+                
+                guild_lookup = get_club_by_number_id(int(search_term))
+                
+                if not guild_lookup:
+                    embed = discord.Embed(title="❌ Guild Not Found", description=f"No guild found with ID `{search_term}`", color=discord.Color.red())
+                    await interaction.followup.send(embed=embed)
+                    return
+                
+                club_id = guild_lookup.get('club_id')
+                hostnum = guild_lookup.get('hostnum', 10103)
+                
+                if not club_id:
+                    embed = discord.Embed(title="❌ Invalid Guild Data", color=discord.Color.red())
+                    await interaction.followup.send(embed=embed)
+                    return
+                
+                await interaction.edit_original_response(content="🔍 Looking up guild by ID...\n📋 Loading guild data...")
+                
+                guild_data = get_full_guild_info(club_id, hostnum=hostnum)
+                
+                if not guild_data or 'result' not in guild_data:
+                    embed = discord.Embed(title="❌ Guild not found or API error", color=discord.Color.red())
+                    await interaction.followup.send(embed=embed)
+                    return
+                
+                result = guild_data['result']
+                base = result.get('base', {})
+                members = result.get('members', {})
+                play = result.get('play', {})
+                create_ts = base.get('create_ts', 0)
+                
+                embed = discord.Embed(title="🏰 Guild Profile", color=discord.Color.og_blurple())
+                embed.description = f"**{base.get('name', 'Unknown Guild')}**"
+                embed.add_field(name="📛 Guild Name", value=f"`{base.get('name', 'Unknown')}`", inline=True)
+                embed.add_field(name="⭐ Level", value=f"`{base.get('level', 0)}`", inline=True)
+                embed.add_field(name="📅 Creation Date", value=f"<t:{create_ts}:R>" if create_ts else "Unknown", inline=True)
+                embed.add_field(name="👥 Members", value=f"`{members.get('member_num', 0)} / 100`", inline=True)
+                embed.add_field(name="💰 Guild Funds", value=f"`{base.get('fund', 0):,}`", inline=True)
+                embed.add_field(name="📈 Total Fame", value=f"`{base.get('fame', 0):,}`", inline=True)
+                embed.add_field(name="🔥 Weekly Activity", value=f"`{base.get('week_fame', 0):,}`", inline=True)
+                embed.add_field(name="⚔️ GvG Points", value=f"`{play.get('pk_match_info', {}).get('battle_score', 0)}`", inline=True)
+                
+                leader_name = "None"
+                vice_leader_name = "None"
+                leader_pid = "None"
+                vice_leader_pid = "None"
+                
+                member_list = members.get('members', {})
+                for pid, member in member_list.items():
+                    post_list = member.get('post', [])
+                    if 1 in post_list:
+                        leader_pid = pid
+                    if 2 in post_list:
+                        vice_leader_pid = pid
+                
+                pids_to_fetch = []
+                if leader_pid != "None":
+                    pids_to_fetch.append(leader_pid)
+                if vice_leader_pid != "None":
+                    pids_to_fetch.append(vice_leader_pid)
+                
+                if pids_to_fetch:
+                    bulk_data = get_bulk_players_info(pids_to_fetch, fields=["base"])
+                    if bulk_data and bulk_data.get('code') == 0:
+                        players = bulk_data.get('result', {})
+                        if leader_pid in players:
+                            leader_base = players[leader_pid].get('base', {})
+                            leader_name = leader_base.get('nickname', 'Unknown')
+                        if vice_leader_pid in players:
+                            vice_base = players[vice_leader_pid].get('base', {})
+                            vice_leader_name = vice_base.get('nickname', 'Unknown')
+                
+                online = 0
+                all_pids = list(member_list.keys())
+                bulk_data = get_bulk_players_info(all_pids, fields=["base"])
+                if bulk_data and bulk_data.get('code') == 0:
+                    players = bulk_data.get('result', {})
+                    for pid, player_data in players.items():
+                        player_base = player_data.get('base', {})
+                        if player_base.get('is_online', 0) == 1:
+                            online += 1
+                
+                embed.add_field(name="👑 Guild Leader", value=f"`{leader_name}`", inline=True)
+                embed.add_field(name="⚔️ Vice Leader", value=f"`{vice_leader_name}`", inline=True)
+                embed.add_field(name="🟢 Online Now", value=f"`{online} / {members.get('member_num', 0)}`", inline=True)
+                
+                announcement = result.get('gonggao_info', {}).get('msg')
+                if announcement and announcement.strip():
+                    embed.add_field(name="📢 Guild Announcement", value=f"`{announcement}`", inline=False)
+                
+                await interaction.edit_original_response(content=None, embed=embed)
+                return
+            
+            # ── Otherwise, treat it as a guild name search ──
             clubs = get_club_by_name(search_term, limit=5)
             
             if not clubs or len(clubs) == 0:
