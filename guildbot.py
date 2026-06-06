@@ -22,6 +22,7 @@ async def setup_hook():
     import cogs.guild_verification_cog  # noqa: F401 — registers VerificationStartView, VerificationAdminView
     import cogs.leaderboard_cog         # noqa: F401 — registers LeaderboardView
     import cogs.wwm_cog                 # noqa: F401 — registers GuildStatusBoard
+    import cogs.giveaway_cog            # noqa: F401 — registers PersistentGiveawayView, EndedGiveawayView
     register_all_views(bot)
     logger.info("Registered persistent views in setup_hook")
 
