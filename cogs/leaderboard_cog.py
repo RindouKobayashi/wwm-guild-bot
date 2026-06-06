@@ -385,7 +385,15 @@ def _build_ba_leaderboard_data() -> Tuple[List[dict], int, dict]:
         session_timings = timings.get(f"session_{session_key}", {}).get("players", {})
         session_info = sessions.get(session_key, {})
         boss_name = session_info.get("boss_name", "Unknown")
-        for pid, data in session_timings.items():
+        session_start_ts = session_info.get("start_ts", 0)
+        for pid, data in list(session_timings.items()):
+            # ── Per-player staleness check ──────────────────────────────
+            # If a player's last recorded timing is before the session's
+            # current start_ts, their data is from a previous occurrence
+            # and should be ignored (treated as stale).
+            last_ts = data.get("last_ts", 0)
+            if session_start_ts and last_ts and last_ts < session_start_ts:
+                continue
             all_pids.add(pid)
             entries.append({
                 "pid": pid,
@@ -537,9 +545,11 @@ class BreakingArmyView(LayoutView):
             mins = time_val // 60
             secs = time_val % 60
             time_display = f"{mins}m {secs}s" if mins > 0 else f"{secs}s"
-            rank = next(i for i, e in enumerate(self.entries, 1)
-                        if e["session_key"] == ue["session_key"] and e["pid"] == user_pid)
-            total_in_session = sum(1 for e in self.entries if e["session_key"] == ue["session_key"])
+            # Compute rank within this session's entries only
+            session_entries = [e for e in self.entries if e["session_key"] == ue["session_key"]]
+            rank = next((i for i, e in enumerate(session_entries, 1)
+                         if e["pid"] == user_pid), len(session_entries))
+            total_in_session = len(session_entries)
             embed.add_field(
                 name=f"Session {ue['session_key']} — {ue.get('boss_name', '?')}",
                 value=f"**Time:** `{time_display}`\n"
