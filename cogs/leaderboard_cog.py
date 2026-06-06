@@ -357,21 +357,28 @@ def _build_ba_leaderboard_data() -> Tuple[List[dict], int, dict]:
     entries = []
     all_pids = set()
 
-    # Check if we need to clear old data (when transitioning to upcoming state with different week)
-    stored_week = timings.get("week_start_ts", 0)
-    if week_start_ts and stored_week and week_start_ts > stored_week:
-        # New week detected — check if any session is upcoming_soon or active
-        # If all are "upcoming" (more than 1h away) and it's a new week, clear old data
-        should_clear = True
-        for s in sessions.values():
-            if s.get("state") in ("upcoming_soon", "active"):
-                should_clear = False
-                break
-        if should_clear:
-            logger.info(f"BA: new week detected, clearing old timings (week {stored_week} -> {week_start_ts})")
-            timings = {}
-            timings["week_start_ts"] = week_start_ts
-            _save_ba_timings(timings)
+    # ── Per-session stale data cleanup ─────────────────────────────────
+    # For each session, check if the stored start_ts no longer matches
+    # the schedule's computed start_ts (indicating the session rolled over
+    # to a new week). This mirrors the check in on_breaking_army_timing
+    # and ensures old data is cleared even during refresh cycles.
+    altered = False
+    for session_key in ("1", "2"):
+        stored_session = timings.get(f"session_{session_key}", {})
+        stored_start = stored_session.get("start_ts", 0)
+        session_info = sessions.get(session_key, {})
+        expected_start = session_info.get("start_ts", 0)
+        if stored_start and expected_start and stored_start != expected_start:
+            logger.info(
+                f"BA build: session {session_key} start_ts changed "
+                f"({stored_start} -> {expected_start}), clearing old session data"
+            )
+            timings.pop(f"session_{session_key}", None)
+            if week_start_ts:
+                timings["week_start_ts"] = week_start_ts
+            altered = True
+    if altered:
+        _save_ba_timings(timings)
 
     # For each session, gather player timings
     for session_key in ("1", "2"):
