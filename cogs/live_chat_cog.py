@@ -224,14 +224,10 @@ class HeadPickerRequestView(LayoutView):
             await interaction.response.send_message("❌ LiveChatCog is not loaded.", ephemeral=True)
             return
 
-        # Mark this head_id as handled so we don't re-prompt on later messages.
-        # We do this when the user clicks (not when the view is first created) so
-        # that if the button times out without interaction, the next message from
-        # this sender still gets a fresh "Set Avatar" button.
-        if self.head_id and cog:
-            cog.seen_head_ids.add(self.head_id)
-            cog.save_config()
-
+        # Note: head_id is NOT marked as "seen" here — the user may close the
+        # picker without completing a selection. Marking happens only when the
+        # user actually selects an avatar (see AvatarPickerView._on_select) or
+        # when an admin approves (AdminConfirmView._on_approve).
         avatar_files = cog._list_avatar_files(force_refresh=True)
         if not avatar_files:
             await interaction.response.send_message(
@@ -287,10 +283,15 @@ class HeadPickerRequestView(LayoutView):
 class AvatarPickerView(LayoutView):
     """Ephemeral paginated picker that lets a user choose one of the avatar PNGs.
 
-    Shows up to 9 avatars per page (up to 3x3 grid, Discord's MediaGallery limit) plus pagination + a Select menu.
+    Shows up to 9 avatars per page (up to 3x3 grid, Discord's MediaGallery limit)
+    plus pagination + a Select menu. PNG files are loaded before WEBP for faster
+    initial pages, and the "Go to page" dropdown shows format counts per page.
+    File objects for the current, previous, and next pages are cached to speed
+    up navigation.
     """
 
     ITEMS_PER_PAGE = 9
+    _page_cache: dict = {}  # page_number -> (List[discord.File], List[str])
 
     def __init__(
         self,
@@ -305,12 +306,16 @@ class AvatarPickerView(LayoutView):
         super().__init__(timeout=300)
         self.cog = cog
         self.head_id = head_id
+        # Files are already sorted PNG-first by _list_avatar_files
         self.avatar_files = list(avatar_files)
         self.suggested_by = suggested_by
         self.sender_nickname = sender_nickname
         self.sender_pid = sender_pid
         self.page = 0
         self._files: List[discord.File] = []
+        self._nav_in_progress = False
+        # Clear any stale cache from a previous picker instance
+        AvatarPickerView._page_cache.clear()
         self._build()
 
     def _resolve_files(self) -> List[discord.File]:
@@ -321,37 +326,76 @@ class AvatarPickerView(LayoutView):
         end = start + self.ITEMS_PER_PAGE
         return self.avatar_files[start:end]
 
+    @staticmethod
+    def _page_format_counts(page_files: List[str]) -> str:
+        """Return a short summary of file formats on this page, e.g. '5 PNG, 4 WEBP'."""
+        png = sum(1 for f in page_files if f.lower().endswith('.png'))
+        webp = sum(1 for f in page_files if f.lower().endswith('.webp'))
+        parts = []
+        if png:
+            parts.append(f"{png} PNG")
+        if webp:
+            parts.append(f"{webp} WEBP")
+        return ", ".join(parts) if parts else "empty"
+
+    def _load_page_files(self, page_num: int) -> tuple[List[discord.File], List[str]]:
+        """Load (files, filenames) for a given page from cache or disk."""
+        if page_num in AvatarPickerView._page_cache:
+            return AvatarPickerView._page_cache[page_num]
+
+        start = page_num * self.ITEMS_PER_PAGE
+        end = start + self.ITEMS_PER_PAGE
+        page_files = self.avatar_files[start:end]
+        loaded: List[discord.File] = []
+        for filename in page_files:
+            disk_path = AVATARS_DIR / filename
+            if not disk_path.exists():
+                continue
+            attach_name = f"picker_{page_num}_{filename}"
+            loaded.append(discord.File(str(disk_path), filename=attach_name))
+        result = (loaded, page_files)
+        # Cache only this page and immediate neighbours (to avoid memory bloat)
+        for cached_page in (page_num - 1, page_num, page_num + 1):
+            if 0 <= cached_page < -(-len(self.avatar_files) // self.ITEMS_PER_PAGE):
+                if cached_page not in AvatarPickerView._page_cache:
+                    AvatarPickerView._page_cache[cached_page] = None  # placeholder
+        AvatarPickerView._page_cache[page_num] = result
+        return result
+
     def _build(self) -> None:
         self.clear_items()
         self._files = []
+        is_loading = getattr(self, '_nav_in_progress', False)
 
         page_files = self._page_slice()
         total_pages = max(1, -(-len(self.avatar_files) // self.ITEMS_PER_PAGE))
 
         inner: list = []
-        inner.append(
-            TextDisplay(
-                f"# 🖼️ Pick an avatar for head_id `{self.head_id}`\n"
-                f"Page **{self.page + 1}** / **{total_pages}** "
-                f"({len(self.avatar_files)} avatars available)\n"
-                "Use the dropdown to choose, then it will be sent to admins for confirmation."
-            )
+
+        # Show a loading indicator if navigating to a page with WEBP files
+        header_text = (
+            f"# 🖼️ Pick an avatar for head_id `{self.head_id}`\n"
+            f"Page **{self.page + 1}** / **{total_pages}** "
+            f"({len(self.avatar_files)} avatars available)\n"
         )
+        if is_loading:
+            header_text += "🔄 Loading page… please wait."
+        else:
+            header_text += "Use the dropdown to choose, then it will be sent to admins for confirmation."
+
+        inner.append(TextDisplay(header_text))
         inner.append(Separator(spacing=discord.SeparatorSpacing.small))
 
         # Build a media gallery with the current page of avatars
         if page_files:
+            loaded_files, _ = self._load_page_files(self.page)
+            self._files = loaded_files
             gallery = MediaGallery()
-            for filename in page_files:
-                disk_path = AVATARS_DIR / filename
-                if not disk_path.exists():
-                    continue
-                attach_name = f"picker_{self.page}_{filename}"
-                # Re-attach as a fresh file each build
-                self._files.append(discord.File(str(disk_path), filename=attach_name))
+            for fname in page_files:
+                attach_name = f"picker_{self.page}_{fname}"
                 gallery.add_item(
                     media=f"attachment://{attach_name}",
-                    description=filename[:80],
+                    description=fname[:80],
                 )
             inner.append(gallery)
 
@@ -376,18 +420,24 @@ class AvatarPickerView(LayoutView):
         else:
             inner.append(TextDisplay("No avatars to display on this page."))
 
-        # "Go to page" dropdown row
+        # "Go to page" dropdown row — includes format counts
         go_row = ActionRow()
         if total_pages > 1:
-            go_options = [
-                discord.SelectOption(
-                    label=f"Page {i + 1}",
-                    description=f"Go to page {i + 1} of {total_pages}",
-                    value=str(i + 1),
-                    default=(i == self.page),
+            go_options = []
+            for i in range(total_pages):
+                start = i * self.ITEMS_PER_PAGE
+                end = start + self.ITEMS_PER_PAGE
+                page_file_list = self.avatar_files[start:end]
+                fmt_count = self._page_format_counts(page_file_list)
+                label = f"Page {i + 1} ({fmt_count})" if fmt_count else f"Page {i + 1}"
+                go_options.append(
+                    discord.SelectOption(
+                        label=label[:98],
+                        description=f"Go to page {i + 1} of {total_pages}",
+                        value=str(i + 1),
+                        default=(i == self.page),
+                    )
                 )
-                for i in range(total_pages)
-            ]
             go_select = Select(
                 placeholder="Go to page…",
                 options=go_options,
@@ -403,7 +453,7 @@ class AvatarPickerView(LayoutView):
             label="⬅ Prev",
             style=discord.ButtonStyle.secondary,
             custom_id="avatar_picker_prev",
-            disabled=self.page <= 0,
+            disabled=self.page <= 0 or is_loading,
         )
         prev_btn.callback = self._on_prev
         nav_row.add_item(prev_btn)
@@ -412,7 +462,7 @@ class AvatarPickerView(LayoutView):
             label="Next ➡",
             style=discord.ButtonStyle.secondary,
             custom_id="avatar_picker_next",
-            disabled=self.page >= total_pages - 1,
+            disabled=self.page >= total_pages - 1 or is_loading,
         )
         next_btn.callback = self._on_next
         nav_row.add_item(next_btn)
@@ -429,17 +479,67 @@ class AvatarPickerView(LayoutView):
         container = Container(*inner, accent_color=0x3498DB)
         self.add_item(container)
 
+    def _disable_nav_buttons(self) -> None:
+        """Disable all prev/next/goto controls to prevent double-clicks."""
+        for child in self.children:
+            if isinstance(child, ActionRow):
+                for item in child.children:
+                    if isinstance(item, (Button, Select)):
+                        item.disabled = True
+
+    async def _navigate(self, interaction: discord.Interaction, new_page: int) -> None:
+        """Navigate to a page with loading indicator and cached file reuse."""
+        # Defer immediately so we don't hit Discord's 3-second interaction
+        # token expiry (animated .webp files can be slow to upload).
+        try:
+            await interaction.response.defer()
+        except Exception:
+            pass
+
+        # Check if the target page is already cached
+        if new_page in AvatarPickerView._page_cache and AvatarPickerView._page_cache[new_page] is not None:
+            self.page = new_page
+            self._nav_in_progress = False
+            self._build()
+            try:
+                await interaction.edit_original_response(
+                    view=self,
+                    attachments=self._files,
+                )
+            except Exception:
+                pass
+            return
+
+        # Not cached — show loading indicator
+        self.page = new_page
+        self._nav_in_progress = True
+        self._build()
+        try:
+            await interaction.edit_original_response(
+                view=self,
+                attachments=[],  # Don't send stale attachments during loading
+            )
+        except Exception:
+            pass
+
+        # Load the page with actual files (triggers cache population)
+        self._nav_in_progress = False
+        self._build()
+        try:
+            await interaction.edit_original_response(
+                view=self,
+                attachments=self._files,
+            )
+        except Exception:
+            pass
+
     async def _on_select(self, interaction: discord.Interaction):
         chosen = interaction.data.get("values", [None])[0]
         if not chosen:
             await interaction.response.send_message("❌ No avatar selected.", ephemeral=True)
             return
         # Disable the picker after a selection to prevent double-sends
-        for child in self.children:
-            if isinstance(child, ActionRow):
-                for item in child.children:
-                    if isinstance(item, (Button, Select)):
-                        item.disabled = True
+        self._disable_nav_buttons()
         await interaction.response.edit_message(view=self)
 
         # Record this head_id as "handled" so we don't re-prompt on later messages
@@ -472,67 +572,29 @@ class AvatarPickerView(LayoutView):
             pass
 
     async def _on_prev(self, interaction: discord.Interaction):
-        # If this view was already stopped (closed/timed out) the buttons
-        # no longer exist on Discord's side — acknowledge silently.
-        if self.is_finished():
+        if self.is_finished() or self._nav_in_progress:
             try:
                 await interaction.response.defer()
             except Exception:
                 pass
             return
-        # Defer immediately so we don't hit Discord's 3-second interaction
-        # token expiry (animated .webp files can be slow to upload).
-        try:
-            await interaction.response.defer()
-        except Exception:
-            pass
         if self.page > 0:
-            self.page -= 1
-            self._build()
-        # Re-upload the new page's images so the rebuilt MediaGallery's
-        # `attachment://picker_<page>_<file>.png` URLs resolve.
-        try:
-            await interaction.edit_original_response(
-                view=self,
-                attachments=self._files,
-            )
-        except Exception:
-            pass
+            await self._navigate(interaction, self.page - 1)
 
     async def _on_next(self, interaction: discord.Interaction):
-        # If this view was already stopped (closed/timed out) the buttons
-        # no longer exist on Discord's side — acknowledge silently.
-        if self.is_finished():
+        if self.is_finished() or self._nav_in_progress:
             try:
                 await interaction.response.defer()
             except Exception:
                 pass
             return
-        # Defer immediately so we don't hit Discord's 3-second interaction
-        # token expiry (animated .webp files can be slow to upload).
-        try:
-            await interaction.response.defer()
-        except Exception:
-            pass
         total_pages = max(1, -(-len(self.avatar_files) // self.ITEMS_PER_PAGE))
         if self.page < total_pages - 1:
-            self.page += 1
-            self._build()
-        # Re-upload the new page's images so the rebuilt MediaGallery's
-        # `attachment://picker_<page>_<file>.png` URLs resolve.
-        try:
-            await interaction.edit_original_response(
-                view=self,
-                attachments=self._files,
-            )
-        except Exception:
-            pass
+            await self._navigate(interaction, self.page + 1)
 
     async def _on_goto(self, interaction: discord.Interaction):
         """Handle the 'Go to page' select menu."""
-        # If this view was already stopped (closed/timed out) the buttons
-        # no longer exist on Discord's side — acknowledge silently.
-        if self.is_finished():
+        if self.is_finished() or self._nav_in_progress:
             try:
                 await interaction.response.defer()
             except Exception:
@@ -541,24 +603,11 @@ class AvatarPickerView(LayoutView):
         page_str = interaction.data.get("values", [None])[0]
         if page_str is None:
             return
-        # Defer immediately to avoid 3s token expiry on slow .webp uploads.
-        try:
-            await interaction.response.defer()
-        except Exception:
-            pass
         try:
             target = int(page_str) - 1  # values are 1-based
             total_pages = max(1, -(-len(self.avatar_files) // self.ITEMS_PER_PAGE))
             if 0 <= target < total_pages and target != self.page:
-                self.page = target
-                self._build()
-                try:
-                    await interaction.edit_original_response(
-                        view=self,
-                        attachments=self._files,
-                    )
-                except Exception:
-                    pass
+                await self._navigate(interaction, target)
                 return
         except (ValueError, TypeError):
             pass
@@ -727,6 +776,13 @@ class AdminConfirmView(LayoutView):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
             return
         await interaction.response.defer(ephemeral=False)
+        
+        # Remove from seen_head_ids so the head_id becomes available for
+        # re-selection (the selection was not approved).
+        if self.head_id:
+            self.cog.seen_head_ids.discard(self.head_id)
+            self.cog.save_config()
+        
         # Edit the original admin message to mark the rejection, drop the
         # proposed-avatar attachment, and remove the buttons entirely.
         # Use a LayoutView + Container + TextDisplay (not embed= or content=) to
@@ -735,7 +791,8 @@ class AdminConfirmView(LayoutView):
             reject_container = Container(
                 TextDisplay(
                     f"❌ **Rejected** by {interaction.user.mention}\n"
-                    f"head_id `{self.head_id}` mapping to `{self.chosen_filename}` was not applied."
+                    f"head_id `{self.head_id}` mapping to `{self.chosen_filename}` was not applied.\n"
+                    "The Set Avatar button will appear again on the next message from this player."
                 ),
                 accent_color=0xE74C3C,
             )
@@ -1608,21 +1665,31 @@ class LiveChatCog(commands.Cog):
         return None
 
     def _list_avatar_files(self, force_refresh: bool = False) -> List[str]:
-        """Return a sorted list of PNG/WEBP filenames available in data/avatars/ root (not mapped/)."""
+        """Return a sorted list of PNG/WEBP filenames available in data/avatars/ root (not mapped/).
+
+        PNG files are listed first (for faster initial load), then WEBP.
+        """
         if self._avatar_files_cache is not None and not force_refresh:
             return self._avatar_files_cache
         try:
             os.makedirs(str(AVATARS_DIR), exist_ok=True)
-            files = []
+            png_files = []
+            webp_files = []
             for f in os.listdir(str(AVATARS_DIR)):
                 name_lower = f.lower()
-                if not (name_lower.endswith('.png') or name_lower.endswith('.webp')):
-                    continue
-                # Skip files that have a .done_ marker (already approved/mapped)
-                if (AVATARS_DIR / f".done_{f}").exists():
-                    continue
-                files.append(f)
-            files.sort(key=str.lower)
+                if name_lower.endswith('.png'):
+                    # Skip files that have a .done_ marker (already approved/mapped)
+                    if (AVATARS_DIR / f".done_{f}").exists():
+                        continue
+                    png_files.append(f)
+                elif name_lower.endswith('.webp'):
+                    if (AVATARS_DIR / f".done_{f}").exists():
+                        continue
+                    webp_files.append(f)
+            # PNGs first, then WEBPs — each group sorted alphabetically
+            png_files.sort(key=str.lower)
+            webp_files.sort(key=str.lower)
+            files = png_files + webp_files
         except Exception as e:
             logger.error(f"Failed to list avatar files: {e}")
             files = []
