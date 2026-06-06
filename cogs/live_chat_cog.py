@@ -922,7 +922,7 @@ class LiveChatCog(commands.Cog):
                     if npc_msg_no == 1082:
                         npc_args = ext.get('npc_msg_args', [])
                         if len(npc_args) >= 2:
-                            nickname = str(npc_args[0])
+                            nickname = "Guild Steward"
                             seconds = float(npc_args[1])
                             timestamp = msg.get('ts', 0)
                             self.bot.dispatch('breaking_army_timing', nickname, seconds, timestamp)

@@ -845,6 +845,22 @@ class LeaderboardCog(commands.Cog):
         if not timings.get("week_start_ts"):
             timings["week_start_ts"] = week_start_ts
 
+        # ── Per-session new week detection ───────────────────────────────
+        # Only clear THIS session's old data when its start time changes
+        # (i.e. the session has rolled over to a new week).
+        # Other sessions' old data stays visible until they themselves roll over.
+        stored_session = timings.get(f"session_{session_key}", {})
+        stored_start = stored_session.get("start_ts", 0)
+        if stored_start and stored_start != int(start_ts):
+            logger.info(
+                f"BA timing: session {session_key} start_ts changed "
+                f"({stored_start} -> {int(start_ts)}), "
+                f"clearing old session data for {nickname}"
+            )
+            timings.pop(f"session_{session_key}", None)
+            timings["week_start_ts"] = week_start_ts
+            _save_ba_timings(timings)
+
         # Get or create session data
         session_data = timings.setdefault(f"session_{session_key}", {
             "boss_id": int(boss_id),
