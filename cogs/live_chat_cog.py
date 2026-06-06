@@ -59,14 +59,18 @@ class ChatMessageView(LayoutView):
             thumb_ext = os.path.splitext(head_avatar_path)[1] or ".png"
             thumb_filename = f"head_{head_id}{thumb_ext}"
             self._files.append(discord.File(head_avatar_path, filename=thumb_filename))
-            header_text = TextDisplay(f"**{author_name}**")
+            # Group the author name and the message body (which already includes
+            # the [Translated] block from format_message_embed) into a single
+            # Section so they render alongside the avatar thumbnail as one
+            # neat chat-bubble-style block.
             section = Section(accessory=Thumbnail(media=f"attachment://{thumb_filename}"))
-            section.add_item(header_text)
+            section.add_item(TextDisplay(f"**{author_name}**"))
+            section.add_item(TextDisplay(body_text))
             container_children.append(section)
         else:
             container_children.append(TextDisplay(f"**{author_name}**"))
+            container_children.append(TextDisplay(body_text))
 
-        container_children.append(TextDisplay(body_text))
         container_children.append(Separator(spacing=discord.SeparatorSpacing.small))
         footer = f"<t:{ts}:F> (<t:{ts}:R>)"
         if discord_mention:
@@ -89,6 +93,9 @@ class EmotionMessageView(LayoutView):
     """Components V2 view for an emote (msg_emotion) chat message.
 
     Shows the emotion PNG and the author/timestamp via a single Container.
+    Optionally includes a Thumbnail of the head_id avatar when one is mapped
+    locally — mirrors the Section-based layout used by ChatMessageView so
+    emotes line up visually with regular chat messages.
     """
 
     def __init__(
@@ -99,6 +106,8 @@ class EmotionMessageView(LayoutView):
         discord_mention: str,
         emotion_id,
         emotion_path: str,
+        head_id = None,
+        head_avatar_path: Optional[str] = None,
     ):
         super().__init__(timeout=None)
         self._files: List[discord.File] = [
@@ -111,13 +120,24 @@ class EmotionMessageView(LayoutView):
         if discord_mention:
             footer += f"\n{discord_mention}"
 
-        container = Container(
-            TextDisplay(f"**{author_name}**"),
-            gallery,
-            Separator(spacing=discord.SeparatorSpacing.small),
-            TextDisplay(footer),
-            accent_color=0x9B59B6,
-        )
+        container_children: list = []
+
+        if head_avatar_path:
+            # Preserve original extension so animated .webp avatars stay animated
+            thumb_ext = os.path.splitext(head_avatar_path)[1] or ".png"
+            thumb_filename = f"head_{head_id}{thumb_ext}"
+            self._files.append(discord.File(head_avatar_path, filename=thumb_filename))
+            section = Section(accessory=Thumbnail(media=f"attachment://{thumb_filename}"))
+            section.add_item(TextDisplay(f"**{author_name}**"))
+            container_children.append(section)
+        else:
+            container_children.append(TextDisplay(f"**{author_name}**"))
+
+        container_children.append(gallery)
+        container_children.append(Separator(spacing=discord.SeparatorSpacing.small))
+        container_children.append(TextDisplay(footer))
+
+        container = Container(*container_children, accent_color=0x9B59B6)
         self.add_item(container)
 
     def _resolve_files(self) -> List[discord.File]:
@@ -1448,6 +1468,11 @@ class LiveChatCog(commands.Cog):
                         discord_mention=discord_mention,
                         emotion_id=emotion_id,
                         emotion_path=emotion_path,
+                        # Pass head_id/avatar so emotes also display the
+                        # mapped avatar thumbnail in a Section, matching
+                        # the ChatMessageView layout.
+                        head_id=str(head_id) if head_id is not None else None,
+                        head_avatar_path=head_avatar_path,
                     )
                     files = view._resolve_files()
                     handled_separately = True
