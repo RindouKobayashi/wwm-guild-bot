@@ -46,6 +46,8 @@ BIRTHDAY_ROLE_ID = 1469960226294730753
 BLURPLE = 0x5865F2
 ORANGE = 0xE67E22
 
+GMT8_TZ = datetime.timezone(datetime.timedelta(hours=8))
+
 MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
                "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
@@ -1401,10 +1403,15 @@ class WWMCog(commands.Cog):
         await self._load_config()
         if self.monitor_enabled and self.monitor_channel:
             self.guild_monitor_task.start()
-    
+        # Always-on opponent-guild reminder (8 AM GMT+8 Sunday + Monday).
+        if not self.gvg_league_notice_task.is_running():
+            self.gvg_league_notice_task.start()
+
     async def cog_unload(self):
         if self.guild_monitor_task.is_running():
             self.guild_monitor_task.cancel()
+        if self.gvg_league_notice_task.is_running():
+            self.gvg_league_notice_task.cancel()
 
     @player_group.command(name="search", description="Search for a WWM player by their Number ID or nickname")
     @app_commands.describe(
@@ -1996,7 +2003,7 @@ class WWMCog(commands.Cog):
 
             birthday_role = guild.get_role(BIRTHDAY_ROLE_ID)
             if not birthday_role:
-                logger.warning(f"Birthday role {BIRTHDAY_ROLE_ID} not found in guild")
+                logger.debug(f"Birthday role {BIRTHDAY_ROLE_ID} not found in guild")
                 return
 
             # Gather the set of Discord user IDs that should keep the role this week
@@ -3321,6 +3328,245 @@ class WWMCog(commands.Cog):
             logger.error(f"Failed to fetch guild or player data: {str(e)}", exc_info=True)
             await interaction.followup.send("❌ Failed to fetch guild or player data")
             return
+
+    async def _build_opponent_reminder_view(self) -> "OpponentGuildView":
+        """Build a Components V2 view describing the current opponent guild from our league data.
+
+        Steps (mirrors test/test_new_get_club_info._api.py):
+          1. Fetch our own guild info (CLUB_ID) and read play.league_info.duishou
+             to find the opponent's club_id + club_host.
+          2. Fetch the opponent's full guild info with that hostnum.
+          3. Resolve leader/vice-leader nicknames and count online members.
+          4. Return a populated OpponentGuildView (or a graceful fallback view on failure).
+        """
+        pulled_at_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+
+        # 1. Our guild data
+        our_data = get_full_guild_info(CLUB_ID)
+        if not our_data or 'result' not in our_data:
+            logger.warning("Opponent reminder: failed to fetch our guild data")
+            return OpponentGuildView(
+                title="⚔️ Opponent Guild",
+                sections=[TextDisplay("❌ Failed to fetch our guild data.")],
+                accent=OpponentGuildView.ACCENT_ERROR,
+                pulled_at_ts=pulled_at_ts,
+                error=True,
+            )
+
+        play = our_data['result'].get('play', {}) or {}
+        league = play.get('league_info', {}) or {}
+        duishou = league.get('duishou') or {}
+
+        # 2. No opponent this period — still return a (grey) view so we know the check ran
+        if not duishou or not duishou.get('club_id'):
+            return OpponentGuildView(
+                title="⚔️ Opponent Guild",
+                sections=[TextDisplay("No current opponent found (no league/showdown data).")],
+                accent=OpponentGuildView.ACCENT_GREY,
+                pulled_at_ts=pulled_at_ts,
+                no_opponent=True,
+            )
+
+        opponent_club_id = duishou['club_id']
+        opponent_hostnum = duishou.get('club_host', 10103)
+
+        # 3. Opponent guild data
+        opp_data = get_full_guild_info(opponent_club_id, hostnum=opponent_hostnum)
+        if not opp_data or 'result' not in opp_data:
+            logger.warning(f"Opponent reminder: failed to fetch opponent guild {opponent_club_id}")
+            return OpponentGuildView(
+                title="⚔️ Opponent Guild",
+                sections=[TextDisplay("Found an opponent but failed to load their guild data.")],
+                accent=OpponentGuildView.ACCENT_ERROR,
+                pulled_at_ts=pulled_at_ts,
+                error=True,
+            )
+
+        result = opp_data['result']
+        base = result.get('base', {})
+        members = result.get('members', {})
+        member_list = members.get('members', {})
+        create_ts = base.get('create_ts', 0)
+
+        # 4. Resolve leader & vice-leader nicknames
+        leader_pid = None
+        vice_leader_pid = None
+        for pid, member in member_list.items():
+            post_list = member.get('post', [])
+            if 1 in post_list:
+                leader_pid = pid
+            if 2 in post_list:
+                vice_leader_pid = pid
+
+        leader_name = "None"
+        vice_leader_name = "None"
+        pids_to_fetch = [pid for pid in (leader_pid, vice_leader_pid) if pid]
+        if pids_to_fetch:
+            bulk = get_bulk_players_info(pids_to_fetch, fields=["base"])
+            if bulk and bulk.get('code') == 0:
+                players = bulk.get('result', {})
+                if leader_pid in players:
+                    leader_name = players[leader_pid].get('base', {}).get('nickname', 'Unknown')
+                if vice_leader_pid in players:
+                    vice_leader_name = players[vice_leader_pid].get('base', {}).get('nickname', 'Unknown')
+
+        # 5. Count online members
+        online = 0
+        all_pids = list(member_list.keys())
+        if all_pids:
+            bulk = get_bulk_players_info(all_pids, fields=["base"])
+            if bulk and bulk.get('code') == 0:
+                for pid, pdata in bulk.get('result', {}).items():
+                    if pdata.get('base', {}).get('is_online', 0) == 1:
+                        online += 1
+
+        # 6. Build the V2 view — grouped TextDisplay blocks
+        creation_value = f"<t:{create_ts}:R>" if create_ts else "Unknown"
+        member_total = members.get('member_num', 0)
+        guild_name = base.get('name', 'Unknown')
+        level = base.get('level', 0)
+        total_fame = base.get('fame', 0)
+        week_fame = base.get('week_fame', 0)
+
+        identity_text = (
+            f"📛 **Name:** {guild_name}\n"
+            f"⭐ **Level:** {level}  👥 **Members:** {member_total}/100"
+        )
+        activity_text = (
+            f"📈 **Total Fame:** {total_fame:,}\n"
+            f"🔥 **Weekly Activity:** {week_fame:,}"
+        )
+        leadership_text = (
+            f"👑 **Guild Leader:** {leader_name}\n"
+            f"⚔️ **Vice Leader:** {vice_leader_name}\n"
+            f"🟢 **Online Now:** {online}/{member_total}"
+        )
+
+        sections = [
+            TextDisplay(identity_text),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay(activity_text),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay(leadership_text),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay(f"📅 **Created:** {creation_value}"),
+        ]
+
+        return OpponentGuildView(
+            title=f"⚔️ Opponent Guild — {guild_name}",
+            sections=sections,
+            accent=OpponentGuildView.ACCENT_RED,
+            pulled_at_ts=pulled_at_ts,
+        )
+
+    @guild_group.command(name="league", description="Show the current opponent guild from our league/showdown data")
+    async def guild_league(self, interaction: discord.Interaction):
+        """Test command: fetch and display the current opponent guild info.
+
+        This uses the same helper that the scheduled Sunday/Monday 8 AM GMT+8
+        reminder will use, so the output here is exactly what the reminder will post.
+        """
+        await interaction.response.defer()
+        try:
+            view = await self._build_opponent_reminder_view()
+            await interaction.followup.send(view=view)
+        except Exception as e:
+            logger.error(f"Guild league command failed: {str(e)}", exc_info=True)
+            await interaction.followup.send(f"❌ Failed to load opponent data: `{e}`")
+
+    @tasks.loop(time=datetime.time(hour=8, minute=0, tzinfo=GMT8_TZ))
+    async def gvg_league_notice_task(self):
+        """Post the opponent-guild V2 view to GVG_LEAGUE_NOTICE_CHANNEL_ID, pinging
+        GVG_PING_ROLE_ID. Fires daily at 8 AM GMT+8; only sends on Sunday and
+        Monday (the days flanking the typical GvG weekend). Silently skips
+        if there is no current opponent (no `duishou` data).
+        """
+        try:
+            now_gmt8 = datetime.datetime.now(GMT8_TZ)
+            # weekday(): Mon=0 ... Sun=6
+            if now_gmt8.weekday() not in (0, 6):
+                return
+
+            channel = self.bot.get_channel(settings.GVG_LEAGUE_NOTICE_CHANNEL_ID)
+            if not channel:
+                logger.error(
+                    f"GvG league notice channel {settings.GVG_LEAGUE_NOTICE_CHANNEL_ID} not found"
+                )
+                return
+
+            # Resolve ping role (optional — silently skip the mention if missing)
+            ping_role = None
+            if getattr(settings, "GVG_PING_ROLE_ID", None):
+                ping_role = (
+                    channel.guild.get_role(settings.GVG_PING_ROLE_ID)
+                    if channel.guild else None
+                )
+
+            view = await self._build_opponent_reminder_view()
+
+            # If there's no current opponent, silently skip the send + ping.
+            if view.no_opponent:
+                logger.info(
+                    "GvG league notice skipped: no current opponent (no duishou data)."
+                )
+                return
+
+            await channel.send(
+                content=ping_role.mention if ping_role else None,
+                view=view,
+                allowed_mentions=discord.AllowedMentions(
+                    roles=[ping_role] if ping_role else []
+                ),
+            )
+            logger.info(
+                f"✅ GvG league notice sent to channel {channel.id} "
+                f"(weekday={now_gmt8.weekday()})"
+            )
+        except Exception as e:
+            logger.error(f"GvG league notice task failed: {e}", exc_info=True)
+
+    @gvg_league_notice_task.before_loop
+    async def before_gvg_league_notice(self):
+        await self.bot.wait_until_ready()
+
+
+class OpponentGuildView(LayoutView):
+    """Components V2 LayoutView showing the current opponent guild profile.
+
+    All copy uses TextDisplay blocks inside a single Container. There is no
+    `embed`/`content` — this is a pure V2 message. The footer only carries a
+    human-readable "pulled at" timestamp, never internal IDs/hostnums.
+    """
+
+    ACCENT_RED = 0xE74C3C
+    ACCENT_GREY = 0x95A5A6
+    ACCENT_ERROR = 0xC0392B
+
+    def __init__(
+        self,
+        title: str,
+        sections: list,
+        accent: int,
+        pulled_at_ts: int,
+        error: bool = False,
+        no_opponent: bool = False,
+    ):
+        super().__init__(timeout=180 if not error else None)
+        # Flags used by the scheduled gvg_league_notice_task to decide
+        # whether to ping / send at all.
+        self.error = error
+        self.no_opponent = no_opponent
+
+        inner_items: list = [
+            TextDisplay(f"# {title}"),
+            Separator(spacing=discord.SeparatorSpacing.small),
+        ]
+        inner_items.extend(sections)
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+        inner_items.append(TextDisplay(f"*Pulled: <t:{pulled_at_ts}:R>*"))
+
+        container = Container(*inner_items, accent_color=accent)
+        self.add_item(container)
 
 
 from cogs.view_registry import register
