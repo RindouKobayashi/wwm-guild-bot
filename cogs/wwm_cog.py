@@ -765,8 +765,13 @@ class PlayerProfileView(LayoutView):
         kongfu_sub: str = None,
         kongfu_role: str = None,
         is_verified: bool = False,
+        # Head avatar from data/avatars/mapped/
+        head_avatar_path: str = None,
     ):
         super().__init__(timeout=180)
+        
+        # Storage for file attachments (e.g. head avatar thumbnail)
+        self._files = []
         
         # Store all data
         self.player_nickname = player_nickname
@@ -815,6 +820,7 @@ class PlayerProfileView(LayoutView):
         self.kongfu_sub = kongfu_sub
         self.kongfu_role = kongfu_role
         self.is_verified = is_verified
+        self.head_avatar_path = head_avatar_path
         
         self._build_overview()
     
@@ -894,8 +900,18 @@ class PlayerProfileView(LayoutView):
             gallery.add_item(media=self.cover_img, description="Fashion Cover")
             inner.append(gallery)
         
-        # Header: text display
-        inner.append(TextDisplay(self._build_header_text()))
+        # Header: text display (with optional head avatar thumbnail)
+        header_text = self._build_header_text()
+        if self.head_avatar_path:
+            import os
+            head_ext = os.path.splitext(self.head_avatar_path)[1] or ".png"
+            head_filename = f"head_pfp{head_ext}"
+            self._files.append(discord.File(self.head_avatar_path, filename=head_filename))
+            section = Section(accessory=Thumbnail(media=f"attachment://{head_filename}"))
+            section.add_item(TextDisplay(header_text))
+            inner.append(section)
+        else:
+            inner.append(TextDisplay(header_text))
         
         # Separator
         inner.append(Separator(spacing=discord.SeparatorSpacing.small))
@@ -928,9 +944,14 @@ class PlayerProfileView(LayoutView):
         
         return Container(*inner, accent_color=BLURPLE)
     
+    def _resolve_files(self) -> list:
+        """Return a copy of attached discord.File objects (e.g. head avatar)."""
+        return list(getattr(self, "_files", []))
+
     def _build_overview(self):
         """Build the default overview (single Container with header + buttons)."""
         self.clear_items()
+        self._files = []  # reset files each rebuild
         self.add_item(self._build_container())
     
     def _show_detail(self, title: str, stat_lines: list, accent: int):
@@ -1016,7 +1037,7 @@ class PlayerProfileView(LayoutView):
         await interaction.edit_original_response(view=self)
     
     async def on_timeout(self):
-        """Disable all buttons when the view times out."""
+        """Disable all buttons when the view times out, and push the disabled view to the original message."""
         for child in self.children:
             if isinstance(child, ActionRow):
                 for item in child.children:
@@ -1029,6 +1050,17 @@ class PlayerProfileView(LayoutView):
                             if isinstance(item, discord.ui.Button):
                                 item.disabled = True
         self.stop()
+        
+        # Best-effort: edit the original message so the disabled state is visible to users.
+        # We only attempt this if we still have a cached original_message reference.
+        try:
+            original = getattr(self, "_original_message", None)
+            if original is not None:
+                view_files = self._resolve_files()
+                await original.edit(view=self, attachments=view_files)
+        except Exception:
+            # Message may have been deleted or we may not own it — silently ignore.
+            pass
     
     async def _handle_guild(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -1465,7 +1497,7 @@ class WWMCog(commands.Cog):
                         description=f"No player found with nickname `{nickname}`",
                         color=discord.Color.red()
                     )
-                    await interaction.followup.send(embed=embed)
+                    await interaction.edit_original_response(content=None, embed=embed)
                     return
                 
                 people_info = nickname_data['result']
@@ -1735,6 +1767,22 @@ class WWMCog(commands.Cog):
                 except Exception as club_err:
                     logger.warning(f"Failed to get club info: {str(club_err)}")
             
+            # ── Resolve head avatar from data/avatars/mapped/ (if any) ──
+            head_avatar_path = None
+            try:
+                head_data = data.get('head', {}) if isinstance(data, dict) else {}
+                if isinstance(head_data, dict):
+                    head_id_value = head_data.get('head')
+                    if head_id_value:
+                        avatars_mapped_dir = BASE_DIR / "data" / "avatars" / "mapped"
+                        for ext in (".png", ".webp"):
+                            candidate = avatars_mapped_dir / f"{head_id_value}{ext}"
+                            if candidate.exists() and candidate.is_file():
+                                head_avatar_path = str(candidate)
+                                break
+            except Exception as head_err:
+                logger.warning(f"Failed to resolve head avatar: {head_err}")
+
             # ── Build and send PlayerProfileView ──
             view = PlayerProfileView(
                 player_nickname=player_nickname,
@@ -1783,9 +1831,19 @@ class WWMCog(commands.Cog):
                 kongfu_sub=kongfu_sub,
                 kongfu_role=kongfu_role,
                 is_verified=is_verified,
+                head_avatar_path=head_avatar_path,
             )
             
-            await interaction.edit_original_response(content=None, embed=None, view=view)
+            view_files = view._resolve_files()
+            # Cache the original message on the view so on_timeout() can edit it
+            # when the buttons expire and need to be visually disabled.
+            view._original_message = await interaction.original_response()
+            await interaction.edit_original_response(
+                content=None,
+                embed=None,
+                view=view,
+                attachments=view_files,
+            )
 
         except Exception as e:
             logger.error(f"Player search failed: {str(e)}")
