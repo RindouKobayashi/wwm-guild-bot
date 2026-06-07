@@ -303,41 +303,31 @@ class GuildStatusBoard(LayoutView):
             await loading_msg.edit(content="❌ Failed to retrieve online players list")
 
 
-class GuildRegionSummaryView(discord.ui.View):
-    """Summary view: shows 5 members per region with buttons to expand each region fully."""
-    def __init__(self, guild_name: str, regions: dict, tag_map: dict, cog, original_embed=None):
+class GuildRegionSummaryView(LayoutView):
+    """Components V2 LayoutView: shows 5 members per region with buttons to expand each region fully."""
+    def __init__(self, guild_name: str, regions: dict, tag_map: dict, cog):
         super().__init__(timeout=120)
         self.guild_name = guild_name
         self.regions = regions
         self.tag_map = tag_map
         self.cog = cog
-        self.original_embed = original_embed
 
-        sorted_tags = sorted(regions.keys(), key=lambda t: self._region_label(t))
-
-        for idx, tag in enumerate(sorted_tags):
-            label = f"{self._region_label(tag)} ({len(regions[tag])})"
-            button = discord.ui.Button(
-                label=label[:80],
-                style=discord.ButtonStyle.secondary,
-                custom_id=f"region_detail_{idx}"
-            )
-            button.callback = self._make_detail_callback(tag)
-            self.add_item(button)
+        self._rebuild()
 
     def _region_label(self, tag):
         return self.tag_map.get(tag, f"❓ {tag}")
 
-    def _build_summary_embed(self):
-        sorted_tags = sorted(self.regions.keys(), key=lambda t: self._region_label(t))
-        total_members = sum(len(m) for m in self.regions.values())
+    def _rebuild(self):
+        """Rebuild the V2 layout (summary overview)."""
+        self.clear_items()
 
-        embed = discord.Embed(
-            title=f"🌍 {self.guild_name} — Members by Region",
-            color=discord.Color.og_blurple()
-        )
-        embed.description = f"**Total members:** {total_members}  |  **Regions found:** {len(sorted_tags)}" + \
-                            "\n*Click a region button below to see full list*"
+        total_members = sum(len(m) for m in self.regions.values())
+        sorted_tags = sorted(self.regions.keys(), key=lambda t: self._region_label(t))
+
+        inner_items = [
+            TextDisplay(f"# 🌍 {self.guild_name} — Members by Region\n**Total:** {total_members}  |  **Regions:** {len(sorted_tags)}"),
+            Separator(spacing=discord.SeparatorSpacing.small),
+        ]
 
         for tag in sorted_tags:
             member_list = self.regions[tag]
@@ -358,12 +348,33 @@ class GuildRegionSummaryView(discord.ui.View):
             if remaining > 0:
                 preview_text += f"\n... and {remaining} more"
 
-            embed.add_field(
-                name=f"{region_label}  ({len(member_list)} members, 🟢 {online_count} online)",
-                value=f"```{preview_text}```",
-                inline=False
+            inner_items.append(TextDisplay(f"### {region_label} ({len(member_list)} members, 🟢 {online_count} online)\n```{preview_text}```"))
+            inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Region detail buttons in action rows
+        # Group into rows of 5
+        button_rows = []
+        current_row = ActionRow()
+        for idx, tag in enumerate(sorted_tags):
+            label = f"{self._region_label(tag)} ({len(self.regions[tag])})"
+            btn = discord.ui.Button(
+                label=label[:80],
+                style=discord.ButtonStyle.secondary,
+                custom_id=f"region_detail_v2_{idx}"
             )
-        return embed
+            btn.callback = self._make_detail_callback(tag)
+            current_row.add_item(btn)
+            if len(current_row.children) >= 5:
+                button_rows.append(current_row)
+                current_row = ActionRow()
+
+        if current_row.children:
+            button_rows.append(current_row)
+
+        inner_items.extend(button_rows)
+
+        container = Container(*inner_items, accent_color=BLURPLE)
+        self.add_item(container)
 
     def _make_detail_callback(self, tag: str):
         async def callback(interaction: discord.Interaction):
@@ -379,52 +390,44 @@ class GuildRegionSummaryView(discord.ui.View):
                 number_id = m.get('number_id', 'N/A')
                 lines.append(f"{online_icon} Lv{m['level']:<3} | {m['nickname']:<25} | ID: {number_id}")
 
-            members_text = "\n".join(lines)
+            body = "\n".join(lines)
 
-            embed = discord.Embed(
+            # Use GuildDetailView for the detail with back button
+            detail_view = GuildDetailView(
                 title=f"🌍 {region_label} — {self.guild_name}",
-                description=f"**{len(members)} members** | 🟢 {online_count} online",
-                color=discord.Color.og_blurple()
+                body=f"**{len(members)} members** | 🟢 {online_count} online\n\n```{body}```",
+                accent=BLURPLE,
+                back_view=self,
             )
-
-            chunk_size = 950
-            chunks = [members_text[i:i+chunk_size] for i in range(0, len(members_text), chunk_size)]
-            for i, chunk in enumerate(chunks):
-                embed.add_field(
-                    name=f"📋 Members (part {i+1}/{len(chunks)})" if len(chunks) > 1 else "📋 Members",
-                    value=f"```{chunk}```",
-                    inline=False
-                )
-
-            back_view = discord.ui.View(timeout=120)
-            back_button = discord.ui.Button(
-                label="🔙 Back to Summary",
-                style=discord.ButtonStyle.primary,
-                custom_id=f"region_back_{tag}"
-            )
-            async def back_cb(back_interaction: discord.Interaction):
-                await back_interaction.response.defer()
-                summary_embed = self._build_summary_embed()
-                await back_interaction.edit_original_response(embed=summary_embed, view=self)
-            back_button.callback = back_cb
-            back_view.add_item(back_button)
-
-            await interaction.edit_original_response(embed=embed, view=back_view)
+            await interaction.edit_original_response(content=None, embed=None, view=detail_view)
         return callback
 
     async def on_timeout(self):
         for child in self.children:
-            child.disabled = True
+            if isinstance(child, Container):
+                for sub in child.children:
+                    if isinstance(sub, ActionRow):
+                        for item in sub.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
 
 
-class GuildRegionSelectView(discord.ui.View):
-    """View with buttons for selecting a guild to view region breakdown"""
+class GuildRegionSelectView(LayoutView):
+    """Components V2 LayoutView with buttons for selecting a guild to view region breakdown"""
     def __init__(self, clubs: list, guild_infos: list, cog):
         super().__init__(timeout=60)
         self.cog = cog
         self.clubs = clubs
         self.guild_infos = guild_infos
         
+        self.clear_items()
+        
+        inner_items = [
+            TextDisplay("# 🔍 Guild Search for Region View\nSelect a guild below to see its member breakdown by region."),
+            Separator(spacing=discord.SeparatorSpacing.small),
+        ]
+        
+        button_row = ActionRow()
         for idx, club in enumerate(clubs[:5]):
             guild_name = "Unknown"
             if guild_infos and idx < len(guild_infos):
@@ -432,21 +435,40 @@ class GuildRegionSelectView(discord.ui.View):
                 guild_name = info.get('base', {}).get('name', 'Unknown')
             
             label = f"{idx + 1}. {guild_name[:45]}" if len(guild_name) > 45 else f"{idx + 1}. {guild_name}"
-            button = discord.ui.Button(
+            btn = discord.ui.Button(
                 label=label,
                 style=discord.ButtonStyle.primary,
-                custom_id=f"guild_region_select_{idx}"
+                custom_id=f"guild_region_select_v2_{idx}"
             )
-            button.callback = self.make_callback(idx)
-            self.add_item(button)
+            btn.callback = self.make_callback(idx)
+            button_row.add_item(btn)
+            if len(button_row.children) >= 5:
+                inner_items.append(button_row)
+                button_row = ActionRow()
+        
+        if button_row.children:
+            inner_items.append(button_row)
+        
+        # Cancel row
+        cancel_row = ActionRow()
+        cancel_btn = discord.ui.Button(
+            label="Cancel",
+            style=discord.ButtonStyle.danger,
+            custom_id="guild_region_select_cancel_v2",
+        )
+        cancel_btn.callback = self._cancel
+        cancel_row.add_item(cancel_btn)
+        inner_items.append(cancel_row)
+        
+        container = Container(*inner_items, accent_color=BLURPLE)
+        self.add_item(container)
     
     def make_callback(self, idx: int):
         async def callback(interaction: discord.Interaction):
             await self._handle_guild_select(interaction, idx)
         return callback
     
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, custom_id="guild_region_select_cancel", row=4)
-    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def _cancel(self, interaction: discord.Interaction):
         await interaction.response.edit_message(content="❌ Cancelled.", embed=None, view=None)
         self.stop()
     
@@ -513,42 +535,10 @@ class GuildRegionSelectView(discord.ui.View):
                 })
 
             guild_name = result.get('base', {}).get('name', 'Unknown Guild')
-            total_members = sum(len(m) for m in regions.values())
-            sorted_tags = sorted(regions.keys(), key=lambda t: get_region_label(t))
 
-            embed = discord.Embed(
-                title=f"🌍 {guild_name} — Members by Region",
-                color=discord.Color.og_blurple()
-            )
-            embed.description = f"**Total members:** {total_members}  |  **Regions found:** {len(sorted_tags)}"
-
-            for tag in sorted_tags:
-                member_list = regions[tag]
-                sorted_members = sorted(member_list, key=lambda m: (not m['is_online'], m['nickname'].lower()))
-                online_count = sum(1 for m in member_list if m['is_online'])
-                region_label = get_region_label(tag)
-
-                preview = sorted_members[:5]
-                remaining = len(sorted_members) - 5
-
-                lines = []
-                for m in preview:
-                    online_icon = "🟢" if m['is_online'] else "⚫"
-                    number_id = m.get('number_id', 'N/A')
-                    lines.append(f"{online_icon} Lv{m['level']:<3} | {m['nickname']:<25} | ID: {number_id}")
-
-                preview_text = "\n".join(lines)
-                if remaining > 0:
-                    preview_text += f"\n... and {remaining} more"
-
-                embed.add_field(
-                    name=f"{region_label}  ({len(member_list)} members, 🟢 {online_count} online)",
-                    value=f"```{preview_text}```",
-                    inline=False
-                )
-
+            # Use GuildRegionSummaryView directly (V2) — no embed needed
             view = GuildRegionSummaryView(guild_name, regions, tag_map, self.cog)
-            await interaction.edit_original_response(content=None, embed=embed, view=view)
+            await interaction.edit_original_response(content=None, embed=None, view=view)
 
         except Exception as e:
             logger.error(f"Guild region select failed: {str(e)}", exc_info=True)
@@ -556,17 +546,31 @@ class GuildRegionSelectView(discord.ui.View):
     
     async def on_timeout(self):
         for child in self.children:
-            child.disabled = True
+            if isinstance(child, Container):
+                for sub in child.children:
+                    if isinstance(sub, ActionRow):
+                        for item in sub.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
 
 
-class GuildSearchSelectView(discord.ui.View):
-    """View with buttons for selecting a guild from search results"""
-    def __init__(self, clubs: list, guild_infos: list, cog):
+class GuildSearchSelectView(LayoutView):
+    """Components V2 LayoutView with buttons for selecting a guild from search results"""
+    def __init__(self, clubs: list, guild_infos: list, cog, header: str = None):
         super().__init__(timeout=60)
         self.cog = cog
         self.clubs = clubs
         self.guild_infos = guild_infos
         
+        self.clear_items()
+        
+        header_display = header or "# 🔍 Guild Search Results\nSelect a button below to view the guild details."
+        inner_items = [
+            TextDisplay(header_display),
+            Separator(spacing=discord.SeparatorSpacing.small),
+        ]
+        
+        button_row = ActionRow()
         for idx, club in enumerate(clubs[:5]):
             guild_name = "Unknown"
             member_num = "?"
@@ -579,21 +583,40 @@ class GuildSearchSelectView(discord.ui.View):
                 apprentice_num = info.get('members', {}).get('apprentice_num', '?')
             
             label = f"{idx + 1}. {guild_name[:40]}" if len(guild_name) > 40 else f"{idx + 1}. {guild_name}"
-            button = discord.ui.Button(
+            btn = discord.ui.Button(
                 label=label,
                 style=discord.ButtonStyle.primary,
-                custom_id=f"guild_select_{idx}"
+                custom_id=f"guild_select_v2_{idx}"
             )
-            button.callback = self.make_callback(idx)
-            self.add_item(button)
+            btn.callback = self.make_callback(idx)
+            button_row.add_item(btn)
+            if len(button_row.children) >= 5:
+                inner_items.append(button_row)
+                button_row = ActionRow()
+        
+        if button_row.children:
+            inner_items.append(button_row)
+        
+        # Cancel row
+        cancel_row = ActionRow()
+        cancel_btn = discord.ui.Button(
+            label="Cancel",
+            style=discord.ButtonStyle.danger,
+            custom_id="guild_select_cancel_v2",
+        )
+        cancel_btn.callback = self._cancel
+        cancel_row.add_item(cancel_btn)
+        inner_items.append(cancel_row)
+        
+        container = Container(*inner_items, accent_color=BLURPLE)
+        self.add_item(container)
     
     def make_callback(self, idx: int):
         async def callback(interaction: discord.Interaction):
             await self._handle_guild_select(interaction, idx)
         return callback
     
-    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.danger, custom_id="guild_select_cancel", row=4)
-    async def cancel_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def _cancel(self, interaction: discord.Interaction):
         await interaction.response.edit_message(content="❌ Search cancelled.", embed=None, view=None)
         self.stop()
     
@@ -623,22 +646,6 @@ class GuildSearchSelectView(discord.ui.View):
             members = result.get('members', {})
             play = result.get('play', {})
             create_ts = base.get('create_ts', 0)
-            
-            embed = discord.Embed(
-                title="🏰 Guild Profile",
-                color=discord.Color.og_blurple()
-            )
-            
-            embed.description = f"**{base.get('name', 'Unknown Guild')}**"
-            
-            embed.add_field(name="📛 Guild Name", value=f"`{base.get('name', 'Unknown')}`", inline=True)
-            embed.add_field(name="⭐ Level", value=f"`{base.get('level', 0)}`", inline=True)
-            embed.add_field(name="📅 Creation Date", value=f"<t:{create_ts}:R>" if create_ts else "Unknown", inline=True)
-            embed.add_field(name="👥 Members", value=f"`{members.get('member_num', 0)} / 100`", inline=True)
-            embed.add_field(name="💰 Guild Funds", value=f"`{base.get('fund', 0):,}`", inline=True)
-            embed.add_field(name="📈 Total Fame", value=f"`{base.get('fame', 0):,}`", inline=True)
-            embed.add_field(name="🔥 Weekly Activity", value=f"`{base.get('week_fame', 0):,}`", inline=True)
-            embed.add_field(name="⚔️ GvG Points", value=f"`{play.get('pk_match_info', {}).get('battle_score', 0)}`", inline=True)
             
             leader_name = "None"
             vice_leader_name = "None"
@@ -680,15 +687,25 @@ class GuildSearchSelectView(discord.ui.View):
                     if player_base.get('is_online', 0) == 1:
                         online += 1
             
-            embed.add_field(name="👑 Guild Leader", value=f"`{leader_name}`", inline=True)
-            embed.add_field(name="⚔️ Vice Leader", value=f"`{vice_leader_name}`", inline=True)
-            embed.add_field(name="🟢 Online Now", value=f"`{online} / {members.get('member_num', 0)}`", inline=True)
-            
             announcement = result.get('gonggao_info', {}).get('msg')
-            if announcement and announcement.strip():
-                embed.add_field(name="📢 Guild Announcement", value=f"`{announcement}`", inline=False)
             
-            await interaction.edit_original_response(content=None, embed=embed, view=None)
+            # Use GuildProfileView instead of embed
+            view = GuildProfileView(
+                guild_name=base.get('name', 'Unknown Guild'),
+                guild_level=base.get('level', 0),
+                member_count=members.get('member_num', 0),
+                member_max=100,
+                create_ts=create_ts,
+                funds=base.get('fund', 0),
+                total_fame=base.get('fame', 0),
+                week_fame=base.get('week_fame', 0),
+                gvg_points=play.get('pk_match_info', {}).get('battle_score', 0),
+                leader_name=leader_name,
+                vice_leader_name=vice_leader_name,
+                online_count=online,
+                announcement=announcement,
+            )
+            await interaction.edit_original_response(content=None, embed=None, view=view)
             await loading_msg.edit(content="✅ Guild found!")
             
         except Exception as e:
@@ -697,7 +714,12 @@ class GuildSearchSelectView(discord.ui.View):
     
     async def on_timeout(self):
         for child in self.children:
-            child.disabled = True
+            if isinstance(child, Container):
+                for sub in child.children:
+                    if isinstance(sub, ActionRow):
+                        for item in sub.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
 
 
 class PlayerProfileView(LayoutView):
@@ -2564,17 +2586,6 @@ class WWMCog(commands.Cog):
                 play = result.get('play', {})
                 create_ts = base.get('create_ts', 0)
                 
-                embed = discord.Embed(title="🏰 Guild Profile", color=discord.Color.og_blurple())
-                embed.description = f"**{base.get('name', 'Unknown Guild')}**"
-                embed.add_field(name="📛 Guild Name", value=f"`{base.get('name', 'Unknown')}`", inline=True)
-                embed.add_field(name="⭐ Level", value=f"`{base.get('level', 0)}`", inline=True)
-                embed.add_field(name="📅 Creation Date", value=f"<t:{create_ts}:R>" if create_ts else "Unknown", inline=True)
-                embed.add_field(name="👥 Members", value=f"`{members.get('member_num', 0)} / 100`", inline=True)
-                embed.add_field(name="💰 Guild Funds", value=f"`{base.get('fund', 0):,}`", inline=True)
-                embed.add_field(name="📈 Total Fame", value=f"`{base.get('fame', 0):,}`", inline=True)
-                embed.add_field(name="🔥 Weekly Activity", value=f"`{base.get('week_fame', 0):,}`", inline=True)
-                embed.add_field(name="⚔️ GvG Points", value=f"`{play.get('pk_match_info', {}).get('battle_score', 0)}`", inline=True)
-                
                 leader_name = "None"
                 vice_leader_name = "None"
                 leader_pid = "None"
@@ -2615,15 +2626,25 @@ class WWMCog(commands.Cog):
                         if player_base.get('is_online', 0) == 1:
                             online += 1
                 
-                embed.add_field(name="👑 Guild Leader", value=f"`{leader_name}`", inline=True)
-                embed.add_field(name="⚔️ Vice Leader", value=f"`{vice_leader_name}`", inline=True)
-                embed.add_field(name="🟢 Online Now", value=f"`{online} / {members.get('member_num', 0)}`", inline=True)
-                
                 announcement = result.get('gonggao_info', {}).get('msg')
-                if announcement and announcement.strip():
-                    embed.add_field(name="📢 Guild Announcement", value=f"`{announcement}`", inline=False)
                 
-                await interaction.edit_original_response(content=None, embed=embed)
+                # Use GuildProfileView instead of embed
+                view = GuildProfileView(
+                    guild_name=base.get('name', 'Unknown Guild'),
+                    guild_level=base.get('level', 0),
+                    member_count=members.get('member_num', 0),
+                    member_max=100,
+                    create_ts=create_ts,
+                    funds=base.get('fund', 0),
+                    total_fame=base.get('fame', 0),
+                    week_fame=base.get('week_fame', 0),
+                    gvg_points=play.get('pk_match_info', {}).get('battle_score', 0),
+                    leader_name=leader_name,
+                    vice_leader_name=vice_leader_name,
+                    online_count=online,
+                    announcement=announcement,
+                )
+                await interaction.edit_original_response(content=None, embed=None, view=view)
                 return
             
             # ── Otherwise, treat it as a guild name search ──
@@ -2659,14 +2680,7 @@ class WWMCog(commands.Cog):
             
             removed_count = len(clubs) - len(valid_clubs)
             
-            embed = discord.Embed(
-                title="🔍 Guild Search Results",
-                description=f"Found **{len(valid_clubs)}** active guild(s) matching `{search_term}`" +
-                            (f"\n*({removed_count} deleted guild(s) filtered out)*" if removed_count > 0 else "") +
-                            "\n\nSelect a button below to view the guild details.",
-                color=discord.Color.og_blurple()
-            )
-            
+            # Build search results text for the V2 view
             result_lines = []
             for idx, info in enumerate(valid_infos, 1):
                 guild_name = info.get('base', {}).get('name', 'Unknown')
@@ -2674,11 +2688,14 @@ class WWMCog(commands.Cog):
                 apprentice_num = info.get('members', {}).get('apprentice_num', '?')
                 result_lines.append(f"**{idx}.** **{guild_name}** — 👥 `{member_num}` 🎓 `{apprentice_num}`")
             
-            embed.add_field(name="📋 Results", value="\n".join(result_lines), inline=False)
-            embed.set_footer(text="⏳ This selection will expire in 60 seconds")
+            results_text = "\n".join(result_lines)
+            description = f"Found **{len(valid_clubs)}** active guild(s) matching `{search_term}`"
+            if removed_count > 0:
+                description += f"\n*({removed_count} deleted guild(s) filtered out)*"
             
-            view = GuildSearchSelectView(valid_clubs, valid_infos, self)
-            await interaction.followup.send(embed=embed, view=view)
+            # Send the V2 view with search results embedded
+            view = GuildSearchSelectView(valid_clubs, valid_infos, self, header=f"# 🔍 Guild Search Results\n{description}\n\n### Results\n{results_text}")
+            await interaction.followup.send(content=None, embed=None, view=view)
             
         except Exception as e:
             logger.error(f"Guild name search failed: {str(e)}", exc_info=True)
@@ -3176,17 +3193,15 @@ class WWMCog(commands.Cog):
                     embed = discord.Embed(title="❌ No Active Guilds Found", color=discord.Color.red())
                     await interaction.followup.send(embed=embed)
                     return
-                embed = discord.Embed(title="🔍 Guild Search for Region View", color=discord.Color.og_blurple())
+                # Build result text for V2 header
                 result_lines = []
                 for idx, info in enumerate(valid_infos, 1):
                     guild_name = info.get('base', {}).get('name', 'Unknown')
                     member_num = info.get('members', {}).get('member_num', '?')
                     apprentice_num = info.get('members', {}).get('apprentice_num', '?')
                     result_lines.append(f"**{idx}.** **{guild_name}** — 👥 `{member_num}` 🎓 `{apprentice_num}`")
-                embed.add_field(name="📋 Results", value="\n".join(result_lines), inline=False)
-                embed.set_footer(text="⏳ This selection will expire in 60 seconds")
                 view = GuildRegionSelectView(valid_clubs, valid_infos, self)
-                await interaction.followup.send(embed=embed, view=view)
+                await interaction.followup.send(content=None, embed=None, view=view)
             except Exception as e:
                 logger.error(f"Guild region search failed: {str(e)}", exc_info=True)
                 embed = discord.Embed(title="❌ Search Failed", color=discord.Color.red())
@@ -3219,26 +3234,8 @@ class WWMCog(commands.Cog):
                     'level': base.get('level', 0), 'is_online': base.get('is_online', 0) == 1, 'oversea_tag': str(base.get('oversea_tag', '')),
                 })
             guild_name = result.get('base', {}).get('name', 'Our Guild')
-            total_members = sum(len(m) for m in regions.values())
-            sorted_tags = sorted(regions.keys(), key=lambda t: get_region_label(t))
-            embed = discord.Embed(title=f"🌍 {guild_name} — Members by Region", color=discord.Color.og_blurple())
-            embed.description = f"**Total members:** {total_members}  |  **Regions found:** {len(sorted_tags)}" + "\n*Click a region button below to see full list*"
-            for tag in sorted_tags:
-                member_list = regions[tag]
-                sorted_members = sorted(member_list, key=lambda m: (not m['is_online'], m['nickname'].lower()))
-                online_count = sum(1 for m in member_list if m['is_online'])
-                region_label = get_region_label(tag)
-                preview = sorted_members[:5]
-                remaining = len(sorted_members) - 5
-                lines = []
-                for m in preview:
-                    lines.append(f"{'🟢' if m['is_online'] else '⚫'} Lv{m['level']:<3} | {m['nickname']:<25} | ID: {m.get('number_id', 'N/A')}")
-                preview_text = "\n".join(lines)
-                if remaining > 0:
-                    preview_text += f"\n... and {remaining} more"
-                embed.add_field(name=f"{region_label}  ({len(member_list)} members, 🟢 {online_count} online)", value=f"```{preview_text}```", inline=False)
             view = GuildRegionSummaryView(guild_name, regions, tag_map, self)
-            await interaction.followup.send(embed=embed, view=view)
+            await interaction.followup.send(content=None, embed=None, view=view)
         except Exception as e:
             logger.error(f"Guild region command failed: {str(e)}", exc_info=True)
             await interaction.followup.send(f"❌ Failed to display guild regions: `{str(e)}`")
@@ -3567,6 +3564,97 @@ class OpponentGuildView(LayoutView):
 
         container = Container(*inner_items, accent_color=accent)
         self.add_item(container)
+
+
+class GuildProfileView(LayoutView):
+    """Components V2 LayoutView for displaying a guild profile (name, level, members, leadership, etc.).
+
+    Used by guild_search, guild_search_name, and the selection views.
+    """
+    ACCENT_BLURPLE = 0x5865F2
+
+    def __init__(
+        self,
+        guild_name: str,
+        guild_level: int,
+        member_count: int,
+        member_max: int = 100,
+        create_ts: int = 0,
+        funds: int = 0,
+        total_fame: int = 0,
+        week_fame: int = 0,
+        gvg_points: int = 0,
+        leader_name: str = "None",
+        vice_leader_name: str = "None",
+        online_count: int = 0,
+        announcement: str = None,
+        timeout: int = 180,
+    ):
+        super().__init__(timeout=timeout)
+
+        inner_items = []
+
+        # Title + Name
+        inner_items.append(TextDisplay(f"# 🏰 Guild Profile\n\n📛 **Name:** __**{guild_name}**__"))
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Core stats
+        inner_items.append(TextDisplay(
+            f"⭐ **Level:** __{guild_level}__    👥 **Members:** __{member_count}/{member_max}__\n"
+            f"📅 **Created:** <t:{create_ts}:R>" if create_ts else f"⭐ **Level:** __{guild_level}__    👥 **Members:** __{member_count}/{member_max}__"
+        ))
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Finances
+        inner_items.append(TextDisplay(
+            f"💰 **Funds:** __{funds:,}__    📈 **Fame:** __{total_fame:,}__\n"
+            f"🔥 **Weekly:** __{week_fame:,}__    ⚔️ **GvG:** __{gvg_points:,}__"
+        ))
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Leadership
+        inner_items.append(TextDisplay(
+            f"👑 **Leader:** __{leader_name}__    ⚔️ **Vice Leader:** __{vice_leader_name}__\n"
+            f"🟢 **Online Now:** __{online_count}/{member_count}__"
+        ))
+
+        # Announcement
+        if announcement and announcement.strip():
+            inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+            inner_items.append(TextDisplay(f"📢 **Announcement:** {announcement}"))
+
+        container = Container(*inner_items, accent_color=self.ACCENT_BLURPLE)
+        self.add_item(container)
+
+
+class GuildDetailView(LayoutView):
+    """Components V2 LayoutView for showing a detail page with a back button.
+
+    Generic re-usable view: shows a title, body text, and a back button
+    that restores the previous view.
+    """
+
+    def __init__(self, title: str, body: str, accent: int, back_view, timeout: int = 180):
+        super().__init__(timeout=timeout)
+        self.back_view = back_view
+
+        inner_items = [
+            TextDisplay(f"# {title}\n\n{body}"),
+            Separator(spacing=discord.SeparatorSpacing.small),
+        ]
+
+        back_row = ActionRow()
+        back_btn = discord.ui.Button(label="🔙 Back", style=discord.ButtonStyle.secondary, custom_id="guild_detail_back")
+        back_btn.callback = self._handle_back
+        back_row.add_item(back_btn)
+        inner_items.append(back_row)
+
+        container = Container(*inner_items, accent_color=accent)
+        self.add_item(container)
+
+    async def _handle_back(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        await interaction.edit_original_response(view=self.back_view)
 
 
 from cogs.view_registry import register
