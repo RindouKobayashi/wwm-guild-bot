@@ -354,11 +354,6 @@ class AvatarPickerView(LayoutView):
             attach_name = f"picker_{page_num}_{filename}"
             loaded.append(discord.File(str(disk_path), filename=attach_name))
         result = (loaded, page_files)
-        # Cache only this page and immediate neighbours (to avoid memory bloat)
-        for cached_page in (page_num - 1, page_num, page_num + 1):
-            if 0 <= cached_page < -(-len(self.avatar_files) // self.ITEMS_PER_PAGE):
-                if cached_page not in AvatarPickerView._page_cache:
-                    AvatarPickerView._page_cache[cached_page] = None  # placeholder
         AvatarPickerView._page_cache[page_num] = result
         return result
 
@@ -388,7 +383,15 @@ class AvatarPickerView(LayoutView):
 
         # Build a media gallery with the current page of avatars
         if page_files:
-            loaded_files, _ = self._load_page_files(self.page)
+            # Defensive: _load_page_files should always return a tuple now
+            # that the neighbour-placeholder loop has been removed, but guard
+            # against any future regression that could re-introduce a `None`
+            # cache entry (which would cause the tuple-unpack to crash).
+            loaded = self._load_page_files(self.page)
+            if loaded is None:
+                loaded_files, _ = [], page_files
+            else:
+                loaded_files, _ = loaded
             self._files = loaded_files
             gallery = MediaGallery()
             for fname in page_files:
