@@ -1032,14 +1032,25 @@ class LeaderboardCog(commands.Cog):
             logger.warning("Cannot assign elegance roles: guild not found")
             return
 
-        # Map the top 3 entry PIDs → Discord user_ids
-        new_top3_pids = set()
-        new_top3_user_ids = set()
-        rank_for_pid = {}
-        for rank, entry in enumerate(entries[:3], 1):
+        # (Tracking sets populated below in the role-assignment loop,
+        # which cascades to the next in-guild member when a top-3 player
+        # has left the guild.)
+
+        # Determine role objects
+        roles = [guild.get_role(rid) for rid in role_ids]
+        roles = [r for r in roles if r is not None]
+
+        # Assign roles to top 3, cascading to the next in-guild member when
+        # a top-3 player has left the guild. This way the role slot is
+        # always filled by the next eligible bound-and-present member.
+        new_top3_pids: list = []
+        new_top3_user_ids: set = set()
+        rank_for_pid: dict = {}
+        next_rank = 1
+        for entry in entries:
+            if next_rank > 3:
+                break
             pid = entry["pid"]
-            new_top3_pids.add(pid)
-            rank_for_pid[pid] = rank
             # Resolve Discord user_id from DB
             async with aiosqlite.connect(DB_PATH) as conn:
                 cur = await conn.execute(
@@ -1047,16 +1058,44 @@ class LeaderboardCog(commands.Cog):
                     (pid,)
                 )
                 row = await cur.fetchone()
-            if row:
-                user_id = row[0]
-                new_top3_user_ids.add(user_id)
+            if not row:
+                # No Discord binding for this pid — skip the pid entirely
+                # (not a guild-leave case; just un-bound).
+                continue
+            user_id = row[0]
+            member = guild.get_member(user_id)
+            if not member:
+                # User has left the guild — skip them and let the loop try
+                # the next entry in the leaderboard for this rank slot.
+                logger.info(
+                    f"Elegance role: skipping pid {pid} (uid {user_id}) — not in guild"
+                )
+                continue
+            rank = next_rank
+            new_top3_pids.append(pid)
+            rank_for_pid[pid] = rank
+            new_top3_user_ids.add(user_id)
+            role = roles[rank - 1]
+            if role not in member.roles:
+                try:
+                    await member.add_roles(role, reason=f"Elegance rank #{rank}")
+                    logger.info(f"Assigned {role.name} to {member} (rank #{rank})")
+                except Exception as e:
+                    logger.error(f"Failed to assign elegance role to {member}: {e}")
+
+            # Remove lower elegance roles if they have them (e.g. #1 shouldn't also have #2 or #3)
+            for lower_rank in range(rank, 3):  # rank is 1-indexed, so lower_rank=rank..3
+                lower_role = roles[lower_rank]
+                if lower_role in member.roles:
+                    try:
+                        await member.remove_roles(lower_role, reason="Elegance rank upgraded")
+                        logger.info(f"Removed lower elegance role {lower_role.name} from {member}")
+                    except Exception as e:
+                        logger.error(f"Failed to remove lower elegance role from {member}: {e}")
+            next_rank += 1
 
         # Store current top 3 PIDs for delta tracking next cycle
         self._prev_elegance_top3 = list(new_top3_pids)
-
-        # Determine role objects
-        roles = [guild.get_role(rid) for rid in role_ids]
-        roles = [r for r in roles if r is not None]
 
         # Remove roles from users who are no longer top 3 (but still have the role)
         async with aiosqlite.connect(DB_PATH) as conn:
@@ -1079,40 +1118,6 @@ class LeaderboardCog(commands.Cog):
                             logger.info(f"Removed elegance role {role.name} from {member} (uid={uid})")
                         except Exception as e:
                             logger.error(f"Failed to remove elegance role from {member}: {e}")
-
-        # Assign roles to top 3
-        for rank, entry in enumerate(entries[:3], 1):
-            pid = entry["pid"]
-            async with aiosqlite.connect(DB_PATH) as conn:
-                cur = await conn.execute(
-                    "SELECT user_id FROM verified_members WHERE player_pid = ?",
-                    (pid,)
-                )
-                row = await cur.fetchone()
-            if not row:
-                continue
-            user_id = row[0]
-            member = guild.get_member(user_id)
-            if not member:
-                logger.warning(f"Cannot assign elegance role: member {user_id} not in guild")
-                continue
-            role = roles[rank - 1]
-            if role not in member.roles:
-                try:
-                    await member.add_roles(role, reason=f"Elegance rank #{rank}")
-                    logger.info(f"Assigned {role.name} to {member} (rank #{rank})")
-                except Exception as e:
-                    logger.error(f"Failed to assign elegance role to {member}: {e}")
-
-            # Remove lower elegance roles if they have them (e.g. #1 shouldn't also have #2 or #3)
-            for lower_rank in range(rank, 3):  # rank is 1-indexed, so lower_rank=rank..3
-                lower_role = roles[lower_rank]
-                if lower_role in member.roles:
-                    try:
-                        await member.remove_roles(lower_role, reason="Elegance rank upgraded")
-                        logger.info(f"Removed lower elegance role {lower_role.name} from {member}")
-                    except Exception as e:
-                        logger.error(f"Failed to remove lower elegance role from {member}: {e}")
 
     # ── publish / refresh a single instance ────────────────────────────
     async def _publish_one(self, inst: _LeaderboardInstance):
