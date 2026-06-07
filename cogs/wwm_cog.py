@@ -92,7 +92,8 @@ class GuildStatusBoard(LayoutView):
                  apprentice_count: int, funds: int, total_fame: int, week_fame: int,
                  gvg_points: int, online_count: int, weekly_leaderboard: list,
                  pending_apps: int, now_ts: int, next_update_ts: int,
-                 birthdays_this_week: list = None):
+                 birthdays_this_week: list = None,
+                 press_count: int = 0):
         super().__init__(timeout=None)
         self.cog = cog
         self.guild_name = guild_name
@@ -100,6 +101,7 @@ class GuildStatusBoard(LayoutView):
         self.member_count = member_count
         self.pending_apps = pending_apps
         self.birthdays_this_week = birthdays_this_week or []
+        self.press_count = press_count
 
         # ── Build section texts ──
         # Identity section
@@ -119,7 +121,8 @@ class GuildStatusBoard(LayoutView):
 
         # Online status section
         status_text = (
-            f"🟢 **Online Now:** __**{online_count}/{member_count}**__"
+            f"🟢 **Online Now:** __**{online_count}/{member_count}**__\n"
+            f"🖱️ **Check Button Presses:** __**{press_count}**__"
         )
 
         # Weekly Activity section
@@ -216,6 +219,15 @@ class GuildStatusBoard(LayoutView):
             await interaction.followup.send("❌ You are not guild member", ephemeral=True)
             return
 
+        # Increment press counters
+        self.press_count += 1
+        self.cog.online_players_button_presses += 1
+        logger.debug(f"Online players button pressed by {interaction.user} (total: {self.cog.online_players_button_presses})")
+        # Persist the updated count to the database
+        await self.cog._save_config()
+        # Update the main monitor message to reflect the new count
+        await self._update_monitor_press_count()
+
         loading_msg = await interaction.followup.send("🔄 Getting player list...", ephemeral=True, wait=True)
 
         try:
@@ -301,6 +313,38 @@ class GuildStatusBoard(LayoutView):
         except Exception as e:
             logger.error(f"Failed to fetch online players: {str(e)}")
             await loading_msg.edit(content="❌ Failed to retrieve online players list")
+
+    async def _update_monitor_press_count(self):
+        """Rebuild and edit the monitor message to show the updated press count."""
+        try:
+            cog = self.cog
+            if not cog or not cog.monitor_message:
+                return
+            now_ts = int(discord.utils.utcnow().timestamp())
+            board_data = cog._gather_status_data(cog.last_guild_state)
+            if not board_data:
+                return
+            new_view = GuildStatusBoard(
+                cog=cog,
+                guild_name=board_data['guild_name'],
+                guild_level=board_data['guild_level'],
+                member_count=board_data['member_count'],
+                apprentice_count=board_data['apprentice_count'],
+                funds=board_data['funds'],
+                total_fame=board_data['total_fame'],
+                week_fame=board_data['week_fame'],
+                gvg_points=board_data['gvg_points'],
+                online_count=board_data['online_count'],
+                weekly_leaderboard=board_data['weekly_leaderboard'],
+                pending_apps=board_data['pending_apps'],
+                now_ts=now_ts,
+                next_update_ts=now_ts + 60,
+                birthdays_this_week=board_data['birthdays_this_week'],
+                press_count=cog.online_players_button_presses,
+            )
+            await cog.monitor_message.edit(content=None, embeds=[], attachments=[], view=new_view)
+        except Exception as e:
+            logger.error(f"Failed to update monitor press count: {e}")
 
 
 class GuildRegionSummaryView(LayoutView):
@@ -1358,6 +1402,7 @@ class WWMCog(commands.Cog):
         self.db_path = BASE_DIR / "data" / "guild_monitor.db"
         self.last_known_applications = {}
         self.pending_apps_channel_id = 1443104374837608529
+        self.online_players_button_presses = 0
 
     player_group = app_commands.Group(
         name="player",
@@ -1411,6 +1456,10 @@ class WWMCog(commands.Cog):
                 self.monitor_enabled = config['enabled'] == 'true'
             if 'interval' in config:
                 self.check_interval_minutes = int(config['interval'])
+            if 'press_count' in config:
+                self.online_players_button_presses = int(config['press_count'])
+            else:
+                self.online_players_button_presses = 0
     
     async def _save_config(self):
         async with aiosqlite.connect(self.db_path) as db:
@@ -1418,6 +1467,7 @@ class WWMCog(commands.Cog):
             await db.execute("REPLACE INTO monitor_config VALUES ('message_id', ?)", (str(self.monitor_message.id) if self.monitor_message else None,))
             await db.execute("REPLACE INTO monitor_config VALUES ('enabled', ?)", ('true' if self.monitor_enabled else 'false',))
             await db.execute("REPLACE INTO monitor_config VALUES ('interval', ?)", (str(self.check_interval_minutes),))
+            await db.execute("REPLACE INTO monitor_config VALUES ('press_count', ?)", (str(self.online_players_button_presses),))
             await db.commit()
     
     async def cog_load(self):
@@ -1922,6 +1972,7 @@ class WWMCog(commands.Cog):
                 now_ts=now_ts,
                 next_update_ts=now_ts + 60,
                 birthdays_this_week=board_data['birthdays_this_week'],
+                press_count=self.online_players_button_presses,
             )
             
             try:
@@ -2289,6 +2340,7 @@ class WWMCog(commands.Cog):
                                 now_ts=now_ts,
                                 next_update_ts=now_ts + 60,
                                 birthdays_this_week=board_data['birthdays_this_week'],
+                                press_count=self.online_players_button_presses,
                             )
                             self.monitor_message = await self.monitor_channel.send(content=None, embeds=[], view=view)
                             await self._save_config()
@@ -2317,12 +2369,13 @@ class WWMCog(commands.Cog):
                     online_count=board_data['online_count'],
                     weekly_leaderboard=board_data['weekly_leaderboard'],
                     pending_apps=board_data['pending_apps'],
-                    now_ts=now_ts,
-                    next_update_ts=now_ts + 60,
-                    birthdays_this_week=board_data['birthdays_this_week'],
-                )
-                self.monitor_message = await channel.send(content=None, embeds=[], view=view)
-                self.last_guild_state = guild_data
+                now_ts=now_ts,
+                next_update_ts=now_ts + 60,
+                birthdays_this_week=board_data['birthdays_this_week'],
+                press_count=self.online_players_button_presses,
+            )
+            self.monitor_message = await channel.send(content=None, embeds=[], view=view)
+            self.last_guild_state = guild_data
         
         await self._save_config()
         await interaction.response.send_message(f"✅ Guild monitor channel set to {channel.mention}. Status board created.", ephemeral=True)
