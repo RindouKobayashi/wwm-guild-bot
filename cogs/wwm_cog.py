@@ -7,6 +7,7 @@ import logging
 import aiosqlite
 import json
 from collections import defaultdict
+from typing import Optional
 from deepdiff import DeepDiff
 
 import settings
@@ -3379,7 +3380,10 @@ class WWMCog(commands.Cog):
             await interaction.followup.send("❌ Failed to fetch guild or player data")
             return
 
-    async def _build_opponent_reminder_view(self) -> "OpponentGuildView":
+    async def _build_opponent_reminder_view(
+        self,
+        ping_mention: Optional[str] = None,
+    ) -> "OpponentGuildView":
         """Build a Components V2 view describing the current opponent guild from our league data.
 
         Steps (mirrors test/test_new_get_club_info._api.py):
@@ -3388,6 +3392,10 @@ class WWMCog(commands.Cog):
           2. Fetch the opponent's full guild info with that hostnum.
           3. Resolve leader/vice-leader nicknames and count online members.
           4. Return a populated OpponentGuildView (or a graceful fallback view on failure).
+
+        The optional ``ping_mention`` (a pre-rendered role mention like ``<@&123>``)
+        is embedded inside the V2 layout, since ``channel.send(content=...)`` is
+        rejected on IS_COMPONENTS_V2 messages.
         """
         pulled_at_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
 
@@ -3401,6 +3409,7 @@ class WWMCog(commands.Cog):
                 accent=OpponentGuildView.ACCENT_ERROR,
                 pulled_at_ts=pulled_at_ts,
                 error=True,
+                ping_mention=ping_mention,
             )
 
         play = our_data['result'].get('play', {}) or {}
@@ -3415,6 +3424,7 @@ class WWMCog(commands.Cog):
                 accent=OpponentGuildView.ACCENT_GREY,
                 pulled_at_ts=pulled_at_ts,
                 no_opponent=True,
+                ping_mention=ping_mention,
             )
 
         opponent_club_id = duishou['club_id']
@@ -3430,6 +3440,7 @@ class WWMCog(commands.Cog):
                 accent=OpponentGuildView.ACCENT_ERROR,
                 pulled_at_ts=pulled_at_ts,
                 error=True,
+                ping_mention=ping_mention,
             )
 
         result = opp_data['result']
@@ -3507,6 +3518,7 @@ class WWMCog(commands.Cog):
             sections=sections,
             accent=OpponentGuildView.ACCENT_RED,
             pulled_at_ts=pulled_at_ts,
+            ping_mention=ping_mention,
         )
 
     @guild_group.command(name="league", description="Show the current opponent guild from our league/showdown data")
@@ -3552,7 +3564,12 @@ class WWMCog(commands.Cog):
                     if channel.guild else None
                 )
 
-            view = await self._build_opponent_reminder_view()
+            # The role mention has to be carried inside the V2 layout, not
+            # via channel.send(content=...) — Components V2 messages reject
+            # the `content` field.
+            view = await self._build_opponent_reminder_view(
+                ping_mention=ping_role.mention if ping_role else None,
+            )
 
             # If there's no current opponent, silently skip the send + ping.
             if view.no_opponent:
@@ -3562,7 +3579,6 @@ class WWMCog(commands.Cog):
                 return
 
             await channel.send(
-                content=ping_role.mention if ping_role else None,
                 view=view,
                 allowed_mentions=discord.AllowedMentions(
                     roles=[ping_role] if ping_role else []
@@ -3600,6 +3616,7 @@ class OpponentGuildView(LayoutView):
         pulled_at_ts: int,
         error: bool = False,
         no_opponent: bool = False,
+        ping_mention: Optional[str] = None,
     ):
         super().__init__(timeout=180 if not error else None)
         # Flags used by the scheduled gvg_league_notice_task to decide
@@ -3607,10 +3624,16 @@ class OpponentGuildView(LayoutView):
         self.error = error
         self.no_opponent = no_opponent
 
-        inner_items: list = [
+        # In Components V2 messages, `content` is not allowed (IS_COMPONENTS_V2
+        # flag). The role ping therefore has to be carried inside the layout
+        # as a TextDisplay rather than via channel.send(content=...).
+        inner_items: list = []
+        if ping_mention:
+            inner_items.append(TextDisplay(ping_mention))
+        inner_items.extend([
             TextDisplay(f"# {title}"),
             Separator(spacing=discord.SeparatorSpacing.small),
-        ]
+        ])
         inner_items.extend(sections)
         inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
         inner_items.append(TextDisplay(f"*Pulled: <t:{pulled_at_ts}:R>*"))
