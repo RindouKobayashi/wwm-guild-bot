@@ -5,13 +5,19 @@ import os
 import shutil
 import aiosqlite
 from datetime import datetime
-from typing import Optional, Set, List
+from pathlib import Path
+from typing import Optional, Set, List, Tuple
+import re as _re
 import discord
+
 from discord.ext import commands, tasks
 from discord.ui import (
     LayoutView, Container, TextDisplay, Separator, ActionRow,
     Button, Thumbnail, MediaGallery, Select, Section,
+    Label, RadioGroup,
 )
+import difflib
+
 from settings import BASE_DIR, logger
 from utility.wwm import get_club_chat, get_custom_guild_info, get_bulk_players_info, get_film_plan, get_teams_info
 from utility.api_constants import get_kongfu_ids_from_player, format_kongfu_display
@@ -23,6 +29,98 @@ AVATARS_DIR = BASE_DIR / "data" / "avatars"
 
 # Channel where avatar-mapping approval requests are sent for admins to review
 ADMIN_AVATAR_CHANNEL_ID = 1500005539256602774
+
+# ── Avatar subfolder layout (still vs animated × male / female / shared) ──
+# Source files (the PNGs/WEBPs the picker shows) live in 6 subfolders:
+#   data/avatars/still_male/      – PNG-only, male-only still images
+#   data/avatars/animated_male/   – WEBP-only, male-only animated
+#   data/avatars/still_female/    – PNG-only, female-only still images
+#   data/avatars/animated_female/ – WEBP-only, female-only animated
+#   data/avatars/still_shared/    – PNG-only, works for both genders
+#   data/avatars/animated_shared/ – WEBP-only, works for both genders
+# Approved copies land in the parallel `mapped/` subfolders with the
+# {head_id}.{ext} naming convention:
+#   data/avatars/mapped/still_male/1037.png
+#   data/avatars/mapped/animated_shared/1234.webp
+# etc.
+AVATARS_STILL_MALE_DIR = AVATARS_DIR / "still_male"
+AVATARS_ANIMATED_MALE_DIR = AVATARS_DIR / "animated_male"
+AVATARS_STILL_FEMALE_DIR = AVATARS_DIR / "still_female"
+AVATARS_ANIMATED_FEMALE_DIR = AVATARS_DIR / "animated_female"
+AVATARS_STILL_SHARED_DIR = AVATARS_DIR / "still_shared"
+AVATARS_ANIMATED_SHARED_DIR = AVATARS_DIR / "animated_shared"
+
+AVATARS_MAPPED_DIR = AVATARS_DIR / "mapped"
+AVATARS_MAPPED_STILL_MALE_DIR = AVATARS_MAPPED_DIR / "still_male"
+AVATARS_MAPPED_ANIMATED_MALE_DIR = AVATARS_MAPPED_DIR / "animated_male"
+AVATARS_MAPPED_STILL_FEMALE_DIR = AVATARS_MAPPED_DIR / "still_female"
+AVATARS_MAPPED_ANIMATED_FEMALE_DIR = AVATARS_MAPPED_DIR / "animated_female"
+AVATARS_MAPPED_STILL_SHARED_DIR = AVATARS_MAPPED_DIR / "still_shared"
+AVATARS_MAPPED_ANIMATED_SHARED_DIR = AVATARS_MAPPED_DIR / "animated_shared"
+
+# All 6 subfolders in lookup priority order for a given body_type.
+# Picker concatenates files from these (gender-specific first, shared last),
+# in still→animated order, so the fast PNGs load before the slow WEBPs.
+AVATARS_SOURCE_SUBFOLDERS_BY_BODY_TYPE = {
+    0: [  # female
+        AVATARS_STILL_FEMALE_DIR,
+        AVATARS_STILL_SHARED_DIR,
+        AVATARS_ANIMATED_FEMALE_DIR,
+        AVATARS_ANIMATED_SHARED_DIR,
+    ],
+    1: [  # male
+        AVATARS_STILL_MALE_DIR,
+        AVATARS_STILL_SHARED_DIR,
+        AVATARS_ANIMATED_MALE_DIR,
+        AVATARS_ANIMATED_SHARED_DIR,
+    ],
+}
+
+# All 6 source subfolders, in still→animated order. Used for the unknown
+# body_type case and for cleanup tasks.
+AVATARS_ALL_SOURCE_SUBFOLDERS = [
+    AVATARS_STILL_MALE_DIR,
+    AVATARS_STILL_FEMALE_DIR,
+    AVATARS_STILL_SHARED_DIR,
+    AVATARS_ANIMATED_MALE_DIR,
+    AVATARS_ANIMATED_FEMALE_DIR,
+    AVATARS_ANIMATED_SHARED_DIR,
+]
+
+# Lookup priority (most preferred → least preferred) for the
+# body-type-aware resolve. The first existing file wins.
+# Female:  still_female → animated_female → still_shared → animated_shared
+# Male:    still_male   → animated_male   → still_shared → animated_shared
+# Unknown: still_shared → animated_shared
+AVATARS_MAPPED_LOOKUP_ORDER_BY_BODY_TYPE = {
+    0: [  # female
+        AVATARS_MAPPED_STILL_FEMALE_DIR,
+        AVATARS_MAPPED_ANIMATED_FEMALE_DIR,
+        AVATARS_MAPPED_STILL_SHARED_DIR,
+        AVATARS_MAPPED_ANIMATED_SHARED_DIR,
+    ],
+    1: [  # male
+        AVATARS_MAPPED_STILL_MALE_DIR,
+        AVATARS_MAPPED_ANIMATED_MALE_DIR,
+        AVATARS_MAPPED_STILL_SHARED_DIR,
+        AVATARS_MAPPED_ANIMATED_SHARED_DIR,
+    ],
+}
+
+# Valid subfolder values for the UploadAvatarModal Select / for the
+# inferred-subfolder from a source path. Strings, lowercase, with underscores.
+AVATAR_VALID_SUBFOLDERS = {
+    "still_male",
+    "animated_male",
+    "still_female",
+    "animated_female",
+    "still_shared",
+    "animated_shared",
+}
+
+# Body-type constants (mirrors the WWM API: 0 = female, 1 = male).
+BODY_TYPE_FEMALE = 0
+BODY_TYPE_MALE = 1
 
 
 # ── Components V2 view classes ──────────────────────────────────────
@@ -176,20 +274,291 @@ class ExhibitionMessageView(LayoutView):
         self.add_item(container)
 
 
+class UploadAvatarModal(discord.ui.Modal, title="Upload Custom Avatar"):
+    """Modal that lets the user upload an image from their computer.
+
+    Fields:
+      - `avatar_file`  (discord.ui.FileUpload) — native file picker. Accepts
+        one PNG or WEBP (≤ 10 MB). Wrapped in a `Label` because
+        Components V2 file pickers (type 19) are not auto-wrapped in an
+        ActionRow by discord.py — they have to be wrapped in a Label or
+        Discord rejects the modal payload.
+      - `subfolder`    (discord.ui.RadioGroup) — pick one of the 6 source
+        subfolders. The default option is pre-selected based on the
+        sender's `body_type` (male → still_male, female → still_female,
+        unknown → still_shared). Like FileUpload, RadioGroup is also a
+        Label-only component in modals.
+
+    On submit we validate the attachment + the selected subfolder, then
+    call the cog's `_stage_uploaded_avatar` directly (no follow-up view
+    needed) and reply with a confirmation.
+    """
+
+    # Stable custom_id for the RadioGroup so on_submit can find the
+    # selected value inside `interaction.data["components"]` (RadioGroup
+    # has no `.values` accessor like Select / FileUpload).
+    SUBFOLDER_COMPONENT_ID = "upload_avatar_subfolder"
+
+    def __init__(
+        self,
+        *,
+        cog: "LiveChatCog",
+        head_id: str,
+        body_type: Optional[int],
+        sender_nickname: str,
+        sender_pid: Optional[str],
+    ):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.head_id = str(head_id) if head_id is not None else ""
+        self.body_type: Optional[int] = body_type if body_type in (0, 1) else None
+        self.sender_nickname = sender_nickname
+        self.sender_pid = sender_pid
+
+        # Pick the suggested subfolder from the sender's body_type.
+        if body_type == BODY_TYPE_MALE:
+            suggested = "still_male"
+        elif body_type == BODY_TYPE_FEMALE:
+            suggested = "still_female"
+        else:
+            suggested = "still_shared"
+
+        # Field 1: FileUpload wrapped in a Label.
+        self.avatar_file = discord.ui.FileUpload(
+            required=True,
+            min_values=1,
+            max_values=1,
+        )
+        self.add_item(
+            Label(
+                text="Upload a PNG or WEBP avatar (max 10 MB)",
+                component=self.avatar_file,
+            )
+        )
+
+        # Field 2: RadioGroup wrapped in a Label for subfolder selection.
+        self.subfolder_group = RadioGroup(
+            required=True,
+            custom_id=self.SUBFOLDER_COMPONENT_ID,
+            options=[
+                discord.RadioGroupOption(
+                    label="🖼️ Still Male",
+                    description="PNG — male-only still image",
+                    value="still_male",
+                    default=(suggested == "still_male"),
+                ),
+                discord.RadioGroupOption(
+                    label="🎞️ Animated Male",
+                    description="WEBP — male-only animated",
+                    value="animated_male",
+                    default=(suggested == "animated_male"),
+                ),
+                discord.RadioGroupOption(
+                    label="🖼️ Still Female",
+                    description="PNG — female-only still image",
+                    value="still_female",
+                    default=(suggested == "still_female"),
+                ),
+                discord.RadioGroupOption(
+                    label="🎞️ Animated Female",
+                    description="WEBP — female-only animated",
+                    value="animated_female",
+                    default=(suggested == "animated_female"),
+                ),
+                discord.RadioGroupOption(
+                    label="🤝 Still Shared",
+                    description="PNG — works for both genders, still",
+                    value="still_shared",
+                    default=(suggested == "still_shared"),
+                ),
+                discord.RadioGroupOption(
+                    label="🤝 Animated Shared",
+                    description="WEBP — works for both genders, animated",
+                    value="animated_shared",
+                    default=(suggested == "animated_shared"),
+                ),
+            ],
+        )
+        self.add_item(
+            Label(
+                text="Target subfolder",
+                component=self.subfolder_group,
+            )
+        )
+
+    @staticmethod
+    def _extract_subfolder(interaction: discord.Interaction) -> Optional[str]:
+        """Find the RadioGroup's selected value in `interaction.data`.
+
+        Modal-submitted RadioGroups surface in `interaction.data` under
+        `components` (mirroring the layout sent to Discord). Each entry has
+        a `custom_id` and a `value` (the selected option's `value`).
+        """
+        try:
+            for comp in (interaction.data or {}).get("components", []) or []:
+                # comp may be the Label wrapper (with nested "component") or
+                # the RadioGroup itself depending on discord.py's layout.
+                inner = comp.get("component", comp)
+                if inner.get("custom_id") == UploadAvatarModal.SUBFOLDER_COMPONENT_ID:
+                    val = inner.get("value")
+                    if isinstance(val, str) and val:
+                        return val
+                    # Older payload shape: values list on the component.
+                    vals = inner.get("values") or []
+                    if vals:
+                        return vals[0]
+        except Exception:
+            pass
+        return None
+
+    async def on_submit(self, interaction: discord.Interaction):
+        # discord.ui.FileUpload.values is a list[discord.Attachment].
+        attachments = self.avatar_file.values
+        if not attachments:
+            await interaction.response.send_message(
+                "❌ No file was attached.", ephemeral=True
+            )
+            return
+        attachment: discord.Attachment = attachments[0]
+
+        # Quick sanity checks (the cog does deeper validation).
+        if attachment.size > 10 * 1024 * 1024:
+            await interaction.response.send_message(
+                f"❌ File too large ({attachment.size // 1024} KB; max 10 MB).",
+                ephemeral=True,
+            )
+            return
+        fname_lower = attachment.filename.lower()
+        if not (fname_lower.endswith(".png") or fname_lower.endswith(".webp")):
+            await interaction.response.send_message(
+                "❌ File must be a `.png` or `.webp`.", ephemeral=True
+            )
+            return
+
+        # Pull the selected subfolder from the RadioGroup in interaction.data.
+        subfolder = self._extract_subfolder(interaction)
+        if subfolder is None or subfolder not in AVATAR_VALID_SUBFOLDERS:
+            await interaction.response.send_message(
+                f"❌ Please pick a target subfolder from the radio list.",
+                ephemeral=True,
+            )
+            return
+
+        # Acknowledge the modal right away so we don't hit the 3-second
+        # deadline while we read the upload bytes.
+        await interaction.response.defer(ephemeral=True)
+
+        # Read the attachment bytes before calling _stage_uploaded_avatar,
+        # because we may need them for the DuplicateCheckView.
+        try:
+            upload_data = await attachment.read()
+        except Exception as e:
+            await interaction.followup.send(f"❌ Failed to read attachment: {e}", ephemeral=True)
+            return
+
+        # Re-create the attachment with the already-read bytes so
+        # _stage_uploaded_avatar can read() it again (Discord attachments
+        # are single-read).
+        class _ReReadableAttachment:
+            """Minimal wrapper that mimics discord.Attachment for .read()."""
+            def __init__(self, data: bytes, filename: str):
+                self._data = data
+                self.filename = filename
+            async def read(self):
+                return self._data
+
+        re_readable = _ReReadableAttachment(upload_data, attachment.filename)
+        ok, err_or_filename = await self.cog._stage_uploaded_avatar(
+            attachment=re_readable,  # type: ignore[arg-type]
+            subfolder=subfolder,
+            head_id=self.head_id,
+            body_type=self.body_type,
+            suggested_by=interaction.user,
+            sender_nickname=self.sender_nickname,
+            sender_pid=self.sender_pid,
+            source_message_jump_url=None,
+        )
+        if not ok and err_or_filename.startswith("duplicate:"):
+            # Similar file found — show the DuplicateCheckView
+            existing_relative = err_or_filename[len("duplicate:"):]
+            dupe_view = DuplicateCheckView(
+                cog=self.cog,
+                uploaded_data=upload_data,
+                uploaded_filename=attachment.filename,
+                existing_filename=existing_relative,
+                head_id=self.head_id,
+                body_type=self.body_type,
+                suggested_by=interaction.user,
+                sender_nickname=self.sender_nickname,
+                sender_pid=self.sender_pid,
+                source_message_jump_url=None,
+                subfolder=subfolder,
+            )
+            dupe_files = dupe_view._resolve_files()
+            try:
+                await interaction.followup.send(
+                    content=None,
+                    view=dupe_view,
+                    files=dupe_files,
+                    ephemeral=True,
+                )
+            except Exception:
+                pass
+            return
+        elif not ok:
+            await interaction.followup.send(f"❌ {err_or_filename}", ephemeral=True)
+            return
+
+        # Mark (head_id, body_type) as seen so we don't re-prompt.
+        if self.head_id and self.body_type is not None:
+            self.cog.seen_head_map.add((self.head_id, self.body_type))
+            self.cog.save_config()
+
+        await interaction.followup.send(
+            f"✅ Saved `{err_or_filename}` to `data/avatars/{subfolder}/` and "
+            f"sent to admins for approval for head_id `{self.head_id}`.",
+            ephemeral=True,
+        )
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception):
+        logger.error(f"UploadAvatarModal on_error: {error}", exc_info=True)
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    f"❌ Upload failed: {error}", ephemeral=True
+                )
+        except Exception:
+            pass
+
+
 class HeadPickerRequestView(LayoutView):
     """Wraps a normal chat message and adds a "Set Avatar" button.
 
     Times out after 180 seconds, after which the button auto-disables.
+    Knows about the sender's `body_type` so the picker it opens can filter
+    avatars to the correct gender / format subfolders.
     """
+
 
     PICKER_TIMEOUT = 180.0  # seconds
 
-    def __init__(self, *, base_view: ChatMessageView, head_id, sender_nickname: str, sender_pid: Optional[str]):
+    def __init__(
+        self,
+        *,
+        base_view: ChatMessageView,
+        head_id,
+        sender_nickname: str,
+        sender_pid: Optional[str],
+        body_type: Optional[int] = None,
+    ):
         super().__init__(timeout=self.PICKER_TIMEOUT)
         self.base_view = base_view
         self.head_id = str(head_id) if head_id is not None else ""
         self.sender_nickname = sender_nickname
         self.sender_pid = sender_pid
+        # Body type of the sender (0=female, 1=male, None=unknown). The
+        # picker uses this to filter the source subfolders it scans.
+        self.body_type: Optional[int] = body_type if body_type in (0, 1) else None
 
         # Carry over the base view's items (a single Container)
         for item in list(base_view.children):
@@ -199,7 +568,7 @@ class HeadPickerRequestView(LayoutView):
         button = Button(
             label="🖼️ Set Avatar",
             style=discord.ButtonStyle.primary,
-            custom_id=f"head_picker_open:{self.head_id}",
+            custom_id=f"head_picker_open:{self.head_id}:{self.body_type if self.body_type is not None else ''}",
         )
         button.callback = self._on_click
         action_row.add_item(button)
@@ -228,29 +597,23 @@ class HeadPickerRequestView(LayoutView):
         # picker without completing a selection. Marking happens only when the
         # user actually selects an avatar (see AvatarPickerView._on_select) or
         # when an admin approves (AdminConfirmView._on_approve).
-        avatar_files = cog._list_avatar_files(force_refresh=True)
-        if not avatar_files:
-            await interaction.response.send_message(
-                "❌ No avatar PNGs are available in `data/avatars/`. "
-                "Add at least one PNG to that folder and try again.",
-                ephemeral=True,
-            )
-            return
-
-        await interaction.response.defer(ephemeral=True)
-        view = AvatarPickerView(
+        #
+        # Show a category picker FIRST (no images) so the user picks which
+        # gender/format subfolder to browse. Avatar files only get loaded
+        # once the user has chosen a category — that way the Set Avatar
+        # button never makes Discord pay the cost of reading every avatar
+        # in every subfolder upfront.
+        view = CategoryPickerView(
             cog=cog,
             head_id=self.head_id,
-            avatar_files=avatar_files,
+            body_type=self.body_type,
             suggested_by=interaction.user,
             sender_nickname=self.sender_nickname,
             sender_pid=self.sender_pid,
         )
-        files = view._resolve_files()
-        await interaction.followup.send(
+        await interaction.response.send_message(
             content=None,
             view=view,
-            files=files,
             ephemeral=True,
             allowed_mentions=discord.AllowedMentions.none(),
         )
@@ -260,10 +623,12 @@ class HeadPickerRequestView(LayoutView):
         # disabling the button) so the live message stops showing a dead
         # control. If we know which channel message this view was attached
         # to, push the change to Discord so users see the button disappear.
+        bt_part = "" if self.body_type is None else str(self.body_type)
+        target_custom_id = f"head_picker_open:{self.head_id}:{bt_part}"
         rows_to_remove = [
             child for child in self.children
             if isinstance(child, ActionRow)
-            and any(isinstance(item, Button) and item.custom_id == f"head_picker_open:{self.head_id}"
+            and any(isinstance(item, Button) and item.custom_id == target_custom_id
                    for item in child.children)
         ]
         for row in rows_to_remove:
@@ -280,14 +645,289 @@ class HeadPickerRequestView(LayoutView):
                 pass
 
 
+
+class CategoryPickerView(LayoutView):
+    """Ephemeral landing view that asks the user WHICH subfolder they want to browse.
+
+    Shown after the user clicks "🖼️ Set Avatar" on the chat message. Does
+    NOT load any avatar images up front — that only happens after the
+    user picks a category from the Select menu (or hits Upload Custom).
+
+    The dropdown offers up to 6 categories depending on the sender's
+    `body_type`:
+
+        body_type=1 (male)   → Still Male, Animated Male,
+                               Still Shared, Animated Shared
+        body_type=0 (female) → Still Female, Animated Female,
+                               Still Shared, Animated Shared
+        body_type=None       → the 4 shared-only options
+
+    Each option's `value` is the source subfolder name (e.g. ``still_male``)
+    which is then handed to ``LiveChatCog._list_avatar_files_in_subfolder``
+    to load ONLY that one subfolder's files into the actual picker.
+    """
+
+    def __init__(
+        self,
+        *,
+        cog: "LiveChatCog",
+        head_id: str,
+        body_type: Optional[int],
+        suggested_by: discord.abc.User,
+        sender_nickname: str,
+        sender_pid: Optional[str],
+    ):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.head_id = head_id
+        self.body_type: Optional[int] = body_type if body_type in (0, 1) else None
+        self.suggested_by = suggested_by
+        self.sender_nickname = sender_nickname
+        self.sender_pid = sender_pid
+        self._build()
+
+    def _build(self) -> None:
+        self.clear_items()
+
+        # Build the Select options filtered by body_type. Always include
+        # the shared options so the user can fall back to a gender-neutral
+        # avatar if they don't want their-gender-specific one.
+        if self.body_type == BODY_TYPE_MALE:
+            options = [
+                discord.SelectOption(
+                    label="🖼️ Still Male",
+                    description="PNG — male-only still images",
+                    value="still_male",
+                ),
+                discord.SelectOption(
+                    label="🎞️ Animated Male",
+                    description="WEBP — male-only animated",
+                    value="animated_male",
+                ),
+                discord.SelectOption(
+                    label="🖼️ Still Shared",
+                    description="PNG — works for both genders, still",
+                    value="still_shared",
+                ),
+                discord.SelectOption(
+                    label="🎞️ Animated Shared",
+                    description="WEBP — works for both genders, animated",
+                    value="animated_shared",
+                ),
+            ]
+        elif self.body_type == BODY_TYPE_FEMALE:
+            options = [
+                discord.SelectOption(
+                    label="🖼️ Still Female",
+                    description="PNG — female-only still images",
+                    value="still_female",
+                ),
+                discord.SelectOption(
+                    label="🎞️ Animated Female",
+                    description="WEBP — female-only animated",
+                    value="animated_female",
+                ),
+                discord.SelectOption(
+                    label="🖼️ Still Shared",
+                    description="PNG — works for both genders, still",
+                    value="still_shared",
+                ),
+                discord.SelectOption(
+                    label="🎞️ Animated Shared",
+                    description="WEBP — works for both genders, animated",
+                    value="animated_shared",
+                ),
+            ]
+        else:
+            # Unknown / no body_type → only shared subfolders are meaningful.
+            options = [
+                discord.SelectOption(
+                    label="🖼️ Still Shared",
+                    description="PNG — works for both genders, still",
+                    value="still_shared",
+                ),
+                discord.SelectOption(
+                    label="🎞️ Animated Shared",
+                    description="WEBP — works for both genders, animated",
+                    value="animated_shared",
+                ),
+            ]
+
+        gender_hint = {
+            BODY_TYPE_FEMALE: "female",
+            BODY_TYPE_MALE: "male",
+        }.get(self.body_type, "either")
+
+        inner: list = [
+            TextDisplay(
+                f"# 🖼️ Pick a category for head_id `{self.head_id}`\n"
+                f"Choose which {gender_hint} avatar subfolder to browse, or upload a custom image.\n"
+                f"\n"
+                f"_No images are loaded until you pick a category — this just lets you pick the folder first._"
+            ),
+            Separator(spacing=discord.SeparatorSpacing.small),
+        ]
+
+        # Select menu for picking a category
+        select_row = ActionRow()
+        category_select = Select(
+            placeholder="Pick a category to browse…",
+            options=options,
+            custom_id=f"avatar_category_pick:{self.head_id}",
+        )
+        category_select.callback = self._on_category
+        select_row.add_item(category_select)
+        inner.append(select_row)
+
+        # Bottom row: Upload Custom + Close
+        nav_row = ActionRow()
+        upload_btn = Button(
+            label="📤 Upload Custom",
+            style=discord.ButtonStyle.success,
+            custom_id="avatar_picker_upload",
+        )
+        upload_btn.callback = self._on_upload_custom
+        nav_row.add_item(upload_btn)
+
+        close_btn = Button(
+            label="Close",
+            style=discord.ButtonStyle.danger,
+            custom_id="avatar_picker_close",
+        )
+        close_btn.callback = self._on_close
+        nav_row.add_item(close_btn)
+        inner.append(nav_row)
+
+        container = Container(*inner, accent_color=0x3498DB)
+        self.add_item(container)
+
+    def _disable_controls(self) -> None:
+        """Disable the Select and all buttons to prevent double-clicks."""
+        for child in self.children:
+            if isinstance(child, ActionRow):
+                for item in child.children:
+                    if isinstance(item, (Button, Select)):
+                        item.disabled = True
+
+    async def _on_category(self, interaction: discord.Interaction):
+        chosen = interaction.data.get("values", [None])[0]
+        if not chosen or chosen not in AVATAR_VALID_SUBFOLDERS:
+            await interaction.response.send_message(
+                "❌ Invalid category selected.", ephemeral=True
+            )
+            return
+        # Lock the category picker right away so a second click doesn't
+        # open two avatar pickers.
+        self._disable_controls()
+        try:
+            await interaction.response.edit_message(view=self)
+        except Exception:
+            pass
+
+        # Load ONLY this one subfolder's files — no scanning the other 5
+        # subfolders just to throw their results away.
+        avatar_files = self.cog._list_avatar_files_in_subfolder(
+            subfolder=chosen,
+            force_refresh=True,
+        )
+        if not avatar_files:
+            await interaction.followup.send(
+                f"❌ No avatar files are available in `data/avatars/{chosen}/`.\n"
+                f"Add at least one PNG/WEBP to that subfolder (or pick a different category) and try again.",
+                ephemeral=True,
+            )
+            return
+
+        # Build the actual paginated picker and edit the same message in
+        # place — this keeps the user in one message and avoids cluttering
+        # the channel with a follow-up.
+        view = AvatarPickerView(
+            cog=self.cog,
+            head_id=self.head_id,
+            body_type=self.body_type,
+            avatar_files=avatar_files,
+            suggested_by=self.suggested_by,
+            sender_nickname=self.sender_nickname,
+            sender_pid=self.sender_pid,
+        )
+        files = view._resolve_files()
+        # Defer to satisfy Discord's 3-second window while we attach files
+        # (especially animated .webp which can be slow).
+        try:
+            await interaction.edit_original_response(
+                view=view,
+                attachments=files,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+        except Exception:
+            # Fallback: send as a new follow-up if the edit raced.
+            await interaction.followup.send(
+                content=None,
+                view=view,
+                files=files,
+                ephemeral=True,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+
+    async def _on_upload_custom(self, interaction: discord.Interaction):
+        """Open the UploadAvatarModal so the user can attach a fresh image."""
+        self._disable_controls()
+        try:
+            await interaction.response.send_modal(
+                UploadAvatarModal(
+                    cog=self.cog,
+                    head_id=self.head_id,
+                    body_type=self.body_type,
+                    sender_nickname=self.sender_nickname,
+                    sender_pid=self.sender_pid,
+                )
+            )
+        except Exception as e:
+            logger.error(f"Failed to open upload modal: {e}", exc_info=True)
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(
+                        "❌ Failed to open the upload form. Please try again.",
+                        ephemeral=True,
+                    )
+            except Exception:
+                pass
+
+    async def _on_close(self, interaction: discord.Interaction):
+        for child in self.children:
+            if isinstance(child, ActionRow):
+                for item in child.children:
+                    if isinstance(item, (Button, Select)):
+                        item.disabled = True
+        close_container = Container(
+            TextDisplay("Picker closed."),
+            accent_color=0x3498DB,
+        )
+        close_view = LayoutView(timeout=None)
+        close_view.add_item(close_container)
+        await interaction.response.edit_message(view=close_view)
+        self.stop()
+
+    async def on_timeout(self) -> None:
+        for child in self.children:
+            if isinstance(child, ActionRow):
+                for item in child.children:
+                    if isinstance(item, (Button, Select)):
+                        item.disabled = True
+        self.stop()
+
+
 class AvatarPickerView(LayoutView):
     """Ephemeral paginated picker that lets a user choose one of the avatar PNGs.
 
     Shows up to 9 avatars per page (up to 3x3 grid, Discord's MediaGallery limit)
-    plus pagination + a Select menu. PNG files are loaded before WEBP for faster
-    initial pages, and the "Go to page" dropdown shows format counts per page.
-    File objects for the current, previous, and next pages are cached to speed
-    up navigation.
+    plus pagination + a Select menu + a "📤 Upload Custom" button that opens
+    a Modal for attaching a fresh image from the user's computer.
+
+    The list of source files is pre-filtered by the sender's `body_type` (via
+    `LiveChatCog._list_avatar_files`) so the picker never shows irrelevant
+    gender-specific folders. PNGs load before WEBPs for snappier first paint,
+    and per-page file objects are cached to speed up pagination.
     """
 
     ITEMS_PER_PAGE = 9
@@ -298,6 +938,7 @@ class AvatarPickerView(LayoutView):
         *,
         cog: "LiveChatCog",
         head_id: str,
+        body_type: Optional[int],
         avatar_files: List[str],
         suggested_by: discord.abc.User,
         sender_nickname: str,
@@ -306,7 +947,12 @@ class AvatarPickerView(LayoutView):
         super().__init__(timeout=300)
         self.cog = cog
         self.head_id = head_id
-        # Files are already sorted PNG-first by _list_avatar_files
+        # body_type of the original sender (0=female, 1=male, None=unknown).
+        # Used to filter the picker source subfolders and to pre-select the
+        # suggested subfolder in the UploadAvatarModal.
+        self.body_type: Optional[int] = body_type if body_type in (0, 1) else None
+        # Files are already sorted PNG-first by _list_avatar_files. Each
+        # entry is a RELATIVE path under AVATARS_DIR (e.g. "still_male/foo.png").
         self.avatar_files = list(avatar_files)
         self.suggested_by = suggested_by
         self.sender_nickname = sender_nickname
@@ -317,6 +963,7 @@ class AvatarPickerView(LayoutView):
         # Clear any stale cache from a previous picker instance
         AvatarPickerView._page_cache.clear()
         self._build()
+
 
     def _resolve_files(self) -> List[discord.File]:
         return list(self._files)
@@ -450,7 +1097,8 @@ class AvatarPickerView(LayoutView):
             go_row.add_item(go_select)
             inner.append(go_row)
 
-        # Pagination row
+        # Navigation row: ⬅ Prev | Next ➡ | 📤 Upload Custom | Close
+        # (4 buttons — within Discord's 5-per-ActionRow limit)
         nav_row = ActionRow()
         prev_btn = Button(
             label="⬅ Prev",
@@ -470,6 +1118,14 @@ class AvatarPickerView(LayoutView):
         next_btn.callback = self._on_next
         nav_row.add_item(next_btn)
 
+        upload_btn = Button(
+            label="📤 Upload Custom",
+            style=discord.ButtonStyle.success,
+            custom_id="avatar_picker_upload",
+        )
+        upload_btn.callback = self._on_upload_custom
+        nav_row.add_item(upload_btn)
+
         close_btn = Button(
             label="Close",
             style=discord.ButtonStyle.danger,
@@ -478,6 +1134,7 @@ class AvatarPickerView(LayoutView):
         close_btn.callback = self._on_close
         nav_row.add_item(close_btn)
         inner.append(nav_row)
+
 
         container = Container(*inner, accent_color=0x3498DB)
         self.add_item(container)
@@ -545,9 +1202,11 @@ class AvatarPickerView(LayoutView):
         self._disable_nav_buttons()
         await interaction.response.edit_message(view=self)
 
-        # Record this head_id as "handled" so we don't re-prompt on later messages
-        if self.head_id:
-            self.cog.seen_head_ids.add(self.head_id)
+        # Record this (head_id, body_type) as "handled" so we don't re-prompt on
+        # later messages from the same gender. (A male and a female sender with
+        # the same head_id are now tracked independently.)
+        if self.head_id and self.body_type is not None:
+            self.cog.seen_head_map.add((self.head_id, self.body_type))
             self.cog.save_config()
 
         jump_url = None
@@ -560,6 +1219,7 @@ class AvatarPickerView(LayoutView):
         await self.cog._send_admin_avatar_approval(
             head_id=self.head_id,
             chosen_filename=chosen,
+            body_type=self.body_type,
             suggested_by=self.suggested_by,
             source_message_jump_url=jump_url,
             sender_nickname=self.sender_nickname,
@@ -573,6 +1233,43 @@ class AvatarPickerView(LayoutView):
             )
         except Exception:
             pass
+
+    async def _on_upload_custom(self, interaction: discord.Interaction):
+        """Open the UploadAvatarModal so the user can attach a fresh image.
+
+        The modal uses discord.ui.FileUpload (native file picker) for the
+        file + a discord.ui.RadioGroup for picking the target subfolder.
+        The pre-selected subfolder is suggested based on the sender's
+        `body_type` (e.g. male sender → `still_male`).
+        """
+        # Disable the picker controls to prevent double-clicks while the
+        # modal is open. We don't try to edit the message here because the
+        # modal opens in parallel and any edit would race with the modal
+        # launch.
+        self._disable_nav_buttons()
+        try:
+            # Pop the modal via the interaction. The FileUpload field plus
+            # the subfolder RadioGroup are defined on UploadAvatarModal.
+            await interaction.response.send_modal(
+                UploadAvatarModal(
+                    cog=self.cog,
+                    head_id=self.head_id,
+                    body_type=self.body_type,
+                    sender_nickname=self.sender_nickname,
+                    sender_pid=self.sender_pid,
+                )
+            )
+        except Exception as e:
+            logger.error(f"Failed to open upload modal: {e}", exc_info=True)
+            try:
+                if not interaction.response.is_done():
+                    await interaction.response.send_message(
+                        "❌ Failed to open the upload form. Please try again.",
+                        ephemeral=True,
+                    )
+            except Exception:
+                pass
+
 
     async def _on_prev(self, interaction: discord.Interaction):
         if self.is_finished() or self._nav_in_progress:
@@ -652,6 +1349,11 @@ class AdminConfirmView(LayoutView):
 
     The actual `approve` / `reject` buttons live in `self.action_row` so the parent
     LayoutView can place them as a separate top-level item in the admin message.
+
+    `chosen_filename` is a RELATIVE path under `AVATARS_DIR` (e.g.
+    `still_male/foo.png` or `legacy/foo.png`). The approve flow copies the
+    file into the matching `mapped/<subfolder>/{head_id}.{ext}` so the
+    body-type-aware resolver can find it later.
     """
 
     def __init__(
@@ -663,6 +1365,7 @@ class AdminConfirmView(LayoutView):
         chosen_filename: str,
         suggested_by_id: Optional[int],
         source_message_jump_url: Optional[str],
+        body_type: Optional[int] = None,
     ):
         super().__init__(timeout=None)
         self.cog = cog
@@ -671,6 +1374,10 @@ class AdminConfirmView(LayoutView):
         self.chosen_filename = chosen_filename
         self.suggested_by_id = suggested_by_id
         self.source_message_jump_url = source_message_jump_url
+        # body_type of the original sender (0=female, 1=male, None=unknown).
+        # Used by `_on_approve` to mark the right (head_id, body_type) key
+        # in `seen_head_map`, and by `_on_reject` to remove it.
+        self.body_type: Optional[int] = body_type if body_type in (0, 1) else None
 
         self.action_row = ActionRow()
         approve_btn = Button(
@@ -694,6 +1401,19 @@ class AdminConfirmView(LayoutView):
             if isinstance(item, Button):
                 item.disabled = True
 
+    @staticmethod
+    def _infer_source_subfolder(chosen_filename: str) -> str:
+        """Extract the source subfolder from a relative path.
+
+        `still_male/foo.png` → `still_male`
+        `foo.png` (legacy flat file) → `""` (empty string; the destination will
+        then be `mapped/{head_id}.{ext}` for backwards compatibility).
+        """
+        chosen_norm = chosen_filename.replace("\\", "/")
+        if "/" in chosen_norm:
+            return chosen_norm.split("/", 1)[0]
+        return ""
+
     async def _on_approve(self, interaction: discord.Interaction):
         if not interaction.user.guild_permissions.administrator:
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
@@ -702,12 +1422,38 @@ class AdminConfirmView(LayoutView):
         await interaction.response.defer(ephemeral=False)
 
         source_path = AVATARS_DIR / self.chosen_filename
-        mapped_dir = AVATARS_DIR / "mapped"
-        os.makedirs(str(mapped_dir), exist_ok=True)
-        target_path = mapped_dir / self.head_target_filename
+        if not source_path.exists() or not source_path.is_file():
+            logger.error(f"Source avatar missing on disk: {source_path}")
+            self._disable()
+            err_container = Container(
+                TextDisplay(
+                    f"❌ Source file `data/avatars/{self.chosen_filename}` is missing on disk."
+                ),
+                accent_color=0xE74C3C,
+            )
+            err_view = LayoutView(timeout=None)
+            err_view.add_item(err_container)
+            await interaction.edit_original_response(
+                view=err_view,
+                attachments=[],
+            )
+            return
+
+        # Determine destination subfolder from the source's parent directory.
+        # e.g. chosen "still_male/foo.png" → destination "mapped/still_male/".
+        # For legacy flat files (no parent), destination is "mapped/" root.
+        source_subfolder = self._infer_source_subfolder(self.chosen_filename)
+        target_dir = AVATARS_MAPPED_DIR
+        if source_subfolder and source_subfolder in AVATAR_VALID_SUBFOLDERS:
+            target_dir = AVATARS_MAPPED_DIR / source_subfolder
+        target_dir.mkdir(parents=True, exist_ok=True)
+        target_path = target_dir / self.head_target_filename
+        # Display string for the success/info embeds (e.g. "mapped/still_male/1037.png").
+        target_display = f"mapped/{source_subfolder}/{self.head_target_filename}" if source_subfolder else f"mapped/{self.head_target_filename}"
+
         try:
             if source_path.resolve() != target_path.resolve():
-                # Copy the file contents to the mapped subfolder. shutil.copy2
+                # Copy the file contents to the destination subfolder. shutil.copy2
                 # only needs read access to the source, which is nearly always
                 # granted even when Explorer/antivirus has a lock on Windows.
                 shutil.copy2(str(source_path), str(target_path))
@@ -720,18 +1466,18 @@ class AdminConfirmView(LayoutView):
                 except OSError:
                     pass
             # Refresh the in-memory cache so the new file is recognized
-            self.cog._avatar_files_cache = None
+            # (the cache is a dict keyed by body_type — clear all of them).
+            try:
+                self.cog._avatar_files_cache.clear()
+            except Exception:
+                self.cog._avatar_files_cache = {}
         except Exception as e:
             logger.error(f"Failed to copy avatar for head_id {self.head_id}: {e}")
             self._disable()
-            # Use a LayoutView + Container + TextDisplay instead of `content=` or
-            # `embed=` — the original message was sent with a LayoutView (Components
-            # V2), and the Discord API rejects both `content` and `embed` fields on
-            # messages with the IS_COMPONENTS_V2 flag set.
             err_container = Container(
                 TextDisplay(
                     f"❌ Failed to copy `{self.chosen_filename}` → "
-                    f"`{self.head_target_filename}`: {e}"
+                    f"`data/avatars/{target_display}`: {e}"
                 ),
                 accent_color=0xE74C3C,
             )
@@ -743,21 +1489,43 @@ class AdminConfirmView(LayoutView):
             )
             return
 
-        # Mark the head_id as mapped so we won't re-prompt
-        if self.head_id:
-            self.cog.seen_head_ids.add(self.head_id)
+        # Mark the (head_id, body_type) pair as mapped so we won't re-prompt
+        # for this gender. The same head_id for a different body_type is
+        # still allowed to be prompted (and may resolve to a different file).
+        if self.head_id and self.body_type is not None:
+            self.cog.seen_head_map.add((self.head_id, self.body_type))
             self.cog.save_config()
+
+        # Build a detailed approval summary that explicitly names the head_id,
+        # the source subfolder + filename, the destination path, the suggester,
+        # and the approver so anyone reading the admin channel later has the
+        # full context without having to scroll up.
+        body_type_label = {
+            BODY_TYPE_FEMALE: "Female",
+            BODY_TYPE_MALE: "Male",
+        }.get(self.body_type, "Unknown")
+        subfolder_label = source_subfolder if source_subfolder else "(legacy / root)"
+        source_filename = source_path.name
+        summary_lines = [
+            f"✅ **Approved** by {interaction.user.mention}",
+            "",
+            f"• `head_id`: **{self.head_id}**",
+            f"• `body_type`: **{body_type_label}**",
+            f"• Source subfolder: **{subfolder_label}**",
+            f"• Source filename: `{source_filename}`",
+            f"• Saved to: `data/avatars/{target_display}`",
+        ]
+        if self.suggested_by_id:
+            summary_lines.append(f"• Suggested by: <@{self.suggested_by_id}>")
+        if self.source_message_jump_url:
+            summary_lines.append(f"• Original message: {self.source_message_jump_url}")
+        summary_text = "\n".join(summary_lines)
 
         # Edit the original admin message to mark the approval, drop the
         # now-stale proposed-avatar attachment, and remove the buttons entirely.
-        # Use a LayoutView + Container + TextDisplay (not embed= or content=) to
-        # stay compatible with Components V2.
         try:
             ok_container = Container(
-                TextDisplay(
-                    f"✅ **Approved** by {interaction.user.mention}\n"
-                    f"head_id `{self.head_id}` → `data/avatars/{self.head_target_filename}`"
-                ),
+                TextDisplay(summary_text),
                 accent_color=0x2ECC71,
             )
             ok_view = LayoutView(timeout=None)
@@ -770,7 +1538,7 @@ class AdminConfirmView(LayoutView):
             pass
 
         logger.info(
-            f"✅ Avatar approved: head_id={self.head_id} → {self.head_target_filename} "
+            f"✅ Avatar approved: head_id={self.head_id} → {target_display} "
             f"(renamed from {self.chosen_filename}, by {interaction.user})"
         )
 
@@ -779,24 +1547,65 @@ class AdminConfirmView(LayoutView):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
             return
         await interaction.response.defer(ephemeral=False)
-        
-        # Remove from seen_head_ids so the head_id becomes available for
-        # re-selection (the selection was not approved).
-        if self.head_id:
-            self.cog.seen_head_ids.discard(self.head_id)
+
+        # If the upload was fresh from a Modal, also remove the now-orphaned
+        # source file so it doesn't get re-listed by the picker. (For picker
+        # selections, the source stays — admins may pick the same file again.)
+        try:
+            if self.chosen_filename.startswith("still_") or self.chosen_filename.startswith("animated_"):
+                source_path = AVATARS_DIR / self.chosen_filename
+                if source_path.exists():
+                    try:
+                        source_path.unlink()
+                    except OSError:
+                        pass
+                    # Also drop any .done_ marker next to the source if present
+                    done_marker = source_path.with_name(f".done_{source_path.name}")
+                    if done_marker.exists():
+                        try:
+                            done_marker.unlink()
+                        except OSError:
+                            pass
+        except Exception:
+            pass
+
+        # Remove the (head_id, body_type) pair from seen_head_map so the
+        # bot can re-prompt the same gender if it sends another message.
+        if self.head_id and self.body_type is not None:
+            self.cog.seen_head_map.discard((self.head_id, self.body_type))
             self.cog.save_config()
-        
+
+        # Build a detailed rejection summary mirroring the approval format.
+        body_type_label = {
+            BODY_TYPE_FEMALE: "Female",
+            BODY_TYPE_MALE: "Male",
+        }.get(self.body_type, "Unknown")
+        source_subfolder = AdminConfirmView._infer_source_subfolder(self.chosen_filename)
+        subfolder_label = source_subfolder if source_subfolder else "(legacy / root)"
+        source_filename = self.chosen_filename.split("/")[-1]
+        summary_lines = [
+            f"❌ **Rejected** by {interaction.user.mention}",
+            "",
+            f"• `head_id`: **{self.head_id}**",
+            f"• `body_type`: **{body_type_label}**",
+            f"• Source subfolder: **{subfolder_label}**",
+            f"• Source filename: `{source_filename}`",
+            f"• Rejected path: `data/avatars/{self.chosen_filename}`",
+        ]
+        if self.suggested_by_id:
+            summary_lines.append(f"• Suggested by: <@{self.suggested_by_id}>")
+        if self.source_message_jump_url:
+            summary_lines.append(f"• Original message: {self.source_message_jump_url}")
+        summary_lines.append(
+            "\nThe Set Avatar button will appear again on the next message from this player."
+        )
+        summary_text = "\n".join(summary_lines)
+
         # Edit the original admin message to mark the rejection, drop the
         # proposed-avatar attachment, and remove the buttons entirely.
-        # Use a LayoutView + Container + TextDisplay (not embed= or content=) to
-        # stay compatible with Components V2.
         try:
             reject_container = Container(
-                TextDisplay(
-                    f"❌ **Rejected** by {interaction.user.mention}\n"
-                    f"head_id `{self.head_id}` mapping to `{self.chosen_filename}` was not applied.\n"
-                    "The Set Avatar button will appear again on the next message from this player."
-                ),
+                TextDisplay(summary_text),
                 accent_color=0xE74C3C,
             )
             reject_view = LayoutView(timeout=None)
@@ -813,6 +1622,249 @@ class AdminConfirmView(LayoutView):
         )
 
 
+
+class DuplicateCheckView(LayoutView):
+    """Ephemeral Components V2 view that shows an uploaded file vs. an existing local file
+    side-by-side and asks the user if they are the same.
+
+    If the user confirms they are the same, the existing file is treated as sufficient
+    and the upload is skipped (no duplicate created). If the user says they are different,
+    the normal upload+approval flow proceeds.
+    """
+
+    def __init__(
+        self,
+        *,
+        cog: "LiveChatCog",
+        uploaded_data: bytes,
+        uploaded_filename: str,
+        existing_filename: str,
+        head_id: str,
+        body_type: Optional[int],
+        suggested_by: discord.abc.User,
+        sender_nickname: str,
+        sender_pid: Optional[str],
+        source_message_jump_url: Optional[str],
+        subfolder: str,
+    ):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.uploaded_data = uploaded_data
+        self.uploaded_filename = uploaded_filename
+        self.existing_filename = existing_filename
+        self.head_id = head_id
+        self.body_type = body_type
+        self.suggested_by = suggested_by
+        self.sender_nickname = sender_nickname
+        self.sender_pid = sender_pid
+        self.source_message_jump_url = source_message_jump_url
+        self.subfolder = subfolder
+        self._build()
+
+    def _build(self) -> None:
+        self.clear_items()
+
+        existing_path = AVATARS_DIR / self.existing_filename
+        existing_basename = existing_path.name if existing_path.exists() else self.existing_filename
+
+        inner: list = [
+            TextDisplay(
+                f"# 🔍 Possible Duplicate Detected\n\n"
+                f"A file with a similar name already exists in `data/avatars/{self.subfolder}/`.\n\n"
+                f"**Uploaded:** `{self.uploaded_filename}`\n"
+                f"**Existing:** `{existing_basename}`\n\n"
+                f"Are these two files the same image? If so, the duplicate can be skipped."
+            ),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay("**Uploaded file (left) — Existing file (right):**"),
+        ]
+
+        # Gallery with both images side by side: uploaded first, existing second
+        gallery = MediaGallery()
+        # Uploaded attachment name (ephemeral view will send both as attachments)
+        gallery.add_item(
+            media=f"attachment://dupe_uploaded_{self.uploaded_filename}",
+            description=f"Uploaded: {self.uploaded_filename}",
+        )
+        if existing_path.exists():
+            gallery.add_item(
+                media=f"attachment://dupe_existing_{existing_basename}",
+                description=f"Existing: {existing_basename}",
+            )
+        inner.append(gallery)
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Action buttons
+        action_row = ActionRow()
+        yes_btn = Button(
+            label="✅ Yes, same — skip duplicate",
+            style=discord.ButtonStyle.success,
+            custom_id="duplicate_yes_same",
+        )
+        yes_btn.callback = self._on_yes_same
+        action_row.add_item(yes_btn)
+
+        no_btn = Button(
+            label="❌ No, different — proceed upload",
+            style=discord.ButtonStyle.primary,
+            custom_id="duplicate_no_different",
+        )
+        no_btn.callback = self._on_no_different
+        action_row.add_item(no_btn)
+
+        inner.append(action_row)
+        container = Container(*inner, accent_color=0xE67E22)
+        self.add_item(container)
+
+    def _resolve_files(self) -> List[discord.File]:
+        """Return both the uploaded and existing file as discord.File objects for attachment."""
+        files: List[discord.File] = []
+        # Uploaded file bytes
+        files.append(
+            discord.File(
+                io.BytesIO(self.uploaded_data),
+                filename=f"dupe_uploaded_{self.uploaded_filename}",
+            )
+        )
+        # Existing file from disk
+        existing_path = AVATARS_DIR / self.existing_filename
+        if existing_path.exists():
+            files.append(
+                discord.File(
+                    str(existing_path),
+                    filename=f"dupe_existing_{existing_path.name}",
+                )
+            )
+        return files
+
+    async def _on_yes_same(self, interaction: discord.Interaction):
+        """User confirmed the files are the same — map the existing local file instead of uploading a duplicate."""
+        # Disable all controls
+        for child in self.children:
+            if isinstance(child, ActionRow):
+                for item in child.children:
+                    if isinstance(item, Button):
+                        item.disabled = True
+        try:
+            await interaction.response.edit_message(view=self)
+        except Exception:
+            pass
+
+        # The existing file is already on disk; send it to admin approval for mapping
+        await self.cog._send_admin_avatar_approval(
+            head_id=self.head_id,
+            chosen_filename=self.existing_filename,
+            body_type=self.body_type,
+            suggested_by=self.suggested_by,
+            source_message_jump_url=self.source_message_jump_url,
+            sender_nickname=self.sender_nickname,
+            sender_pid=self.sender_pid,
+        )
+
+        # Mark (head_id, body_type) as seen so the picker won't re-prompt
+        if self.head_id and self.body_type is not None:
+            self.cog.seen_head_map.add((self.head_id, self.body_type))
+            self.cog.save_config()
+
+        try:
+            await interaction.followup.send(
+                f"✅ Confirmed as duplicate. The existing file `{self.existing_filename}` "
+                f"has been sent to admins for approval for head_id `{self.head_id}`.",
+                ephemeral=True,
+            )
+        except Exception:
+            pass
+        self.stop()
+
+    async def _on_no_different(self, interaction: discord.Interaction):
+        """User said the files are different — proceed with normal upload + admin approval."""
+        # Disable all controls
+        for child in self.children:
+            if isinstance(child, ActionRow):
+                for item in child.children:
+                    if isinstance(item, Button):
+                        item.disabled = True
+        try:
+            await interaction.response.edit_message(view=self)
+        except Exception:
+            pass
+
+        # Continue with the normal upload flow: save the file and send for admin approval
+        target_dir = AVATARS_DIR / self.subfolder
+        try:
+            target_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logger.error(f"Failed to mkdir {target_dir}: {e}")
+            try:
+                await interaction.followup.send(
+                    f"❌ Could not create target folder: {e}", ephemeral=True
+                )
+            except Exception:
+                pass
+            return
+
+        # Determine extension from the uploaded filename
+        ext = ".png"
+        if self.uploaded_filename.lower().endswith(".webp"):
+            ext = ".webp"
+        raw_name = _re.sub(r"[^A-Za-z0-9._-]", "_", self.uploaded_filename)
+        if not raw_name.lower().endswith(ext):
+            raw_name = raw_name + ext
+
+        target_path = target_dir / raw_name
+        if target_path.exists():
+            stem, ext_only = os.path.splitext(raw_name)
+            n = 1
+            while True:
+                cand = target_dir / f"{stem}_{n}{ext_only}"
+                if not cand.exists():
+                    target_path = cand
+                    raw_name = cand.name
+                    break
+                n += 1
+
+        try:
+            target_path.write_bytes(self.uploaded_data)
+        except Exception as e:
+            logger.error(f"Failed to write uploaded file {target_path}: {e}", exc_info=True)
+            try:
+                await interaction.followup.send(
+                    f"❌ Could not write the file to disk: {e}", ephemeral=True
+                )
+            except Exception:
+                pass
+            return
+
+        chosen_relative = f"{self.subfolder}/{raw_name}"
+        await self.cog._send_admin_avatar_approval(
+            head_id=self.head_id,
+            chosen_filename=chosen_relative,
+            body_type=self.body_type,
+            suggested_by=self.suggested_by,
+            source_message_jump_url=self.source_message_jump_url,
+            sender_nickname=self.sender_nickname,
+            sender_pid=self.sender_pid,
+        )
+
+        try:
+            await interaction.followup.send(
+                f"✅ Saved `{raw_name}` to `data/avatars/{self.subfolder}/` and "
+                f"sent to admins for approval for head_id `{self.head_id}`.",
+                ephemeral=True,
+            )
+        except Exception:
+            pass
+        self.stop()
+
+    async def on_timeout(self) -> None:
+        for child in self.children:
+            if isinstance(child, ActionRow):
+                for item in child.children:
+                    if isinstance(item, Button):
+                        item.disabled = True
+        self.stop()
+
+
 class LiveChatCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -824,11 +1876,16 @@ class LiveChatCog(commands.Cog):
         self._translate_retry_delay = 2.0
         self._translate_max_retries = 2
         self.pid_to_discord_user: dict[str, int] = {}  # player_pid -> discord user_id
-        # head_ids we've already prompted the user to map (so we only attach
-        # the "Set Avatar" button once per unknown head_id, per bot lifetime).
-        self.seen_head_ids: Set[str] = set()
-        # Cached list of avatar filenames for the picker UI.
-        self._avatar_files_cache: Optional[List[str]] = None
+        # (head_id_str, body_type) pairs we've already prompted the user to map.
+        # Keyed by gender so a male sender with head_id X and a female sender
+        # with the same head_id X can each be prompted once independently.
+        # (`None` body_type is also a valid key for messages missing the field.)
+        self.seen_head_map: Set[Tuple[str, Optional[int]]] = set()
+        # Cached list of avatar filenames for the picker UI, keyed by body_type
+        # (0/1/None). The first time a particular body_type is requested we
+        # populate it; subsequent calls reuse it unless `force_refresh=True`.
+        self._avatar_files_cache: dict = {}  # body_type -> Optional[List[str]]
+
         # Configuration
         self.CONFIG_FILE = "data/live_chat_config.json"
         self.CLUB_ID = "aRvTyiPA8WMSXrRj"      # Your guild ID
@@ -844,6 +1901,22 @@ class LiveChatCog(commands.Cog):
 
         # Ensure data directory exists
         os.makedirs("data", exist_ok=True)
+        # Make sure the 6 avatar source subfolders + the 6 mapped subfolders
+        # exist on disk so the picker and lookup logic never trip over a
+        # missing directory.
+        for d in (
+            AVATARS_STILL_MALE_DIR, AVATARS_ANIMATED_MALE_DIR,
+            AVATARS_STILL_FEMALE_DIR, AVATARS_ANIMATED_FEMALE_DIR,
+            AVATARS_STILL_SHARED_DIR, AVATARS_ANIMATED_SHARED_DIR,
+            AVATARS_MAPPED_STILL_MALE_DIR, AVATARS_MAPPED_ANIMATED_MALE_DIR,
+            AVATARS_MAPPED_STILL_FEMALE_DIR, AVATARS_MAPPED_ANIMATED_FEMALE_DIR,
+            AVATARS_MAPPED_STILL_SHARED_DIR, AVATARS_MAPPED_ANIMATED_SHARED_DIR,
+        ):
+            try:
+                d.mkdir(parents=True, exist_ok=True)
+            except Exception as e:
+                logger.warning(f"Could not create avatar subfolder {d}: {e}")
+
         
         # Load saved configuration
         self.load_config()
@@ -1427,7 +2500,14 @@ class LiveChatCog(commands.Cog):
 
 
     def load_config(self):
-        """Load saved configuration from file"""
+        """Load saved configuration from file.
+
+        Migrates the legacy `seen_head_ids: List[str]` field (pre body-type
+        support) into the new `seen_head_map: Set[Tuple[str, Optional[int]]]`
+        by registering each flat entry for BOTH body_type 0 and 1 — the
+        conservative assumption is that the original mapping was intended as
+        "shared" (works for both genders), so we just don't re-prompt.
+        """
         if os.path.exists(self.CONFIG_FILE):
             try:
                 with open(self.CONFIG_FILE, 'r') as f:
@@ -1437,28 +2517,66 @@ class LiveChatCog(commands.Cog):
                     self.last_seen_msg_ids = set(config.get('last_msg_ids', []))
                     self._last_seen_npc_ts = config.get('last_npc_ts', 0)
                     self._last_seen_max_ts = config.get('last_max_ts', 0)
-                    # head_ids we've already prompted (so we don't keep re-attaching the picker button)
-                    self.seen_head_ids = set(str(h) for h in config.get('seen_head_ids', []))
-                logger.debug(f"Loaded live chat config: enabled={self.is_running}, channel={self.CHANNEL_ID}, last_max_ts={self._last_seen_max_ts}, seen_head_ids={len(self.seen_head_ids)}")
+
+                    # --- Migrate seen_head_ids → seen_head_map ---
+                    # 1) Read the legacy flat list (Set[str]) and register
+                    #    each entry for BOTH body_types.
+                    legacy_seen = config.get('seen_head_ids', []) or []
+                    for h in legacy_seen:
+                        head_str = str(h)
+                        self.seen_head_map.add((head_str, BODY_TYPE_FEMALE))
+                        self.seen_head_map.add((head_str, BODY_TYPE_MALE))
+                    # 2) Read the new (head_id, body_type) list, format is
+                    #    "head_id_str|body_type_int" (body_type_int may be
+                    #    the string "0", "1", or "" for None).
+                    for entry in config.get('seen_head_map', []) or []:
+                        try:
+                            if '|' in entry:
+                                head_part, bt_part = entry.split('|', 1)
+                                bt: Optional[int] = int(bt_part) if bt_part not in ("", "None") else None
+                            else:
+                                # No separator — treat as legacy flat entry.
+                                head_part, bt = str(entry), None
+                            if head_part:
+                                self.seen_head_map.add((str(head_part), bt))
+                        except (TypeError, ValueError):
+                            continue
+                logger.debug(
+                    f"Loaded live chat config: enabled={self.is_running}, "
+                    f"channel={self.CHANNEL_ID}, last_max_ts={self._last_seen_max_ts}, "
+                    f"seen_head_map={len(self.seen_head_map)}"
+                )
             except Exception as e:
                 logger.error(f"Failed to load live chat config: {str(e)}")
 
     def save_config(self):
-        """Save current configuration to file"""
+        """Save current configuration to file.
+
+        Persists the new `seen_head_map` (as a list of "head_id|body_type"
+        strings) AND keeps writing the legacy `seen_head_ids` list (flat
+        head_ids only) so any external tools that read it keep working.
+        """
         try:
+            # Flat view of seen_head_map for the legacy field.
+            legacy_flat = sorted({h for (h, _bt) in self.seen_head_map})
+            seen_head_map_serialized = sorted(
+                f"{h}|{'' if bt is None else bt}" for (h, bt) in self.seen_head_map
+            )
             config = {
                 'channel_id': self.CHANNEL_ID,
                 'enabled': self.is_running,
                 'last_msg_ids': list(self.last_seen_msg_ids)[-300:],
                 'last_npc_ts': self._last_seen_npc_ts,
                 'last_max_ts': self._last_seen_max_ts,
-                'seen_head_ids': list(self.seen_head_ids),
+                'seen_head_ids': legacy_flat,
+                'seen_head_map': seen_head_map_serialized,
             }
             with open(self.CONFIG_FILE, 'w') as f:
                 json.dump(config, f, indent=4)
             logger.debug("Saved live chat configuration")
         except Exception as e:
             logger.error(f"Failed to save live chat config: {str(e)}")
+
 
     async def _load_verified_mapping(self):
         """Load the player_pid -> discord_user_id mapping from guild_verification.db"""
@@ -1486,7 +2604,10 @@ class LiveChatCog(commands.Cog):
         """Build and post a Components V2 view for one chat message.
 
         Also handles the head_id avatar picker (if the head_id has no
-        local PNG yet) and the @teamup alert dispatch.
+        local file yet) and the @teamup alert dispatch. The sender's
+        `body_type` (0=female, 1=male) is threaded through to the head
+        avatar lookup + picker offer so male and female senders with the
+        same `head_id` are handled independently.
         """
         ext = msg.get("ext", {}) or {}
         msg_type = ext.get("msg_type", "msg_normal")
@@ -1496,6 +2617,10 @@ class LiveChatCog(commands.Cog):
         level = msg.get("level", 0) or 0
         sender_pid = msg.get("from_pid", None)
         head_id = msg.get("head_id", None)
+        # Body type of the sender (0=female, 1=male). Falls back to None
+        # if the API doesn't return it for this message shape.
+        raw_body_type = msg.get("body_type", None)
+        body_type: Optional[int] = raw_body_type if raw_body_type in (0, 1) else None
 
         rank_name = self._get_rank_name(sender_pid)
         author_name = (
@@ -1504,7 +2629,9 @@ class LiveChatCog(commands.Cog):
             else f"{nickname} (Lv.{level})"
         )
         discord_mention = self._get_discord_mention(sender_pid)
-        head_avatar_path = self._avatar_path(head_id)
+        # Body-type aware lookup: male/female senders may have different
+        # avatar mappings under their respective subfolders.
+        head_avatar_path = self._avatar_path(head_id, body_type)
         channel_type = msg.get("channel", "club_chat")
         accent_color = {
             "club_chat": 0x2ECC71,
@@ -1597,7 +2724,7 @@ class LiveChatCog(commands.Cog):
             not handled_separately
             and head_id is not None
             and head_avatar_path is None
-            and self._should_offer_avatar_picker(head_id)
+            and self._should_offer_avatar_picker(head_id, body_type)
             and isinstance(view, ChatMessageView)
         ):
             view = HeadPickerRequestView(
@@ -1605,6 +2732,7 @@ class LiveChatCog(commands.Cog):
                 head_id=head_id,
                 sender_nickname=nickname,
                 sender_pid=sender_pid,
+                body_type=body_type,
             )
             files = view._resolve_files()
 
@@ -1626,6 +2754,7 @@ class LiveChatCog(commands.Cog):
         raw_msg = (msg.get("msg", "") or "").strip().lower()
         if teamup_channel is not None and self.TEAMUP_KEYWORD in raw_msg:
             await self.send_teamup_alert(msg, teamup_channel)
+
 
     def _get_rank_name(self, sender_pid: Optional[str]) -> str:
         """Look up the highest custom rank name for the given PID."""
@@ -1650,99 +2779,277 @@ class LiveChatCog(commands.Cog):
         }
         return custom_rank_names.get(highest_rank_id, highest_rank_name)
 
-    def _avatar_path(self, head_id) -> Optional[str]:
-        """Return absolute path to a local avatar for the given head_id, or None.
+    def _avatar_path(self, head_id, body_type: Optional[int] = None) -> Optional[str]:
+        """Return absolute path to a local avatar for the given (head_id, body_type), or None.
 
-        Checks for .png first, then .webp in the mapped subfolder.
+        Lookup priority (most preferred → least preferred):
+            body_type=0 (female): still_female → animated_female → still_shared → animated_shared
+            body_type=1 (male):   still_male   → animated_male   → still_shared → animated_shared
+            body_type=None:       still_shared → animated_shared
+
+        Legacy fallback: if no file is found in any of the 6 mapped subfolders,
+        also check the flat `data/avatars/mapped/{head_id}.{ext}` path so any
+        pre-existing flat-style mappings keep working until the user migrates
+        them into the new subfolders.
         """
         if head_id is None:
             return None
         head_str = str(head_id).strip()
         if not head_str:
             return None
-        # Convention: data/avatars/mapped/{head_id}.png or .webp
+
+        # Determine which subfolders to search, in priority order.
+        if body_type in (0, 1):
+            search_dirs = AVATARS_MAPPED_LOOKUP_ORDER_BY_BODY_TYPE[body_type]
+        else:
+            # Unknown / missing body_type → only shared.
+            search_dirs = [
+                AVATARS_MAPPED_STILL_SHARED_DIR,
+                AVATARS_MAPPED_ANIMATED_SHARED_DIR,
+            ]
+
+        for d in search_dirs:
+            for ext in (".png", ".webp"):
+                candidate = d / f"{head_str}{ext}"
+                if candidate.exists() and candidate.is_file():
+                    return str(candidate)
+
+        # Legacy flat-file fallback. Existing files like
+        # data/avatars/mapped/1037.webp keep working until you move them
+        # into the appropriate subfolder.
         for ext in (".png", ".webp"):
-            candidate = AVATARS_DIR / "mapped" / f"{head_str}{ext}"
+            candidate = AVATARS_MAPPED_DIR / f"{head_str}{ext}"
             if candidate.exists() and candidate.is_file():
                 return str(candidate)
+
         return None
 
-    def _list_avatar_files(self, force_refresh: bool = False) -> List[str]:
-        """Return a sorted list of PNG/WEBP filenames available in data/avatars/ root (not mapped/).
+    def _list_avatar_files(
+        self,
+        body_type: Optional[int] = None,
+        force_refresh: bool = False,
+    ) -> List[str]:
+        """Return a sorted list of source-file *relative paths* (e.g. `still_male/foo.png`)
+        across the 6 avatar subfolders, ordered to prefer fast PNGs before
+        animated WEBPs, and the sender's gender-specific subfolders before
+        the shared ones.
 
-        PNG files are listed first (for faster initial load), then WEBP.
+        Returns *relative paths* under `AVATARS_DIR` so the picker can show
+        them with their subfolder prefix in the dropdown labels and so the
+        approve flow can infer which `mapped/<subfolder>/` destination to use.
         """
-        if self._avatar_files_cache is not None and not force_refresh:
-            return self._avatar_files_cache
+        cache_key = body_type  # 0/1/None
+        if not force_refresh and self._avatar_files_cache.get(cache_key) is not None:
+            return self._avatar_files_cache[cache_key]
+
+        # Pick which subfolders to scan, in display order.
+        if body_type in (0, 1):
+            subdirs = AVATARS_SOURCE_SUBFOLDERS_BY_BODY_TYPE[body_type]
+        else:
+            # Unknown body_type → only the still/animated shared subfolders.
+            subdirs = [AVATARS_STILL_SHARED_DIR, AVATARS_ANIMATED_SHARED_DIR]
+
+        files: List[str] = []
+        for d in subdirs:
+            if not d.is_dir():
+                continue
+            try:
+                png_files: List[str] = []
+                webp_files: List[str] = []
+                for f in os.listdir(str(d)):
+                    if f.startswith("."):
+                        continue  # .done_*, .DS_Store, etc.
+                    name_lower = f.lower()
+                    if name_lower.endswith('.png'):
+                        if (d / f".done_{f}").exists():
+                            continue
+                        png_files.append(f)
+                    elif name_lower.endswith('.webp'):
+                        if (d / f".done_{f}").exists():
+                            continue
+                        webp_files.append(f)
+                png_files.sort(key=str.lower)
+                webp_files.sort(key=str.lower)
+                # Prefix the subfolder name to make each entry a relative path
+                # like `still_male/foo.png`. This is what the picker stores
+                # in its `avatar_files` list and what `_load_page_files` later
+                # resolves back to a full path via AVATARS_DIR / entry.
+                subdir_name = d.name
+                files.extend(f"{subdir_name}/{f}" for f in png_files)
+                files.extend(f"{subdir_name}/{f}" for f in webp_files)
+            except Exception as e:
+                logger.error(f"Failed to list avatar files in {d}: {e}")
+                continue
+
+        self._avatar_files_cache[cache_key] = files
+        return files
+
+
+    def _list_avatar_files_in_subfolder(
+        self,
+        subfolder: str,
+        force_refresh: bool = False,
+    ) -> List[str]:
+        """Return a sorted list of source-file *relative paths* from a SINGLE
+        avatar subfolder (e.g. ``still_male``).
+
+        This is the "category picker" counterpart of ``_list_avatar_files``:
+        instead of scanning every subfolder, it only scans the one the
+        user picked from the CategoryPickerView dropdown. That way the
+        Set Avatar button never makes Discord pay for preloading images
+        the user isn't going to look at.
+
+        Returns *relative paths* under ``AVATARS_DIR`` in the same
+        ``<subfolder>/<name>.<ext>`` format used everywhere else in the
+        picker / approval flow.
+        """
+        if subfolder not in AVATAR_VALID_SUBFOLDERS:
+            return []
+        # Per-subfolder cache so subsequent re-opens (e.g. user switches
+        # back to the same category) are instant. Keyed by the subfolder
+        # name itself so it never collides with the body_type-keyed cache.
+        per_sub_cache_attr = "_avatar_files_by_subfolder"
+        per_sub_cache: dict = getattr(self, per_sub_cache_attr, None)
+        if per_sub_cache is None:
+            per_sub_cache = {}
+            setattr(self, per_sub_cache_attr, per_sub_cache)
+
+        if not force_refresh and per_sub_cache.get(subfolder) is not None:
+            return per_sub_cache[subfolder]
+
+        # Map subfolder string to its directory constant.
+        subfolder_dir_map = {
+            "still_male": AVATARS_STILL_MALE_DIR,
+            "animated_male": AVATARS_ANIMATED_MALE_DIR,
+            "still_female": AVATARS_STILL_FEMALE_DIR,
+            "animated_female": AVATARS_ANIMATED_FEMALE_DIR,
+            "still_shared": AVATARS_STILL_SHARED_DIR,
+            "animated_shared": AVATARS_ANIMATED_SHARED_DIR,
+        }
+        d = subfolder_dir_map.get(subfolder)
+        if d is None or not d.is_dir():
+            per_sub_cache[subfolder] = []
+            return []
+
+        files: List[str] = []
         try:
-            os.makedirs(str(AVATARS_DIR), exist_ok=True)
-            png_files = []
-            webp_files = []
-            for f in os.listdir(str(AVATARS_DIR)):
+            png_files: List[str] = []
+            webp_files: List[str] = []
+            for f in os.listdir(str(d)):
+                if f.startswith("."):
+                    continue
                 name_lower = f.lower()
                 if name_lower.endswith('.png'):
-                    # Skip files that have a .done_ marker (already approved/mapped)
-                    if (AVATARS_DIR / f".done_{f}").exists():
+                    if (d / f".done_{f}").exists():
                         continue
                     png_files.append(f)
                 elif name_lower.endswith('.webp'):
-                    if (AVATARS_DIR / f".done_{f}").exists():
+                    if (d / f".done_{f}").exists():
                         continue
                     webp_files.append(f)
-            # PNGs first, then WEBPs — each group sorted alphabetically
             png_files.sort(key=str.lower)
             webp_files.sort(key=str.lower)
-            files = png_files + webp_files
+            files.extend(f"{subfolder}/{f}" for f in png_files)
+            files.extend(f"{subfolder}/{f}" for f in webp_files)
         except Exception as e:
-            logger.error(f"Failed to list avatar files: {e}")
-            files = []
-        self._avatar_files_cache = files
+            logger.error(f"Failed to list avatar files in {d}: {e}")
+
+        per_sub_cache[subfolder] = files
         return files
+
 
     async def _cleanup_done_markers(self):
         """Background task: try to delete source avatars that have .done_ markers.
 
-        Once the OS releases its file lock (e.g. Explorer finishes indexing),
-        the file can finally be removed. Also tries to remove the marker itself.
-        Runs every 30 seconds.
+        Walks the legacy `data/avatars/` root (for any pre-existing flat files)
+        AND the 6 new source subfolders. Once the OS releases its file lock
+        (e.g. Explorer finishes indexing), the file can finally be removed.
+        Also tries to remove the marker itself. Runs every 30 seconds.
         """
-        try:
-            avatars_dir = str(AVATARS_DIR)
-            if not os.path.isdir(avatars_dir):
-                return
-            for f in os.listdir(avatars_dir):
-                if not f.startswith(".done_"):
+        # Build the list of directories to scan: legacy root + the 6 subfolders.
+        scan_dirs: List["Path"] = [AVATARS_DIR]
+        scan_dirs.extend(AVATARS_ALL_SOURCE_SUBFOLDERS)
+        for d in scan_dirs:
+            try:
+                if not d.is_dir():
                     continue
-                # Derive the original source filename from the marker name
-                source_name = f[6:]  # strip ".done_" prefix
-                source_path = os.path.join(avatars_dir, source_name)
-                done_path = os.path.join(avatars_dir, f)
-                # Try to delete the source first
-                try:
-                    os.remove(source_path)
-                except OSError:
-                    continue  # still locked, try again next cycle
-                # Source gone — remove the marker too
-                try:
-                    os.remove(done_path)
-                except OSError:
-                    pass
-                logger.debug(f"Cleaned up approved avatar: {source_name}")
-        except Exception:
-            pass
+                for f in os.listdir(str(d)):
+                    if not f.startswith(".done_"):
+                        continue
+                    # Derive the original source filename from the marker name
+                    source_name = f[6:]  # strip ".done_" prefix
+                    source_path = d / source_name
+                    done_path = d / f
+                    # Try to delete the source first
+                    try:
+                        os.remove(source_path)
+                    except OSError:
+                        continue  # still locked, try again next cycle
+                    # Source gone — remove the marker too
+                    try:
+                        os.remove(done_path)
+                    except OSError:
+                        pass
+                    logger.debug(f"Cleaned up approved avatar: {d.name}/{source_name}")
+            except Exception:
+                # Swallow per-folder errors so one bad folder doesn't stop the loop
+                continue
 
-    def _should_offer_avatar_picker(self, head_id) -> bool:
-        """True if this is a new (unmapped) head_id worth offering the picker for."""
-        if head_id is None:
+    @staticmethod
+    def _normalize_filename_for_comparison(filename: str) -> str:
+        """Normalize a filename for fuzzy comparison.
+
+        Converts spaces/underscores/hyphens to a consistent separator,
+        lowercases, and strips the extension. This catches cases where
+        Discord auto-replaces spaces with underscores on upload.
+        """
+        name = os.path.splitext(filename)[0]
+        normalized = name.lower()
+        normalized = _re.sub(r'[\s_\-]+', '_', normalized)
+        return normalized
+
+    @staticmethod
+    def _find_similar_existing_file(
+        uploaded_filename: str,
+        subfolder: str,
+        filenames_from_subfolder: Optional[List[str]] = None,
+        similarity_threshold: float = 0.7,
+    ) -> Optional[str]:
+        """Check if an uploaded filename is similar to any existing file in the subfolder.
+
+        Uses normalized comparison (space->underscore via
+        ``_normalize_filename_for_comparison``) and falls back to
+        ``difflib.SequenceMatcher`` ratio for fuzzy matching.
+        """
+        up_normalized = LiveChatCog._normalize_filename_for_comparison(uploaded_filename)
+
+        # First, try exact match after normalization (catches space vs underscore)
+        for existing in (filenames_from_subfolder or []):
+            ex_normalized = LiveChatCog._normalize_filename_for_comparison(os.path.basename(existing))
+            if up_normalized == ex_normalized:
+                return existing
+
+        # Then try fuzzy ratio matching
+        for existing in (filenames_from_subfolder or []):
+            ex_normalized = LiveChatCog._normalize_filename_for_comparison(os.path.basename(existing))
+            ratio = difflib.SequenceMatcher(None, up_normalized, ex_normalized).ratio()
+            if ratio >= similarity_threshold:
+                return existing
+
+        return None
+
+    def _should_offer_avatar_picker(self, head_id, body_type: Optional[int] = None) -> bool:
+        """True if this is a new (unmapped) (head_id, body_type) worth offering the picker for."""
+        if head_id is None or body_type not in (0, 1):
             return False
         head_str = str(head_id).strip()
         if not head_str:
             return False
-        # Already on disk → nothing to do
-        if self._avatar_path(head_str) is not None:
+        # Already on disk (in any of the 6 mapped subfolders, or via legacy fallback) -> nothing to do
+        if self._avatar_path(head_str, body_type) is not None:
             return False
-        # Already prompted once → don't keep spamming the button
-        if head_str in self.seen_head_ids:
+        # Already prompted once for this (head_id, body_type) -> don't keep spamming the button
+        if (head_str, body_type) in self.seen_head_map:
             return False
         return True
 
@@ -1755,15 +3062,26 @@ class LiveChatCog(commands.Cog):
         source_message_jump_url: Optional[str],
         sender_nickname: str,
         sender_pid: Optional[str],
+        body_type: Optional[int] = None,
     ) -> None:
-        """Send the admin-confirmation LayoutView to the configured mod channel."""
+        """Send the admin-confirmation LayoutView to the configured mod channel.
+
+        `chosen_filename` may be either a flat filename (`foo.png`) for legacy
+        files in the `data/avatars/` root, OR a relative path
+        (`still_male/foo.png`) for files inside one of the 6 source subfolders.
+        The admin's `approve` action infers the destination `mapped/<sub>/`
+        from the source's parent directory, so the file is stored in the
+        right gender/format bucket for the body-type-aware resolver.
+        """
         channel = self.bot.get_channel(ADMIN_AVATAR_CHANNEL_ID)
         if channel is None:
             logger.error(f"Admin avatar channel {ADMIN_AVATAR_CHANNEL_ID} not found")
             return
 
+        # Resolve the source path. `chosen_filename` is a relative path
+        # under AVATARS_DIR (e.g. "still_male/foo.png" or "foo.png").
         source_path = AVATARS_DIR / chosen_filename
-        if not source_path.exists():
+        if not source_path.exists() or not source_path.is_file():
             logger.error(f"Chosen avatar file missing on disk: {source_path}")
             try:
                 await channel.send(
@@ -1773,18 +3091,26 @@ class LiveChatCog(commands.Cog):
                 pass
             return
 
-        # Determine target extension from source (support .png and animated .webp)
+        # Determine target extension from the SOURCE filename (e.g. `.png` or
+        # `.webp`). Note: this strips the subfolder prefix if present.
+        source_basename = source_path.name
         target_ext = ".png"
-        if chosen_filename.lower().endswith(".webp"):
+        if source_basename.lower().endswith(".webp"):
             target_ext = ".webp"
         head_filename = f"{head_id}{target_ext}"
-        head_target_path = AVATARS_DIR / head_filename
-        # Avoid filename collisions with existing local files
-        copy_source = source_path
-        copy_source_name = chosen_filename
-        # If the source file is *not* already named after the head_id, the approve
-        # action will copy it. We re-attach the original chosen file to the admin
-        # message so admins can see what they're approving.
+
+        # The display name of the file we attach to the admin message. We
+        # strip the subfolder prefix for a cleaner attachment name in the
+        # admin's UI.
+        attach_filename = source_basename
+
+        # Compute the destination display string for the info embed.
+        source_subfolder = AdminConfirmView._infer_source_subfolder(chosen_filename)
+        if source_subfolder and source_subfolder in AVATAR_VALID_SUBFOLDERS:
+            target_display = f"mapped/{source_subfolder}/{head_filename}"
+        else:
+            # Legacy flat file → destination is the mapped/ root.
+            target_display = f"mapped/{head_filename}"
 
         confirm_view = AdminConfirmView(
             cog=self,
@@ -1793,6 +3119,7 @@ class LiveChatCog(commands.Cog):
             chosen_filename=chosen_filename,
             suggested_by_id=suggested_by.id if suggested_by else None,
             source_message_jump_url=source_message_jump_url,
+            body_type=body_type,
         )
 
         # Read the file into a BytesIO so the disk file is closed immediately.
@@ -1800,20 +3127,27 @@ class LiveChatCog(commands.Cog):
         # block the copy later in the approve flow.
         with open(str(source_path), "rb") as _f:
             file_bytes = _f.read()
-        file = discord.File(io.BytesIO(file_bytes), filename=copy_source_name)
+        file = discord.File(io.BytesIO(file_bytes), filename=attach_filename)
 
+        # Build info lines
         info_lines = [
             f"**New head_id avatar request**",
             f"• `head_id`: **{head_id}**",
-            f"• Suggested by: {suggested_by.mention if suggested_by else 'unknown'}",
-            f"• Sender nickname: **{sender_nickname}**"
-            + (f" (PID: `{sender_pid}`)" if sender_pid else ""),
         ]
+        if body_type is not None:
+            info_lines.append(
+                f"• `body_type`: **{'Male' if body_type == 1 else 'Female'}**"
+            )
+        info_lines.append(f"• Suggested by: {suggested_by.mention if suggested_by else 'unknown'}")
+        info_lines.append(
+            f"• Sender nickname: **{sender_nickname}**"
+            + (f" (PID: `{sender_pid}`)" if sender_pid else "")
+        )
         if source_message_jump_url:
             info_lines.append(f"• Original message: {source_message_jump_url}")
         info_lines.append(
-            f"\n📎 Chosen file: `{chosen_filename}`"
-            f"\n✅ Approve will copy it to `data/avatars/{head_filename}`."
+            f"\n📎 Chosen file: `data/avatars/{chosen_filename}`"
+            f"\n✅ Approve will copy it to `data/avatars/{target_display}`."
         )
 
         container = Container(
@@ -1823,7 +3157,10 @@ class LiveChatCog(commands.Cog):
             accent_color=0xE67E22,
         )
         container.add_item(MediaGallery())
-        container.children[-1].add_item(media=f"attachment://{copy_source_name}", description=f"Proposed avatar for head_id {head_id}")
+        container.children[-1].add_item(
+            media=f"attachment://{attach_filename}",
+            description=f"Proposed avatar for head_id {head_id}",
+        )
 
         view = LayoutView(timeout=None)
         view.add_item(container)
@@ -1837,10 +3174,127 @@ class LiveChatCog(commands.Cog):
                 allowed_mentions=discord.AllowedMentions.none(),
             )
             logger.info(
-                f"📤 Avatar approval request sent to {channel} for head_id={head_id}, file={chosen_filename}"
+                f"📤 Avatar approval request sent to {channel} for "
+                f"head_id={head_id} (body_type={body_type}), file={chosen_filename}"
             )
         except Exception as e:
             logger.error(f"Failed to send admin avatar approval message: {e}")
+
+    async def _stage_uploaded_avatar(
+        self,
+        *,
+        attachment: discord.Attachment,
+        subfolder: str,
+        head_id: str,
+        body_type: Optional[int],
+        suggested_by: discord.abc.User,
+        sender_nickname: str,
+        sender_pid: Optional[str],
+        source_message_jump_url: Optional[str],
+    ) -> Tuple[bool, str]:
+        """Stage an uploaded file and route it to the admin-approval flow.
+
+        Called by `UploadAvatarModal.on_submit` after the user picks a file
+        from their computer and chooses a subfolder. The file is saved to
+        `data/avatars/<subfolder>/<sanitized-name>`, then we reuse
+        `_send_admin_avatar_approval` so the existing admin Approve / Reject
+        flow kicks in.
+
+        Returns `(True, saved_filename)` on success or `(False, error_message)`
+        on failure. The caller (the Modal's `on_submit`) handles the
+        user-visible error.
+        """
+        # Validate subfolder (defensive — Modal already validates).
+        if subfolder not in AVATAR_VALID_SUBFOLDERS:
+            return False, f"Invalid subfolder `{subfolder}`."
+
+        # 1. Read attachment bytes.
+        try:
+            data = await attachment.read()
+        except Exception as e:
+            logger.error(f"Failed to read uploaded attachment: {e}", exc_info=True)
+            return False, f"Failed to read the uploaded file: {e}"
+        if len(data) > 10 * 1024 * 1024:
+            return False, "File too large (max 10 MB)."
+
+        # 2. Determine extension from filename + magic bytes (fallback).
+        ext = None
+        fname_lower = attachment.filename.lower()
+        if fname_lower.endswith(".png"):
+            ext = ".png"
+        elif fname_lower.endswith(".webp"):
+            ext = ".webp"
+        elif data.startswith(b"\x89PNG\r\n\x1a\n"):
+            ext = ".png"
+        elif len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+            ext = ".webp"
+        if ext is None:
+            return False, "File is not a recognized PNG or WEBP."
+
+        # 3. Sanitize the filename (strip path traversal / weird chars).
+        raw_name = _re.sub(r"[^A-Za-z0-9._-]", "_", attachment.filename)
+        if not raw_name.lower().endswith(ext):
+            raw_name = raw_name + ext
+
+        # 4. Check for similar existing files in the target subfolder before writing.
+        target_dir = AVATARS_DIR / subfolder
+        try:
+            target_dir.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logger.error(f"Failed to mkdir {target_dir}: {e}")
+            return False, f"Could not create target folder: {e}"
+
+        # List existing files in the subfolder (just filenames, not relative paths)
+        existing_fnames: List[str] = []
+        try:
+            for f in os.listdir(str(target_dir)):
+                if not f.startswith("."):
+                    existing_fnames.append(f)
+        except Exception:
+            pass
+
+        similar = self._find_similar_existing_file(raw_name, subfolder, existing_fnames, similarity_threshold=0.7)
+        if similar is not None:
+            # Duplicate candidate found — return the existing relative path so the
+            # caller can show the DuplicateCheckView to the user. Do NOT write the
+            # file yet; only proceed if the user confirms they are different.
+            similar_relative = f"{subfolder}/{similar}"
+            return False, f"duplicate:{similar_relative}"
+
+        # 5. Write the file.
+        target_path = target_dir / raw_name
+        if target_path.exists():
+            stem, ext_only = os.path.splitext(raw_name)
+            n = 1
+            while True:
+                cand = target_dir / f"{stem}_{n}{ext_only}"
+                if not cand.exists():
+                    target_path = cand
+                    raw_name = cand.name
+                    break
+                n += 1
+        try:
+            target_path.write_bytes(data)
+        except Exception as e:
+            logger.error(f"Failed to write uploaded file {target_path}: {e}", exc_info=True)
+            return False, f"Could not write the file to disk: {e}"
+
+        # 6. Build the relative path (under AVATARS_DIR) for the
+        # approval flow.
+        chosen_relative = f"{subfolder}/{raw_name}"
+
+        # 7. Route to the existing admin-approval flow.
+        await self._send_admin_avatar_approval(
+            head_id=head_id,
+            chosen_filename=chosen_relative,
+            body_type=body_type,
+            suggested_by=suggested_by,
+            source_message_jump_url=source_message_jump_url,
+            sender_nickname=sender_nickname,
+            sender_pid=sender_pid,
+        )
+        return True, raw_name
+
 
 
 async def setup(bot: commands.Bot):

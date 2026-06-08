@@ -1847,21 +1847,47 @@ class WWMCog(commands.Cog):
                 except Exception as club_err:
                     logger.warning(f"Failed to get club info: {str(club_err)}")
             
-            # ── Resolve head avatar from data/avatars/mapped/ (if any) ──
+            # ── Resolve head avatar from data/avatars/mapped/<sub>/ (if any) ──
+            # Body-type aware: a male and a female with the same head_id may
+            # have different avatar files in their respective subfolders.
             head_avatar_path = None
             try:
                 head_data = data.get('head', {}) if isinstance(data, dict) else {}
                 if isinstance(head_data, dict):
                     head_id_value = head_data.get('head')
                     if head_id_value:
-                        avatars_mapped_dir = BASE_DIR / "data" / "avatars" / "mapped"
+                        # body_type lives in `base` (0=female, 1=male, None=unknown).
+                        raw_bt = base_data.get('body_type') if isinstance(base_data, dict) else None
+                        body_type = raw_bt if raw_bt in (0, 1) else None
+                        candidates = []  # (priority-ordered) absolute paths to try
+                        if body_type in (0, 1):
+                            from utility.avatar_paths import (
+                                AVATARS_MAPPED_LOOKUP_ORDER_BY_BODY_TYPE,
+                                AVATARS_MAPPED_DIR,
+                            )
+                            for d in AVATARS_MAPPED_LOOKUP_ORDER_BY_BODY_TYPE[body_type]:
+                                for ext in (".png", ".webp"):
+                                    candidates.append(d / f"{head_id_value}{ext}")
+                        else:
+                            # Unknown / missing body_type → only the shared subfolders.
+                            from utility.avatar_paths import (
+                                AVATARS_MAPPED_STILL_SHARED_DIR,
+                                AVATARS_MAPPED_ANIMATED_SHARED_DIR,
+                                AVATARS_MAPPED_DIR,
+                            )
+                            for d in (AVATARS_MAPPED_STILL_SHARED_DIR, AVATARS_MAPPED_ANIMATED_SHARED_DIR):
+                                for ext in (".png", ".webp"):
+                                    candidates.append(d / f"{head_id_value}{ext}")
+                        # Legacy flat-file fallback for any pre-existing mappings.
                         for ext in (".png", ".webp"):
-                            candidate = avatars_mapped_dir / f"{head_id_value}{ext}"
+                            candidates.append(AVATARS_MAPPED_DIR / f"{head_id_value}{ext}")
+                        for candidate in candidates:
                             if candidate.exists() and candidate.is_file():
                                 head_avatar_path = str(candidate)
                                 break
             except Exception as head_err:
                 logger.warning(f"Failed to resolve head avatar: {head_err}")
+
 
             # ── Build and send PlayerProfileView ──
             view = PlayerProfileView(
