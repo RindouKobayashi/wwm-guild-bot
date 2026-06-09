@@ -626,16 +626,16 @@ class LeaderboardView(LayoutView):
                 if e["score"] >= 90000 and not milestones[0]["already_reached"]:
                     milestones[0]["already_reached"] = True
                     lines.append(f"**-----{milestones[0]['name']}-----**")
-                if e["score"] >= 70000 and not milestones[1]["already_reached"]:
+                elif e["score"] >= 70000 and not milestones[1]["already_reached"]:
                     milestones[1]["already_reached"] = True
                     lines.append(f"**-----{milestones[1]['name']}-----**")
-                if e["score"] >= 50000 and not milestones[2]["already_reached"]:
+                elif e["score"] >= 50000 and not milestones[2]["already_reached"]:
                     milestones[2]["already_reached"] = True
                     lines.append(f"**-----{milestones[2]['name']}-----**")
-                if e["score"] >= 30000 and not milestones[3]["already_reached"]:
+                elif e["score"] >= 30000 and not milestones[3]["already_reached"]:
                     milestones[3]["already_reached"] = True
                     lines.append(f"**-----{milestones[3]['name']}-----**")
-                if e["score"] >= 5000 and not milestones[4]["already_reached"]:
+                elif e["score"] >= 5000 and not milestones[4]["already_reached"]:
                     milestones[4]["already_reached"] = True
                     lines.append(f"**-----{milestones[4]['name']}-----**")
         rankings = "\n".join(lines) if lines else "*No data yet*"
