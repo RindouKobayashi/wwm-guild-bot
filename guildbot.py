@@ -29,6 +29,7 @@ async def setup_hook():
 @bot.event
 async def on_ready():
     logger.info(f"User: {bot.user} (ID: {bot.user.id})")
+    bot.owner_id = settings.BOT_OWNER_ID
 
     # Loading cogs
     for cog_file in settings.COGS_DIR.glob("*cog.py"):

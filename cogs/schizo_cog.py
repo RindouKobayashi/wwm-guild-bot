@@ -15,7 +15,8 @@ class SchizoCog(commands.Cog):
         if message.channel.id in [414234388776353828, 1442853064053756028]:
             if message.author == self.bot.user:
                 return
-            if message.author == self.bot.owner_id: # blacklist owner
+            if message.author.id == self.bot.owner_id: # blacklist owner
+                logger.debug(f"skipped owner {self.bot.owner_id}")
                 return
             roll = random.random()
             logger.debug(f"Rolled a {roll:.4f} for message ID {message.id} in channel ID {message.channel.id}")
