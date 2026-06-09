@@ -624,18 +624,28 @@ class LeaderboardView(LayoutView):
             if self.lb_type == "elegance":
                 # Check for highest milestone reached
                 if e["score"] >= 90000 and not milestones[0]["already_reached"]:
+                    if milestones[0]["already_reached"]:
+                        return
                     milestones[0]["already_reached"] = True
                     lines.append(f"**-----{milestones[0]['name']}-----**")
                 elif e["score"] >= 70000 and not milestones[1]["already_reached"]:
+                    if milestones[1]["already_reached"]:
+                        return
                     milestones[1]["already_reached"] = True
                     lines.append(f"**-----{milestones[1]['name']}-----**")
                 elif e["score"] >= 50000 and not milestones[2]["already_reached"]:
+                    if milestones[2]["already_reached"]:
+                        return
                     milestones[2]["already_reached"] = True
                     lines.append(f"**-----{milestones[2]['name']}-----**")
                 elif e["score"] >= 30000 and not milestones[3]["already_reached"]:
+                    if milestones[3]["already_reached"]:
+                        return
                     milestones[3]["already_reached"] = True
                     lines.append(f"**-----{milestones[3]['name']}-----**")
                 elif e["score"] >= 5000 and not milestones[4]["already_reached"]:
+                    if milestones[4]["already_reached"]:
+                        return
                     milestones[4]["already_reached"] = True
                     lines.append(f"**-----{milestones[4]['name']}-----**")
         rankings = "\n".join(lines) if lines else "*No data yet*"
