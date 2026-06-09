@@ -593,18 +593,7 @@ class LeaderboardView(LayoutView):
             prefix = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, f"{i}.")
             score_str = f"{e['score']:,}" if isinstance(e['score'], int) else str(e['score'])
             lines.append(f"{prefix} **{e['nickname']}** — `{score_str}`")
-            if self.lb_type == "elegance":
-                # Check if elegance over milestone, include milestone as separator
-                if e['score'] > 90000:
-                    lines.append(f"--------**Matchless Elegance (Tier 3) (90k)**--------")
-                elif e['score'] > 70000:
-                    lines.append(f"--------**Matchless Elegance (Tier 2) (70k)**--------")
-                elif e['score'] > 50000:
-                    lines.append(f"--------**Matchless Elegance (Tier 1) (50k)**--------")
-                elif e["score"] > 30000:
-                    lines.append(f"--------**Timeless Hero (30k)**--------")
-                elif e["score"] > 5000:
-                    lines.append(f"--------**Embracer of Splendor (5k)**--------")
+
         rankings = "\n".join(lines) if lines else "*No data yet*"
         inner.append(TextDisplay(rankings))
 
