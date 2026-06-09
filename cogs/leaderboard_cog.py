@@ -587,67 +587,12 @@ class LeaderboardView(LayoutView):
 
         inner.append(TextDisplay(f"# {emoji} {display_name} Leaderboard\nTop players who have bound their accounts"))
         inner.append(Separator(spacing=discord.SeparatorSpacing.small))
-        if self.lb_type == "elegance":
-            milestones = [
-                {
-                    "name": "Matchless Elegance (Tier 3) (90k)",
-                    "score": 90000,
-                    "already_reached": False
-                },
-                {
-                    "name": "Matchless Elegance (Tier 2) (70k)",
-                    "score": 70000,
-                    "already_reached": False
-                },
-                {
-                    "name": "Matchless Elegance (Tier 1) (50k)",
-                    "score": 50000,
-                    "already_reached": False
-                },
-                {
-                    "name": "Timeless Hero (30k)",
-                    "score": 30000,
-                    "already_reached": False
-                },
-                {
-                    "name": "Embracer of Splendor (5k)",
-                    "score": 5000,
-                    "already_reached": False
-                }
-            ]
-
         lines = []
         for i, e in enumerate(self.entries[:15], 1):
             prefix = {1: "🥇", 2: "🥈", 3: "🥉"}.get(i, f"{i}.")
             score_str = f"{e['score']:,}" if isinstance(e['score'], int) else str(e['score'])
             lines.append(f"{prefix} **{e['nickname']}** — `{score_str}`")
-            if self.lb_type == "elegance":
-                # Check for highest milestone reached
-                if e["score"] >= 90000 and not milestones[0]["already_reached"]:
-                    if milestones[0]["already_reached"]:
-                        return
-                    milestones[0]["already_reached"] = True
-                    lines.append(f"**-----{milestones[0]['name']}-----**")
-                elif e["score"] >= 70000 and not milestones[1]["already_reached"]:
-                    if milestones[1]["already_reached"]:
-                        return
-                    milestones[1]["already_reached"] = True
-                    lines.append(f"**-----{milestones[1]['name']}-----**")
-                elif e["score"] >= 50000 and not milestones[2]["already_reached"]:
-                    if milestones[2]["already_reached"]:
-                        return
-                    milestones[2]["already_reached"] = True
-                    lines.append(f"**-----{milestones[2]['name']}-----**")
-                elif e["score"] >= 30000 and not milestones[3]["already_reached"]:
-                    if milestones[3]["already_reached"]:
-                        return
-                    milestones[3]["already_reached"] = True
-                    lines.append(f"**-----{milestones[3]['name']}-----**")
-                elif e["score"] >= 5000 and not milestones[4]["already_reached"]:
-                    if milestones[4]["already_reached"]:
-                        return
-                    milestones[4]["already_reached"] = True
-                    lines.append(f"**-----{milestones[4]['name']}-----**")
+
         rankings = "\n".join(lines) if lines else "*No data yet*"
         inner.append(TextDisplay(rankings))
 
