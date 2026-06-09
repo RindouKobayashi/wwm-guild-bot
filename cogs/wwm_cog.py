@@ -836,6 +836,9 @@ class PlayerProfileView(LayoutView):
         is_verified: bool = False,
         # Head avatar from data/avatars/mapped/
         head_avatar_path: str = None,
+        head_id=None,
+        body_type=None,
+        sender_pid: str = None,
     ):
         super().__init__(timeout=180)
         
@@ -890,6 +893,9 @@ class PlayerProfileView(LayoutView):
         self.kongfu_role = kongfu_role
         self.is_verified = is_verified
         self.head_avatar_path = head_avatar_path
+        self.head_id = head_id
+        self.body_type = body_type
+        self.sender_pid = sender_pid
         
         self._build_overview()
     
@@ -1009,6 +1015,11 @@ class PlayerProfileView(LayoutView):
             btn_guild = discord.ui.Button(label="Guild Profile", emoji="🏰", style=discord.ButtonStyle.secondary, custom_id="player_guild")
             btn_guild.callback = self._handle_guild
             row2.add_item(btn_guild)
+            # Only show Set Avatar button when head_id is present but no mapped avatar exists
+            if self.head_id is not None and self.head_avatar_path is None and self.body_type in (0, 1):
+                btn_set_avatar = discord.ui.Button(label="Set Avatar", emoji="🖼️", style=discord.ButtonStyle.success, custom_id="player_set_avatar")
+                btn_set_avatar.callback = self._handle_set_avatar
+                row2.add_item(btn_set_avatar)
             inner.append(row2)
         
         return Container(*inner, accent_color=BLURPLE)
@@ -1131,6 +1142,34 @@ class PlayerProfileView(LayoutView):
             # Message may have been deleted or we may not own it — silently ignore.
             pass
     
+    async def _handle_set_avatar(self, interaction: discord.Interaction):
+        """Open the avatar picker (CategoryPickerView) so the user can map an avatar for this player."""
+        try:
+            from cogs.live_chat_cog import CategoryPickerView
+        except ImportError:
+            await interaction.response.send_message("❌ Avatar picker not available.", ephemeral=True)
+            return
+
+        cog = interaction.client.get_cog("LiveChatCog")
+        if cog is None:
+            await interaction.response.send_message("❌ LiveChatCog is not loaded.", ephemeral=True)
+            return
+
+        view = CategoryPickerView(
+            cog=cog,
+            head_id=str(self.head_id),
+            body_type=self.body_type,
+            suggested_by=interaction.user,
+            sender_nickname=self.player_nickname,
+            sender_pid=self.sender_pid,
+        )
+        await interaction.response.send_message(
+            content=None,
+            view=view,
+            ephemeral=True,
+            allowed_mentions=discord.AllowedMentions.none(),
+        )
+
     async def _handle_guild(self, interaction: discord.Interaction):
         await interaction.response.defer()
         lines = []
@@ -1938,6 +1977,9 @@ class WWMCog(commands.Cog):
                 kongfu_role=kongfu_role,
                 is_verified=is_verified,
                 head_avatar_path=head_avatar_path,
+                head_id=head_id_value if head_data and isinstance(head_data, dict) else None,
+                body_type=body_type if body_type in (0, 1) else None,
+                sender_pid=str(player_pid) if player_pid else None,
             )
             
             view_files = view._resolve_files()
