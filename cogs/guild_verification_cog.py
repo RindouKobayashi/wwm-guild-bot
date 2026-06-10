@@ -8,6 +8,37 @@ from settings import logger, BASE_DIR, WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB
 from datetime import datetime
 from discord.ext import tasks
 from utility.wwm import get_player_info, get_club_hostnums
+from utility.api_constants import SCHOOL_ROLES
+
+
+def get_player_school(player_data: dict) -> int:
+    """Extract the school/sect ID from player data. Returns 100 (Sectless) if not found."""
+    return player_data.get('base', {}).get('school', 100)
+
+
+async def assign_school_role(member: discord.Member, player_data: dict):
+    """Assign the appropriate school role based on player's in-game sect.
+    Removes any previously assigned school role first.
+    Safely skips if SCHOOL_ROLES is empty/not configured for this branch.
+    """
+    if not SCHOOL_ROLES:
+        return None
+    
+    school_id = get_player_school(player_data)
+    role_id = SCHOOL_ROLES.get(school_id)
+    
+    # Remove any existing school roles first
+    existing_school_roles = [r for r in member.roles if r.id in SCHOOL_ROLES.values()]
+    if existing_school_roles:
+        await member.remove_roles(*existing_school_roles, reason="Updating school/sect role")
+    
+    if role_id:
+        role = member.guild.get_role(role_id)
+        if role:
+            await member.add_roles(role, reason=f"Player school/sect ID: {school_id}")
+            return role
+    return None
+
 
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 
@@ -160,7 +191,7 @@ class GuildVerificationCog(commands.Cog):
                 return
                 
             from utility.wwm import get_bulk_players_info
-            bulk_data = get_bulk_players_info(all_pids, fields=["club"])
+            bulk_data = get_bulk_players_info(all_pids, fields=["club", "base"])
             
             if not bulk_data or bulk_data.get('code') != 0:
                 logger.warning("Failed to get bulk player data for membership sync")
@@ -212,6 +243,9 @@ class GuildVerificationCog(commands.Cog):
                     if not has_community_role:
                         await member.add_roles(community_role)
                         logger.info(f"Added community role to {member} - left guild")
+                
+                # Sync school/sect role based on player's in-game sect
+                await assign_school_role(member, player_data)
                 
         except Exception as e:
             logger.error(f"Guild member sync task failed: {str(e)}", exc_info=True)
@@ -362,6 +396,10 @@ class GuildVerificationCog(commands.Cog):
             await member.add_roles(community_role)
             if guild_role and guild_role in member.roles:
                 await member.remove_roles(guild_role)
+        
+        # Assign school/sect role based on player's in-game sect
+        if player_data and 'result' in player_data:
+            await assign_school_role(member, player_data['result'])
         
         embed = discord.Embed(
             title="✅ Member Added Successfully",
@@ -1241,6 +1279,9 @@ class VerifySignatureView(discord.ui.View):
                         if guild_role and guild_role in target_user.roles:
                             await target_user.remove_roles(guild_role)
                 
+                # Assign school/sect role based on player's in-game sect
+                await assign_school_role(target_user, player)
+                
                 player_pid = str(player.get('id', ''))
                 async with aiosqlite.connect(DB_PATH) as conn:
                     await conn.execute('''
@@ -1369,12 +1410,18 @@ class VerificationAdminView(discord.ui.View):
             logger.info(f"Community member role assigned to {target_user} by {interaction.user}")
         
         player_pid = ''
+        player_data_for_school = None
         try:
             pid_data = get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
             if pid_data and 'result' in pid_data:
                 player_pid = str(pid_data['result'].get('id', ''))
+                player_data_for_school = pid_data['result']
         except Exception as e:
             logger.warning(f"Failed to resolve PID for admin approval of {self.character_uid}: {e}")
+        
+        # Assign school/sect role based on player's in-game sect
+        if player_data_for_school:
+            await assign_school_role(target_user, player_data_for_school)
         
         async with aiosqlite.connect(DB_PATH) as conn:
             await conn.execute('''
@@ -1549,6 +1596,10 @@ class UnbindConfirmView(discord.ui.View):
                 community_role = guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
                 if community_role and community_role in target_member.roles:
                     roles_to_remove.append(community_role)
+            
+            # Also remove any school/sect role
+            school_roles_to_remove = [r for r in target_member.roles if r.id in SCHOOL_ROLES.values()]
+            roles_to_remove.extend(school_roles_to_remove)
             
             if roles_to_remove:
                 await target_member.remove_roles(*roles_to_remove)
