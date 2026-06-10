@@ -18,7 +18,7 @@ def get_player_school(player_data: dict) -> int:
 
 async def assign_school_role(member: discord.Member, player_data: dict):
     """Assign the appropriate school role based on player's in-game sect.
-    Removes any previously assigned school role first.
+    Only updates if the sect has changed — skips unnecessary role churn.
     Safely skips if SCHOOL_ROLES is empty/not configured for this branch.
     """
     if not SCHOOL_ROLES:
@@ -27,16 +27,20 @@ async def assign_school_role(member: discord.Member, player_data: dict):
     school_id = get_player_school(player_data)
     role_id = SCHOOL_ROLES.get(school_id)
     
-    # Remove any existing school roles first
+    # Check if they already have the correct role equipped
+    correct_role = member.guild.get_role(role_id) if role_id else None
+    if correct_role and correct_role in member.roles:
+        # Already has the right school role — no change needed
+        return correct_role
+    
+    # Remove any existing school roles that are now incorrect
     existing_school_roles = [r for r in member.roles if r.id in SCHOOL_ROLES.values()]
     if existing_school_roles:
         await member.remove_roles(*existing_school_roles, reason="Updating school/sect role")
     
-    if role_id:
-        role = member.guild.get_role(role_id)
-        if role:
-            await member.add_roles(role, reason=f"Player school/sect ID: {school_id}")
-            return role
+    if correct_role:
+        await member.add_roles(correct_role, reason=f"Player school/sect ID: {school_id}")
+        return correct_role
     return None
 
 
