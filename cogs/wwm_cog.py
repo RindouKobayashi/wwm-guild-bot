@@ -815,6 +815,7 @@ class PlayerProfileView(LayoutView):
         fashion_score: int = 0,
         # Combat
         arena_1v1_rank: str = None,
+        arena_1v1_max_winning_streak: int = 0,
         arena_3v3_rank: str = None,
         pvp_score: int = 0,
         group_strategy: int = 0,
@@ -875,6 +876,7 @@ class PlayerProfileView(LayoutView):
         self.school_rank = school_rank
         self.fashion_score = fashion_score
         self.arena_1v1_rank = arena_1v1_rank
+        self.arena_1v1_max_winning_streak = arena_1v1_max_winning_streak
         self.arena_3v3_rank = arena_3v3_rank
         self.pvp_score = pvp_score
         self.group_strategy = group_strategy
@@ -1064,6 +1066,8 @@ class PlayerProfileView(LayoutView):
         lines = []
         if self.arena_1v1_rank:
             lines.append(f"⚔️ **1v1 Arena Rank:** {self.arena_1v1_rank}")
+        if self.arena_1v1_max_winning_streak:
+            lines.append(f"⚔️ **1v1 Max Winning Streak:** {self.arena_1v1_max_winning_streak}")
         if self.arena_3v3_rank:
             lines.append(f"⚔️ **3v3 Arena Rank:** {self.arena_3v3_rank}")
         if self.pvp_score:
@@ -1774,6 +1778,7 @@ class WWMCog(commands.Cog):
             lunjian = data.get('lunjian', {})
             if lunjian and 'grade' in lunjian:
                 arena_1v1_rank = _fmt_rank(lunjian['grade'], lunjian.get('small_grade', 0))
+                arena_1v1_max_winning_streak = lunjian.get('max_winning_streak', 0)
             
             lunjian3v3 = data.get('lunjian3v3_prop', {})
             if lunjian3v3 and 'grade' in lunjian3v3:
@@ -1959,6 +1964,7 @@ class WWMCog(commands.Cog):
                 school_rank=school_rank,
                 fashion_score=fashion_score,
                 arena_1v1_rank=arena_1v1_rank,
+                arena_1v1_max_winning_streak=arena_1v1_max_winning_streak,
                 arena_3v3_rank=arena_3v3_rank,
                 pvp_score=pvp_score,
                 group_strategy=group_strategy,
