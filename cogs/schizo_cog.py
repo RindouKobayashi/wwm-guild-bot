@@ -79,7 +79,7 @@ class SchizoCog(commands.Cog):
 
 
         roll = random.random()
-        logger.info(f"For edited message, chance roll: {roll}")
+        logger.debug(f"For edited message, chance roll: {roll}")
         
         if roll < 0.1:
             try:
