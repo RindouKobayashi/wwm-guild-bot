@@ -4,6 +4,7 @@ import logging
 
 from dotenv import load_dotenv
 from logging.config import dictConfig
+import datetime
 
 load_dotenv()
 
@@ -57,7 +58,7 @@ SPECIAL_ROLES = {
     "Esy Role": 1506882168272715926,
 }
 
-
+GMT8_TZ = datetime.timezone(datetime.timedelta(hours=8))
 
 CLUB_ID = os.getenv("CLUB_ID")
 

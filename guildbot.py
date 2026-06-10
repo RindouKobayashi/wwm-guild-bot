@@ -23,6 +23,7 @@ async def setup_hook():
     import cogs.leaderboard_cog         # noqa: F401 — registers LeaderboardView
     import cogs.wwm_cog                 # noqa: F401 — registers GuildStatusBoard
     import cogs.giveaway_cog            # noqa: F401 — registers PersistentGiveawayView, EndedGiveawayView
+    import cogs.market_cog              # noqa: F401 — registers MarketReportView
     register_all_views(bot)
     logger.info("Registered persistent views in setup_hook")
 

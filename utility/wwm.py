@@ -48,7 +48,8 @@ ALL_KNOWN_FIELDS = [
     "big_world", "homeworld_data", "_account_", "weapons", "identity", "fashion",
     "coop_score", "ququs", "baiye_season_simple_statics", "region_collect_prop",
     "fight_shoulder", "lunjian2v2_prop", "lunjian3v3_prop", "chiji", "huiwu",
-    "skill_sets", "combat_plan"
+    "skill_sets", "combat_plan", "social_frozen", "road_sign",
+    "hoard_profiteer", "activity"
 ]
 
 # -----------------------------------------------------------------------------
@@ -302,6 +303,32 @@ def get_bulk_players_info(pid_list: List[str], fields: Optional[List[str]] = Non
         }
     )
 
+
+def get_bulk_hoard_data(pid_list: List[str], hostnum: int = 10595) -> Optional[Dict[str, Any]]:
+    """Bulk fetch hoard_profiteer data for multiple players in one API call.
+    
+    Uses WWM_REDIS_PLAYER_URL which returns full player data including the
+    hoard_profiteer field (price change history, main_good, stuff_profit, etc.).
+    
+    Returns raw API response dict keyed by PID, or None on failure.
+    """
+    if not pid_list:
+        return None
+    
+    from settings import WWM_REDIS_PLAYER_URL
+    
+    logger.debug(f"Bulk fetching hoard data for {len(pid_list)} players")
+    
+    return _wwm_api_post(
+        WWM_REDIS_PLAYER_URL,
+        {
+            "fields": ["base", "hoard_profiteer"],
+            "hostnum2pids": {
+                hostnum: pid_list
+            },
+            "uid": WWM_UID
+        }
+    )
 
 def get_fashion_plan(player_pid: str, hostnum: int = 10403, uid: Optional[str] = None, token: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Get player fashion plan including cover image"""
@@ -596,7 +623,7 @@ def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
 
 if __name__ == "__main__":
     # CONFIG: Just change this number_id to lookup any player
-    TARGET_NUMBER_ID = "4036668451" # 4036668451 | 4033283420 | 1069034222
+    TARGET_NUMBER_ID = "1028077590" # 4036668451 | 4033283420 | 1069034222 | 0013538244
     
     combined_data = get_full_player_and_club(TARGET_NUMBER_ID)
     
