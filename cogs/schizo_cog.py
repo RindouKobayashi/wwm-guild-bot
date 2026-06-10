@@ -33,7 +33,7 @@ class SchizoCog(commands.Cog):
             return
         if message.author.id == self.bot.owner_id: # blacklist owner
             logger.debug(f"skipped owner {self.bot.owner_id}")
-            #eturn
+            return
         
         roll = {
             "react": random.random(),
