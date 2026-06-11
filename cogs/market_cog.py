@@ -11,7 +11,7 @@ from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow,
 
 import settings
 from settings import BASE_DIR, CLUB_ID, WWM_UID, logger, GMT8_TZ
-from utility.wwm import get_full_guild_info, get_bulk_hoard_data, get_bulk_players_info, _wwm_api_post
+from utility.wwm import get_full_guild_info, get_bulk_hoard_data, get_bulk_players_info, _wwm_api_post, get_topics_likes
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -304,6 +304,8 @@ class MarketPlayerView(LayoutView):
         total_profit: int,
         is_on_watchlist: bool = False,
         good_has_name: bool = False,
+        good_name: str = "",
+        likes: int = 0,
     ):
         super().__init__(timeout=180)
         self.cog = cog
@@ -317,7 +319,8 @@ class MarketPlayerView(LayoutView):
         # Stats text
         lines = [f"# 📈 Market Stats — {nickname}"]
         lines.append(f"**Number ID:** `{number_id}`")
-        lines.append(f"**Main Good:** `{main_good}`")
+        good_label = f"{good_name} (#{main_good})" if good_name else f"#{main_good}"
+        lines.append(f"**Main Good:** `{good_label}`")
         if price_history:
             original = price_history[0]
             current = price_history[-1]
@@ -325,6 +328,8 @@ class MarketPlayerView(LayoutView):
             lines.append(f"**Price:** `{original}` → `{current}` ({pct_str})")
             lines.append("**History:** `" + " → ".join(str(p) for p in price_history) + "`")
         lines.append(f"**💰 Total Profit:** `{total_profit:,}`")
+        if likes > 0:
+            lines.append(f"**👍 Market Likes:** `{likes}`")
         inner.append(TextDisplay("\n".join(lines)))
         inner.append(Separator(spacing=discord.SeparatorSpacing.small))
 
@@ -414,7 +419,7 @@ class MarketReportView(LayoutView):
     def __init__(
         self,
         cog: "MarketCog",
-        grouped_data: Dict[str, List[Tuple[str, str, str, float, float, float]]],
+        grouped_data: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int]]],
         total_players: int,
         report_ts: int,
         next_update_ts: int,
@@ -450,7 +455,7 @@ class MarketReportView(LayoutView):
 
             # Build leaderboard lines
             lines = []
-            for rank, (pid, nickname, number_id, original_price, current_price, pct) in enumerate(players[:10], 1):
+            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum) in enumerate(players[:10], 1):
                 if rank == 1:
                     prefix = "🥇"
                 elif rank == 2:
@@ -461,8 +466,9 @@ class MarketReportView(LayoutView):
                     prefix = f"`{rank}.`"
 
                 sign = "+" if pct >= 0 else ""
+                online_icon = "🟢" if is_online else "⚫"
                 lines.append(
-                    f"{prefix} **{nickname}** ({number_id})  ─  "
+                    f"{prefix} {online_icon} **{nickname}** ({number_id})  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                 )
 
@@ -486,8 +492,7 @@ class MarketReportView(LayoutView):
 
         # Footer
         inner_items.append(TextDisplay(
-            f"📊 Report generated: <t:{report_ts}:R>  •  "
-            f"🔄 Next update: <t:{next_update_ts}:R>"
+            f"📊 Report generated: <t:{report_ts}:R>  •  🔄 Updates every 10 minutes"
         ))
 
         container = Container(*inner_items, accent_color=ACCENT_GREEN)
@@ -720,7 +725,7 @@ class MarketCog(commands.Cog):
 
         week_start_ts = self._get_week_start_ts()
 
-        good_groups: Dict[str, List[Tuple[str, str, str, float, float, float]]] = defaultdict(list)
+        good_groups: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int]]] = defaultdict(list)
         skipped_none = 0
         skipped_stale = 0
 
@@ -728,6 +733,7 @@ class MarketCog(commands.Cog):
             base = player_entry.get('base', {}) if isinstance(player_entry, dict) else {}
             nickname = base.get('nickname', 'Unknown')
             number_id = str(base.get('number_id', '')) if base.get('number_id') else ''
+            hostnum = int(base.get('hostnum', 10595)) if base.get('hostnum') else 10595
 
             # Freshness check: skip stale data, UNLESS on watchlist
             is_online = base.get('is_online', 0) == 1
@@ -762,7 +768,8 @@ class MarketCog(commands.Cog):
 
             good_groups[main_good].append((
                 pid, nickname, number_id,
-                original_price, current_price, pct
+                original_price, current_price, pct,
+                is_online, hostnum
             ))
 
         logger.debug(
@@ -779,7 +786,7 @@ class MarketCog(commands.Cog):
             good_groups[good_id].sort(key=lambda x: x[5], reverse=True)
 
         unique_goods = list(good_groups.keys())
-        logger.info(f"Market cog: found {len(unique_goods)} unique goods: {unique_goods}")
+        logger.debug(f"Market cog: found {len(unique_goods)} unique goods: {unique_goods}")
         if len(unique_goods) > 3:
             logger.warning(f"Market cog: expected at most 3 unique goods but found {len(unique_goods)}")
 
@@ -838,15 +845,46 @@ class MarketCog(commands.Cog):
             target += datetime.timedelta(days=1)
         return int(target.timestamp())
 
+    async def _fetch_market_likes(self, pid: str, hostnum: int = 10595) -> int:
+        """Fetch market likes (topic 129) for a single player. Returns n_likes."""
+        try:
+            result = get_topics_likes(pid, hostnum)
+            if result and 'result' in result:
+                likes_info = result['result']
+                if isinstance(likes_info, dict):
+                    topic_129 = likes_info.get(129)
+                    if isinstance(topic_129, dict):
+                        return topic_129.get('n_likes', 0)
+        except Exception as e:
+            logger.debug(f"Market cog: failed to fetch likes for PID {pid}: {e}")
+        return 0
+
+    async def _fetch_all_market_likes(self, grouped: Dict[str, List], max_per_good: int = 10) -> Dict[str, int]:
+        """Fetch market likes for the top players in each good group.
+        Returns dict mapping pid -> n_likes."""
+        likes_map: Dict[str, int] = {}
+        # Collect unique (pid, hostnum) from top players only
+        seen: Set[Tuple[str, int]] = set()
+        for good_id, players in grouped.items():
+            for player in players[:max_per_good]:
+                pid = player[0]
+                hostnum = player[7] if len(player) > 7 else 10595
+                if pid not in {s[0] for s in seen}:
+                    seen.add((pid, hostnum))
+        # Fetch likes for all top players with correct hostnum
+        for pid, hostnum in seen:
+            likes_map[pid] = await self._fetch_market_likes(pid, hostnum)
+        return likes_map
+
     # -- Scheduled task ---------------------------------------------------
-    @tasks.loop(time=datetime.time(hour=6, minute=0, tzinfo=GMT8_TZ))
+    @tasks.loop(minutes=10)
     async def daily_market_report(self):
-        """Daily market report at 6am GMT+8."""
-        logger.info("Market cog: running daily market report")
+        """Market report refreshes every 10 minutes."""
+        logger.debug("Market cog: running report refresh")
         try:
             await self._build_and_send_report()
         except Exception as e:
-            logger.error(f"Market cog: daily report failed: {e}", exc_info=True)
+            logger.error(f"Market cog: report refresh failed: {e}", exc_info=True)
 
     @daily_market_report.before_loop
     async def before_daily_market_report(self):
@@ -908,7 +946,7 @@ class MarketCog(commands.Cog):
         )
         embed.add_field(
             name="Schedule",
-            value="Daily at 6:00 AM GMT+8" if self.daily_market_report.is_running() else "❌ Stopped",
+            value="Every 10 minutes" if self.daily_market_report.is_running() else "❌ Stopped",
             inline=True
         )
         embed.add_field(
@@ -1086,6 +1124,7 @@ class MarketCog(commands.Cog):
                 if player_data and 'result' in player_data and 'base' in player_data['result']:
                     player_entry = player_data['result']
                     pid = player_entry.get('id')
+                    player_hostnum = player_entry.get("hostnum", 10595)
                 else:
                     await interaction.followup.send("❌ Player not found with that Number ID.", ephemeral=True)
                     return
@@ -1095,6 +1134,7 @@ class MarketCog(commands.Cog):
                     await interaction.followup.send("❌ Player not found with that nickname.", ephemeral=True)
                     return
                 pid = nick_data['result'].get('id')
+                player_hostnum = nick_data["result"].get("hostnum", 10595)
                 if not pid:
                     await interaction.followup.send("❌ Could not resolve nickname to a player ID.", ephemeral=True)
                     return
@@ -1134,6 +1174,11 @@ class MarketCog(commands.Cog):
             # Check if good has an approved name
             known_goods = await self._get_known_goods()
             good_has_name = main_good in known_goods if main_good else False
+            good_name = await self._get_good_name(main_good) if good_has_name else ""
+
+            # Fetch market likes for this player (hostnum is at root level, not in base)
+            likes = await self._fetch_market_likes(pid, player_hostnum) if pid else 0
+            logger.debug(f"PID {pid} HOSTNUM {player_hostnum} has {likes} likes")
 
             view = MarketPlayerView(
                 cog=self,
@@ -1145,6 +1190,8 @@ class MarketCog(commands.Cog):
                 total_profit=total_profit,
                 is_on_watchlist=is_on_watchlist,
                 good_has_name=good_has_name,
+                good_name=good_name or "",
+                likes=likes,
             )
 
             # Edit the deferred response with the view

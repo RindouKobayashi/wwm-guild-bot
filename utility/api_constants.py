@@ -230,6 +230,17 @@ SCHOOL_RANKING = {
     "12_5": "Flower Messenger",
 }
 
+LIKES = {
+    122: "Arena",
+    103: "Hero's Realm/Sword Trial",
+    107: "Co-op",
+    103: "Signpost",
+    101: "Healer/Scholar",
+    112: "Profile",
+    111: "Performance",
+    129: "Market",
+}
+
 BOSS_NAMES = {
     1: "The Void King", 2: "Ye Wanshan", 3: "Lucky Seventeen",
     4: "Heartseeker", 5: "Snaker Doctor", 6: "Puppeteer",
