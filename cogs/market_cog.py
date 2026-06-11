@@ -313,6 +313,8 @@ class MarketPlayerView(LayoutView):
         self.nickname = nickname
         self.number_id = number_id
         self.main_good = main_good
+        self.price_history = price_history or []
+        self.good_name = good_name or ""
 
         inner: list = []
 
@@ -321,12 +323,12 @@ class MarketPlayerView(LayoutView):
         lines.append(f"**Number ID:** `{number_id}`")
         good_label = f"{good_name} (#{main_good})" if good_name else f"#{main_good}"
         lines.append(f"**Main Good:** `{good_label}`")
-        if price_history:
-            original = price_history[0]
-            current = price_history[-1]
-            pct_str, _ = _pct_str(original, current)
-            lines.append(f"**Price:** `{original}` → `{current}` ({pct_str})")
-            lines.append("**History:** `" + " → ".join(str(p) for p in price_history) + "`")
+        if self.price_history:
+            self.original_price = price_history[0]
+            self.current_price = price_history[-1]
+            self.pct_str, _ = _pct_str(self.original_price, self.current_price)
+            lines.append(f"**Price:** `{self.original_price}` → `{self.current_price}` ({self.pct_str})")
+            lines.append("**History:** `" + " → ".join(str(p) for p in self.price_history) + "`")
         lines.append(f"**💰 Total Profit:** `{total_profit:,}`")
         if likes > 0:
             lines.append(f"**👍 Market Likes:** `{likes}`")
@@ -379,7 +381,7 @@ class MarketPlayerView(LayoutView):
         # Format price info
         good_label = f"{self.good_name} (#{self.main_good})" if self.good_name else f"Good #{self.main_good}"
         price_line = f"`{self.original_price:.0f}` → `{self.current_price:.0f}`"
-        sign = "+" if self.pct >= 0 else ""
+        pct_str = self.pct_str
         history_line = " → ".join(str(p) for p in self.price_history) if self.price_history else ""
 
         container = Container(
@@ -387,7 +389,7 @@ class MarketPlayerView(LayoutView):
                 f"# 📋 Add Player to Market Report\n\n"
                 f"• **{self.nickname}** (`{self.number_id}`)\n"
                 f"• **{good_label}**\n"
-                f"• Price: {price_line}  ({sign}{self.pct:.2f}%)\n"
+                f"• Price: {price_line}  ({pct_str})\n"
                 + (f"• History: `{history_line}`\n" if history_line else "")
                 + f"\n• Requested by: {interaction.user.mention}\n\n"
                 f"Approve to include this player in the daily market report dashboard."
