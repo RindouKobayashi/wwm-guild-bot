@@ -361,49 +361,48 @@ class MarketPlayerView(LayoutView):
         self.add_item(container)
 
     async def _on_include(self, interaction: discord.Interaction):
-        # Send approval request to admin channel
-        admin_channel_id = getattr(self.cog, '_admin_channel_id', None) or ADMIN_AVATAR_CHANNEL_ID
-        admin_channel = interaction.guild.get_channel(admin_channel_id)
-        if not admin_channel:
-            await interaction.response.send_message("❌ Admin channel not configured.", ephemeral=True)
-            return
-
         await interaction.response.defer(ephemeral=True)
 
-        view = MarketPlayerAdminConfirmView(
-            cog=self.cog,
-            pid=self.pid,
-            nickname=self.nickname,
-            number_id=self.number_id,
-            suggested_by=interaction.user,
-        )
+        # Directly add to watchlist (no admin approval needed)
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                "REPLACE INTO market_watchlist (pid, nickname, number_id, added_by, added_at) VALUES (?, ?, ?, ?, ?)",
+                (self.pid, self.nickname, self.number_id, interaction.user.id, int(datetime.datetime.now(datetime.timezone.utc).timestamp()))
+            )
+            await db.commit()
 
-        # Format price info
-        good_label = f"{self.good_name} (#{self.main_good})" if self.good_name else f"Good #{self.main_good}"
-        price_line = f"`{self.original_price:.0f}` → `{self.current_price:.0f}`"
-        pct_str = self.pct_str
-        history_line = " → ".join(str(p) for p in self.price_history) if self.price_history else ""
+        logger.info(f"Market player watchlist add (auto): {self.nickname} ({self.pid}) by {interaction.user}")
 
-        container = Container(
-            TextDisplay(
-                f"# 📋 Add Player to Market Report\n\n"
-                f"• **{self.nickname}** (`{self.number_id}`)\n"
-                f"• **{good_label}**\n"
-                f"• Price: {price_line}  ({pct_str})\n"
-                + (f"• History: `{history_line}`\n" if history_line else "")
-                + f"\n• Requested by: {interaction.user.mention}\n\n"
-                f"Approve to include this player in the daily market report dashboard."
-            ),
-            Separator(spacing=discord.SeparatorSpacing.small),
-            accent_color=ACCENT_ORANGE,
-        )
-        msg_view = LayoutView(timeout=None)
-        msg_view.add_item(container)
-        msg_view.add_item(view.action_row)
+        # Edit the original response to show success and remove the include button
+        inner: list = []
 
-        await admin_channel.send(view=msg_view)
+        # Stats text (same as constructor)
+        lines = [f"# 📈 Market Stats — {self.nickname}"]
+        lines.append(f"**Number ID:** `{self.number_id}`")
+        good_label = f"{self.good_name} (#{self.main_good})" if self.good_name else f"#{self.main_good}"
+        lines.append(f"**Main Good:** `{good_label}`")
+        if self.price_history:
+            lines.append(f"**Price:** `{self.original_price}` → `{self.current_price}` ({self.pct_str})")
+            lines.append("**History:** `" + " → ".join(str(p) for p in self.price_history) + "`")
+        lines.append(f"**💰 Price Change:** `{self.pct_str}`")
+        inner.append(TextDisplay("\n".join(lines)))
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Success message — no buttons
+        inner.append(TextDisplay("✅ **Successfully added to market report!**"))
+        inner.append(TextDisplay(f"Player `{self.nickname}` is now tracked in the daily report. Refreshing dashboard..."))
+
+        container = Container(*inner, accent_color=ACCENT_GREEN)
+        success_view = LayoutView(timeout=None)
+        success_view.add_item(container)
+
+        await interaction.edit_original_response(content=None, view=success_view)
+
+        # Force refresh dashboard to include this player
+        await self.cog._refresh_dashboard()
+
         await interaction.followup.send(
-            f"✅ Approval request sent to admins for including **{self.nickname}** in the market report.",
+            f"✅ **{self.nickname}** has been added to the market report!",
             ephemeral=True
         )
 
@@ -497,8 +496,69 @@ class MarketReportView(LayoutView):
             f"📊 Report generated: <t:{report_ts}:R>  •  🔄 Updates every 10 minutes"
         ))
 
+        # Filter button row
+        filter_row = ActionRow()
+        online_filter_btn = Button(
+            label="🟢 Filter Online Only",
+            style=discord.ButtonStyle.secondary,
+            custom_id="market_filter_online",
+        )
+        online_filter_btn.callback = self._on_filter_online
+        filter_row.add_item(online_filter_btn)
+        inner_items.append(filter_row)
+
         container = Container(*inner_items, accent_color=ACCENT_GREEN)
         self.add_item(container)
+
+    async def _on_filter_online(self, interaction: discord.Interaction):
+        """Filter the report to show only online players, sent as an ephemeral message."""
+        await interaction.response.defer(ephemeral=True)
+
+        # Filter each good group to only include online players
+        filtered: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int]]] = {}
+        total_filtered = 0
+        for good_id, players in self.grouped_data.items():
+            online_players = [p for p in players if p[6]]  # is_online is index 6
+            if online_players:
+                filtered[good_id] = online_players
+                total_filtered += len(online_players)
+
+        if not filtered:
+            await interaction.followup.send("🟢 No online players found in the current report data.", ephemeral=True)
+            return
+
+        # Build a text-only ephemeral response (simpler than a full LayoutView)
+        lines = ["# 🟢 Online Players Only", f"Showing **{total_filtered}** online players across **{len(filtered)}** goods\n"]
+
+        sorted_goods = sorted(filtered.keys(), key=lambda gid: int(gid))
+        for idx, good_id in enumerate(sorted_goods):
+            players = filtered[good_id]
+            emoji = GOOD_EMOJIS[idx % len(GOOD_EMOJIS)]
+            good_name = self.good_names_map.get(good_id, "")
+            label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
+
+            lines.append(f"### {emoji} {label} — {len(players)} online")
+            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum) in enumerate(players[:10], 1):
+                prefix = ["🥇", "🥈", "🥉"][rank - 1] if rank <= 3 else f"`{rank}.`"
+                sign = "+" if pct >= 0 else ""
+                lines.append(
+                    f"{prefix} 🟢 **{nickname}** ({number_id})  ─  "
+                    f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
+                )
+            lines.append("")
+
+        lines.append(f"📊 Filtered from current report data.")
+
+        # Use a simple Container with TextDisplay for the ephemeral reply
+        inner = [
+            TextDisplay("\n".join(lines)),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay("_This message is only visible to you._"),
+        ]
+        container = Container(*inner, accent_color=ACCENT_BLURPLE)
+        result_view = LayoutView(timeout=60)
+        result_view.add_item(container)
+        await interaction.followup.send(view=result_view, ephemeral=True)
 
     def _make_suggest_callback(self, good_id: str):
         async def callback(interaction: discord.Interaction):
