@@ -879,25 +879,47 @@ class MarketCog(commands.Cog):
             logger.warning("Market cog: no qualifying players found (online or logged out today)")
             return None
 
-        # Check for new week: collect goods from ALL qualifying players with
-        # price_change_history of length 1 AND non-empty average_price
-        new_week_good_ids: Set[str] = set()
+        # Check for new week: first try to find an ONLINE player with 1 data point
+        # and 3 average_price goods. If none, fallback to a player logged out within today.
+        new_week_good_ids: List[str] = []
+        # Try online players first
         for qp in qualifying_players:
+            if not qp['is_online']:
+                continue
             hoard = qp['player_entry'].get('hoard_profiteer', {}) if isinstance(qp['player_entry'], dict) else {}
             price_history = hoard.get('price_change_history', [])
             if len(price_history) == 1:
                 average_price = hoard.get('average_price', {})
-                if average_price:
-                    for gid in average_price.keys():
-                        new_week_good_ids.add(str(gid))
+                if len(average_price) >= 3:
+                    new_week_good_ids = sorted(
+                        (str(gid) for gid in average_price.keys()),
+                        key=lambda x: int(x)
+                    )[:3]
+                    logger.info(
+                        f"Market cog: NEW WEEK detected via ONLINE player {qp['pid']} — "
+                        f"goods: {new_week_good_ids}"
+                    )
+                    break
+        # Fallback: any qualifying player with 1 data point and non-empty average_price
+        if not new_week_good_ids:
+            for qp in qualifying_players:
+                hoard = qp['player_entry'].get('hoard_profiteer', {}) if isinstance(qp['player_entry'], dict) else {}
+                price_history = hoard.get('price_change_history', [])
+                if len(price_history) == 1:
+                    average_price = hoard.get('average_price', {})
+                    if average_price:
+                        new_week_good_ids = sorted(
+                            (str(gid) for gid in average_price.keys()),
+                            key=lambda x: int(x)
+                        )[:3]
+                        logger.info(
+                            f"Market cog: NEW WEEK detected via player {qp['pid']} — "
+                            f"goods: {new_week_good_ids}"
+                        )
+                        break
 
         if new_week_good_ids:
-            sorted_ids = sorted(new_week_good_ids, key=lambda x: int(x))
-            logger.info(
-                f"Market cog: NEW WEEK detected — "
-                f"goods: {sorted_ids}"
-            )
-            return {"mode": "new_week", "good_ids": sorted_ids}
+            return {"mode": "new_week", "good_ids": new_week_good_ids}
         else:
             # Active mode – build ranking groups for qualifying players with >=2 data points
             good_groups: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int]]] = defaultdict(list)
