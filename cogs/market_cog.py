@@ -493,7 +493,7 @@ class MarketReportView(LayoutView):
 
         # Footer
         inner_items.append(TextDisplay(
-            f"📊 Report generated: <t:{report_ts}:R>  •  🔄 Updates every 10 minutes"
+            f"📊 Report generated: <t:{report_ts}:R>  •  🔄 Updates every 3 minutes"
         ))
 
         # Filter button row
@@ -559,6 +559,75 @@ class MarketReportView(LayoutView):
         result_view = LayoutView(timeout=60)
         result_view.add_item(container)
         await interaction.followup.send(view=result_view, ephemeral=True)
+
+    def _make_suggest_callback(self, good_id: str):
+        async def callback(interaction: discord.Interaction):
+            modal = GoodNameModal(good_id=good_id, cog=self.cog)
+            await interaction.response.send_modal(modal)
+        return callback
+
+
+# ---------------------------------------------------------------------------
+# New Week Market View (shown when a new week has started)
+# ---------------------------------------------------------------------------
+class NewWeekMarketView(LayoutView):
+    """Components V2 LayoutView shown when market is in 'new week' mode.
+    Displays the available goods from average_price and asks people to buy them.
+    """
+
+    def __init__(
+        self,
+        cog: "MarketCog",
+        good_ids: List[str],
+        good_names_map: Dict[str, str],
+        known_goods: Set[str],
+        report_ts: int,
+    ):
+        super().__init__(timeout=None)
+        self.cog = cog
+        self.good_ids = good_ids
+        self.good_names_map = good_names_map
+        self.known_goods = known_goods
+
+        inner_items: list = []
+
+        # Title
+        inner_items.append(TextDisplay(
+            f"# 🆕 New Market Week!\n"
+            f"Market prices have reset. Check out these goods to buy and prepare for stock changes!"
+        ))
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Display each good
+        for idx, good_id in enumerate(sorted(good_ids, key=lambda gid: int(gid))):
+            emoji = GOOD_EMOJIS[idx % len(GOOD_EMOJIS)]
+            good_name = good_names_map.get(good_id, "")
+            label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
+            inner_items.append(TextDisplay(
+                f"{emoji} **{label}** — Recommended to buy!"
+            ))
+
+            # Suggest Name button for goods without a name
+            if good_id not in known_goods:
+                name_row = ActionRow()
+                suggest_btn = Button(
+                    label="🏷️ Suggest Name",
+                    style=discord.ButtonStyle.secondary,
+                    custom_id=f"newwk_suggest_name:{good_id}",
+                )
+                suggest_btn.callback = self._make_suggest_callback(good_id)
+                name_row.add_item(suggest_btn)
+                inner_items.append(name_row)
+
+            inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Footer
+        inner_items.append(TextDisplay(
+            f"📊 Generated: <t:{report_ts}:R>  •  🔄 Updates every 3 minutes"
+        ))
+
+        container = Container(*inner_items, accent_color=ACCENT_GREEN)
+        self.add_item(container)
 
     def _make_suggest_callback(self, good_id: str):
         async def callback(interaction: discord.Interaction):
@@ -748,32 +817,36 @@ class MarketCog(commands.Cog):
         return all_pids
 
     @staticmethod
-    def _get_week_start_ts() -> int:
-        """Return the UNIX timestamp of the current schedule week start (Monday 5am GMT+8)."""
+    def _get_day_start_ts() -> int:
+        """Return the UNIX timestamp of today's 6am GMT+8 (or yesterday's 6am if before 6am)."""
         GMT8_OFFSET = 8 * 3600
         now_utc_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
         gmt8_now_ts = now_utc_ts + GMT8_OFFSET
         gmt8_dt = datetime.datetime.fromtimestamp(gmt8_now_ts, tz=datetime.timezone.utc)
-        adjusted_dt = gmt8_dt - datetime.timedelta(hours=5)
-        monday_dt = adjusted_dt - datetime.timedelta(days=adjusted_dt.weekday())
-        week_start = monday_dt.replace(hour=5, minute=0, second=0, microsecond=0)
-        return int(week_start.timestamp() - GMT8_OFFSET)
+        # If current GMT+8 hour < 6, use yesterday's 6am; else today's 6am
+        if gmt8_dt.hour < 6:
+            day_start = (gmt8_dt - datetime.timedelta(days=1)).replace(hour=6, minute=0, second=0, microsecond=0)
+        else:
+            day_start = gmt8_dt.replace(hour=6, minute=0, second=0, microsecond=0)
+        return int(day_start.timestamp() - GMT8_OFFSET)
 
     async def _fetch_and_process(self) -> Optional[Dict[str, Any]]:
-        """Fetch hoard data, group by main_good, calculate percentages.
+        """Fetch hoard data and determine market state.
         
-        Only includes players whose data is fresh (online this week),
-        OR who are on the watchlist, to avoid stale data >3 goods.
+        Logic:
+          - Filter qualifying players: online AND/OR logged out within today (since 6am GMT+8).
+          - If ANY qualifying player has only 1 data point in price_change_history,
+            it's a new week: return {"mode": "new_week", "good_ids": [...]} with
+            goods from that player's average_price keys.
+          - Otherwise (all qualifying players have >=2 data points): return
+            {"mode": "active", "groups": {good_id: [(player_data...), ...]}}
         
-        Returns dict: { good_id: [(pid, nickname, number_id, original, current, pct), ...] }
-        Or None if no data.
+        Returns None if no qualifying player data.
         """
         all_pids = await self._get_all_player_pids()
         if not all_pids:
             logger.warning("Market cog: no player PIDs to fetch")
             return None
-
-        watchlist = await self._get_watchlist_pids()
 
         raw_data = get_bulk_hoard_data(all_pids)
         if not raw_data or 'result' not in raw_data:
@@ -785,108 +858,152 @@ class MarketCog(commands.Cog):
             logger.warning("Market cog: empty player data from bulk hoard fetch")
             return None
 
-        week_start_ts = self._get_week_start_ts()
+        day_start_ts = self._get_day_start_ts()
 
-        good_groups: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int]]] = defaultdict(list)
-        skipped_none = 0
-        skipped_stale = 0
-
+        # First pass: find qualifying players (online OR logged out within today)
+        qualifying_players: List[Dict] = []
         for pid, player_entry in players_data.items():
             base = player_entry.get('base', {}) if isinstance(player_entry, dict) else {}
-            nickname = base.get('nickname', 'Unknown')
-            number_id = str(base.get('number_id', '')) if base.get('number_id') else ''
-            hostnum = int(base.get('hostnum', 10595)) if base.get('hostnum') else 10595
-
-            # Freshness check: skip stale data, UNLESS on watchlist
             is_online = base.get('is_online', 0) == 1
             logout_time = base.get('logout_time', 0) or base.get('last_online_ts', 0)
-            if not is_online and logout_time < week_start_ts and pid not in watchlist:
-                skipped_stale += 1
-                continue
+            if not is_online and logout_time < day_start_ts:
+                continue  # not online and not logged out within today
+            qualifying_players.append({
+                'pid': pid,
+                'player_entry': player_entry,
+                'base': base,
+                'is_online': is_online,
+            })
 
-            hoard = player_entry.get('hoard_profiteer', {}) if isinstance(player_entry, dict) else {}
-            if not hoard:
-                skipped_none += 1
-                continue
-
-            main_good = str(hoard.get('main_good', ''))
-            if not main_good:
-                skipped_none += 1
-                continue
-
-            price_history = hoard.get('price_change_history', [])
-            if len(price_history) < 2:
-                skipped_none += 1
-                continue
-
-            original_price = float(price_history[0])
-            current_price = float(price_history[-1])
-
-            if original_price == 0:
-                skipped_none += 1
-                continue
-
-            pct = ((current_price - original_price) / original_price) * 100.0
-
-            good_groups[main_good].append((
-                pid, nickname, number_id,
-                original_price, current_price, pct,
-                is_online, hostnum
-            ))
-
-        logger.debug(
-            f"Market cog: processed {len(players_data)} players — "
-            f"{skipped_none} no hoard data, {skipped_stale} stale (not seen this week), "
-            f"{sum(len(v) for v in good_groups.values())} included"
-        )
-
-        if not good_groups:
-            logger.warning("Market cog: no players with valid hoard data found")
+        if not qualifying_players:
+            logger.warning("Market cog: no qualifying players found (online or logged out today)")
             return None
 
-        for good_id in good_groups:
-            good_groups[good_id].sort(key=lambda x: x[5], reverse=True)
+        # Check for new week: any qualifying player with price_change_history of length 1
+        # Collect good IDs from the average_price of ALL such players (deduplicated)
+        new_week_good_ids: Set[str] = set()
+        new_week_detected = False
+        for qp in qualifying_players:
+            hoard = qp['player_entry'].get('hoard_profiteer', {}) if isinstance(qp['player_entry'], dict) else {}
+            price_history = hoard.get('price_change_history', [])
+            if len(price_history) == 1:
+                new_week_detected = True
+                average_price = hoard.get('average_price', {})
+                for gid in average_price.keys():
+                    new_week_good_ids.add(str(gid))
 
-        unique_goods = list(good_groups.keys())
-        logger.debug(f"Market cog: found {len(unique_goods)} unique goods: {unique_goods}")
-        if len(unique_goods) > 3:
-            logger.warning(f"Market cog: expected at most 3 unique goods but found {len(unique_goods)}")
+        if new_week_detected:
+            good_ids = sorted(new_week_good_ids, key=lambda x: int(x))
+            logger.info(
+                f"Market cog: NEW WEEK detected — "
+                f"goods from qualifying players: {good_ids}"
+            )
+            return {"mode": "new_week", "good_ids": good_ids}
+        else:
+            # Active mode – build ranking groups for qualifying players with >=2 data points
+            good_groups: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int]]] = defaultdict(list)
+            skipped_none = 0
+            skipped_short_history = 0
 
-        return dict(good_groups)
+            for qp in qualifying_players:
+                pid = qp['pid']
+                base = qp['base']
+                nickname = base.get('nickname', 'Unknown')
+                number_id = str(base.get('number_id', '')) if base.get('number_id') else ''
+                hostnum = int(base.get('hostnum', 10595)) if base.get('hostnum') else 10595
+                is_online = qp['is_online']
+
+                hoard = qp['player_entry'].get('hoard_profiteer', {}) if isinstance(qp['player_entry'], dict) else {}
+                if not hoard:
+                    skipped_none += 1
+                    continue
+
+                main_good = str(hoard.get('main_good', ''))
+                if not main_good:
+                    skipped_none += 1
+                    continue
+
+                price_history = hoard.get('price_change_history', [])
+                if len(price_history) < 2:
+                    skipped_short_history += 1
+                    continue
+
+                original_price = float(price_history[0])
+                current_price = float(price_history[-1])
+
+                if original_price == 0:
+                    skipped_none += 1
+                    continue
+
+                pct = ((current_price - original_price) / original_price) * 100.0
+
+                good_groups[main_good].append((
+                    pid, nickname, number_id,
+                    original_price, current_price, pct,
+                    is_online, hostnum
+                ))
+
+            logger.debug(
+                f"Market cog: processed {len(qualifying_players)} qualifying players — "
+                f"{skipped_none} no hoard data, {skipped_short_history} short history, "
+                f"{sum(len(v) for v in good_groups.values())} included"
+            )
+
+            if not good_groups:
+                logger.warning("Market cog: no players with valid hoard data found in active mode")
+                return None
+
+            for good_id in good_groups:
+                good_groups[good_id].sort(key=lambda x: x[5], reverse=True)
+
+            unique_goods = list(good_groups.keys())
+            logger.debug(f"Market cog: found {len(unique_goods)} unique goods: {unique_goods}")
+            if len(unique_goods) > 3:
+                logger.warning(f"Market cog: expected at most 3 unique goods but found {len(unique_goods)}")
+
+            return {"mode": "active", "groups": dict(good_groups)}
 
     # -- Build and send report --------------------------------------------
     async def _build_and_send_report(self):
-        """Fetch data, build view, send/edit to channel."""
+        """Fetch data, determine mode, build appropriate view, send/edit to channel."""
         if not self.market_channel:
             logger.warning("Market cog: no channel configured, cannot send report")
             return
 
-        grouped = await self._fetch_and_process()
-        if not grouped:
+        result = await self._fetch_and_process()
+        if not result:
             await self.market_channel.send("❌ No market data available to report.")
             return
 
+        now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
         known_goods = await self._get_known_goods()
-        # Build a map of good_id -> approved name for display
         good_names_map = {}
         for gid in known_goods:
             name = await self._get_good_name(gid)
             if name:
                 good_names_map[gid] = name
 
-        total_players = sum(len(v) for v in grouped.values())
-        now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
-        next_update_ts = self._get_next_update_ts()
-
-        view = MarketReportView(
-            cog=self,
-            grouped_data=grouped,
-            total_players=total_players,
-            report_ts=now_ts,
-            next_update_ts=next_update_ts,
-            known_goods=known_goods,
-            good_names_map=good_names_map,
-        )
+        if result['mode'] == 'new_week':
+            good_ids = result['good_ids']
+            view = NewWeekMarketView(
+                cog=self,
+                good_ids=good_ids,
+                good_names_map=good_names_map,
+                known_goods=known_goods,
+                report_ts=now_ts,
+            )
+        else:
+            grouped = result['groups']
+            total_players = sum(len(v) for v in grouped.values())
+            view = MarketReportView(
+                cog=self,
+                grouped_data=grouped,
+                total_players=total_players,
+                report_ts=now_ts,
+                next_update_ts=self._get_next_update_ts(),
+                known_goods=known_goods,
+                good_names_map=good_names_map,
+            )
 
         try:
             if self.last_report_message:
@@ -939,9 +1056,9 @@ class MarketCog(commands.Cog):
         return likes_map
 
     # -- Scheduled task ---------------------------------------------------
-    @tasks.loop(minutes=10)
+    @tasks.loop(minutes=3)
     async def daily_market_report(self):
-        """Market report refreshes every 10 minutes."""
+        """Market report refreshes every 3 minutes."""
         logger.debug("Market cog: running report refresh")
         try:
             await self._build_and_send_report()
@@ -1008,7 +1125,7 @@ class MarketCog(commands.Cog):
         )
         embed.add_field(
             name="Schedule",
-            value="Every 10 minutes" if self.daily_market_report.is_running() else "❌ Stopped",
+            value="Every 3 minutes" if self.daily_market_report.is_running() else "❌ Stopped",
             inline=True
         )
         embed.add_field(
@@ -1269,6 +1386,7 @@ class MarketCog(commands.Cog):
 # ---------------------------------------------------------------------------
 from cogs.view_registry import register
 register(MarketReportView, cog=None, grouped_data={}, total_players=0, report_ts=0, next_update_ts=0, known_goods=set())
+register(NewWeekMarketView, cog=None, good_ids=[], good_names_map={}, known_goods=set(), report_ts=0)
 
 
 # ---------------------------------------------------------------------------
