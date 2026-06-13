@@ -13,7 +13,7 @@ from settings import (
     WWM_CLUB_BRIEF_INFO_BATCH_URL, WWM_CLUB_CHAT_URL,
     WWM_FIND_PEOPLE_BY_NICKNAME_URL, WWM_HOST, logger,
     WWM_FASHION_SCORE_URL, WWM_FILM_PLAN_URL, WWM_TEAMS_INFO_URL,
-    WWM_GET_CLUB_BY_NUMBER_ID_URL
+    WWM_GET_CLUB_BY_NUMBER_ID_URL, RANK_GET_RANKLIST_URL
 )
 
 # -----------------------------------------------------------------------------
@@ -619,6 +619,34 @@ def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
     print(f"\n✅ All data combined and saved to: {filename}")
     
     return combined_data
+
+
+def get_sect_election_ranking(school_id: int, limit: int = 5) -> Optional[Dict[str, Any]]:
+    """Fetch the top election candidates for a given sect/school.
+
+    Args:
+        school_id: The numeric school ID (e.g. 1, 2, 3, 4, 6, 11, 12).
+        limit: How many top candidates to fetch (default 5).
+
+    Returns:
+        API response dict with 'code' and 'result', or None on failure.
+    """
+    rank_name = f"rank_chief_campaign_{school_id}"
+    payload = {
+        "fields": [],
+        "pid": None,
+        "hostnum": 10001,
+        "start": 0,
+        "uid": WWM_UID,
+        "rank_name": rank_name,
+        "end": limit  # exclusive end index
+    }
+
+    logger.debug(f"Fetching sect election ranking for school_id={school_id}, rank_name='{rank_name}'")
+
+    # The rank endpoint appends rank_name to the base URL
+    url = RANK_GET_RANKLIST_URL + rank_name
+    return _wwm_api_post(url, payload)
 
 
 if __name__ == "__main__":

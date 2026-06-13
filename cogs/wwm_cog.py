@@ -14,6 +14,7 @@ import settings
 from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, format_kongfu_display, classify_kongfu_role
+from utility.wwm import get_sect_election_ranking
 
 
 def admin_or_staff():
@@ -1457,6 +1458,95 @@ class WWMCog(commands.Cog):
         name="guild",
         description="Guild monitoring commands"
     )
+    
+    sect_group = app_commands.Group(
+        name="sect",
+        description="Sect-related commands"
+    )
+
+    @sect_group.command(name="election", description="View the top election candidates for a sect")
+    @app_commands.describe(sect_name="The name of the sect to check election rankings for", count="How many candidates to show (default 5, max 20)")
+    @app_commands.choices(sect_name=[
+        app_commands.Choice(name=name, value=str(sid))
+        for sid, name in sorted(SCHOOL_NAMES.items()) if sid != 100
+    ])
+    async def sect_election(self, interaction: discord.Interaction, sect_name: app_commands.Choice[str], count: int = 5):
+        """Fetch and display the top election candidates for the chosen sect."""
+        school_id = int(sect_name.value)
+        # Clamp count between 1 and 20
+        count = max(1, min(20, count))
+
+        await interaction.response.send_message(f"🗳️ Fetching top **{count}** election candidates for **{SCHOOL_NAMES[school_id]}**...")
+
+        try:
+            response = get_sect_election_ranking(school_id, limit=count)
+            if not response or response.get('code') != 0:
+                embed = discord.Embed(
+                    title="❌ API Error",
+                    description="Failed to fetch election ranking data.",
+                    color=discord.Color.red()
+                )
+                await interaction.edit_original_response(content=None, embed=embed)
+                return
+
+            result = response.get('result', {})
+            rank_list = result.get('rank_list', [])
+
+            if not rank_list:
+                embed = discord.Embed(
+                    title=f"{SCHOOL_EMOTES.get(school_id, '')} {SCHOOL_NAMES[school_id]} Election",
+                    description="No election data found for this sect. There may be no ongoing election.",
+                    color=discord.Color.orange()
+                )
+                await interaction.edit_original_response(content=None, embed=embed)
+                return
+
+            sect_emoji = SCHOOL_EMOTES.get(school_id, "")
+            embed = discord.Embed(
+                title=f"{sect_emoji} {SCHOOL_NAMES[school_id]} — Top Election Candidates",
+                color=0x9B59B6,
+            )
+
+            medals = ["🥇", "🥈", "🥉", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
+            for idx, entry in enumerate(rank_list):
+                player_info = entry.get('player_info', {})
+                base = player_info.get('base', {})
+                head = player_info.get('head', {})
+
+                nickname = base.get('nickname', 'Unknown')
+                level = base.get('level', '?')
+                number_id = base.get('number_id', 'N/A')
+                score = entry.get('score', 0)
+                pid = entry.get('pid') or player_info.get('id')
+
+                rank_medal = medals[idx] if idx < len(medals) else f"{idx+1}."
+
+                # Build value string
+                value_parts = [f"Lv.{level}  |  Score: **{score:,}**  |  ID: {number_id}"]
+                value_str = "  |  ".join(value_parts)
+                embed.add_field(
+                    name=f"{rank_medal} {nickname}",
+                    value=value_str,
+                    inline=False
+                )
+
+                # Add a separator after the 10th entry to mark the cutoff
+                if idx == 9:
+                    embed.add_field(name="━" * 30, value="*Entries beyond top 10*", inline=False)
+
+            total_candidates = result.get('rank_total_len', len(rank_list))
+            embed.set_footer(text=f"Total candidates: {total_candidates}")
+
+            await interaction.edit_original_response(content=None, embed=embed)
+
+        except Exception as e:
+            logger.error(f"Sect election command failed: {str(e)}", exc_info=True)
+            embed = discord.Embed(
+                title="❌ Error",
+                description=f"Failed to fetch election data: `{str(e)}`",
+                color=discord.Color.red()
+            )
+            await interaction.edit_original_response(content=None, embed=embed)
 
     async def _init_database(self):
         (BASE_DIR / "data").mkdir(exist_ok=True)
