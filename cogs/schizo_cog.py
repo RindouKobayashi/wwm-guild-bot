@@ -83,9 +83,7 @@ class SchizoCog(commands.Cog):
         
         if roll < 0.1:
             try:
-                msg = await after.reply("I saw what you originally sent.", mention_author=False)
-                await asyncio.sleep(1)
-                await msg.delete()
+                msg = await after.reply("I saw what you originally sent.", mention_author=False, delete_after=1)
                 logger.debug(f"Called out {after.author.name} for editing a message")
             except discord.HTTPException:
                 pass
