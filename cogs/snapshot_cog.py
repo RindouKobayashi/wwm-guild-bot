@@ -80,12 +80,8 @@ def _today_gmt8_str() -> str:
 # ══════════════════════════════════════════════════════════════════════
 
 async def _collect_snapshot_data() -> dict | None:
-    return await asyncio.to_thread(_collect_snapshot_data_sync)
-
-
-def _collect_snapshot_data_sync() -> dict | None:
     try:
-        guild_data = get_full_guild_info(CLUB_ID)
+        guild_data = await get_full_guild_info(CLUB_ID)
         if not guild_data or "result" not in guild_data:
             logger.error("Snapshot: failed to fetch guild data")
             return None
@@ -111,18 +107,17 @@ def _collect_snapshot_data_sync() -> dict | None:
             logger.warning("Snapshot: no members in guild")
             return {"guild_summary": guild_summary, "players": []}
 
-        bulk_data = get_bulk_players_info(all_pids, fields=["base", "club", "attr"])
+        bulk_data = await get_bulk_players_info(all_pids, fields=["base", "club", "attr"])
         players_result = {}
         if bulk_data and bulk_data.get("code") == 0:
             players_result = bulk_data.get("result", {})
 
         # Fetch fashion scores concurrently
         fashion_scores = {}
-        batch_size = 10
 
-        def _fetch_fashion(pid):
+        async def _fetch_fashion(pid):
             try:
-                sd = get_fashion_score(pid)
+                sd = await get_fashion_score(pid)
                 if sd and "result" in sd:
                     score = sd["result"]
                     if isinstance(score, dict):
@@ -132,16 +127,12 @@ def _collect_snapshot_data_sync() -> dict | None:
                 pass
             return (pid, 0)
 
-        chunks = [all_pids[i:i + batch_size] for i in range(0, len(all_pids), batch_size)]
-        for chunk in chunks:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=batch_size) as pool:
-                futures = [pool.submit(_fetch_fashion, pid) for pid in chunk]
-                for f in futures:
-                    try:
-                        pid, score = f.result(timeout=15)
-                        fashion_scores[pid] = score
-                    except Exception:
-                        pass
+        for pid in all_pids:
+            try:
+                pid, score = await _fetch_fashion(pid)
+                fashion_scores[pid] = score
+            except Exception:
+                pass
 
         players = []
         for pid, pdata in players_result.items():

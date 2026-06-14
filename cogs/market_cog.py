@@ -792,7 +792,7 @@ class MarketCog(commands.Cog):
         """Collect PIDs from guild members + bound players + watchlist, deduplicated."""
         guild_pids = set()
         try:
-            guild_data = get_full_guild_info(CLUB_ID)
+            guild_data = await get_full_guild_info(CLUB_ID)
             if guild_data and 'result' in guild_data:
                 members = guild_data['result'].get('members', {}).get('members', {})
                 guild_pids.update(members.keys())
@@ -848,7 +848,7 @@ class MarketCog(commands.Cog):
             logger.warning("Market cog: no player PIDs to fetch")
             return None
 
-        raw_data = get_bulk_hoard_data(all_pids)
+        raw_data = await get_bulk_hoard_data(all_pids)
         if not raw_data or 'result' not in raw_data:
             logger.warning("Market cog: bulk hoard fetch returned no data")
             return None
@@ -1048,7 +1048,7 @@ class MarketCog(commands.Cog):
     async def _fetch_market_likes(self, pid: str, hostnum: int = 10595) -> int:
         """Fetch market likes (topic 129) for a single player. Returns n_likes."""
         try:
-            result = get_topics_likes(pid, hostnum)
+            result = await get_topics_likes(pid, hostnum)
             if result and 'result' in result:
                 likes_info = result['result']
                 if isinstance(likes_info, dict):
@@ -1166,7 +1166,7 @@ class MarketCog(commands.Cog):
             guild_pids = set()
             bound_pids = set()
             try:
-                guild_data = get_full_guild_info(CLUB_ID)
+                guild_data = await get_full_guild_info(CLUB_ID)
                 if guild_data and 'result' in guild_data:
                     members = guild_data['result'].get('members', {}).get('members', {})
                     guild_pids.update(members.keys())
@@ -1320,7 +1320,7 @@ class MarketCog(commands.Cog):
             pid = None
 
             if number_id:
-                player_data = get_player_info(number_id, fields=["base", "hoard_profiteer"])
+                player_data = await get_player_info(number_id, fields=["base", "hoard_profiteer"])
                 if player_data and 'result' in player_data and 'base' in player_data['result']:
                     player_entry = player_data['result']
                     pid = player_entry.get('id')
@@ -1329,7 +1329,7 @@ class MarketCog(commands.Cog):
                     await interaction.followup.send("❌ Player not found with that Number ID.", ephemeral=True)
                     return
             elif nickname:
-                nick_data = find_people_by_nickname(nickname)
+                nick_data = await find_people_by_nickname(nickname)
                 if not nick_data or 'result' not in nick_data:
                     await interaction.followup.send("❌ Player not found with that nickname.", ephemeral=True)
                     return
@@ -1338,7 +1338,7 @@ class MarketCog(commands.Cog):
                 if not pid:
                     await interaction.followup.send("❌ Could not resolve nickname to a player ID.", ephemeral=True)
                     return
-                raw = _wwm_api_post(
+                raw = await _wwm_api_post(
                     WWM_REDIS_PLAYER_URL,
                     {
                         "fields": ["base", "hoard_profiteer"],

@@ -119,7 +119,7 @@ def decode_extra(cat: int, ev: int, extra: list) -> str:
 # -----------------------------------------------------------------------------
 # Helper: fetch club event log from API
 # -----------------------------------------------------------------------------
-def fetch_event_log_raw() -> Optional[Dict[str, Any]]:
+async def fetch_event_log_raw() -> Optional[Dict[str, Any]]:
     """Call the game API and return the full response dict, or None on failure."""
     payload = {
         "club_id": CLUB_ID,
@@ -127,20 +127,20 @@ def fetch_event_log_raw() -> Optional[Dict[str, Any]]:
         "field_info": {"event_log": []},
         "hostnum": 10103,
     }
-    return _wwm_api_post(WWM_FULL_GUILD_URL, payload, timeout=15)
+    return await _wwm_api_post(WWM_FULL_GUILD_URL, payload, timeout=15)
 
 
 PLAYER_INFO_URL = WWM_REDIS_PLAYER_URL
 
 
-def resolve_player_name_sync(pid: str, hostnum: int = 10403) -> Optional[str]:
+async def resolve_player_name(pid: str, hostnum: int = 10403) -> Optional[str]:
     """Fetch a player's nickname by PID using the correct hostnum."""
     try:
         payload = {
             "fields": ["base"],
             "hostnum2pids": {hostnum: [pid]},
         }
-        data = _wwm_api_post(PLAYER_INFO_URL, payload)
+        data = await _wwm_api_post(PLAYER_INFO_URL, payload)
         if data and 'result' in data and pid in data['result']:
             base = data['result'][pid].get('base', {})
             name = base.get('nickname')
@@ -258,7 +258,7 @@ class EventLogCog(commands.Cog):
             logger.warning(f"Event log channel {channel_id} not found")
             return 0
 
-        raw = await self.bot.loop.run_in_executor(None, fetch_event_log_raw)
+        raw = await fetch_event_log_raw()
         if not raw or 'result' not in raw:
             return 0
 
@@ -460,7 +460,7 @@ class EventLogCog(commands.Cog):
         cache_key = f"{pid}@{hostnum}"
         if cache_key in self._name_cache:
             return self._name_cache[cache_key]
-        name = await self.bot.loop.run_in_executor(None, resolve_player_name_sync, pid, hostnum)
+        name = await resolve_player_name(pid, hostnum)
         if name:
             self._name_cache[cache_key] = name
             return name

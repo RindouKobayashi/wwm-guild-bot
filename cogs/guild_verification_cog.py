@@ -119,7 +119,7 @@ class GuildVerificationCog(commands.Cog):
                 for row in rows_to_migrate:
                     rowid, user_id, character_uid = row
                     try:
-                        player_data = get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+                        player_data = await get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
                         if player_data and 'result' in player_data:
                             player = player_data['result']
                             pid = player.get('id')
@@ -195,7 +195,7 @@ class GuildVerificationCog(commands.Cog):
                 return
                 
             from utility.wwm import get_bulk_players_info
-            bulk_data = get_bulk_players_info(all_pids, fields=["club", "base"])
+            bulk_data = await get_bulk_players_info(all_pids, fields=["club", "base"])
             
             if not bulk_data or bulk_data.get('code') != 0:
                 logger.warning("Failed to get bulk player data for membership sync")
@@ -335,7 +335,7 @@ class GuildVerificationCog(commands.Cog):
             return
         
         pagination_view = BoundAccountsPaginationView(all_members, show_values, interaction.user.id, current_page=1)
-        embed = pagination_view.generate_embed()
+        embed = await pagination_view.generate_embed()
         
         message = await interaction.followup.send(embed=embed, view=pagination_view, ephemeral=False)
         pagination_view.message = message
@@ -356,12 +356,12 @@ class GuildVerificationCog(commands.Cog):
         player_pid = ''
         try:
             from utility.wwm import get_club_hostnums
-            player_data = get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+            player_data = await get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
             if player_data and 'result' in player_data:
                 player = player_data['result']
                 player_pid = str(player.get('id', ''))
                 if player_pid:
-                    club_data = get_club_hostnums(player_pid)
+                    club_data = await get_club_hostnums(player_pid)
                     if club_data and 'result' in club_data:
                         player_club_data = club_data['result'].get(player_pid, {})
                         club_id = player_club_data.get('club', {}).get('club_id')
@@ -589,7 +589,7 @@ class BoundAccountsPaginationView(discord.ui.View):
         self.prev_page_button.disabled = self.current_page <= 1
         self.next_page_button.disabled = self.current_page >= self.total_pages
     
-    def generate_embed(self):
+    async def generate_embed(self):
         start_idx = (self.current_page - 1) * self.items_per_page
         end_idx = start_idx + self.items_per_page
         page_members = self.all_members[start_idx:end_idx]
@@ -617,7 +617,7 @@ class BoundAccountsPaginationView(discord.ui.View):
                     from utility.wwm import _wwm_api_post
                     for number_id in missing_uids:
                         try:
-                            pid_result = _wwm_api_post(
+                            pid_result = await _wwm_api_post(
                                 WWM_API_URL,
                                 {
                                     "uid": WWM_UID,
@@ -635,7 +635,7 @@ class BoundAccountsPaginationView(discord.ui.View):
                             continue
                     
                     from utility.wwm import get_bulk_players_info
-                    bulk_data = get_bulk_players_info(pid_list, fields=["base"])
+                    bulk_data = await get_bulk_players_info(pid_list, fields=["base"])
                     
                     if bulk_data and bulk_data.get('code') == 0:
                         bulk_players = bulk_data.get('result', {})
@@ -688,7 +688,7 @@ class BoundAccountsPaginationView(discord.ui.View):
         await interaction.response.defer()
         self.current_page -= 1
         self.update_button_states()
-        await interaction.edit_original_response(embed=self.generate_embed(), view=self)
+        await interaction.edit_original_response(embed=await self.generate_embed(), view=self)
     
     @discord.ui.button(label="Next →", style=ButtonStyle.secondary)
     async def next_page_button(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -699,7 +699,7 @@ class BoundAccountsPaginationView(discord.ui.View):
         await interaction.response.defer()
         self.current_page += 1
         self.update_button_states()
-        await interaction.edit_original_response(embed=self.generate_embed(), view=self)
+        await interaction.edit_original_response(embed=await self.generate_embed(), view=self)
     
     async def on_timeout(self):
         for child in self.children:
@@ -1130,7 +1130,7 @@ class CharacterUIDModal(discord.ui.Modal, title="Bind Game Account"):
         await interaction.response.defer(ephemeral=True)
         
         try:
-            player_data = get_player_info(uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+            player_data = await get_player_info(uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
             
             if not player_data or 'result' not in player_data:
                 await interaction.followup.send(
@@ -1147,7 +1147,7 @@ class CharacterUIDModal(discord.ui.Modal, title="Bind Game Account"):
             player_pid = player.get('id')
             
             if player_pid:
-                club_data = get_club_hostnums(player_pid)
+                club_data = await get_club_hostnums(player_pid)
                 if club_data and 'result' in club_data:
                     player_club_data = club_data['result'].get(player_pid, {})
                     club_id = player_club_data.get('club', {}).get('club_id')
@@ -1249,7 +1249,7 @@ class VerifySignatureView(discord.ui.View):
         await interaction.response.defer(ephemeral=True)
         
         try:
-            player_data = get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+            player_data = await get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
             
             if not player_data or 'result' not in player_data:
                 await interaction.followup.send(
@@ -1416,7 +1416,7 @@ class VerificationAdminView(discord.ui.View):
         player_pid = ''
         player_data_for_school = None
         try:
-            pid_data = get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+            pid_data = await get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
             if pid_data and 'result' in pid_data:
                 player_pid = str(pid_data['result'].get('id', ''))
                 player_data_for_school = pid_data['result']

@@ -246,7 +246,7 @@ class GuildStatusBoard(LayoutView):
             # Fetch rank info (custom posts) from guild
             ranks_data = {}
             try:
-                guild_ranks = get_custom_guild_info(
+                guild_ranks = await get_custom_guild_info(
                     settings.CLUB_ID, 10103, {'members': ['custom_posts']}
                 )
                 if guild_ranks and 'result' in guild_ranks:
@@ -275,7 +275,7 @@ class GuildStatusBoard(LayoutView):
                 return None
 
             # Fetch player data with base + kongfu fields
-            bulk_data = get_bulk_players_info(all_pids, fields=["base", "kongfu"])
+            bulk_data = await get_bulk_players_info(all_pids, fields=["base", "kongfu"])
 
             online_players = []
             if bulk_data and bulk_data.get('code') == 0:
@@ -323,7 +323,7 @@ class GuildStatusBoard(LayoutView):
             if not cog or not cog.monitor_message:
                 return
             now_ts = int(discord.utils.utcnow().timestamp())
-            board_data = cog._gather_status_data(cog.last_guild_state)
+            board_data = await cog._gather_status_data(cog.last_guild_state)
             if not board_data:
                 return
             new_view = GuildStatusBoard(
@@ -530,7 +530,7 @@ class GuildRegionSelectView(LayoutView):
             return
         
         try:
-            guild_data = get_full_guild_info(club_id, hostnum=hostnum)
+            guild_data = await get_full_guild_info(club_id, hostnum=hostnum)
             if not guild_data or 'result' not in guild_data:
                 await interaction.followup.send("❌ Guild not found or API error")
                 return
@@ -543,7 +543,7 @@ class GuildRegionSelectView(LayoutView):
                 await interaction.followup.send("❌ No members found in guild")
                 return
 
-            bulk_data = get_bulk_players_info(all_uids, fields=["base"])
+            bulk_data = await get_bulk_players_info(all_uids, fields=["base"])
             if not bulk_data or bulk_data.get('code') != 0:
                 await interaction.followup.send("❌ Failed to fetch player info")
                 return
@@ -681,7 +681,7 @@ class GuildSearchSelectView(LayoutView):
         
         try:
             logger.debug(f"Trying to fetch full guild info for selected club_id: {club_id} with hostnum: {hostnum}")
-            guild_data = get_full_guild_info(club_id, hostnum=hostnum)
+            guild_data = await get_full_guild_info(club_id, hostnum=hostnum)
             
             if not guild_data or 'result' not in guild_data:
                 await loading_msg.edit(content="❌ Guild not found or API error")
@@ -713,7 +713,7 @@ class GuildSearchSelectView(LayoutView):
                 pids_to_fetch.append(vice_leader_pid)
             
             if pids_to_fetch:
-                bulk_data = get_bulk_players_info(pids_to_fetch, fields=["base"])
+                bulk_data = await get_bulk_players_info(pids_to_fetch, fields=["base"])
                 if bulk_data and bulk_data.get('code') == 0:
                     players = bulk_data.get('result', {})
                     if leader_pid in players:
@@ -725,7 +725,7 @@ class GuildSearchSelectView(LayoutView):
             
             online = 0
             all_pids = list(member_list.keys())
-            bulk_data = get_bulk_players_info(all_pids, fields=["base"])
+            bulk_data = await get_bulk_players_info(all_pids, fields=["base"])
             if bulk_data and bulk_data.get('code') == 0:
                 players = bulk_data.get('result', {})
                 for pid, player_data in players.items():
@@ -1479,7 +1479,7 @@ class WWMCog(commands.Cog):
         await interaction.response.send_message(f"🗳️ Fetching top **{count}** election candidates for **{SCHOOL_NAMES[school_id]}**...")
 
         try:
-            response = get_sect_election_ranking(school_id, limit=count)
+            response = await get_sect_election_ranking(school_id, limit=count)
             if not response or response.get('code') != 0:
                 embed = discord.Embed(
                     title="❌ API Error",
@@ -1688,7 +1688,7 @@ class WWMCog(commands.Cog):
                     return
 
                 await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...")
-                raw_data = get_player_info(number_id, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+                raw_data = await get_player_info(number_id, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
                 
                 if not raw_data:
                     embed = discord.Embed(title="❌ Player not found", color=discord.Color.red())
@@ -1702,7 +1702,7 @@ class WWMCog(commands.Cog):
                 # --- Lookup by Nickname ---
                 await interaction.edit_original_response(content="✅ Found by nickname\n📦 Loading player profile...")
                 
-                nickname_data = find_people_by_nickname(nickname)
+                nickname_data = await find_people_by_nickname(nickname)
                 
                 if not nickname_data or 'result' not in nickname_data or not nickname_data['result']:
                     embed = discord.Embed(
@@ -1726,7 +1726,7 @@ class WWMCog(commands.Cog):
                     await interaction.followup.send(embed=embed)
                     return
                 
-                raw_data = fetch_player_data_by_pid(player_pid, hostnum=10595)
+                raw_data = await fetch_player_data_by_pid(player_pid, hostnum=10595)
                 
                 if not raw_data:
                     embed = discord.Embed(title="❌ Failed to load player data", color=discord.Color.red())
@@ -1757,7 +1757,7 @@ class WWMCog(commands.Cog):
             cover_img = None
             try:
                 if player_pid:
-                    fashion_data = get_fashion_plan(player_pid, hostnum=player_hostnum)
+                    fashion_data = await get_fashion_plan(player_pid, hostnum=player_hostnum)
                     if fashion_data:
                         if fashion_data.get('code') == 0 and 'result' in fashion_data:
                             cover_img = fashion_data['result'].get('cover_img')
@@ -1814,7 +1814,7 @@ class WWMCog(commands.Cog):
             fashion_score = 0
             if is_verified:
                 try:
-                    fashion_score_data = get_fashion_score(player_pid, hostnum=player_hostnum)
+                    fashion_score_data = await get_fashion_score(player_pid, hostnum=player_hostnum)
                     if fashion_score_data and 'result' in fashion_score_data:
                         score = fashion_score_data['result']
                         if isinstance(score, dict):
@@ -1827,7 +1827,7 @@ class WWMCog(commands.Cog):
             likes_count = 0
             if is_verified:
                 try:
-                    likes_data = get_topics_likes(target_uuid=player_pid, target_hostnum=player_hostnum)
+                    likes_data = await get_topics_likes(target_uuid=player_pid, target_hostnum=player_hostnum)
                     if likes_data and 'result' in likes_data:
                         likes_data_res = likes_data['result']
                         likes_count = sum(topic.get('n_likes', 0) for topic in likes_data_res.values())
@@ -1923,7 +1923,7 @@ class WWMCog(commands.Cog):
             if player_pid and is_verified:
                 try:
                     await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...\n🏰 Checking guild info...")
-                    club_data = get_club_hostnums(player_pid)
+                    club_data = await get_club_hostnums(player_pid)
                     
                     player_club_id = None
                     club_hostnum = 10103
@@ -1937,7 +1937,7 @@ class WWMCog(commands.Cog):
                     
                     if player_club_id:
                         await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...\n🏰 Checking guild info...\n📋 Loading guild data...")
-                        guild_full_data = get_full_guild_info(player_club_id, hostnum=club_hostnum)
+                        guild_full_data = await get_full_guild_info(player_club_id, hostnum=club_hostnum)
                         
                         if guild_full_data:
                             guild_result = guild_full_data.get('result', {})
@@ -1967,7 +1967,7 @@ class WWMCog(commands.Cog):
                                 pids_to_fetch.append(vice_leader_pid)
                             
                             if pids_to_fetch:
-                                bulk_lookup = get_bulk_players_info(pids_to_fetch, fields=["base"])
+                                bulk_lookup = await get_bulk_players_info(pids_to_fetch, fields=["base"])
                                 if bulk_lookup and bulk_lookup.get('code') == 0:
                                     players = bulk_lookup.get('result', {})
                                     if leader_pid and leader_pid in players:
@@ -2104,13 +2104,13 @@ class WWMCog(commands.Cog):
             return
         
         try:
-            guild_data = get_full_guild_info(CLUB_ID)
+            guild_data = await get_full_guild_info(CLUB_ID)
             
             if not guild_data:
                 logger.warning("Guild check returned no data")
                 return
             
-            board_data = self._gather_status_data(guild_data)
+            board_data = await self._gather_status_data(guild_data)
             if not board_data:
                 return
             
@@ -2280,7 +2280,7 @@ class WWMCog(commands.Cog):
         except Exception as e:
             logger.error(f"Birthday role assignment failed: {e}")
 
-    def _gather_status_data(self, guild_data):
+    async def _gather_status_data(self, guild_data):
         """Extract structured status data from guild API response.
         
         Returns a dict with all fields needed to build the GuildStatusBoard,
@@ -2302,7 +2302,7 @@ class WWMCog(commands.Cog):
         all_pids = list(member_list.keys())
         
         try:
-            bulk_data = get_bulk_players_info(all_pids, fields=["base", "club", "birthday"])
+            bulk_data = await get_bulk_players_info(all_pids, fields=["base", "club", "birthday"])
             if bulk_data and bulk_data.get('code') == 0:
                 players_data = bulk_data.get('result', {})
                 for pid, player_data in players_data.items():
@@ -2484,9 +2484,9 @@ class WWMCog(commands.Cog):
                     self.monitor_message = await self.monitor_channel.fetch_message(int(row[0]))
                 except:
                     # Message not found or other error — create fresh V2 message
-                    guild_data = get_full_guild_info(CLUB_ID)
+                    guild_data = await get_full_guild_info(CLUB_ID)
                     if guild_data:
-                        board_data = self._gather_status_data(guild_data)
+                        board_data = await self._gather_status_data(guild_data)
                         if board_data:
                             now_ts = int(discord.utils.utcnow().timestamp())
                             view = GuildStatusBoard(
@@ -2516,9 +2516,9 @@ class WWMCog(commands.Cog):
     async def set_monitor_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         self.monitor_channel = channel
         
-        guild_data = get_full_guild_info(CLUB_ID)
+        guild_data = await get_full_guild_info(CLUB_ID)
         if guild_data:
-            board_data = self._gather_status_data(guild_data)
+            board_data = await self._gather_status_data(guild_data)
             if board_data:
                 now_ts = int(discord.utils.utcnow().timestamp())
                 view = GuildStatusBoard(
@@ -2569,7 +2569,7 @@ class WWMCog(commands.Cog):
     async def force_guild_check(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
         
-        guild_data = get_full_guild_info(CLUB_ID)
+        guild_data = await get_full_guild_info(CLUB_ID)
         
         if not guild_data:
             await interaction.followup.send("❌ Failed to retrieve guild data")
@@ -2632,7 +2632,7 @@ class WWMCog(commands.Cog):
 
             await interaction.edit_original_response(content="✅ Found player\n🏰 Looking up guild info...")
             
-            player_data = get_player_info(player_id)
+            player_data = await get_player_info(player_id)
             
             if not player_data or 'result' not in player_data:
                 embed = discord.Embed(title="❌ Player not found", color=discord.Color.red())
@@ -2647,7 +2647,7 @@ class WWMCog(commands.Cog):
                 await interaction.followup.send(embed=embed)
                 return
 
-            club_data = get_club_hostnums(player_pid)
+            club_data = await get_club_hostnums(player_pid)
             
             if not club_data or 'result' not in club_data:
                 embed = discord.Embed(title="❌ Player is not in any guild", color=discord.Color.red())
@@ -2668,7 +2668,7 @@ class WWMCog(commands.Cog):
 
             await interaction.edit_original_response(content="✅ Found player\n🏰 Looking up guild info...\n📋 Loading guild data...")
             
-            guild_data = get_full_guild_info(target_guild_id, hostnum=target_hostnum)
+            guild_data = await get_full_guild_info(target_guild_id, hostnum=target_hostnum)
             
             if not guild_data or 'result' not in guild_data:
                 embed = discord.Embed(title="❌ Guild not found", color=discord.Color.red())
@@ -2713,7 +2713,7 @@ class WWMCog(commands.Cog):
 
             if pids_to_fetch:
                 from utility.wwm import get_bulk_players_info
-                bulk_data = get_bulk_players_info(pids_to_fetch, fields=["base"])
+                bulk_data = await get_bulk_players_info(pids_to_fetch, fields=["base"])
                 if bulk_data and bulk_data.get('code') == 0:
                     players = bulk_data.get('result', {})
                     if leader_pid in players:
@@ -2730,7 +2730,7 @@ class WWMCog(commands.Cog):
             online = 0
             all_pids = list(member_list.keys())
             from utility.wwm import get_bulk_players_info
-            bulk_data = get_bulk_players_info(all_pids, fields=["base"])
+            bulk_data = await get_bulk_players_info(all_pids, fields=["base"])
             if bulk_data and bulk_data.get('code') == 0:
                 players = bulk_data.get('result', {})
                 for pid, player_data in players.items():
@@ -2774,7 +2774,7 @@ class WWMCog(commands.Cog):
             if search_term.isdigit():
                 await interaction.edit_original_response(content="🔍 Looking up guild by ID...")
                 
-                guild_lookup = get_club_by_number_id(int(search_term))
+                guild_lookup = await get_club_by_number_id(int(search_term))
                 
                 if not guild_lookup:
                     embed = discord.Embed(title="❌ Guild Not Found", description=f"No guild found with ID `{search_term}`", color=discord.Color.red())
@@ -2791,7 +2791,7 @@ class WWMCog(commands.Cog):
                 
                 await interaction.edit_original_response(content="🔍 Looking up guild by ID...\n📋 Loading guild data...")
                 
-                guild_data = get_full_guild_info(club_id, hostnum=hostnum)
+                guild_data = await get_full_guild_info(club_id, hostnum=hostnum)
                 
                 if not guild_data or 'result' not in guild_data:
                     embed = discord.Embed(title="❌ Guild not found or API error", color=discord.Color.red())
@@ -2824,7 +2824,7 @@ class WWMCog(commands.Cog):
                     pids_to_fetch.append(vice_leader_pid)
                 
                 if pids_to_fetch:
-                    bulk_data = get_bulk_players_info(pids_to_fetch, fields=["base"])
+                    bulk_data = await get_bulk_players_info(pids_to_fetch, fields=["base"])
                     if bulk_data and bulk_data.get('code') == 0:
                         players = bulk_data.get('result', {})
                         if leader_pid in players:
@@ -2836,7 +2836,7 @@ class WWMCog(commands.Cog):
                 
                 online = 0
                 all_pids = list(member_list.keys())
-                bulk_data = get_bulk_players_info(all_pids, fields=["base"])
+                bulk_data = await get_bulk_players_info(all_pids, fields=["base"])
                 if bulk_data and bulk_data.get('code') == 0:
                     players = bulk_data.get('result', {})
                     for pid, player_data in players.items():
@@ -2866,7 +2866,7 @@ class WWMCog(commands.Cog):
                 return
             
             # ── Otherwise, treat it as a guild name search ──
-            clubs = get_club_by_name(search_term, limit=5)
+            clubs = await get_club_by_name(search_term, limit=5)
             
             if not clubs or len(clubs) == 0:
                 embed = discord.Embed(title="❌ No Results", description=f"No guilds found matching `{search_term}`", color=discord.Color.red())
@@ -2875,7 +2875,7 @@ class WWMCog(commands.Cog):
             
             club_ids = [club.get('club_id') for club in clubs]
             hostnums = [club.get('hostnum', 10103) for club in clubs]
-            guild_infos = get_club_brief_info_batch(club_ids, hostnums) or []
+            guild_infos = await get_club_brief_info_batch(club_ids, hostnums) or []
             
             guild_info_map = {}
             for info in guild_infos:
@@ -3387,14 +3387,14 @@ class WWMCog(commands.Cog):
                 if not search_term:
                     await interaction.followup.send("❌ Please provide a valid guild name")
                     return
-                clubs = get_club_by_name(search_term, limit=5)
+                clubs = await get_club_by_name(search_term, limit=5)
                 if not clubs or len(clubs) == 0:
                     embed = discord.Embed(title="❌ No Results", color=discord.Color.red())
                     await interaction.followup.send(embed=embed)
                     return
                 club_ids = [club.get('club_id') for club in clubs]
                 hostnums = [club.get('hostnum', 10103) for club in clubs]
-                guild_infos = get_club_brief_info_batch(club_ids, hostnums) or []
+                guild_infos = await get_club_brief_info_batch(club_ids, hostnums) or []
                 guild_info_map = {}
                 for info in guild_infos:
                     info_club_id = info.get('club_id')
@@ -3427,7 +3427,7 @@ class WWMCog(commands.Cog):
             return
 
         try:
-            guild_data = get_full_guild_info(CLUB_ID)
+            guild_data = await get_full_guild_info(CLUB_ID)
             if not guild_data or 'result' not in guild_data:
                 await interaction.followup.send("❌ Failed to fetch guild data")
                 return
@@ -3437,7 +3437,7 @@ class WWMCog(commands.Cog):
             if not all_uids:
                 await interaction.followup.send("❌ No members found in guild")
                 return
-            bulk_data = get_bulk_players_info(all_uids, fields=["base"])
+            bulk_data = await get_bulk_players_info(all_uids, fields=["base"])
             if not bulk_data or bulk_data.get('code') != 0:
                 await interaction.followup.send("❌ Failed to fetch player info")
                 return
@@ -3473,7 +3473,7 @@ class WWMCog(commands.Cog):
     async def guild_inactive(self, interaction: discord.Interaction, point_threshold: int = 1500):
         await interaction.response.defer()
         try:
-            guild_data = get_full_guild_info(CLUB_ID)
+            guild_data = await get_full_guild_info(CLUB_ID)
             if not guild_data or 'result' not in guild_data:
                 await interaction.followup.send("❌ Failed to fetch guild data")
                 return
@@ -3482,7 +3482,7 @@ class WWMCog(commands.Cog):
             member_list = members.get('members', {})
             all_pids = list(member_list.keys())
 
-            bulk_data = get_bulk_players_info(all_pids, fields=["club", "base"])
+            bulk_data = await get_bulk_players_info(all_pids, fields=["club", "base"])
             if bulk_data and bulk_data.get('code') == 0:
                 players_result = bulk_data.get('result', {})
                 logger.debug(f"Fetched club info for {len(players_result)} players in bulk")
@@ -3564,7 +3564,7 @@ class WWMCog(commands.Cog):
         pulled_at_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
 
         # 1. Our guild data
-        our_data = get_full_guild_info(CLUB_ID)
+        our_data = await get_full_guild_info(CLUB_ID)
         if not our_data or 'result' not in our_data:
             logger.warning("Opponent reminder: failed to fetch our guild data")
             return OpponentGuildView(
@@ -3595,7 +3595,7 @@ class WWMCog(commands.Cog):
         opponent_hostnum = duishou.get('club_host', 10103)
 
         # 3. Opponent guild data
-        opp_data = get_full_guild_info(opponent_club_id, hostnum=opponent_hostnum)
+        opp_data = await get_full_guild_info(opponent_club_id, hostnum=opponent_hostnum)
         if not opp_data or 'result' not in opp_data:
             logger.warning(f"Opponent reminder: failed to fetch opponent guild {opponent_club_id}")
             return OpponentGuildView(
@@ -3627,7 +3627,7 @@ class WWMCog(commands.Cog):
         vice_leader_name = "None"
         pids_to_fetch = [pid for pid in (leader_pid, vice_leader_pid) if pid]
         if pids_to_fetch:
-            bulk = get_bulk_players_info(pids_to_fetch, fields=["base"])
+            bulk = await get_bulk_players_info(pids_to_fetch, fields=["base"])
             if bulk and bulk.get('code') == 0:
                 players = bulk.get('result', {})
                 if leader_pid in players:
@@ -3639,7 +3639,7 @@ class WWMCog(commands.Cog):
         online = 0
         all_pids = list(member_list.keys())
         if all_pids:
-            bulk = get_bulk_players_info(all_pids, fields=["base"])
+            bulk = await get_bulk_players_info(all_pids, fields=["base"])
             if bulk and bulk.get('code') == 0:
                 for pid, pdata in bulk.get('result', {}).items():
                     if pdata.get('base', {}).get('is_online', 0) == 1:

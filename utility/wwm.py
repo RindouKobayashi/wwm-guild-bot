@@ -1,9 +1,9 @@
 import sys
 import os
-import time as time_module
+import asyncio
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
-import requests
+import aiohttp
 import msgpack
 import json
 from typing import Dict, Any, Optional, List
@@ -53,6 +53,29 @@ ALL_KNOWN_FIELDS = [
 ]
 
 # -----------------------------------------------------------------------------
+# aiohttp session management
+# -----------------------------------------------------------------------------
+_aiohttp_session: Optional[aiohttp.ClientSession] = None
+
+
+async def get_session() -> aiohttp.ClientSession:
+    """Return the shared aiohttp session, creating it lazily if needed."""
+    global _aiohttp_session
+    if _aiohttp_session is None or _aiohttp_session.closed:
+        timeout = aiohttp.ClientTimeout(total=30)
+        _aiohttp_session = aiohttp.ClientSession(timeout=timeout)
+    return _aiohttp_session
+
+
+async def close_session():
+    """Close the shared aiohttp session. Call this on bot shutdown."""
+    global _aiohttp_session
+    if _aiohttp_session and not _aiohttp_session.closed:
+        await _aiohttp_session.close()
+        _aiohttp_session = None
+
+
+# -----------------------------------------------------------------------------
 # Helper: recursively convert bytes keys/values to str for json compatibility
 # -----------------------------------------------------------------------------
 def _convert_bytes_to_str(obj):
@@ -70,7 +93,7 @@ def _convert_bytes_to_str(obj):
 # -----------------------------------------------------------------------------
 # Base API Request Handler (all common logic in one place)
 # -----------------------------------------------------------------------------
-def _wwm_api_post(
+async def _wwm_api_post(
     url: str,
     payload: Dict[str, Any],
     uid: Optional[str] = None,
@@ -81,60 +104,71 @@ def _wwm_api_post(
     base_delay: float = 2.0
 ) -> Optional[Dict[str, Any]]:
     """
-    Internal base handler for all WWM MessagePack API requests
-    Handles packing, headers, request sending, unpacking and logging automatically
+    Internal base handler for all WWM MessagePack API requests.
+    Handles packing, headers, request sending, unpacking and logging automatically.
     Retries up to max_retries times on timeout/connection errors with exponential backoff.
+
+    This is a non-blocking async function that uses aiohttp instead of requests,
+    so it does not block the asyncio event loop.
     """
     headers = DEFAULT_HEADERS.copy()
-    
+
     # Override credentials if provided
     if uid:
         headers["h72-ms-uid"] = uid
     if token:
         headers["h72-ms-token"] = token
 
+    session = await get_session()
+    req_timeout = aiohttp.ClientTimeout(total=timeout)
+
     last_error = None
     for attempt in range(max_retries + 1):
         try:
             # Pack payload unless raw bytes are explicitly provided
             request_data = raw_payload if raw_payload is not None else msgpack.packb(payload)
-            
-            response = requests.post(
+
+            async with session.post(
                 url,
                 headers=headers,
                 data=request_data,
-                timeout=timeout,
-                verify=True,
-                allow_redirects=False
-            )
+                timeout=req_timeout,
+                allow_redirects=False,
+            ) as response:
+                logger.debug(f"API Request {url} status: {response.status}")
 
-            logger.debug(f"API Request {url} status: {response.status_code}")
+                if response.status == 200:
+                    body = await response.read()
+                    try:
+                        return msgpack.unpackb(
+                            body,
+                            raw=False,
+                            strict_map_key=False
+                        )
+                    except UnicodeDecodeError:
+                        logger.debug("Response contains non-UTF8 binary data, falling back to raw mode")
+                        raw_result = msgpack.unpackb(
+                            body,
+                            raw=True,
+                            strict_map_key=False
+                        )
+                        return _convert_bytes_to_str(raw_result)
 
-            if response.status_code == 200:
-                try:
-                    return msgpack.unpackb(
-                        response.content,
-                        raw=False,
-                        strict_map_key=False
-                    )
-                except UnicodeDecodeError:
-                    logger.debug("Response contains non-UTF8 binary data, falling back to raw mode")
-                    raw_result = msgpack.unpackb(
-                        response.content,
-                        raw=True,
-                        strict_map_key=False
-                    )
-                    return _convert_bytes_to_str(raw_result)
-            
-            logger.warning(f"API Request failed {url}: HTTP {response.status_code}")
-            return None
+                logger.warning(f"API Request failed {url}: HTTP {response.status}")
+                return None
 
-        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
+        except (
+            aiohttp.ClientTimeout,
+            aiohttp.ClientOSError,
+            aiohttp.ClientConnectorError,
+            ConnectionError,
+            OSError,
+        ) as e:
             last_error = e
             if attempt < max_retries:
                 delay = base_delay * (2 ** attempt)
                 logger.warning(f"API Request {url} timed out (attempt {attempt + 1}/{max_retries + 1}), retrying in {delay}s...")
-                time_module.sleep(delay)
+                await asyncio.sleep(delay)
             else:
                 logger.error(f"API Request failed {url} after {max_retries + 1} attempts: {str(e)}")
         except Exception as e:
@@ -143,19 +177,20 @@ def _wwm_api_post(
 
     return None
 
+
 # -----------------------------------------------------------------------------
 # Public API Functions
 # -----------------------------------------------------------------------------
-def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[str] = None, api_url: Optional[str] = None, fields: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
+async def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[str] = None, api_url: Optional[str] = None, fields: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
     """
     Get full player info by Number ID (two step lookup)
     1. Resolve Number ID to PID
     2. Fetch full player data from Redis endpoint
     """
     logger.debug(f"Resolving Number ID {number_id} to PID")
-    
+
     # Step 1: Resolve Number ID to PID
-    pid_result = _wwm_api_post(
+    pid_result = await _wwm_api_post(
         api_url if api_url else WWM_API_URL,
         {
             "uid": uid if uid else WWM_UID,
@@ -175,8 +210,8 @@ def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[s
 
     # Step 2: Get full player data
     logger.debug(f"Getting full player data for PID {player_pid}")
-    
-    redis_data = _wwm_api_post(
+
+    redis_data = await _wwm_api_post(
         WWM_CLUB_HOSTNUMS_URL,
         {
             "fields": fields if fields else DEFAULT_FIELDS,
@@ -193,11 +228,11 @@ def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[s
         first_pid = next(iter(redis_data['result'].keys()))
         full_player_data = redis_data['result'][first_pid]
         logger.debug("✅ Got full player data with signatures")
-        
+
         # Preserve hostnum from initial lookup response
         if 'hostnum' in pid_result['result']:
             full_player_data['hostnum'] = pid_result['result']['hostnum']
-            
+
         return {
             'code': 0,
             'result': full_player_data
@@ -208,11 +243,11 @@ def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[s
     return pid_result
 
 
-def get_full_guild_info(club_id: int, hostnum: int = 10103) -> Optional[Dict[str, Any]]:
+async def get_full_guild_info(club_id: int, hostnum: int = 10103) -> Optional[Dict[str, Any]]:
     """Get complete guild information including all fields"""
     logger.debug(f"Getting full guild info for club_id: {club_id}")
-    
-    return _wwm_api_post(
+
+    return await _wwm_api_post(
         WWM_FULL_GUILD_URL,
         {
             "club_id": club_id,
@@ -233,11 +268,11 @@ def get_full_guild_info(club_id: int, hostnum: int = 10103) -> Optional[Dict[str
         }
     )
 
-def get_custom_guild_info(club_id: int, hostnum: int = 10103, fields: Optional[Dict[str, list]] = None) -> Optional[Dict[str, Any]]:
+async def get_custom_guild_info(club_id: int, hostnum: int = 10103, fields: Optional[Dict[str, list]] = None) -> Optional[Dict[str, Any]]:
     """Get custom guild information with specified fields"""
     logger.debug(f"Getting custom guild info for club_id: {club_id} with fields: {fields}")
-    
-    return _wwm_api_post(
+
+    return await _wwm_api_post(
         WWM_FULL_GUILD_URL,
         {
             "club_id": club_id,
@@ -247,11 +282,11 @@ def get_custom_guild_info(club_id: int, hostnum: int = 10103, fields: Optional[D
         }
     )
 
-def get_topics_likes(target_uuid: str, target_hostnum: int) -> Optional[Dict[str, Any]]:
+async def get_topics_likes(target_uuid: str, target_hostnum: int) -> Optional[Dict[str, Any]]:
     """Get likes/unlikes count for a player's topics"""
     logger.debug(f"Getting topics likes for UUID: {target_uuid} | Hostnum: {target_hostnum}")
-    
-    return _wwm_api_post(
+
+    return await _wwm_api_post(
         WWM_TOPICS_LIKES_URL,
         {
             "group_number": 10001, # Assuming a default group number
@@ -269,11 +304,11 @@ def get_topics_likes(target_uuid: str, target_hostnum: int) -> Optional[Dict[str
     )
 
 
-def get_club_hostnums(player_pid: str) -> Optional[Dict[str, Any]]:
+async def get_club_hostnums(player_pid: str) -> Optional[Dict[str, Any]]:
     """Get club hostnum associations for a player"""
     logger.debug(f"Getting club hostnums for PID: {player_pid}")
-    
-    return _wwm_api_post(
+
+    return await _wwm_api_post(
         WWM_CLUB_HOSTNUMS_URL,
         {
             "fields": ["club"],
@@ -285,14 +320,14 @@ def get_club_hostnums(player_pid: str) -> Optional[Dict[str, Any]]:
     )
 
 
-def get_bulk_players_info(pid_list: List[str], fields: Optional[List[str]] = None, hostnum: int = 10595) -> Optional[Dict[str, Any]]:
+async def get_bulk_players_info(pid_list: List[str], fields: Optional[List[str]] = None, hostnum: int = 10595) -> Optional[Dict[str, Any]]:
     """Bulk fetch multiple players info in one API call"""
     if fields is None:
         fields = ["base"]
-    
+
     logger.debug(f"Bulk fetching {len(pid_list)} players")
-    
-    return _wwm_api_post(
+
+    return await _wwm_api_post(
         WWM_CLUB_HOSTNUMS_URL,
         {
             "fields": fields,
@@ -304,22 +339,22 @@ def get_bulk_players_info(pid_list: List[str], fields: Optional[List[str]] = Non
     )
 
 
-def get_bulk_hoard_data(pid_list: List[str], hostnum: int = 10595) -> Optional[Dict[str, Any]]:
+async def get_bulk_hoard_data(pid_list: List[str], hostnum: int = 10595) -> Optional[Dict[str, Any]]:
     """Bulk fetch hoard_profiteer data for multiple players in one API call.
-    
+
     Uses WWM_REDIS_PLAYER_URL which returns full player data including the
     hoard_profiteer field (price change history, main_good, stuff_profit, etc.).
-    
+
     Returns raw API response dict keyed by PID, or None on failure.
     """
     if not pid_list:
         return None
-    
+
     from settings import WWM_REDIS_PLAYER_URL
-    
+
     logger.debug(f"Bulk fetching hoard data for {len(pid_list)} players")
-    
-    return _wwm_api_post(
+
+    return await _wwm_api_post(
         WWM_REDIS_PLAYER_URL,
         {
             "fields": ["base", "hoard_profiteer"],
@@ -330,26 +365,26 @@ def get_bulk_hoard_data(pid_list: List[str], hostnum: int = 10595) -> Optional[D
         }
     )
 
-def get_fashion_plan(player_pid: str, hostnum: int = 10403, uid: Optional[str] = None, token: Optional[str] = None) -> Optional[Dict[str, Any]]:
+async def get_fashion_plan(player_pid: str, hostnum: int = 10403, uid: Optional[str] = None, token: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Get player fashion plan including cover image"""
     logger.debug(f"Getting fashion plan for PID: {player_pid} | hostnum: {hostnum}")
-    
+
     final_uid = uid if uid else WWM_UID
-    
+
     # Proper msgpack payload construction
     payload = {
         "uid": final_uid,
         "pid": player_pid,
         "hostnum": hostnum
     }
-    
+
     packed = msgpack.packb(payload, use_bin_type=True)
     # Append required trailing 0xa3 byte that game client sends
     packed += b'\xa3'
-    
+
     logger.debug(f"Fashion plan payload size: {len(packed)} bytes | hex: {packed.hex()}")
 
-    return _wwm_api_post(
+    return await _wwm_api_post(
         WWM_FASHION_PLAN_URL,
         {},
         uid=final_uid,
@@ -358,11 +393,11 @@ def get_fashion_plan(player_pid: str, hostnum: int = 10403, uid: Optional[str] =
     )
 
 
-def get_fashion_score(player_pid: str, hostnum: int = 10403) -> Optional[Dict[str, Any]]:
+async def get_fashion_score(player_pid: str, hostnum: int = 10403) -> Optional[Dict[str, Any]]:
     """Get player fashion score (elegance rating)"""
     logger.debug(f"Getting fashion score for PID: {player_pid} | hostnum: {hostnum}")
-    
-    return _wwm_api_post(
+
+    return await _wwm_api_post(
         WWM_FASHION_SCORE_URL,
         {
             "uid": WWM_UID,
@@ -372,11 +407,11 @@ def get_fashion_score(player_pid: str, hostnum: int = 10403) -> Optional[Dict[st
     )
 
 
-def get_film_plan(plan_id: str) -> Optional[Dict[str, Any]]:
+async def get_film_plan(plan_id: str) -> Optional[Dict[str, Any]]:
     """Get exhibition/dance video plan details by plan_id"""
     logger.debug(f"Getting film plan for plan_id: {plan_id}")
-    
-    return _wwm_api_post(
+
+    return await _wwm_api_post(
         WWM_FILM_PLAN_URL,
         {
             "plan_id": plan_id,
@@ -384,11 +419,11 @@ def get_film_plan(plan_id: str) -> Optional[Dict[str, Any]]:
         }
     )
 
-def get_teams_info(team_hostnum: int, team_id: str) -> Optional[Dict[str, Any]]:
+async def get_teams_info(team_hostnum: int, team_id: str) -> Optional[Dict[str, Any]]:
     """Get team info including members pid, hostnum and oversea_tag"""
     logger.debug(f"Getting team info for team_id: {team_id} | hostnum: {team_hostnum}")
-    
-    return _wwm_api_post(
+
+    return await _wwm_api_post(
         WWM_TEAMS_INFO_URL,
         {
             "hostnum2tids": {
@@ -403,7 +438,7 @@ def get_teams_info(team_hostnum: int, team_id: str) -> Optional[Dict[str, Any]]:
     )
 
 
-def get_club_brief_info_batch(club_ids: List[str], hostnums: List[int]) -> Optional[List[Dict]]:
+async def get_club_brief_info_batch(club_ids: List[str], hostnums: List[int]) -> Optional[List[Dict]]:
     """
     Fetch brief info for multiple clubs in batch (name, member count, apprentice count).
     Args:
@@ -413,52 +448,51 @@ def get_club_brief_info_batch(club_ids: List[str], hostnums: List[int]) -> Optio
         List of dicts with base['name'], members['member_num'], members['apprentice_num'], club_id, etc.
     """
     logger.debug(f"Fetching brief info for {len(club_ids)} clubs in batch")
-    
+
     payload = {
         "club_list": [{"club_id": cid, "hostnum": hnum} for cid, hnum in zip(club_ids, hostnums)],
         "uid": WWM_UID
     }
-    
-    response = _wwm_api_post(WWM_CLUB_BRIEF_INFO_BATCH_URL, payload)
-    
+
+    response = await _wwm_api_post(WWM_CLUB_BRIEF_INFO_BATCH_URL, payload)
+
     if response and 'result' in response and 'data' in response['result']:
         data = response['result']['data']
         logger.debug(f"Received brief info for {len(data)} clubs")
         return data
-    
+
     logger.warning("Failed to fetch club brief info batch")
     return None
 
 
-def get_club_by_number_id(club_number_id: int) -> Optional[Dict[str, Any]]:
+async def get_club_by_number_id(club_number_id: int) -> Optional[Dict[str, Any]]:
     """
     Look up a club/guild directly by its numeric club number_id.
     Args:
         club_number_id: The numeric club/guild number_id
-        hostnum: The hostnum (default 10103)
     Returns:
         Dict with 'base', 'members', 'club_id', 'hostnum' keys, or None if not found.
     """
     logger.debug(f"Looking up club by number_id: '{club_number_id}'")
-    
+
     payload = {
         "number_id": club_number_id,
         "uid": WWM_UID,
         "group_number": 10001,
     }
-    
-    response = _wwm_api_post(WWM_GET_CLUB_BY_NUMBER_ID_URL, payload)
-    
+
+    response = await _wwm_api_post(WWM_GET_CLUB_BY_NUMBER_ID_URL, payload)
+
     if response and 'result' in response and 'data' in response['result']:
         data = response['result']['data']
         logger.debug(f"Found club by number_id '{club_number_id}': {data.get('base', {}).get('name', 'Unknown')}")
         return data
-    
+
     logger.warning(f"No club found for number_id: '{club_number_id}'")
     return None
 
 
-def get_club_by_name(club_name: str, limit: int = 5, start: int = 0) -> Optional[List[Dict]]:
+async def get_club_by_name(club_name: str, limit: int = 5, start: int = 0) -> Optional[List[Dict]]:
     """
     Search for clubs/guilds by name.
     Args:
@@ -469,7 +503,7 @@ def get_club_by_name(club_name: str, limit: int = 5, start: int = 0) -> Optional
         List of dicts with club_id and hostnum, or None if no results
     """
     logger.debug(f"Searching for clubs with name: '{club_name}' (limit: {limit}, start: {start})")
-    
+
     payload = {
         "club_name": club_name,
         "limit": limit,
@@ -477,37 +511,37 @@ def get_club_by_name(club_name: str, limit: int = 5, start: int = 0) -> Optional
         "uid": WWM_UID,
         "group_number": 10001
     }
-    
-    response = _wwm_api_post(WWM_CLUB_BY_NAME_URL, payload)
-    
+
+    response = await _wwm_api_post(WWM_CLUB_BY_NAME_URL, payload)
+
     if response and 'result' in response and 'results' in response['result']:
         clubs = response['result']['results']
         logger.debug(f"Found {len(clubs)} clubs matching '{club_name}'")
         return clubs
-    
+
     logger.debug(f"No clubs found matching '{club_name}'")
     return None
 
 
-def find_people_by_nickname(nickname: str) -> Optional[Dict[str, Any]]:
+async def find_people_by_nickname(nickname: str) -> Optional[Dict[str, Any]]:
     """
     Search for a player by their in-game nickname.
     Returns player info including 'id' (PID) and 'hostnum'.
     """
     logger.debug(f"Searching for player by nickname: '{nickname}'")
-    
+
     if not WWM_FIND_PEOPLE_BY_NICKNAME_URL:
         logger.error("WWM_FIND_PEOPLE_BY_NICKNAME_URL is not configured")
         return None
-    
+
     payload = {
         "nickname": nickname,
         "uid": WWM_UID,
         "force_search": False
     }
-    
-    response = _wwm_api_post(WWM_FIND_PEOPLE_BY_NICKNAME_URL, payload)
-    
+
+    response = await _wwm_api_post(WWM_FIND_PEOPLE_BY_NICKNAME_URL, payload)
+
     if response and 'result' in response:
         people_info = response['result']
         logger.debug(f"Found player by nickname: {people_info.get('id', 'unknown')}")
@@ -515,19 +549,19 @@ def find_people_by_nickname(nickname: str) -> Optional[Dict[str, Any]]:
             'code': 0,
             'result': people_info
         }
-    
+
     logger.warning(f"No player found for nickname: '{nickname}'")
     return response
 
 
-def fetch_player_data_by_pid(player_pid: str, uid: Optional[str] = None, token: Optional[str] = None, hostnum: int = 10595) -> Optional[Dict[str, Any]]:
+async def fetch_player_data_by_pid(player_pid: str, uid: Optional[str] = None, token: Optional[str] = None, hostnum: int = 10595) -> Optional[Dict[str, Any]]:
     """
     Fetch full player data directly by PID (player ID) from the Redis endpoint.
     This is used after resolving a player's PID via nickname lookup.
     """
     logger.debug(f"Fetching full player data for PID: {player_pid}")
-    
-    redis_data = _wwm_api_post(
+
+    redis_data = await _wwm_api_post(
         WWM_CLUB_HOSTNUMS_URL,
         {
             "fields": DEFAULT_FIELDS,
@@ -539,7 +573,7 @@ def fetch_player_data_by_pid(player_pid: str, uid: Optional[str] = None, token: 
         uid=uid,
         token=token
     )
-    
+
     if redis_data and 'result' in redis_data and redis_data['result']:
         first_pid = next(iter(redis_data['result'].keys()))
         full_player_data = redis_data['result'][first_pid]
@@ -548,15 +582,15 @@ def fetch_player_data_by_pid(player_pid: str, uid: Optional[str] = None, token: 
             'code': 0,
             'result': full_player_data
         }
-    
+
     logger.warning("Failed to fetch player data by PID")
     return None
 
 
-def get_club_chat(club_id: str, hostnum: int = 10103) -> Optional[Dict[str, Any]]:
+async def get_club_chat(club_id: str, hostnum: int = 10103) -> Optional[Dict[str, Any]]:
     """Fetch latest club chat messages"""
     logger.debug(f"Fetching club chat for club_id: {club_id} (hostnum: {hostnum})")
-    
+
     payload = {
         "club_id": club_id,
         "hostnum": hostnum,
@@ -565,20 +599,20 @@ def get_club_chat(club_id: str, hostnum: int = 10103) -> Optional[Dict[str, Any]
         },
         "uid": WWM_UID
     }
-    
-    return _wwm_api_post(WWM_CLUB_CHAT_URL, payload)
+
+    return await _wwm_api_post(WWM_CLUB_CHAT_URL, payload)
 
 
-def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
+async def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
     """Complete player + guild lookup workflow"""
     print(f"\n🔍 Looking up player with number_id: {number_id}")
-    
+
     # Step 1: Get player info
     # call with all available fields to get hostnum and club info in one go
-    player_data = get_player_info(number_id, fields=ALL_KNOWN_FIELDS)
+    player_data = await get_player_info(number_id, fields=ALL_KNOWN_FIELDS)
     player = player_data.get('result', {}) if player_data else {}
     player_pid = player.get('id')
-    
+
     print(f"\n✅ Found player: {player.get('name')}")
     print(f"✅ Player PID: {player_pid}")
     print("\n" + "="*60)
@@ -589,8 +623,8 @@ def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
     if player_pid:
         # Step 2: Get club info for player
         print(f"\n🏰 Getting club info for this player...")
-        club_data = get_club_hostnums(player_pid)
-        
+        club_data = await get_club_hostnums(player_pid)
+
         print("\n" + "="*60)
 
         # Step 3: Get full guild data
@@ -598,10 +632,10 @@ def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
             result_data = club_data.get('result', {})
             club_player_data = result_data.get(player_pid, {})
             club_id = club_player_data.get('club', {}).get('club_id')
-            
+
             if club_id:
                 print(f"\n🏯 Getting full guild data for club_id: {club_id}")
-                full_guild_data = get_full_guild_info(club_id)
+                full_guild_data = await get_full_guild_info(club_id)
 
     # Combine all data
     combined_data = {
@@ -615,13 +649,13 @@ def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
     filename = f"data/{number_id}.json"
     with open(filename, 'w', encoding='utf-8') as f:
         json.dump(combined_data, f, indent=4, default=str, ensure_ascii=False)
-    
+
     print(f"\n✅ All data combined and saved to: {filename}")
-    
+
     return combined_data
 
 
-def get_sect_election_ranking(school_id: int, limit: int = 5) -> Optional[Dict[str, Any]]:
+async def get_sect_election_ranking(school_id: int, limit: int = 5) -> Optional[Dict[str, Any]]:
     """Fetch the top election candidates for a given sect/school.
 
     Args:
@@ -646,13 +680,18 @@ def get_sect_election_ranking(school_id: int, limit: int = 5) -> Optional[Dict[s
 
     # The rank endpoint appends rank_name to the base URL
     url = RANK_GET_RANKLIST_URL + rank_name
-    return _wwm_api_post(url, payload)
+    return await _wwm_api_post(url, payload)
 
 
 if __name__ == "__main__":
     # CONFIG: Just change this number_id to lookup any player
     TARGET_NUMBER_ID = "1028077590" # 4036668451 | 4033283420 | 1069034222 | 0013538244
-    
-    combined_data = get_full_player_and_club(TARGET_NUMBER_ID)
-    
-    print("\n✅ Done.")
+
+    async def _main():
+        try:
+            combined_data = await get_full_player_and_club(TARGET_NUMBER_ID)
+            print("\n✅ Done.")
+        finally:
+            await close_session()
+
+    asyncio.run(_main())

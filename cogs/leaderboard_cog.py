@@ -136,7 +136,7 @@ CLUB_INFO_URL = WWM_FULL_GUILD_URL
 BA_PLAY_TYPE = 13
 
 
-def _fetch_ba_schedule() -> Dict[str, Any]:
+async def _fetch_ba_schedule() -> Dict[str, Any]:
     """
     Fetch the guild club info and extract Breaking Army (play type 13) schedule.
     Returns dict with session "1" and "2" schedule info + boss_id, or empty dict on failure.
@@ -151,7 +151,7 @@ def _fetch_ba_schedule() -> Dict[str, Any]:
         "hostnum": 10103
     }
     try:
-        response = _wwm_api_post(CLUB_INFO_URL, payload)
+        response = await _wwm_api_post(CLUB_INFO_URL, payload)
         if not response or 'result' not in response:
             logger.warning("BA schedule: failed to fetch club info")
             return {}
@@ -645,7 +645,7 @@ class LeaderboardView(LayoutView):
 
         try:
             fields, hostnum = LB_API_FIELDS.get(self.lb_type, (["attr", "base"], 10595))
-            resp = _wwm_api_post(
+            resp = await _wwm_api_post(
                 WWM_REDIS_PLAYER_URL,
                 {
                     "fields": fields,
@@ -822,7 +822,7 @@ class LeaderboardCog(commands.Cog):
         schedule = _load_ba_schedule_cache()
         if not schedule:
             logger.warning("BA timing: no schedule available, refreshing...")
-            schedule = _fetch_ba_schedule()
+            schedule = await _fetch_ba_schedule()
             if not schedule:
                 logger.error("BA timing: cannot determine active session without schedule")
                 return
@@ -909,7 +909,7 @@ class LeaderboardCog(commands.Cog):
             # We'll attempt to look up by nickname from the bulk API
             try:
                 from utility.wwm import find_people_by_nickname
-                result = await asyncio.to_thread(find_people_by_nickname, nickname)
+                result = await find_people_by_nickname(nickname)
                 if result and 'result' in result:
                     pid = result['result'].get('id')
             except Exception as e:
@@ -948,11 +948,11 @@ class LeaderboardCog(commands.Cog):
                     logger.error(f"BA timing: failed to refresh leaderboard: {e}")
 
     # ── BA Schedule Refresh ───────────────────────────────────────────
-    def _refresh_ba_schedule_if_needed(self):
+    async def _refresh_ba_schedule_if_needed(self):
         """Fetch BA schedule from API if cache is stale (every 5 minutes)."""
         now = datetime.datetime.now(datetime.timezone.utc).timestamp()
         if now - self._last_ba_schedule_refresh > 300:  # 5 min
-            schedule = _fetch_ba_schedule()
+            schedule = await _fetch_ba_schedule()
             if schedule:
                 _save_ba_schedule_cache(schedule)
             self._last_ba_schedule_refresh = now
@@ -963,7 +963,7 @@ class LeaderboardCog(commands.Cog):
     async def _fetch_data(self, lb_type: str) -> Tuple[List[dict], int]:
         if lb_type == "breaking_army":
             # Refresh BA schedule periodically
-            self._refresh_ba_schedule_if_needed()
+            await self._refresh_ba_schedule_if_needed()
             entries, total, state = _build_ba_leaderboard_data()
             # Store session_state for publishing
             self._ba_session_state = state
@@ -987,7 +987,7 @@ class LeaderboardCog(commands.Cog):
         for i in range(0, len(all_pids), BATCH):
             batch = all_pids[i:i + BATCH]
             try:
-                resp = _wwm_api_post(
+                resp = await _wwm_api_post(
                     WWM_REDIS_PLAYER_URL,
                     {"fields": fields, "hostnum2pids": {hostnum: batch}},
                 )

@@ -1949,7 +1949,7 @@ class LiveChatCog(commands.Cog):
             
         try:
             # Fetch chat data in thread pool (avoid blocking event loop)
-            chat_result = await asyncio.to_thread(get_club_chat, self.CLUB_ID, self.HOSTNUM)
+            chat_result = await get_club_chat(self.CLUB_ID, self.HOSTNUM)
             
             if not chat_result or 'result' not in chat_result or 'chat' not in chat_result['result']:
                 logger.debug("No chat data received")
@@ -2040,7 +2040,7 @@ class LiveChatCog(commands.Cog):
                 logger.debug(f"🔔 Found {len(new_messages)} new chat messages")
 
                 # Call guild api so that we can get rank of sender and other info that might not be included in chat message data
-                self.ranks = await asyncio.to_thread(get_custom_guild_info, self.CLUB_ID, self.HOSTNUM, {'members': ['custom_posts']})
+                self.ranks = await get_custom_guild_info(self.CLUB_ID, self.HOSTNUM, {'members': ['custom_posts']})
                 self.ranks = self.ranks.get('result', {}).get('members', {}).get('custom_posts', {}) if self.ranks else {}
                 #logger.info(f"Ranks data: {self.ranks}")
                 # Load PID -> Discord user mapping from guild verification database
@@ -2196,7 +2196,7 @@ class LiveChatCog(commands.Cog):
             # Check if this is an Exhibition (dance video)
             if message_type_label == "[Exhibition]" and plan_id:
                 # Fetch video details via film plan API
-                film_data = await asyncio.to_thread(get_film_plan, plan_id)
+                film_data = await get_film_plan(plan_id)
                 if film_data and 'result' in film_data:
                     video_url = film_data['result'].get('video_url', '')
                     video_name = film_data['result'].get('name', artwork_name)
@@ -2223,7 +2223,7 @@ class LiveChatCog(commands.Cog):
             team_hostnum = extra_data.get('team_hostnum')
             if team_id and team_hostnum:
                 # Fetch team details via teams info API
-                team_data = await asyncio.to_thread(get_teams_info, team_hostnum, team_id)
+                team_data = await get_teams_info(team_hostnum, team_id)
                 if team_data and 'result' in team_data and team_id in team_data['result']:
                     members_data = team_data['result'][team_id].get('members', {}).get('members', [])
                     
@@ -2238,7 +2238,7 @@ class LiveChatCog(commands.Cog):
                     # Fetch nickname, level and kongfu for all members
                     member_info = {}
                     for m_hostnum, pids in hostnum_pids.items():
-                        bulk_result = await asyncio.to_thread(get_bulk_players_info, pids, ["base", "kongfu"], m_hostnum)
+                        bulk_result = await get_bulk_players_info(pids, ["base", "kongfu"], m_hostnum)
                         if bulk_result and 'result' in bulk_result:
                             for pid_key, player_data in bulk_result['result'].items():
                                 base_info = player_data.get('base', {})
@@ -2356,7 +2356,7 @@ class LiveChatCog(commands.Cog):
         if sender_pid:
             try:
                 sender_hostnum = msg.get('hostnum', 10595)
-                bulk_data = await asyncio.to_thread(get_bulk_players_info, [sender_pid], ["base", "team"], sender_hostnum)
+                bulk_data = await get_bulk_players_info([sender_pid], ["base", "team"], sender_hostnum)
                 if bulk_data and 'result' in bulk_data:
                     player_info = bulk_data['result'].get(str(sender_pid), {})
                     if player_info:
@@ -2369,7 +2369,7 @@ class LiveChatCog(commands.Cog):
                         team_hostnum = team_data.get('hostnum')
                         
                         if team_id and team_hostnum:
-                            team_result = await asyncio.to_thread(get_teams_info, team_hostnum, team_id)
+                            team_result = await get_teams_info(team_hostnum, team_id)
                             if team_result and 'result' in team_result and team_id in team_result['result']:
                                 members_data = team_result['result'][team_id].get('members', {}).get('members', [])
                                 if members_data:
@@ -2384,7 +2384,7 @@ class LiveChatCog(commands.Cog):
                                     # Fetch nickname, level and kongfu for all members
                                     member_info = {}
                                     for m_hostnum, pids in hostnum_pids.items():
-                                        bulk_result = await asyncio.to_thread(get_bulk_players_info, pids, ["base", "kongfu"], m_hostnum)
+                                        bulk_result = await get_bulk_players_info(pids, ["base", "kongfu"], m_hostnum)
                                         if bulk_result and 'result' in bulk_result:
                                             for pid_key, player_data in bulk_result['result'].items():
                                                 base_info = player_data.get('base', {})
@@ -2669,7 +2669,7 @@ class LiveChatCog(commands.Cog):
             artwork_data = ext.get("extra_data", {}).get("artwork_data", {}) or {}
             plan_id = artwork_data.get("plan_id", "") or ""
             if plan_id:
-                film_data = await asyncio.to_thread(get_film_plan, plan_id)
+                film_data = await get_film_plan(plan_id)
                 if film_data and "result" in film_data:
                     video_url = film_data["result"].get("video_url", "") or ""
                     if video_url:

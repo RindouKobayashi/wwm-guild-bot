@@ -58,6 +58,8 @@ async def main():
     finally:
         logger.info("Closing bot...")
         await bot.close()
+        from utility.wwm import close_session
+        await close_session()
         logger.info("Bot closed successfully.")
 
 def run():
