@@ -158,7 +158,7 @@ async def _wwm_api_post(
                 return None
 
         except (
-            aiohttp.ClientTimeout,
+            asyncio.TimeoutError,
             aiohttp.ClientOSError,
             aiohttp.ClientConnectorError,
             ConnectionError,
