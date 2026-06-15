@@ -167,7 +167,8 @@ class ChatMessageView(LayoutView):
             container_children.append(section)
         else:
             container_children.append(TextDisplay(f"**{author_name}**"))
-            container_children.append(TextDisplay(body_text))
+            if body_text:
+                container_children.append(TextDisplay(body_text))
 
         container_children.append(Separator(spacing=discord.SeparatorSpacing.small))
         footer = f"<t:{ts}:F> (<t:{ts}:R>)"
@@ -2704,6 +2705,10 @@ class LiveChatCog(commands.Cog):
             if msg_type == "msg_artwork_card":
                 artwork_data = ext.get("extra_data", {}).get("artwork_data", {}) or {}
                 picture_url = artwork_data.get("picture_url", "") or None
+            # Skip messages with no meaningful content (e.g. empty
+            # hongbao_auto_reply_msg where body_text is stripped to "").
+            if not body_text and not picture_url:
+                return
             view = ChatMessageView(
                 author_name=author_name,
                 body_text=body_text,
