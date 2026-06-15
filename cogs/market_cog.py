@@ -705,6 +705,15 @@ class MarketCog(commands.Cog):
                     added_at INTEGER
                 )
             """)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS guild_cache (
+                    club_id INTEGER NOT NULL,
+                    hostnum INTEGER NOT NULL DEFAULT 10595,
+                    guild_name TEXT NOT NULL,
+                    last_updated INTEGER NOT NULL,
+                    PRIMARY KEY (club_id, hostnum)
+                )
+            """)
             await db.commit()
 
     async def _load_config(self):
@@ -780,10 +789,14 @@ class MarketCog(commands.Cog):
         await self._load_config()
         if not self.daily_market_report.is_running():
             self.daily_market_report.start()
+        if not self.refresh_guild_names.is_running():
+            self.refresh_guild_names.start()
 
     async def cog_unload(self):
         if self.daily_market_report.is_running():
             self.daily_market_report.cancel()
+        if self.refresh_guild_names.is_running():
+            self.refresh_guild_names.cancel()
 
     # -- Force refresh ----------------------------------------------------
     async def _refresh_dashboard(self):
@@ -792,6 +805,66 @@ class MarketCog(commands.Cog):
             await self._build_and_send_report()
         except Exception as e:
             logger.error(f"Market cog: dashboard refresh failed: {e}", exc_info=True)
+
+    # -- Guild name cache -------------------------------------------------
+    async def _resolve_guild_name(self, club_id: int, hostnum: int = 10595) -> str:
+        """Look up guild name from cache; fetch and store if not cached."""
+        if not club_id:
+            return 'Unknown'
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute(
+                "SELECT guild_name FROM guild_cache WHERE club_id = ? AND hostnum = ?",
+                (club_id, hostnum)
+            )
+            row = await cursor.fetchone()
+            if row:
+                return row[0]
+        # Not in cache — fetch from API and store
+        guild_name = 'Unknown'
+        try:
+            guild_full_data = await get_full_guild_info(club_id, hostnum=hostnum, fields={'base': []})
+            if guild_full_data and 'result' in guild_full_data:
+                guild_name = guild_full_data['result'].get('base', {}).get('name', 'Unknown')
+        except Exception as e:
+            logger.debug(f"Market cog: failed to fetch guild info for club {club_id}: {e}")
+        now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "REPLACE INTO guild_cache (club_id, hostnum, guild_name, last_updated) VALUES (?, ?, ?, ?)",
+                (club_id, hostnum, guild_name, now_ts)
+            )
+            await db.commit()
+        logger.debug(f"Market cog: cached guild name '{guild_name}' for club {club_id} (hostnum {hostnum})")
+        return guild_name
+
+    async def _refresh_all_guild_names(self):
+        """Re-fetch all cached guild names to detect renames. Run once daily."""
+        logger.info("Market cog: starting daily guild name refresh")
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT club_id, hostnum, guild_name FROM guild_cache")
+            rows = await cursor.fetchall()
+        updated = 0
+        now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        for club_id, hostnum, old_name in rows:
+            try:
+                guild_full_data = await get_full_guild_info(club_id, hostnum=hostnum, fields={'base': []})
+                if guild_full_data and 'result' in guild_full_data:
+                    new_name = guild_full_data['result'].get('base', {}).get('name', old_name)
+                else:
+                    new_name = old_name
+            except Exception as e:
+                logger.debug(f"Market cog: daily refresh failed for club {club_id}: {e}")
+                continue
+            if new_name != old_name:
+                async with aiosqlite.connect(self.db_path) as db:
+                    await db.execute(
+                        "REPLACE INTO guild_cache (club_id, hostnum, guild_name, last_updated) VALUES (?, ?, ?, ?)",
+                        (club_id, hostnum, new_name, now_ts)
+                    )
+                    await db.commit()
+                logger.info(f"Market cog: guild renamed — club {club_id}: '{old_name}' → '{new_name}'")
+                updated += 1
+        logger.info(f"Market cog: daily guild name refresh complete — {len(rows)} checked, {updated} updated")
 
     # -- Core data fetching ------------------------------------------------
     async def _get_all_player_pids(self) -> List[str]:
@@ -875,9 +948,7 @@ class MarketCog(commands.Cog):
             club_hostnum = club_info.get('hostnum', 10595)
             guild_name = 'Unknown'
             if club_id != 0:
-                guild_full_data = await get_full_guild_info(club_id, hostnum=club_hostnum, fields={'base': []})
-                if guild_full_data and 'result' in guild_full_data:
-                    guild_name = guild_full_data['result'].get('base').get('name', 'Unknown')
+                guild_name = await self._resolve_guild_name(club_id, club_hostnum)
             is_online = base.get('is_online', 0) == 1
             logout_time = base.get('logout_time', 0) or base.get('last_online_ts', 0)
             if not is_online and logout_time < day_start_ts:
@@ -1113,6 +1184,19 @@ class MarketCog(commands.Cog):
                 await self._build_and_send_report()
             except Exception as e:
                 logger.error(f"Market cog: initial report build failed: {e}")
+
+    # -- Daily guild name refresh -----------------------------------------
+    @tasks.loop(hours=24)
+    async def refresh_guild_names(self):
+        """Once a day, re-fetch all cached guild names to detect renames."""
+        try:
+            await self._refresh_all_guild_names()
+        except Exception as e:
+            logger.error(f"Market cog: daily guild name refresh failed: {e}", exc_info=True)
+
+    @refresh_guild_names.before_loop
+    async def before_refresh_guild_names(self):
+        await self.bot.wait_until_ready()
 
     # -- Slash commands ---------------------------------------------------
     @market_group.command(name="report", description="Force-trigger a fresh market price report")
@@ -1395,17 +1479,12 @@ class MarketCog(commands.Cog):
             likes = await self._fetch_market_likes(pid, player_hostnum) if pid else 0
             logger.debug(f"PID {pid} HOSTNUM {player_hostnum} has {likes} likes")
 
-            # Fetch guild name from club_info
+            # Fetch guild name from club_info (via cache)
             guild_name = ''
             club_info = player_entry.get('club_info', {}) if isinstance(player_entry, dict) else {}
             club_id = club_info.get('club_id', 0)
             if club_id:
-                try:
-                    guild_full_data = await get_full_guild_info(club_id, hostnum=player_hostnum)
-                    if guild_full_data and 'result' in guild_full_data:
-                        guild_name = guild_full_data['result'].get('name', 'Unknown')
-                except Exception:
-                    pass
+                guild_name = await self._resolve_guild_name(club_id, player_hostnum)
 
             view = MarketPlayerView(
                 cog=self,
