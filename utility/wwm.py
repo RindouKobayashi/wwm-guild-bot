@@ -52,6 +52,20 @@ ALL_KNOWN_FIELDS = [
     "hoard_profiteer", "activity"
 ]
 
+# Default Guild FIELDS
+DEFAULT_GUILD_FIELDS = {
+    "warehouse": [],
+    "applys": [],
+    "building": [],
+    "members": [],
+    "activity": [],
+    "custom_activity": [],
+    "targets": [],
+    "play": [],
+    "base": [],
+    "bonus": []
+}
+
 # -----------------------------------------------------------------------------
 # aiohttp session management
 # -----------------------------------------------------------------------------
@@ -243,7 +257,7 @@ async def get_player_info(number_id: str, uid: Optional[str] = None, token: Opti
     return pid_result
 
 
-async def get_full_guild_info(club_id: int, hostnum: int = 10103) -> Optional[Dict[str, Any]]:
+async def get_full_guild_info(club_id: int, hostnum: int = 10103, fields: Optional[Dict[str, list]] = None) -> Optional[Dict[str, Any]]:
     """Get complete guild information including all fields"""
     logger.debug(f"Getting full guild info for club_id: {club_id}")
 
@@ -252,18 +266,7 @@ async def get_full_guild_info(club_id: int, hostnum: int = 10103) -> Optional[Di
         {
             "club_id": club_id,
             "uid": WWM_UID,
-            "field_info": {
-                "warehouse": [],
-                "applys": [],
-                "building": [],
-                "members": [],
-                "activity": [],
-                "custom_activity": [],
-                "targets": [],
-                "play": [],
-                "base": [],
-                "bonus": []
-            },
+            "field_info": fields if fields else DEFAULT_GUILD_FIELDS,
             "hostnum": hostnum
         }
     )
@@ -357,7 +360,7 @@ async def get_bulk_hoard_data(pid_list: List[str], hostnum: int = 10595) -> Opti
     return await _wwm_api_post(
         WWM_REDIS_PLAYER_URL,
         {
-            "fields": ["base", "hoard_profiteer"],
+            "fields": ["base", "hoard_profiteer", "club"],
             "hostnum2pids": {
                 hostnum: pid_list
             },

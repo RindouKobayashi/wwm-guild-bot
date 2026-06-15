@@ -306,6 +306,7 @@ class MarketPlayerView(LayoutView):
         good_has_name: bool = False,
         good_name: str = "",
         likes: int = 0,
+        guild_name: str = "",
     ):
         super().__init__(timeout=180)
         self.cog = cog
@@ -315,11 +316,14 @@ class MarketPlayerView(LayoutView):
         self.main_good = main_good
         self.price_history = price_history or []
         self.good_name = good_name or ""
+        self.guild_name = guild_name or ""
 
         inner: list = []
 
         # Stats text
         lines = [f"# 📈 Market Stats — {nickname}"]
+        if self.guild_name and self.guild_name != 'Unknown':
+            lines.append(f"**Guild:** *{self.guild_name}*")
         lines.append(f"**Number ID:** `{number_id}`")
         good_label = f"{good_name} (#{main_good})" if good_name else f"#{main_good}"
         lines.append(f"**Main Good:** `{good_label}`")
@@ -420,7 +424,7 @@ class MarketReportView(LayoutView):
     def __init__(
         self,
         cog: "MarketCog",
-        grouped_data: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int]]],
+        grouped_data: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str]]],
         total_players: int,
         report_ts: int,
         next_update_ts: int,
@@ -456,7 +460,7 @@ class MarketReportView(LayoutView):
 
             # Build leaderboard lines
             lines = []
-            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum) in enumerate(players[:10], 1):
+            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name) in enumerate(players[:10], 1):
                 if rank == 1:
                     prefix = "🥇"
                 elif rank == 2:
@@ -468,8 +472,9 @@ class MarketReportView(LayoutView):
 
                 sign = "+" if pct >= 0 else ""
                 online_icon = "🟢" if is_online else "⚫"
+                guild_display = f" — *{guild_name}*" if guild_name and guild_name != 'Unknown' else ""
                 lines.append(
-                    f"{prefix} {online_icon} **{nickname}** ({number_id})  ─  "
+                    f"{prefix} {online_icon} **{nickname}** ({number_id}){guild_display}  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                 )
 
@@ -515,7 +520,7 @@ class MarketReportView(LayoutView):
         await interaction.response.defer(ephemeral=True)
 
         # Filter each good group to only include online players
-        filtered: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int]]] = {}
+        filtered: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str]]] = {}
         total_filtered = 0
         for good_id, players in self.grouped_data.items():
             online_players = [p for p in players if p[6]]  # is_online is index 6
@@ -538,11 +543,12 @@ class MarketReportView(LayoutView):
             label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
 
             lines.append(f"### {emoji} {label} — {len(players)} online")
-            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum) in enumerate(players[:10], 1):
+            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name) in enumerate(players[:10], 1):
                 prefix = ["🥇", "🥈", "🥉"][rank - 1] if rank <= 3 else f"`{rank}.`"
                 sign = "+" if pct >= 0 else ""
+                guild_display = f" — *{guild_name}*" if guild_name and guild_name != 'Unknown' else ""
                 lines.append(
-                    f"{prefix} 🟢 **{nickname}** ({number_id})  ─  "
+                    f"{prefix} 🟢 **{nickname}** ({number_id}){guild_display}  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                 )
             lines.append("")
@@ -864,6 +870,14 @@ class MarketCog(commands.Cog):
         qualifying_players: List[Dict] = []
         for pid, player_entry in players_data.items():
             base = player_entry.get('base', {}) if isinstance(player_entry, dict) else {}
+            club_info = player_entry.get('club', {}) if isinstance(player_entry, dict) else {}
+            club_id = club_info.get('club_id', 0)
+            club_hostnum = club_info.get('hostnum', 10595)
+            guild_name = 'Unknown'
+            if club_id != 0:
+                guild_full_data = await get_full_guild_info(club_id, hostnum=club_hostnum, fields={'base': []})
+                if guild_full_data and 'result' in guild_full_data:
+                    guild_name = guild_full_data['result'].get('base').get('name', 'Unknown')
             is_online = base.get('is_online', 0) == 1
             logout_time = base.get('logout_time', 0) or base.get('last_online_ts', 0)
             if not is_online and logout_time < day_start_ts:
@@ -873,6 +887,7 @@ class MarketCog(commands.Cog):
                 'player_entry': player_entry,
                 'base': base,
                 'is_online': is_online,
+                'guild_name': guild_name
             })
 
         if not qualifying_players:
@@ -922,7 +937,7 @@ class MarketCog(commands.Cog):
             return {"mode": "new_week", "good_ids": new_week_good_ids}
         else:
             # Active mode – build ranking groups for qualifying players with >=2 data points
-            good_groups: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int]]] = defaultdict(list)
+            good_groups: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str]]] = defaultdict(list)
             skipped_none = 0
             skipped_short_history = 0
 
@@ -961,7 +976,7 @@ class MarketCog(commands.Cog):
                 good_groups[main_good].append((
                     pid, nickname, number_id,
                     original_price, current_price, pct,
-                    is_online, hostnum
+                    is_online, hostnum, qp['guild_name']
                 ))
 
             logger.debug(
@@ -1380,6 +1395,18 @@ class MarketCog(commands.Cog):
             likes = await self._fetch_market_likes(pid, player_hostnum) if pid else 0
             logger.debug(f"PID {pid} HOSTNUM {player_hostnum} has {likes} likes")
 
+            # Fetch guild name from club_info
+            guild_name = ''
+            club_info = player_entry.get('club_info', {}) if isinstance(player_entry, dict) else {}
+            club_id = club_info.get('club_id', 0)
+            if club_id:
+                try:
+                    guild_full_data = await get_full_guild_info(club_id, hostnum=player_hostnum)
+                    if guild_full_data and 'result' in guild_full_data:
+                        guild_name = guild_full_data['result'].get('name', 'Unknown')
+                except Exception:
+                    pass
+
             view = MarketPlayerView(
                 cog=self,
                 pid=pid or '',
@@ -1392,6 +1419,7 @@ class MarketCog(commands.Cog):
                 good_has_name=good_has_name,
                 good_name=good_name or "",
                 likes=likes,
+                guild_name=guild_name,
             )
 
             # Edit the deferred response with the view
