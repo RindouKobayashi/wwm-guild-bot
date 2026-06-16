@@ -6,7 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import aiohttp
 import msgpack
 import json
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 from settings import (
     WWM_TOPICS_LIKES_URL, WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL,
     WWM_FULL_GUILD_URL, WWM_FASHION_PLAN_URL, WWM_CLUB_BY_NAME_URL,
@@ -684,6 +684,82 @@ async def get_sect_election_ranking(school_id: int, limit: int = 5) -> Optional[
     # The rank endpoint appends rank_name to the base URL
     url = RANK_GET_RANKLIST_URL + rank_name
     return await _wwm_api_post(url, payload)
+
+
+# -----------------------------------------------------------------------------
+# Concurrent API executor
+# -----------------------------------------------------------------------------
+async def run_concurrent(
+    coros: list,
+    max_concurrency: int = 30,
+    return_exceptions: bool = True,
+) -> list:
+    """
+    Run multiple async coroutines concurrently with a configurable concurrency
+    cap (semaphore) to avoid overwhelming the remote API.
+
+    All coroutines share the same ``aiohttp.ClientSession`` managed by
+    ``get_session()``, so this is both safe and efficient.
+
+    Args:
+        coros:          List of coroutine objects (e.g. [foo(a), bar(b), …]).
+        max_concurrency: Maximum number of in-flight requests (default 30).
+        return_exceptions: If True, exceptions are returned as result items
+                           instead of being raised. (default True)
+
+    Returns:
+        List of results in the same order as *coros*.  When
+        ``return_exceptions=True``, failed positions hold an ``Exception``
+        instance instead of a normal result.
+    """
+    if not coros:
+        return []
+
+    semaphore = asyncio.Semaphore(max_concurrency)
+
+    async def _limited(coro):
+        async with semaphore:
+            return await coro
+
+    tasks = [_limited(coro) for coro in coros]
+    return await asyncio.gather(*tasks, return_exceptions=return_exceptions)
+
+
+async def get_bulk_topics_likes(
+    targets: List[Tuple[str, int]],
+    max_concurrency: int = 30,
+) -> Dict[str, int]:
+    """
+    Concurrently fetch topic likes (topic 129 – market likes) for multiple
+    players in one batch.
+
+    Each ``get_topics_likes`` call goes to a separate player hostnum, so the
+    normal bulk endpoint cannot replace it – this function fires them all
+    concurrently instead of one-by-one.
+
+    Args:
+        targets: List of (uuid / pid, hostnum) tuples.
+        max_concurrency: Concurrency cap for the parallel requests.
+
+    Returns:
+        Dict mapping uuid (str) → ``n_likes`` (int).  Players whose requests
+        fail or have no topic-129 data get 0.
+    """
+    if not targets:
+        return {}
+
+    coros = [get_topics_likes(uuid, hostnum) for uuid, hostnum in targets]
+    results = await run_concurrent(coros, max_concurrency=max_concurrency)
+
+    likes: Dict[str, int] = {}
+    for (uuid, _), result in zip(targets, results):
+        n = 0
+        if isinstance(result, dict) and 'result' in result:
+            topic_129 = result['result'].get(129, {})
+            if isinstance(topic_129, dict):
+                n = topic_129.get('n_likes', 0)
+        likes[uuid] = n
+    return likes
 
 
 if __name__ == "__main__":

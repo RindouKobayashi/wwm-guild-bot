@@ -430,6 +430,7 @@ class MarketReportView(LayoutView):
         next_update_ts: int,
         known_goods: Set[str] = None,
         good_names_map: Dict[str, str] = None,
+        likes_map: Dict[str, int] = None,
     ):
         super().__init__(timeout=None)
         self.cog = cog
@@ -439,6 +440,7 @@ class MarketReportView(LayoutView):
         self.next_update_ts = next_update_ts
         self.known_goods = known_goods or set()
         self.good_names_map = good_names_map or {}
+        self.likes_map = likes_map or {}
 
         inner_items: list = []
 
@@ -473,9 +475,11 @@ class MarketReportView(LayoutView):
                 sign = "+" if pct >= 0 else ""
                 online_icon = "🟢" if is_online else "⚫"
                 guild_display = f" — *{guild_name}*" if guild_name and guild_name != 'Unknown' else ""
+                likes_text = f"  │  👍 {self.likes_map.get(pid, 0)}" if self.likes_map.get(pid, 0) else ""
                 lines.append(
                     f"{prefix} {online_icon} **{nickname}** ({number_id}){guild_display}  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
+                    f"{likes_text}"
                 )
 
             body = "\n".join(lines) if lines else "*No data available*"
@@ -1102,6 +1106,8 @@ class MarketCog(commands.Cog):
         else:
             grouped = result['groups']
             total_players = sum(len(v) for v in grouped.values())
+            # Concurrently fetch market likes for top players
+            likes_map = await self._fetch_all_market_likes(grouped, max_per_good=10)
             view = MarketReportView(
                 cog=self,
                 grouped_data=grouped,
@@ -1110,6 +1116,7 @@ class MarketCog(commands.Cog):
                 next_update_ts=self._get_next_update_ts(),
                 known_goods=known_goods,
                 good_names_map=good_names_map,
+                likes_map=likes_map,
             )
 
         try:
@@ -1147,20 +1154,24 @@ class MarketCog(commands.Cog):
 
     async def _fetch_all_market_likes(self, grouped: Dict[str, List], max_per_good: int = 10) -> Dict[str, int]:
         """Fetch market likes for the top players in each good group.
+        Uses ``get_bulk_topics_likes`` to fire all requests concurrently.
         Returns dict mapping pid -> n_likes."""
-        likes_map: Dict[str, int] = {}
+        from utility.wwm import get_bulk_topics_likes
+
         # Collect unique (pid, hostnum) from top players only
-        seen: Set[Tuple[str, int]] = set()
+        seen: Dict[str, int] = {}
         for good_id, players in grouped.items():
             for player in players[:max_per_good]:
                 pid = player[0]
                 hostnum = player[7] if len(player) > 7 else 10595
-                if pid not in {s[0] for s in seen}:
-                    seen.add((pid, hostnum))
-        # Fetch likes for all top players with correct hostnum
-        for pid, hostnum in seen:
-            likes_map[pid] = await self._fetch_market_likes(pid, hostnum)
-        return likes_map
+                if pid not in seen:
+                    seen[pid] = hostnum
+
+        if not seen:
+            return {}
+
+        targets = list(seen.items())  # [(pid, hostnum), ...]
+        return await get_bulk_topics_likes(targets, max_concurrency=30)
 
     # -- Scheduled task ---------------------------------------------------
     @tasks.loop(minutes=3)
