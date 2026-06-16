@@ -797,6 +797,7 @@ class PlayerProfileView(LayoutView):
         jieyi_name: str = None,
         jieyi_text: str = None,
         likes_count: int = 0,
+        likes_data_raw: dict = None,
         # Masteries
         martial_mastery: float = 0,
         scholar_mastery: float = 0,
@@ -863,6 +864,7 @@ class PlayerProfileView(LayoutView):
         self.jieyi_name = jieyi_name
         self.jieyi_text = jieyi_text
         self.likes_count = likes_count
+        self.likes_data_raw = likes_data_raw or {}
         self.martial_mastery = martial_mastery
         self.scholar_mastery = scholar_mastery
         self.healer_mastery = healer_mastery
@@ -1018,6 +1020,9 @@ class PlayerProfileView(LayoutView):
             btn_guild = discord.ui.Button(label="Guild Profile", emoji="🏰", style=discord.ButtonStyle.secondary, custom_id="player_guild")
             btn_guild.callback = self._handle_guild
             row2.add_item(btn_guild)
+            btn_likes = discord.ui.Button(label="Likes", emoji="❤️", style=discord.ButtonStyle.secondary, custom_id="player_likes")
+            btn_likes.callback = self._handle_likes
+            row2.add_item(btn_likes)
             # Only show Set Avatar button when head_id is present but no mapped avatar exists
             if self.head_id is not None and self.head_avatar_path is None and self.body_type in (0, 1):
                 btn_set_avatar = discord.ui.Button(label="Set Avatar", emoji="🖼️", style=discord.ButtonStyle.success, custom_id="player_set_avatar")
@@ -1174,6 +1179,31 @@ class PlayerProfileView(LayoutView):
             ephemeral=True,
             allowed_mentions=discord.AllowedMentions.none(),
         )
+
+    async def _handle_likes(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        from utility.api_constants import LIKES
+        lines = []
+        if self.likes_data_raw:
+            total = 0
+            for topic_id_str, topic_data in self.likes_data_raw.items():
+                if not isinstance(topic_data, dict):
+                    continue
+                n_likes = topic_data.get('n_likes', 0)
+                if n_likes > 0:
+                    try:
+                        tid = int(topic_id_str)
+                    except (ValueError, TypeError):
+                        continue
+                    topic_name = LIKES.get(tid, f"Topic {tid}")
+                    lines.append(f"❤️ **{topic_name}:** {n_likes:,}")
+                    total += n_likes
+            lines.append(f"\n**Total Likes:** {total:,}")
+        if not lines:
+            lines.append("*No likes data available*")
+
+        self._show_detail("❤️ Likes Breakdown", lines, accent=0xE74C3C)
+        await interaction.edit_original_response(view=self)
 
     async def _handle_guild(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -1825,12 +1855,14 @@ class WWMCog(commands.Cog):
             
             # Likes
             likes_count = 0
+            likes_data_raw = {}
             if is_verified:
                 try:
                     likes_data = await get_topics_likes(target_uuid=player_pid, target_hostnum=player_hostnum)
                     if likes_data and 'result' in likes_data:
                         likes_data_res = likes_data['result']
                         likes_count = sum(topic.get('n_likes', 0) for topic in likes_data_res.values())
+                        likes_data_raw = likes_data_res
                 except Exception:
                     pass
             
@@ -2055,6 +2087,7 @@ class WWMCog(commands.Cog):
                 jieyi_name=jieyi_name,
                 jieyi_text=jieyi_text,
                 likes_count=likes_count,
+                likes_data_raw=likes_data_raw,
                 martial_mastery=float(martial_mastery) if is_verified else 0,
                 scholar_mastery=float(scholar_mastery) if is_verified else 0,
                 healer_mastery=float(healer_mastery) if is_verified else 0,
