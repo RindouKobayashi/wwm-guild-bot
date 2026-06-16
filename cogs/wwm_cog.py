@@ -1892,6 +1892,7 @@ class WWMCog(commands.Cog):
                 return f"{grade_name} {small_suffix}" if small_suffix else grade_name
             
             arena_1v1_rank = None
+            arena_1v1_max_winning_streak = 0
             arena_3v3_rank = None
             pvp_score = 0
             group_strategy = 0

@@ -859,7 +859,7 @@ class MarketCog(commands.Cog):
         old_names_map = {(club_id, hostnum): old_name for club_id, hostnum, old_name in rows}
 
         # Concurrently fetch all guild names
-        names_map = await get_bulk_guild_names(targets, max_concurrency=30)
+        names_map = await get_bulk_guild_names(targets, max_concurrency=10)
 
         updated = 0
         now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
@@ -973,7 +973,7 @@ class MarketCog(commands.Cog):
         # Concurrently fetch all uncached guild names in one batch
         if uncached_targets:
             from utility.wwm import get_bulk_guild_names
-            names_map = await get_bulk_guild_names(uncached_targets, max_concurrency=30)
+            names_map = await get_bulk_guild_names(uncached_targets, max_concurrency=10)
             now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
             async with aiosqlite.connect(self.db_path) as db:
                 for (cid, hnum), name in names_map.items():
@@ -987,6 +987,8 @@ class MarketCog(commands.Cog):
         qualifying_players: List[Dict] = []
         for pid, player_entry in players_data.items():
             base = player_entry.get('base', {}) if isinstance(player_entry, dict) else {}
+            # hostnum is in space_data
+            player_hostnum = player_entry.get("space_data").get("space_hostnum", 10595)
             club_info = player_entry.get('club', {}) if isinstance(player_entry, dict) else {}
             club_id = club_info.get('club_id', 0)
             club_hostnum = club_info.get('hostnum', 10595)
@@ -1002,7 +1004,8 @@ class MarketCog(commands.Cog):
                 'player_entry': player_entry,
                 'base': base,
                 'is_online': is_online,
-                'guild_name': guild_name
+                'guild_name': guild_name,
+                'hostnum': player_hostnum
             })
 
         if not qualifying_players:
@@ -1061,7 +1064,7 @@ class MarketCog(commands.Cog):
                 base = qp['base']
                 nickname = base.get('nickname', 'Unknown')
                 number_id = str(base.get('number_id', '')) if base.get('number_id') else ''
-                hostnum = int(base.get('hostnum', 10595)) if base.get('hostnum') else 10595
+                hostnum = qp['hostnum']
                 is_online = qp['is_online']
 
                 hoard = qp['player_entry'].get('hoard_profiteer', {}) if isinstance(qp['player_entry'], dict) else {}
@@ -1185,7 +1188,12 @@ class MarketCog(commands.Cog):
             if result and 'result' in result:
                 likes_info = result['result']
                 if isinstance(likes_info, dict):
-                    topic_129 = likes_info.get(129)
+                    # Handle both int and string keys from the API
+                    topic_129 = None
+                    for key in (129, "129"):
+                        if key in likes_info:
+                            topic_129 = likes_info[key]
+                            break
                     if isinstance(topic_129, dict):
                         return topic_129.get('n_likes', 0)
         except Exception as e:
@@ -1212,7 +1220,10 @@ class MarketCog(commands.Cog):
             return {}
 
         targets = list(seen.items())  # [(pid, hostnum), ...]
-        return await get_bulk_topics_likes(targets, max_concurrency=30)
+        logger.debug(f"Market cog: fetching likes for {len(targets)} players")
+        likes_map = await get_bulk_topics_likes(targets, max_concurrency=10)
+        logger.debug(f"Market cog: likes fetched — {sum(1 for v in likes_map.values() if v > 0)} players with likes, {sum(1 for v in likes_map.values() if v == 0)} with 0")
+        return likes_map
 
     # -- Scheduled task ---------------------------------------------------
     @tasks.loop(minutes=3)
@@ -1471,11 +1482,12 @@ class MarketCog(commands.Cog):
             pid = None
 
             if number_id:
-                player_data = await get_player_info(number_id, fields=["base", "hoard_profiteer"])
+                player_data = await get_player_info(number_id, fields=["base", "hoard_profiteer", "space_data"])
                 if player_data and 'result' in player_data and 'base' in player_data['result']:
                     player_entry = player_data['result']
                     pid = player_entry.get('id')
-                    player_hostnum = player_entry.get("hostnum", 10595)
+                    # hostnum in space_data
+                    player_hostnum = player_entry.get("space_data").get("space_hostnum", 10595)
                 else:
                     await interaction.followup.send("❌ Player not found with that Number ID.", ephemeral=True)
                     return

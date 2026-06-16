@@ -6,6 +6,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 import aiohttp
 import msgpack
 import json
+import random
 from typing import Dict, Any, Optional, List, Tuple
 from settings import (
     WWM_TOPICS_LIKES_URL, WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL,
@@ -294,7 +295,8 @@ async def get_topics_likes(target_uuid: str, target_hostnum: int) -> Optional[Di
         WWM_TOPICS_LIKES_URL,
         {
             "group_number": 10001, # Assuming a default group number
-            "uid": WWM_UID,
+            "uid": random.randint(1,99999999),
+            "token": random.randint(1,99999999),
             "uuid": target_uuid,
             "hostnum": target_hostnum,
             "fromid": '',
@@ -362,7 +364,7 @@ async def get_bulk_hoard_data(pid_list: List[str], hostnum: int = 10595) -> Opti
     return await _wwm_api_post(
         WWM_REDIS_PLAYER_URL,
         {
-            "fields": ["base", "hoard_profiteer", "club"],
+            "fields": ["base", "hoard_profiteer", "club", "space_data"],
             "hostnum2pids": {
                 hostnum: pid_list
             },
@@ -665,7 +667,7 @@ async def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
 # -----------------------------------------------------------------------------
 async def run_concurrent(
     coros: list,
-    max_concurrency: int = 30,
+    max_concurrency: int = 10,
     return_exceptions: bool = True,
 ) -> list:
     """
@@ -677,7 +679,7 @@ async def run_concurrent(
 
     Args:
         coros:          List of coroutine objects (e.g. [foo(a), bar(b), …]).
-        max_concurrency: Maximum number of in-flight requests (default 30).
+        max_concurrency: Maximum number of in-flight requests (default 10).
         return_exceptions: If True, exceptions are returned as result items
                            instead of being raised. (default True)
 
@@ -701,7 +703,7 @@ async def run_concurrent(
 
 async def get_bulk_topics_likes(
     targets: List[Tuple[str, int]],
-    max_concurrency: int = 30,
+    max_concurrency: int = 10,
 ) -> Dict[str, int]:
     """
     Concurrently fetch topic likes (topic 129 – market likes) for multiple
@@ -722,23 +724,52 @@ async def get_bulk_topics_likes(
     if not targets:
         return {}
 
+    logger.debug(f"Bulk topics likes: fetching for {len(targets)} targets")
     coros = [get_topics_likes(uuid, hostnum) for uuid, hostnum in targets]
     results = await run_concurrent(coros, max_concurrency=max_concurrency)
-
+    logger.debug(f"Bulk topics likes: all {len(targets)} requests completed")
     likes: Dict[str, int] = {}
+    # Debug counters
+    _none_count = 0
+    _empty_count = 0
+    _data_count = 0
     for (uuid, _), result in zip(targets, results):
         n = 0
-        if isinstance(result, dict) and 'result' in result:
-            topic_129 = result['result'].get(129, {})
-            if isinstance(topic_129, dict):
-                n = topic_129.get('n_likes', 0)
+        if result is None:
+            _none_count += 1
+            logger.debug(f"Bulk topics likes: result is None (timeout) for {uuid}")
+        elif isinstance(result, dict):
+            result_data = result.get('result')
+            if result_data is None or result_data == {}:
+                _empty_count += 1
+                # Log first 5 empty results with full response for debugging
+                #if _empty_count <= 5:
+                logger.debug(f"Bulk topics likes: empty result for {uuid}, full response = {result}")
+            else:
+                _data_count += 1
+                # Log all responses with data
+                logger.debug(f"Bulk topics likes: data result for {uuid}, full response = {result_data}")
+                # Handle both int and string keys from the API
+                if isinstance(result_data, dict):
+                    topic_129 = None
+                    for key in (129, "129"):
+                        if key in result_data:
+                            topic_129 = result_data[key]
+                            break
+                    if topic_129 is None:
+                        topic_129 = {}
+                    if isinstance(topic_129, dict):
+                        n = topic_129.get('n_likes', 0)
+        else:
+            logger.debug(f"Bulk topics likes: unexpected result type for {uuid}: {type(result).__name__}")
         likes[uuid] = n
+    logger.debug(f"Bulk topics likes: summary — {_data_count} with data, {_empty_count} empty, {_none_count} timeouts")
     return likes
 
 
 async def get_bulk_guild_names(
     targets: List[Tuple[int, int]],
-    max_concurrency: int = 30,
+    max_concurrency: int = 10,
 ) -> Dict[Tuple[int, int], str]:
     """
     Concurrently resolve guild names for multiple (club_id, hostnum) pairs.
@@ -749,7 +780,7 @@ async def get_bulk_guild_names(
 
     Args:
         targets: List of (club_id, hostnum) tuples.
-        max_concurrency: Concurrency cap (default 30).
+        max_concurrency: Concurrency cap (default 10).
 
     Returns:
         Dict ``{(club_id, hostnum): "Guild Name"}``.  Failed lookups get
