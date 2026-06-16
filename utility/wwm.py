@@ -268,7 +268,8 @@ async def get_full_guild_info(club_id: int, hostnum: int = 10103, fields: Option
             "uid": WWM_UID,
             "field_info": fields if fields else DEFAULT_GUILD_FIELDS,
             "hostnum": hostnum
-        }
+        },
+        timeout=15,
     )
 
 async def get_custom_guild_info(club_id: int, hostnum: int = 10103, fields: Optional[Dict[str, list]] = None) -> Optional[Dict[str, Any]]:
