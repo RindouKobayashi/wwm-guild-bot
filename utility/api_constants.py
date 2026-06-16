@@ -234,7 +234,7 @@ LIKES = {
     122: "Arena",
     103: "Hero's Realm/Sword Trial",
     107: "Co-op",
-    103: "Signpost",
+    106: "Signpost",
     101: "Healer/Scholar",
     112: "Profile",
     111: "Performance",
