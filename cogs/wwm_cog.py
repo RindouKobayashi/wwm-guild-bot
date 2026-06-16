@@ -1985,6 +1985,8 @@ class WWMCog(commands.Cog):
             # Body-type aware: a male and a female with the same head_id may
             # have different avatar files in their respective subfolders.
             head_avatar_path = None
+            head_id_value = None
+            body_type = None
             try:
                 head_data = data.get('head', {}) if isinstance(data, dict) else {}
                 if isinstance(head_data, dict):
@@ -1997,22 +1999,35 @@ class WWMCog(commands.Cog):
                         if body_type in (0, 1):
                             from utility.avatar_paths import (
                                 AVATARS_MAPPED_LOOKUP_ORDER_BY_BODY_TYPE,
-                                AVATARS_MAPPED_DIR,
                             )
                             for d in AVATARS_MAPPED_LOOKUP_ORDER_BY_BODY_TYPE[body_type]:
                                 for ext in (".png", ".webp"):
                                     candidates.append(d / f"{head_id_value}{ext}")
                         else:
-                            # Unknown / missing body_type → only the shared subfolders.
+                            # Unknown / missing body_type → search ALL 6 mapped
+                            # subfolders (both genders + shared), then legacy flat,
+                            # so a gender-specific avatar file is still found even
+                            # when body_type is not available from the API.
                             from utility.avatar_paths import (
+                                AVATARS_MAPPED_STILL_MALE_DIR,
+                                AVATARS_MAPPED_ANIMATED_MALE_DIR,
+                                AVATARS_MAPPED_STILL_FEMALE_DIR,
+                                AVATARS_MAPPED_ANIMATED_FEMALE_DIR,
                                 AVATARS_MAPPED_STILL_SHARED_DIR,
                                 AVATARS_MAPPED_ANIMATED_SHARED_DIR,
-                                AVATARS_MAPPED_DIR,
                             )
-                            for d in (AVATARS_MAPPED_STILL_SHARED_DIR, AVATARS_MAPPED_ANIMATED_SHARED_DIR):
+                            for d in (
+                                AVATARS_MAPPED_STILL_MALE_DIR,
+                                AVATARS_MAPPED_ANIMATED_MALE_DIR,
+                                AVATARS_MAPPED_STILL_FEMALE_DIR,
+                                AVATARS_MAPPED_ANIMATED_FEMALE_DIR,
+                                AVATARS_MAPPED_STILL_SHARED_DIR,
+                                AVATARS_MAPPED_ANIMATED_SHARED_DIR,
+                            ):
                                 for ext in (".png", ".webp"):
                                     candidates.append(d / f"{head_id_value}{ext}")
                         # Legacy flat-file fallback for any pre-existing mappings.
+                        from utility.avatar_paths import AVATARS_MAPPED_DIR
                         for ext in (".png", ".webp"):
                             candidates.append(AVATARS_MAPPED_DIR / f"{head_id_value}{ext}")
                         for candidate in candidates:
