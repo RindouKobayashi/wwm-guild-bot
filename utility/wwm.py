@@ -303,7 +303,8 @@ async def get_topics_likes(target_uuid: str, target_hostnum: int) -> Optional[Di
                 10008, 120, 121, 122, 124, 132,
                 133, 139, 140, 142, 129,
             ]
-        }
+        },
+        timeout=15,
     )
 
 
