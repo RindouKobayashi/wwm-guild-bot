@@ -551,9 +551,11 @@ class MarketReportView(LayoutView):
                 prefix = ["🥇", "🥈", "🥉"][rank - 1] if rank <= 3 else f"`{rank}.`"
                 sign = "+" if pct >= 0 else ""
                 guild_display = f" — *{guild_name}*" if guild_name and guild_name != 'Unknown' else ""
+                likes_text = f"  │  👍 {self.likes_map.get(pid, 0)}" if self.likes_map.get(pid, 0) else ""
                 lines.append(
                     f"{prefix} 🟢 **{nickname}** ({number_id}){guild_display}  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
+                    f"{likes_text}"
                 )
             lines.append("")
 
@@ -847,27 +849,31 @@ class MarketCog(commands.Cog):
         async with aiosqlite.connect(self.db_path) as db:
             cursor = await db.execute("SELECT club_id, hostnum, guild_name FROM guild_cache")
             rows = await cursor.fetchall()
+
+        if not rows:
+            logger.info("Market cog: no cached guild names to refresh")
+            return
+
+        from utility.wwm import get_bulk_guild_names
+        targets = [(club_id, hostnum) for club_id, hostnum, _ in rows]
+        old_names_map = {(club_id, hostnum): old_name for club_id, hostnum, old_name in rows}
+
+        # Concurrently fetch all guild names
+        names_map = await get_bulk_guild_names(targets, max_concurrency=30)
+
         updated = 0
         now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
-        for club_id, hostnum, old_name in rows:
-            try:
-                guild_full_data = await get_full_guild_info(club_id, hostnum=hostnum, fields={'base': []})
-                if guild_full_data and 'result' in guild_full_data:
-                    new_name = guild_full_data['result'].get('base', {}).get('name', old_name)
-                else:
-                    new_name = old_name
-            except Exception as e:
-                logger.debug(f"Market cog: daily refresh failed for club {club_id}: {e}")
-                continue
-            if new_name != old_name:
-                async with aiosqlite.connect(self.db_path) as db:
+        async with aiosqlite.connect(self.db_path) as db:
+            for (cid, hnum), new_name in names_map.items():
+                old_name = old_names_map.get((cid, hnum), "Unknown")
+                if new_name != old_name:
                     await db.execute(
                         "REPLACE INTO guild_cache (club_id, hostnum, guild_name, last_updated) VALUES (?, ?, ?, ?)",
-                        (club_id, hostnum, new_name, now_ts)
+                        (cid, hnum, new_name, now_ts)
                     )
-                    await db.commit()
-                logger.info(f"Market cog: guild renamed — club {club_id}: '{old_name}' → '{new_name}'")
-                updated += 1
+                    logger.info(f"Market cog: guild renamed — club {cid}: '{old_name}' → '{new_name}'")
+                    updated += 1
+            await db.commit()
         logger.info(f"Market cog: daily guild name refresh complete — {len(rows)} checked, {updated} updated")
 
     # -- Core data fetching ------------------------------------------------
@@ -943,7 +949,41 @@ class MarketCog(commands.Cog):
 
         day_start_ts = self._get_day_start_ts()
 
-        # First pass: find qualifying players (online OR logged out within today)
+        # First pass: collect all unique (club_id, hostnum) pairs and
+        # identify which ones are *not* already cached so we can fetch
+        # them in one concurrent batch.
+        uncached_targets: List[Tuple[int, int]] = []
+        seen_clubs: Set[Tuple[int, int]] = set()
+        for pid, player_entry in players_data.items():
+            club_info = player_entry.get('club', {}) if isinstance(player_entry, dict) else {}
+            club_id = club_info.get('club_id', 0)
+            club_hostnum = club_info.get('hostnum', 10595)
+            if club_id != 0 and (club_id, club_hostnum) not in seen_clubs:
+                seen_clubs.add((club_id, club_hostnum))
+                # Check cache first
+                async with aiosqlite.connect(self.db_path) as db:
+                    cursor = await db.execute(
+                        "SELECT 1 FROM guild_cache WHERE club_id = ? AND hostnum = ?",
+                        (club_id, club_hostnum)
+                    )
+                    row = await cursor.fetchone()
+                    if not row:
+                        uncached_targets.append((club_id, club_hostnum))
+
+        # Concurrently fetch all uncached guild names in one batch
+        if uncached_targets:
+            from utility.wwm import get_bulk_guild_names
+            names_map = await get_bulk_guild_names(uncached_targets, max_concurrency=30)
+            now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+            async with aiosqlite.connect(self.db_path) as db:
+                for (cid, hnum), name in names_map.items():
+                    await db.execute(
+                        "REPLACE INTO guild_cache (club_id, hostnum, guild_name, last_updated) VALUES (?, ?, ?, ?)",
+                        (cid, hnum, name, now_ts)
+                    )
+                await db.commit()
+
+        # Second pass: build qualifying players list (cache hit, no API calls)
         qualifying_players: List[Dict] = []
         for pid, player_entry in players_data.items():
             base = player_entry.get('base', {}) if isinstance(player_entry, dict) else {}
@@ -1106,8 +1146,8 @@ class MarketCog(commands.Cog):
         else:
             grouped = result['groups']
             total_players = sum(len(v) for v in grouped.values())
-            # Concurrently fetch market likes for top players
-            likes_map = await self._fetch_all_market_likes(grouped, max_per_good=10)
+            # Concurrently fetch market likes for all players
+            likes_map = await self._fetch_all_market_likes(grouped)
             view = MarketReportView(
                 cog=self,
                 grouped_data=grouped,
@@ -1152,16 +1192,17 @@ class MarketCog(commands.Cog):
             logger.debug(f"Market cog: failed to fetch likes for PID {pid}: {e}")
         return 0
 
-    async def _fetch_all_market_likes(self, grouped: Dict[str, List], max_per_good: int = 10) -> Dict[str, int]:
-        """Fetch market likes for the top players in each good group.
+    async def _fetch_all_market_likes(self, grouped: Dict[str, List]) -> Dict[str, int]:
+        """Fetch market likes for all players in every good group.
         Uses ``get_bulk_topics_likes`` to fire all requests concurrently.
         Returns dict mapping pid -> n_likes."""
         from utility.wwm import get_bulk_topics_likes
 
-        # Collect unique (pid, hostnum) from top players only
+        # Collect unique (pid, hostnum) from ALL players (not just top N),
+        # so the online-filter view shows likes for everyone correctly.
         seen: Dict[str, int] = {}
         for good_id, players in grouped.items():
-            for player in players[:max_per_good]:
+            for player in players:
                 pid = player[0]
                 hostnum = player[7] if len(player) > 7 else 10595
                 if pid not in seen:

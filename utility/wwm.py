@@ -658,34 +658,6 @@ async def get_full_player_and_club(number_id: str) -> Dict[str, Any]:
     return combined_data
 
 
-async def get_sect_election_ranking(school_id: int, limit: int = 5) -> Optional[Dict[str, Any]]:
-    """Fetch the top election candidates for a given sect/school.
-
-    Args:
-        school_id: The numeric school ID (e.g. 1, 2, 3, 4, 6, 11, 12).
-        limit: How many top candidates to fetch (default 5).
-
-    Returns:
-        API response dict with 'code' and 'result', or None on failure.
-    """
-    rank_name = f"rank_chief_campaign_{school_id}"
-    payload = {
-        "fields": [],
-        "pid": None,
-        "hostnum": 10001,
-        "start": 0,
-        "uid": WWM_UID,
-        "rank_name": rank_name,
-        "end": limit  # exclusive end index
-    }
-
-    logger.debug(f"Fetching sect election ranking for school_id={school_id}, rank_name='{rank_name}'")
-
-    # The rank endpoint appends rank_name to the base URL
-    url = RANK_GET_RANKLIST_URL + rank_name
-    return await _wwm_api_post(url, payload)
-
-
 # -----------------------------------------------------------------------------
 # Concurrent API executor
 # -----------------------------------------------------------------------------
@@ -760,6 +732,71 @@ async def get_bulk_topics_likes(
                 n = topic_129.get('n_likes', 0)
         likes[uuid] = n
     return likes
+
+
+async def get_bulk_guild_names(
+    targets: List[Tuple[int, int]],
+    max_concurrency: int = 30,
+) -> Dict[Tuple[int, int], str]:
+    """
+    Concurrently resolve guild names for multiple (club_id, hostnum) pairs.
+
+    Each pair fires ``get_full_guild_info`` with only the ``base`` field,
+    minimising response size.  The results are returned as a dict keyed by
+    the ``(club_id, hostnum)`` tuple.
+
+    Args:
+        targets: List of (club_id, hostnum) tuples.
+        max_concurrency: Concurrency cap (default 30).
+
+    Returns:
+        Dict ``{(club_id, hostnum): "Guild Name"}``.  Failed lookups get
+        the name ``"Unknown"``.
+    """
+    if not targets:
+        return {}
+
+    coros = [
+        get_full_guild_info(cid, hostnum=hnum, fields={"base": []})
+        for cid, hnum in targets
+    ]
+    results = await run_concurrent(coros, max_concurrency=max_concurrency)
+
+    names: Dict[Tuple[int, int], str] = {}
+    for (cid, hnum), result in zip(targets, results):
+        name = "Unknown"
+        if isinstance(result, dict) and 'result' in result:
+            name = result['result'].get('base', {}).get('name', 'Unknown')
+        names[(cid, hnum)] = name
+    return names
+
+
+async def get_sect_election_ranking(school_id: int, limit: int = 5) -> Optional[Dict[str, Any]]:
+    """Fetch the top election candidates for a given sect/school.
+
+    Args:
+        school_id: The numeric school ID (e.g. 1, 2, 3, 4, 6, 11, 12).
+        limit: How many top candidates to fetch (default 5).
+
+    Returns:
+        API response dict with 'code' and 'result', or None on failure.
+    """
+    rank_name = f"rank_chief_campaign_{school_id}"
+    payload = {
+        "fields": [],
+        "pid": None,
+        "hostnum": 10001,
+        "start": 0,
+        "uid": WWM_UID,
+        "rank_name": rank_name,
+        "end": limit  # exclusive end index
+    }
+
+    logger.debug(f"Fetching sect election ranking for school_id={school_id}, rank_name='{rank_name}'")
+
+    # The rank endpoint appends rank_name to the base URL
+    url = RANK_GET_RANKLIST_URL + rank_name
+    return await _wwm_api_post(url, payload)
 
 
 if __name__ == "__main__":
