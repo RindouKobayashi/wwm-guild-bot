@@ -352,6 +352,9 @@ async def get_bulk_hoard_data(pid_list: List[str], hostnum: int = 10595) -> Opti
     Uses WWM_REDIS_PLAYER_URL which returns full player data including the
     hoard_profiteer field (price change history, main_good, stuff_profit, etc.).
 
+    Splits large PID lists into batches to avoid request timeouts on the
+    remote endpoint, then merges results into a single dict keyed by PID.
+
     Returns raw API response dict keyed by PID, or None on failure.
     """
     if not pid_list:
@@ -359,18 +362,47 @@ async def get_bulk_hoard_data(pid_list: List[str], hostnum: int = 10595) -> Opti
 
     from settings import WWM_REDIS_PLAYER_URL
 
-    logger.debug(f"Bulk fetching hoard data for {len(pid_list)} players")
+    CHUNK_SIZE = 50
+    TIMEOUT = 30  # longer timeout for this slow endpoint
 
-    return await _wwm_api_post(
-        WWM_REDIS_PLAYER_URL,
-        {
-            "fields": ["base", "hoard_profiteer", "club", "space_data"],
-            "hostnum2pids": {
-                hostnum: pid_list
+    # Split into batches
+    batches = [pid_list[i:i+CHUNK_SIZE] for i in range(0, len(pid_list), CHUNK_SIZE)]
+    logger.debug(f"Bulk fetching hoard data for {len(pid_list)} players in {len(batches)} batches (chunk size={CHUNK_SIZE}, timeout={TIMEOUT}s)")
+
+    async def _fetch_batch(batch_pids: List[str]) -> Optional[Dict[str, Any]]:
+        return await _wwm_api_post(
+            WWM_REDIS_PLAYER_URL,
+            {
+                "fields": ["base", "hoard_profiteer", "club", "space_data"],
+                "hostnum2pids": {
+                    hostnum: batch_pids
+                },
+                "uid": WWM_UID
             },
-            "uid": WWM_UID
-        }
+            timeout=TIMEOUT,
+        )
+
+    results = await run_concurrent(
+        [_fetch_batch(batch) for batch in batches],
+        max_concurrency=5,
+        return_exceptions=True,
     )
+
+    # Merge results from all batches
+    merged: Dict[str, Any] = {}
+    for result in results:
+        if isinstance(result, Exception):
+            logger.error(f"Bulk hoard batch failed: {result}")
+            continue
+        if result and isinstance(result, dict) and 'result' in result:
+            merged.update(result['result'])
+
+    if not merged:
+        logger.warning("Bulk hoard fetch returned no data from any batch")
+        return None
+
+    logger.debug(f"Bulk hoard fetch merged {len(merged)} player entries across {len(batches)} batches")
+    return {'code': 0, 'result': merged}
 
 async def get_fashion_plan(player_pid: str, hostnum: int = 10403, uid: Optional[str] = None, token: Optional[str] = None) -> Optional[Dict[str, Any]]:
     """Get player fashion plan including cover image"""
