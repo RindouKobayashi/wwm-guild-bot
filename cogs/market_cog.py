@@ -7,7 +7,7 @@ from collections import defaultdict
 from typing import Optional, List, Tuple, Dict, Any, Set
 from discord import app_commands
 from discord.ext import commands, tasks
-from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow, Button, Modal, TextInput, Select
+from discord.ui import LayoutView, Container, TextDisplay, Separator, Section, ActionRow, Button, Modal, TextInput, Select
 
 import settings
 from settings import BASE_DIR, CLUB_ID, WWM_UID, logger, GMT8_TZ
@@ -718,11 +718,20 @@ class MarketReportView(LayoutView):
 
         inner_items: list = []
 
-        # Title
-        inner_items.append(TextDisplay(
-            f"# 📈 Market Price Report\n"
-            f"Tracking **{total_players}** players across **{len(grouped_data)}** goods"
-        ))
+        # Title section with invite button
+        inner_items.append(
+            Section(
+                TextDisplay(
+                    f"# 📈 Market Price Report\n"
+                    f"Tracking **{total_players}** players across **{len(grouped_data)}** goods"
+                ),
+                accessory=Button(
+                    label="🔗 Join the Discord",
+                    url="https://discord.gg/YQSV79ysGY",
+                    style=discord.ButtonStyle.link,
+                ),
+            )
+        )
         inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
 
         # Sort goods by their ID for consistent ordering
@@ -892,11 +901,20 @@ class NewWeekMarketView(LayoutView):
 
         inner_items: list = []
 
-        # Title
-        inner_items.append(TextDisplay(
-            f"# 🆕 New Market Week!\n"
-            f"Market prices have reset. Check out these goods to buy and prepare for stock changes!"
-        ))
+        # Title section with invite button
+        inner_items.append(
+            Section(
+                TextDisplay(
+                    f"# 🆕 New Market Week!\n"
+                    f"Market prices have reset. Check out these goods to buy and prepare for stock changes!"
+                ),
+                accessory=Button(
+                    label="🔗 Join the Discord",
+                    url="https://discord.gg/YQSV79ysGY",
+                    style=discord.ButtonStyle.link,
+                ),
+            )
+        )
         inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
 
         # Display each good
