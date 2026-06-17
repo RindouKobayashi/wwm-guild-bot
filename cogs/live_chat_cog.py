@@ -191,11 +191,27 @@ class ChatMessageView(LayoutView):
 class EmotionMessageView(LayoutView):
     """Components V2 view for an emote (msg_emotion) chat message.
 
-    Shows the emotion PNG and the author/timestamp via a single Container.
+    Shows the emotion PNG/WEBP and the author/timestamp via a single Container.
     Optionally includes a Thumbnail of the head_id avatar when one is mapped
     locally — mirrors the Section-based layout used by ChatMessageView so
     emotes line up visually with regular chat messages.
     """
+
+    @staticmethod
+    def _is_animated_webp(path: str) -> bool:
+        """Check if a WebP file is actually animated by looking for VP8X chunk."""
+        if not path.lower().endswith('.webp'):
+            return False
+        try:
+            with open(path, 'rb') as f:
+                riff = f.read(4)
+                if riff != b'RIFF':
+                    return False
+                f.seek(8)
+                vp8x = f.read(4)
+                return vp8x == b'VP8X'
+        except Exception:
+            return False
 
     def __init__(
         self,
@@ -209,11 +225,16 @@ class EmotionMessageView(LayoutView):
         head_avatar_path: Optional[str] = None,
     ):
         super().__init__(timeout=None)
+        ext = os.path.splitext(emotion_path)[1] or ".png"
+        filename = f"{emotion_id}{ext}"
         self._files: List[discord.File] = [
-            discord.File(emotion_path, filename=f"{emotion_id}.png")
+            discord.File(emotion_path, filename=filename)
         ]
         gallery = MediaGallery()
-        gallery.add_item(media=f"attachment://{emotion_id}.png", description="Emote")
+        gallery.add_item(
+            media=f"attachment://{filename}",
+            description="Emote",
+        )
 
         footer = f"📅 <t:{ts}:F> (<t:{ts}:R>)"
         if discord_mention:
@@ -2644,12 +2665,17 @@ class LiveChatCog(commands.Cog):
         files: List[discord.File] = []
         handled_separately = False  # True if emotion / exhibition took ownership
 
-        # ── Emotion messages (custom emote PNGs) ──
+        # ── Emotion messages (custom emote PNG/WEBP) ──
         if msg_type == "msg_emotion":
             emotion_id = ext.get("emotion_id")
             if emotion_id:
-                emotion_path = f"data/emotion/{emotion_id}.png"
-                if os.path.exists(emotion_path):
+                emotion_path = None
+                for ext_try in (".png", ".webp"):
+                    candidate = f"data/emotion/{emotion_id}{ext_try}"
+                    if os.path.exists(candidate):
+                        emotion_path = candidate
+                        break
+                if emotion_path:
                     view = EmotionMessageView(
                         author_name=author_name,
                         ts=ts,
