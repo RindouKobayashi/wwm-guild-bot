@@ -56,6 +56,7 @@ SPECIAL_ROLES = {
     "BA1": 1488835134101655652,
     "BA2": 1488835215949434891,
     "Esy Role": 1506882168272715926,
+    "ZZ's Role": 1516698383622869153
 }
 
 GMT8_TZ = datetime.timezone(datetime.timedelta(hours=8))
