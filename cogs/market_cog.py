@@ -1603,7 +1603,6 @@ class MarketCog(commands.Cog):
 
         result = await self._fetch_and_process()
         if not result:
-            await self.market_channel.send("❌ No market data available to report.")
             return
 
         now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
