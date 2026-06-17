@@ -11,7 +11,7 @@ from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow,
 
 import settings
 from settings import BASE_DIR, CLUB_ID, WWM_UID, logger, GMT8_TZ
-from utility.wwm import get_full_guild_info, get_bulk_hoard_data, get_bulk_players_info, _wwm_api_post, get_topics_likes
+from utility.wwm import get_full_guild_info, get_bulk_hoard_data, get_bulk_players_info, _wwm_api_post, get_topics_likes, get_player_info, find_people_by_nickname
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -107,6 +107,280 @@ class GoodNameModal(Modal, title="Suggest a Good Name"):
                 await interaction.response.send_message(f"❌ Error: {error}", ephemeral=True)
         except Exception:
             pass
+
+
+# ---------------------------------------------------------------------------
+# Add to Watchlist Modal
+# ---------------------------------------------------------------------------
+class AddToWatchlistModal(Modal, title="Add Player to Watchlist"):
+    """Modal to add one or more players to the market watchlist by UID or nickname."""
+
+    identifiers = TextInput(
+        label="Player UIDs or Nicknames",
+        placeholder="e.g. 4036668451, 4025937269, 0032906407, TjTreacher",
+        required=True,
+        style=discord.TextStyle.paragraph,
+        max_length=1000,
+    )
+
+    def __init__(self, cog: "MarketCog"):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.pending_entries: List[Tuple[str, str, str]] = []
+
+    async def on_submit(self, interaction: discord.Interaction):
+        raw = self.identifiers.value.strip()
+        if not raw:
+            await interaction.response.send_message("❌ Please enter at least one UID or nickname.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        entries = [part.strip() for part in raw.split(",") if part.strip()]
+        if not entries:
+            await interaction.followup.send("❌ No valid entries found.", ephemeral=True)
+            return
+
+        self.pending_entries = []
+        for entry in entries:
+            pid = None
+            nickname = None
+            number_id = None
+            if entry.isdigit():
+                try:
+                    player_data = await get_player_info(entry, fields=["base", "hoard_profiteer", "space_data"])
+                    if player_data and 'result' in player_data and 'base' in player_data['result']:
+                        pid = player_data['result'].get('id')
+                        base = player_data['result'].get('base', {})
+                        nickname = base.get('nickname')
+                        number_id = base.get('number_id')
+                except Exception as e:
+                    logger.debug(f"Watchlist add lookup failed for number_id {entry}: {e}")
+            if not pid:
+                try:
+                    nick_data = await find_people_by_nickname(entry)
+                    if nick_data and 'result' in nick_data:
+                        pid = nick_data['result'].get('id')
+                        if pid:
+                            nickname = nick_data['result'].get('nickname', nickname or entry)
+                            number_id = nick_data['result'].get('number_id', number_id)
+                except Exception as e:
+                    logger.debug(f"Watchlist add lookup failed for nickname {entry}: {e}")
+
+            if pid:
+                self.pending_entries.append((pid, nickname or entry, str(number_id) if number_id else ""))
+
+        if not self.pending_entries:
+            await interaction.followup.send("❌ Could not resolve any entries to players.", ephemeral=True)
+            return
+
+        # Confirmation view
+        lines = ["# 🧾 Confirm Add to Watchlist", f"**{len(self.pending_entries)} player(s) will be added:**\n"]
+        lines += [f"• **{n}** (`{nid}`)" for _, n, nid in self.pending_entries]
+        lines.append("\nPlease confirm to proceed.")
+        container = Container(
+            TextDisplay("\n".join(lines)),
+            accent_color=ACCENT_BLURPLE,
+        )
+        confirm_view = _ConfirmAddView(cog=self.cog, entries=self.pending_entries)
+        confirm_layout = LayoutView(timeout=120)
+        confirm_layout.add_item(container)
+        confirm_layout.add_item(confirm_view.action_row)
+        await interaction.followup.send(view=confirm_layout, ephemeral=True)
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception):
+        logger.error(f"AddToWatchlistModal error: {error}", exc_info=True)
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(f"❌ Error: {error}", ephemeral=True)
+        except Exception:
+            pass
+
+
+class _BulkPlayerLookupModal(Modal, title="Look Up Players"):
+    """Modal for bulk player lookup by UID or nickname."""
+
+    query = TextInput(
+        label="Player UIDs or Nicknames",
+        placeholder="e.g. 4036668451, 4025937269, 0032906407, TjTreacher",
+        required=True,
+        style=discord.TextStyle.paragraph,
+        max_length=1000,
+    )
+
+    def __init__(self, cog: "MarketCog"):
+        super().__init__(timeout=300)
+        self.cog = cog
+
+    async def on_submit(self, interaction: discord.Interaction):
+        raw = self.query.value.strip()
+        if not raw:
+            await interaction.response.send_message("❌ Please enter at least one UID or nickname.", ephemeral=True)
+            return
+        await self.cog._bulk_player_lookup(interaction, raw)
+
+
+class _BulkPlayerConfirmView:
+    """Confirmation view for bulk player lookup with stats and add-to-watchlist option."""
+
+    def __init__(self, cog: "MarketCog", players: List[Dict[str, Any]]):
+        self.cog = cog
+        self.players = players
+
+        self.action_row = ActionRow()
+        add_btn = Button(
+            label="➕ Add All to Watchlist",
+            style=discord.ButtonStyle.success,
+            custom_id="bulk_player_add_watchlist",
+        )
+        add_btn.callback = self._on_add_all
+        self.action_row.add_item(add_btn)
+
+        close_btn = Button(
+            label="❌ Close",
+            style=discord.ButtonStyle.secondary,
+            custom_id="bulk_player_close",
+        )
+        close_btn.callback = self._on_close
+        self.action_row.add_item(close_btn)
+
+    def _disable(self):
+        for item in self.action_row.children:
+            if isinstance(item, Button):
+                item.disabled = True
+
+    def build_container(self) -> Container:
+        inner: list = []
+        lines = [f"# 📈 Player Stats — {len(self.players)} player(s)"]
+        for p in self.players:
+            pct_str, _ = _pct_str(p['price_history'][0], p['price_history'][-1]) if p['price_history'] else ("N/A", 0.0)
+            status = "✅ In report" if p['is_on_watchlist'] else "⚪ Not in report"
+            good_label = f"{p['good_name']} (#{p['main_good']})" if p['good_name'] else f"#{p['main_good']}"
+
+            player_lines = [f"• **{p['nickname']}** ({p['number_id']})  │  {status}"]
+            if p['guild_name'] and p['guild_name'] != 'Unknown':
+                player_lines.append(f"  **Guild:** *{p['guild_name']}*")
+            player_lines.append(f"  **Main Good:** `{good_label}`")
+            if p['price_history']:
+                original_price = p['price_history'][0]
+                current_price = p['price_history'][-1]
+                player_lines.append(f"  **Price:** `{original_price}` → `{current_price}` ({pct_str})")
+                player_lines.append("  **History:** `" + " → ".join(str(price) for price in p['price_history']) + "`")
+            if p['likes'] > 0:
+                player_lines.append(f"  **👍 Market Likes:** `{p['likes']}`")
+
+            lines.append("\n".join(player_lines))
+        inner.append(TextDisplay("\n".join(lines)))
+        return Container(*inner, accent_color=ACCENT_BLURPLE)
+
+    async def _on_add_all(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        added = 0
+        for p in self.players:
+            if p['is_on_watchlist']:
+                continue
+            async with aiosqlite.connect(DB_PATH) as db:
+                await db.execute(
+                    "REPLACE INTO market_watchlist (pid, nickname, number_id, added_by, added_at) VALUES (?, ?, ?, ?, ?)",
+                    (p['pid'], p['nickname'], p['number_id'], interaction.user.id, int(datetime.datetime.now(datetime.timezone.utc).timestamp()))
+                )
+                await db.commit()
+            added += 1
+
+        self._disable()
+        container = Container(
+            TextDisplay(
+                f"✅ **Watchlist Updated** by {interaction.user.mention}\n\n"
+                f"**{added} player(s) added** to the market watchlist."
+            ),
+            accent_color=ACCENT_GREEN,
+        )
+        done_view = LayoutView(timeout=None)
+        done_view.add_item(container)
+        await interaction.edit_original_response(view=done_view)
+
+        logger.info(f"Market watchlist bulk add from player command: {added} players by {interaction.user}")
+        await self.cog._refresh_dashboard()
+
+    async def _on_close(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        self._disable()
+        container = Container(
+            TextDisplay("ℹ️ **Closed**\n\nNo changes were made."),
+            accent_color=ACCENT_BLURPLE,
+        )
+        done_view = LayoutView(timeout=None)
+        done_view.add_item(container)
+        await interaction.edit_original_response(view=done_view)
+
+
+class _ConfirmAddView:
+    """Holds approve/reject buttons for watchlist confirmation."""
+
+    def __init__(self, cog: "MarketCog", entries: List[Tuple[str, str, str]], suggested_by: Optional[discord.abc.User] = None):
+        self.cog = cog
+        self.entries = entries
+        self.suggested_by = suggested_by
+
+        self.action_row = ActionRow()
+        approve_btn = Button(
+            label="✅ Confirm – Add All",
+            style=discord.ButtonStyle.success,
+            custom_id="watchlist_confirm_add",
+        )
+        approve_btn.callback = self._on_approve
+        self.action_row.add_item(approve_btn)
+
+        reject_btn = Button(
+            label="❌ Cancel",
+            style=discord.ButtonStyle.danger,
+            custom_id="watchlist_reject_add",
+        )
+        reject_btn.callback = self._on_reject
+        self.action_row.add_item(reject_btn)
+
+    def _disable(self):
+        for item in self.action_row.children:
+            if isinstance(item, Button):
+                item.disabled = True
+
+    async def _on_approve(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        added = 0
+        for pid, nickname, number_id in self.entries:
+            async with aiosqlite.connect(DB_PATH) as db:
+                await db.execute(
+                    "REPLACE INTO market_watchlist (pid, nickname, number_id, added_by, added_at) VALUES (?, ?, ?, ?, ?)",
+                    (pid, nickname, number_id, interaction.user.id, int(datetime.datetime.now(datetime.timezone.utc).timestamp()))
+                )
+                await db.commit()
+            added += 1
+
+        self._disable()
+        container = Container(
+            TextDisplay(
+                f"✅ **Watchlist Updated** by {interaction.user.mention}\n\n"
+                f"**{added} player(s) added** to the market watchlist."
+            ),
+            accent_color=ACCENT_GREEN,
+        )
+        done_view = LayoutView(timeout=None)
+        done_view.add_item(container)
+        await interaction.edit_original_response(view=done_view)
+
+        logger.info(f"Market watchlist bulk add: {added} players by {interaction.user}")
+        await self.cog._refresh_dashboard()
+
+    async def _on_reject(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        self._disable()
+        container = Container(
+            TextDisplay("❌ **Watchlist Add Cancelled**\n\nNo players were added."),
+            accent_color=ACCENT_RED,
+        )
+        done_view = LayoutView(timeout=None)
+        done_view.add_item(container)
+        await interaction.edit_original_response(view=done_view)
 
 
 # ---------------------------------------------------------------------------
@@ -284,7 +558,7 @@ class MarketPlayerAdminConfirmView:
         done_view = LayoutView(timeout=None)
         done_view.add_item(summary)
         await interaction.edit_original_response(view=done_view)
-        logger.info(f"Market player watchlist reject: {self.nickname} ({self.pid}) by {interaction.user}")
+        logger.info(f"Market player watchlist reject: {self.nickname} ({self.pid}) (by {interaction.user})")
 
 
 # ---------------------------------------------------------------------------
@@ -416,7 +690,7 @@ class MarketPlayerView(LayoutView):
 
 
 # ---------------------------------------------------------------------------
-# Market Report View (Components V2) — updated with Suggest Name buttons
+# Market Report View (Components V2) — updated with Add to Watchlist button
 # ---------------------------------------------------------------------------
 class MarketReportView(LayoutView):
     """Components V2 LayoutView for the daily market price report."""
@@ -505,6 +779,17 @@ class MarketReportView(LayoutView):
             f"📊 Report generated: <t:{report_ts}:R>  •  🔄 Updates every 3 minutes"
         ))
 
+        # Add to watchlist button
+        add_row = ActionRow()
+        add_btn = Button(
+            label="➕ Add Player to Watchlist",
+            style=discord.ButtonStyle.success,
+            custom_id="market_add_watchlist",
+        )
+        add_btn.callback = self._on_add_watchlist
+        add_row.add_item(add_btn)
+        inner_items.append(add_row)
+
         # Filter button row
         filter_row = ActionRow()
         online_filter_btn = Button(
@@ -518,6 +803,10 @@ class MarketReportView(LayoutView):
 
         container = Container(*inner_items, accent_color=ACCENT_GREEN)
         self.add_item(container)
+
+    async def _on_add_watchlist(self, interaction: discord.Interaction):
+        modal = AddToWatchlistModal(cog=self.cog)
+        await interaction.response.send_modal(modal)
 
     async def _on_filter_online(self, interaction: discord.Interaction):
         """Filter the report to show only online players, sent as an ephemeral message."""
@@ -633,6 +922,17 @@ class NewWeekMarketView(LayoutView):
 
             inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
 
+        # Add to watchlist
+        add_row = ActionRow()
+        add_btn = Button(
+            label="➕ Add Player to Watchlist",
+            style=discord.ButtonStyle.success,
+            custom_id="market_add_watchlist",
+        )
+        add_btn.callback = self._on_add_watchlist
+        add_row.add_item(add_btn)
+        inner_items.append(add_row)
+
         # Footer
         inner_items.append(TextDisplay(
             f"📊 Generated: <t:{report_ts}:R>  •  🔄 Updates every 3 minutes"
@@ -640,6 +940,10 @@ class NewWeekMarketView(LayoutView):
 
         container = Container(*inner_items, accent_color=ACCENT_GREEN)
         self.add_item(container)
+
+    async def _on_add_watchlist(self, interaction: discord.Interaction):
+        modal = AddToWatchlistModal(cog=self.cog)
+        await interaction.response.send_modal(modal)
 
     def _make_suggest_callback(self, good_id: str):
         async def callback(interaction: discord.Interaction):
@@ -921,7 +1225,7 @@ class MarketCog(commands.Cog):
 
     async def _fetch_and_process(self) -> Optional[Dict[str, Any]]:
         """Fetch hoard data and determine market state.
-        
+
         Logic:
           - Filter qualifying players: online AND/OR logged out within today (since 6am GMT+8).
           - If ANY qualifying player has only 1 data point in price_change_history,
@@ -929,7 +1233,7 @@ class MarketCog(commands.Cog):
             goods from that player's average_price keys.
           - Otherwise (all qualifying players have >=2 data points): return
             {"mode": "active", "groups": {good_id: [(player_data...), ...]}}
-        
+
         Returns None if no qualifying player data.
         """
         all_pids = await self._get_all_player_pids()
@@ -1460,117 +1764,141 @@ class MarketCog(commands.Cog):
             else:
                 await interaction.followup.send("❌ Player not found on watchlist.", ephemeral=True)
 
-    @market_group.command(name="player", description="Look up a specific player's market stats")
+    @market_group.command(name="player", description="Look up specific players' market stats")
     @app_commands.describe(
-        number_id="The player's 10-digit Number ID",
-        nickname="The player's in-game nickname"
+        query="One or more player UIDs or nicknames, comma-separated (optional if using the modal)",
     )
-    async def market_player(self, interaction: discord.Interaction, number_id: str = None, nickname: str = None):
-        """Show market data for a specific player."""
-        if not number_id and not nickname:
-            await interaction.response.send_message("❌ Please provide either a Number ID or nickname.", ephemeral=True)
+    async def market_player(self, interaction: discord.Interaction, query: str = ""):
+        """Show market data for one or more players."""
+        if query:
+            # Direct lookup from slash command argument
+            await self._bulk_player_lookup(interaction, query)
+        else:
+            # Open modal for bulk input
+            modal = _BulkPlayerLookupModal(cog=self)
+            await interaction.response.send_modal(modal)
+
+    async def _bulk_player_lookup(self, interaction: discord.Interaction, raw: str):
+        entries = [part.strip() for part in raw.split(",") if part.strip()]
+        if not entries:
+            await interaction.response.send_message("❌ Please enter at least one UID or nickname.", ephemeral=True)
             return
 
         await interaction.response.defer(ephemeral=False)
 
-        try:
-            from utility.wwm import get_player_info, find_people_by_nickname, fetch_player_data_by_pid
-            from settings import WWM_REDIS_PLAYER_URL
+        resolved: List[Dict[str, Any]] = []
 
-            player_entry = None
-            resolved_number_id = number_id
+        # Resolve each entry
+        for entry in entries:
             pid = None
+            nickname = None
+            number_id = None
+            hostnum = 10595
 
-            if number_id:
-                player_data = await get_player_info(number_id, fields=["base", "hoard_profiteer", "space_data"])
-                if player_data and 'result' in player_data and 'base' in player_data['result']:
-                    player_entry = player_data['result']
-                    pid = player_entry.get('id')
-                    # hostnum in space_data
-                    player_hostnum = player_entry.get("space_data").get("space_hostnum", 10595)
-                else:
-                    await interaction.followup.send("❌ Player not found with that Number ID.", ephemeral=True)
-                    return
-            elif nickname:
-                nick_data = await find_people_by_nickname(nickname)
-                if not nick_data or 'result' not in nick_data:
-                    await interaction.followup.send("❌ Player not found with that nickname.", ephemeral=True)
-                    return
-                pid = nick_data['result'].get('id')
-                player_hostnum = nick_data["result"].get("hostnum", 10595)
-                if not pid:
-                    await interaction.followup.send("❌ Could not resolve nickname to a player ID.", ephemeral=True)
-                    return
-                raw = await _wwm_api_post(
-                    WWM_REDIS_PLAYER_URL,
-                    {
-                        "fields": ["base", "hoard_profiteer"],
-                        "hostnum2pids": {10595: [pid]},
-                        "uid": WWM_UID
-                    }
-                )
-                if raw and 'result' in raw:
-                    first_pid = next(iter(raw['result'].keys()))
-                    player_entry = raw['result'][first_pid]
-                if not player_entry:
-                    await interaction.followup.send("❌ Failed to fetch player data.", ephemeral=True)
-                    return
-                resolved_number_id = player_entry.get('base', {}).get('number_id', '')
+            if entry.isdigit():
+                try:
+                    player_data = await get_player_info(entry, fields=["base", "hoard_profiteer", "space_data"])
+                    if player_data and 'result' in player_data and 'base' in player_data['result']:
+                        pid = player_data['result'].get('id')
+                        base = player_data['result'].get('base', {})
+                        nickname = base.get('nickname')
+                        number_id = base.get('number_id')
+                        hostnum = player_data['result'].get("space_data", {}).get("space_hostnum", 10595)
+                except Exception as e:
+                    logger.debug(f"Player lookup failed for number_id {entry}: {e}")
 
-            base = player_entry.get('base', {}) if isinstance(player_entry, dict) else {}
-            hoard = player_entry.get('hoard_profiteer', {}) if isinstance(player_entry, dict) else {}
+            if not pid:
+                try:
+                    nick_data = await find_people_by_nickname(entry)
+                    if nick_data and 'result' in nick_data:
+                        pid = nick_data['result'].get('id')
+                        if pid:
+                            nickname = nick_data['result'].get('nickname', nickname or entry)
+                            number_id = nick_data['result'].get('number_id', number_id)
+                            hostnum = nick_data["result"].get("hostnum", 10595)
+                except Exception as e:
+                    logger.debug(f"Player lookup failed for nickname {entry}: {e}")
 
+            if pid:
+                resolved.append({
+                    "pid": pid,
+                    "nickname": nickname or entry,
+                    "number_id": str(number_id) if number_id else "",
+                    "hostnum": hostnum,
+                })
+
+        if not resolved:
+            await interaction.followup.send("❌ Could not resolve any entries to players.", ephemeral=True)
+            return
+
+        # Fetch hoard data for all resolved PIDs concurrently
+        from utility.wwm import get_bulk_hoard_data
+        pids = [r["pid"] for r in resolved]
+        try:
+            raw_data = await get_bulk_hoard_data(pids)
+        except Exception as e:
+            logger.error(f"Market cog: bulk hoard fetch failed: {e}")
+            await interaction.followup.send("❌ Failed to fetch market data for resolved players.", ephemeral=True)
+            return
+
+        players_data = raw_data.get('result', {}) if raw_data else {}
+
+        # Build final list with stats
+        final_players: List[Dict[str, Any]] = []
+        for r in resolved:
+            pid = r["pid"]
+            entry = players_data.get(pid, {})
+            base = entry.get('base', {}) if isinstance(entry, dict) else {}
+            hoard = entry.get('hoard_profiteer', {}) if isinstance(entry, dict) else {}
             if not hoard:
-                await interaction.followup.send("⚠️ This player has no market data.", ephemeral=True)
-                return
+                continue
 
-            nickname_val = base.get('nickname', nickname or 'Unknown')
-            number_id_val = str(resolved_number_id or base.get('number_id', ''))
+            nickname = base.get('nickname', r['nickname'])
+            number_id = r['number_id'] or str(base.get('number_id', ''))
             main_good = str(hoard.get('main_good', '?'))
             price_history = hoard.get('price_change_history', [])
             total_profit = hoard.get('total_profit', 0)
 
             # Check if already on watchlist
             watchlist_pids = await self._get_watchlist_pids()
-            is_on_watchlist = pid in watchlist_pids if pid else False
+            is_on_watchlist = pid in watchlist_pids
 
-            # Check if good has an approved name
+            # Good name check
             known_goods = await self._get_known_goods()
-            good_has_name = main_good in known_goods if main_good else False
+            good_has_name = main_good in known_goods
             good_name = await self._get_good_name(main_good) if good_has_name else ""
-
-            # Fetch market likes for this player (hostnum is at root level, not in base)
-            likes = await self._fetch_market_likes(pid, player_hostnum) if pid else 0
-            logger.debug(f"PID {pid} HOSTNUM {player_hostnum} has {likes} likes")
-
-            # Fetch guild name from club_info (via cache)
+            likes = await self._fetch_market_likes(pid, r["hostnum"])
             guild_name = ''
-            club_info = player_entry.get('club_info', {}) if isinstance(player_entry, dict) else {}
+            club_info = entry.get('club_info', {}) if isinstance(entry, dict) else {}
             club_id = club_info.get('club_id', 0)
             if club_id:
-                guild_name = await self._resolve_guild_name(club_id, player_hostnum)
+                guild_name = await self._resolve_guild_name(club_id, r["hostnum"])
 
-            view = MarketPlayerView(
-                cog=self,
-                pid=pid or '',
-                nickname=nickname_val,
-                number_id=number_id_val,
-                main_good=main_good,
-                price_history=price_history,
-                total_profit=total_profit,
-                is_on_watchlist=is_on_watchlist,
-                good_has_name=good_has_name,
-                good_name=good_name or "",
-                likes=likes,
-                guild_name=guild_name,
-            )
+            final_players.append({
+                "pid": pid,
+                "nickname": nickname,
+                "number_id": number_id,
+                "main_good": main_good,
+                "price_history": price_history,
+                "total_profit": total_profit,
+                "is_on_watchlist": is_on_watchlist,
+                "good_has_name": good_has_name,
+                "good_name": good_name or "",
+                "likes": likes,
+                "guild_name": guild_name,
+            })
 
-            # Edit the deferred response with the view
-            await interaction.edit_original_response(content=None, view=view)
+        if not final_players:
+            await interaction.followup.send("⚠️ No players with market data found in the resolved list.", ephemeral=True)
+            return
 
-        except Exception as e:
-            logger.error(f"Market cog: player lookup failed: {e}", exc_info=True)
-            await interaction.followup.send(f"❌ Error: `{e}`", ephemeral=True)
+        # Confirmation view
+        confirm_view = _BulkPlayerConfirmView(cog=self, players=final_players)
+        container = confirm_view.build_container()
+        confirm_layout = LayoutView(timeout=180)
+        confirm_layout.add_item(container)
+        confirm_layout.add_item(confirm_view.action_row)
+        await interaction.followup.send(view=confirm_layout, ephemeral=True)
 
 
 # ---------------------------------------------------------------------------
