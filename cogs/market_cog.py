@@ -953,6 +953,179 @@ class NewWeekMarketView(LayoutView):
 
 
 # ---------------------------------------------------------------------------
+# Watchlist Paginated View
+# ---------------------------------------------------------------------------
+class WatchlistPaginatedView(LayoutView):
+    """Paginated view for the market watchlist showing 10 entries per page."""
+
+    def __init__(
+        self,
+        cog: "MarketCog",
+        all_entries: List[Dict[str, Any]],
+        guild_pids: Set[str],
+        bound_pids: Set[str],
+    ):
+        super().__init__(timeout=180)
+        self.cog = cog
+        self.all_entries = all_entries
+        self.guild_pids = guild_pids
+        self.bound_pids = bound_pids
+        self.page_size = 10
+        self.current_page = 0
+        self.total_pages = max(1, (len(all_entries) + self.page_size - 1) // self.page_size)
+
+        self._build()
+
+    def _get_page_entries(self) -> Tuple[List[Dict], List[Dict]]:
+        start = self.current_page * self.page_size
+        end = start + self.page_size
+        page = self.all_entries[start:end]
+        manual = [e for e in page if e['pid'] not in self.guild_pids and e['pid'] not in self.bound_pids]
+        auto = [e for e in page if e['pid'] in self.guild_pids or e['pid'] in self.bound_pids]
+        return manual, auto
+
+    def _build(self) -> None:
+        # Clear previous items except the base container approach
+        self.clear_items()
+
+        manual, auto = self._get_page_entries()
+        start = self.current_page * self.page_size + 1
+        end = min((self.current_page + 1) * self.page_size, len(self.all_entries))
+
+        lines: List[str] = []
+        lines.append(f"# 📋 Market Watchlist\n")
+        lines.append(f"**Total:** {len(self.all_entries)} entries  •  **Page {self.current_page + 1}/{self.total_pages}** (showing {start}-{end})\n")
+
+        page_manual_start = self.current_page * self.page_size
+        page_manual = [e for e in self.all_entries[page_manual_start:page_manual_start + self.page_size]
+                       if e['pid'] not in self.guild_pids and e['pid'] not in self.bound_pids]
+        page_auto = [e for e in self.all_entries[page_manual_start:page_manual_start + self.page_size]
+                     if e['pid'] in self.guild_pids or e['pid'] in self.bound_pids]
+
+        if page_manual:
+            lines.append(f"## Manually Added ({len([e for e in self.all_entries if e['pid'] not in self.guild_pids and e['pid'] not in self.bound_pids])})\n")
+            for entry in page_manual:
+                lines.append(
+                    f"• **{entry['nickname']}** ({entry['number_id']}) "
+                    f"— added <t:{entry['added_at']}:R> by <@{entry['added_by']}>"
+                )
+            lines.append("")
+
+        if page_auto:
+            lines.append(f"## Also in Guild/Bound ({len([e for e in self.all_entries if e['pid'] in self.guild_pids or e['pid'] in self.bound_pids])})\n")
+            for entry in page_auto:
+                lines.append(
+                    f"• **{entry['nickname']}** ({entry['number_id']}) "
+                    f"— added <t:{entry['added_at']}:R> by <@{entry['added_by']}>"
+                )
+            lines.append("")
+
+        if not page_manual and not page_auto:
+            lines.append("No entries on this page.")
+
+        inner: list = []
+        inner.append(TextDisplay("\n".join(lines)))
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Remove Select menu (only for entries on current page)
+        remove_options: List[discord.SelectOption] = []
+        for entry in page_manual + page_auto:
+            label = f"{entry['nickname']} ({entry['number_id']})"[:90]
+            remove_options.append(
+                discord.SelectOption(
+                    label=label,
+                    description=f"Remove from watchlist",
+                    value=str(entry['pid']),
+                )
+            )
+
+        if remove_options:
+            select_row = ActionRow()
+            remove_select = Select(
+                placeholder="Select a player to remove…",
+                options=remove_options[:25],
+                custom_id="watchlist_remove_select",
+            )
+            remove_select.callback = self._on_remove
+            select_row.add_item(remove_select)
+            inner.append(select_row)
+
+        # Navigation buttons
+        nav_row = ActionRow()
+        prev_btn = Button(
+            label="◀ Previous",
+            style=discord.ButtonStyle.secondary,
+            custom_id="watchlist_prev",
+            disabled=self.current_page == 0,
+        )
+        prev_btn.callback = self._on_prev
+        nav_row.add_item(prev_btn)
+
+        page_btn = Button(
+            label=f"{self.current_page + 1}/{self.total_pages}",
+            style=discord.ButtonStyle.secondary,
+            custom_id="watchlist_page",
+            disabled=True,
+        )
+        nav_row.add_item(page_btn)
+
+        next_btn = Button(
+            label="Next ▶",
+            style=discord.ButtonStyle.secondary,
+            custom_id="watchlist_next",
+            disabled=self.current_page >= self.total_pages - 1,
+        )
+        next_btn.callback = self._on_next
+        nav_row.add_item(next_btn)
+        inner.append(nav_row)
+
+        container = Container(*inner, accent_color=ACCENT_BLURPLE)
+        self.add_item(container)
+
+    async def _on_prev(self, interaction: discord.Interaction):
+        if self.current_page > 0:
+            self.current_page -= 1
+            self._build()
+            await interaction.response.edit_message(view=self)
+
+    async def _on_next(self, interaction: discord.Interaction):
+        if self.current_page < self.total_pages - 1:
+            self.current_page += 1
+            self._build()
+            await interaction.response.edit_message(view=self)
+
+    async def _on_remove(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ Admins only.", ephemeral=True)
+            return
+
+        pid = interaction.data.get("values", [None])[0]
+        if not pid:
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        async with aiosqlite.connect(self.cog.db_path) as db:
+            cursor = await db.execute("SELECT nickname FROM market_watchlist WHERE pid = ?", (pid,))
+            row = await cursor.fetchone()
+            if row:
+                nickname = row[0]
+                await db.execute("DELETE FROM market_watchlist WHERE pid = ?", (pid,))
+                await db.commit()
+                await interaction.followup.send(f"✅ Removed **{nickname}** from the watchlist.", ephemeral=True)
+                # Update local entries and refresh view
+                self.all_entries = [e for e in self.all_entries if e['pid'] != pid]
+                self.total_pages = max(1, (len(self.all_entries) + self.page_size - 1) // self.page_size)
+                if self.current_page >= self.total_pages:
+                    self.current_page = max(0, self.total_pages - 1)
+                self._build()
+                await interaction.edit_original_response(view=self)
+                await self.cog._refresh_dashboard()
+            else:
+                await interaction.followup.send("❌ Player not found on watchlist.", ephemeral=True)
+
+
+# ---------------------------------------------------------------------------
 # Market Cog
 # ---------------------------------------------------------------------------
 class MarketCog(commands.Cog):
@@ -1625,7 +1798,7 @@ class MarketCog(commands.Cog):
     @market_group.command(name="watchlist", description="Show/remove manually added players on the market watchlist")
     @app_commands.checks.has_permissions(administrator=True)
     async def market_watchlist(self, interaction: discord.Interaction):
-        """Show all manually-added players on the watchlist, with a Select to remove entries."""
+        """Show all manually-added players on the watchlist, with pagination (10 per page) and removal Select."""
         await interaction.response.defer()
         try:
             # Get guild + bound PIDs to filter out
@@ -1659,80 +1832,22 @@ class MarketCog(commands.Cog):
                 await interaction.followup.send("📋 Watchlist is empty — no manually added players.")
                 return
 
-            # Build lists
-            manual_only = []
-            also_auto = []
+            all_entries: List[Dict[str, Any]] = []
             for row in rows:
-                entry = {
+                all_entries.append({
                     'pid': row['pid'],
                     'nickname': row['nickname'],
                     'number_id': row['number_id'],
                     'added_by': row['added_by'],
                     'added_at': row['added_at'],
-                }
-                if row['pid'] in guild_pids or row['pid'] in bound_pids:
-                    also_auto.append(entry)
-                else:
-                    manual_only.append(entry)
+                })
 
-            lines = []
-            lines.append(f"# 📋 Market Watchlist\n")
-            lines.append(f"**Total:** {len(rows)} entries\n")
-
-            if manual_only:
-                lines.append(f"## Manually Added ({len(manual_only)})\n")
-                for entry in manual_only:
-                    lines.append(
-                        f"• **{entry['nickname']}** ({entry['number_id']}) "
-                        f"— added <t:{entry['added_at']}:R> by <@{entry['added_by']}>"
-                    )
-                lines.append("")
-
-            if also_auto:
-                lines.append(f"## Also in Guild/Bound ({len(also_auto)})\n")
-                for entry in also_auto:
-                    lines.append(
-                        f"• **{entry['nickname']}** ({entry['number_id']}) "
-                        f"— added <t:{entry['added_at']}:R> by <@{entry['added_by']}>"
-                    )
-                lines.append("")
-
-            if not manual_only and also_auto:
-                lines.append("\nAll watchlist entries are already covered by guild/bound membership.")
-            elif not manual_only and not also_auto:
-                lines.append("No entries.")
-
-            # Build a Select menu for removal
-            remove_options = []
-            for row in rows:
-                label = f"{row['nickname']} ({row['number_id']})"[:90]
-                remove_options.append(
-                    discord.SelectOption(
-                        label=label,
-                        description=f"Remove from watchlist",
-                        value=str(row['pid']),
-                    )
-                )
-
-            inner = [
-                TextDisplay("\n".join(lines)),
-                Separator(spacing=discord.SeparatorSpacing.small),
-            ]
-
-            if remove_options:
-                select_row = ActionRow()
-                remove_select = Select(
-                    placeholder="Select a player to remove from watchlist…",
-                    options=remove_options[:25],  # Discord max 25 options per Select
-                    custom_id="watchlist_remove_select",
-                )
-                remove_select.callback = self._watchlist_remove_callback
-                select_row.add_item(remove_select)
-                inner.append(select_row)
-
-            container = Container(*inner, accent_color=ACCENT_BLURPLE)
-            view = LayoutView(timeout=120)
-            view.add_item(container)
+            view = WatchlistPaginatedView(
+                cog=self,
+                all_entries=all_entries,
+                guild_pids=guild_pids,
+                bound_pids=bound_pids,
+            )
             await interaction.followup.send(view=view)
 
         except Exception as e:
