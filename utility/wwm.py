@@ -270,7 +270,7 @@ async def get_full_guild_info(club_id: int, hostnum: int = 10103, fields: Option
             "field_info": fields if fields else DEFAULT_GUILD_FIELDS,
             "hostnum": hostnum
         },
-        timeout=15,
+        timeout=20,
     )
 
 async def get_custom_guild_info(club_id: int, hostnum: int = 10103, fields: Optional[Dict[str, list]] = None) -> Optional[Dict[str, Any]]:
@@ -307,7 +307,7 @@ async def get_topics_likes(target_uuid: str, target_hostnum: int) -> Optional[Di
                 133, 139, 140, 142, 129,
             ]
         },
-        timeout=15,
+        timeout=20,
     )
 
 
