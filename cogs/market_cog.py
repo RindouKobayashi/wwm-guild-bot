@@ -808,6 +808,14 @@ class MarketReportView(LayoutView):
         )
         online_filter_btn.callback = self._on_filter_online
         filter_row.add_item(online_filter_btn)
+
+        guild_filter_btn = Button(
+            label="🏰 Filter My Guild",
+            style=discord.ButtonStyle.secondary,
+            custom_id="market_filter_guild",
+        )
+        guild_filter_btn.callback = self._on_filter_guild
+        filter_row.add_item(guild_filter_btn)
         inner_items.append(filter_row)
 
         container = Container(*inner_items, accent_color=ACCENT_GREEN)
@@ -875,6 +883,100 @@ class MarketReportView(LayoutView):
             modal = GoodNameModal(good_id=good_id, cog=self.cog)
             await interaction.response.send_modal(modal)
         return callback
+
+    async def _on_filter_guild(self, interaction: discord.Interaction):
+        """Filter the report to show only players from the user's bound guild, sent as an ephemeral message."""
+        await interaction.response.defer(ephemeral=True)
+
+        # Look up bound player_pid for this user
+        bound_pid = None
+        try:
+            async with aiosqlite.connect(VERIFICATION_DB_PATH) as conn:
+                cursor = await conn.execute(
+                    "SELECT player_pid FROM verified_members WHERE user_id = ? AND player_pid IS NOT NULL",
+                    (interaction.user.id,)
+                )
+                row = await cursor.fetchone()
+                if row:
+                    bound_pid = row[0]
+        except Exception as e:
+            logger.error(f"Market cog: failed to lookup bound player for user {interaction.user.id}: {e}")
+
+        if not bound_pid:
+            await interaction.followup.send(
+                "❌ You don't have a bound account. Please bind your account first using the verification system.",
+                ephemeral=True
+            )
+            return
+
+        # Find the bound player's guild name in the current report data
+        bound_guild_name = None
+        for good_id, players in self.grouped_data.items():
+            for player_tuple in players:
+                # player_tuple: (pid, nickname, number_id, original_price, current_price, pct, is_online, hostnum, guild_name)
+                if player_tuple[0] == bound_pid:
+                    bound_guild_name = player_tuple[8]
+                    break
+            if bound_guild_name:
+                break
+
+        if not bound_guild_name or bound_guild_name == 'Unknown':
+            await interaction.followup.send(
+                f"⚠️ Could not determine your guild from the current report data. "
+                f"Make sure your character is online or recently active.",
+                ephemeral=True
+            )
+            return
+
+        # Filter each good group to only include players from the same guild
+        filtered: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str]]] = {}
+        total_filtered = 0
+        for good_id, players in self.grouped_data.items():
+            guild_players = [p for p in players if p[8] == bound_guild_name]
+            if guild_players:
+                filtered[good_id] = guild_players
+                total_filtered += len(guild_players)
+
+        if not filtered:
+            await interaction.followup.send(
+                f"🏰 No other players from **{bound_guild_name}** found in the current report data.",
+                ephemeral=True
+            )
+            return
+
+        # Build a text-only ephemeral response
+        lines = [f"# 🏰 Guild Filter — {bound_guild_name}", f"Showing **{total_filtered}** player(s) from your guild\n"]
+        sorted_goods = sorted(filtered.keys(), key=lambda gid: int(gid))
+        for idx, good_id in enumerate(sorted_goods):
+            players = filtered[good_id]
+            emoji = GOOD_EMOJIS[idx % len(GOOD_EMOJIS)]
+            good_name = self.good_names_map.get(good_id, "")
+            label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
+
+            lines.append(f"### {emoji} {label} — {len(players)} player(s)")
+            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name) in enumerate(players[:10], 1):
+                prefix = ["🥇", "🥈", "🥉"][rank - 1] if rank <= 3 else f"`{rank}.`"
+                sign = "+" if pct >= 0 else ""
+                online_icon = "🟢" if is_online else "⚫"
+                likes_text = f"  │  👍 {self.likes_map.get(pid, 0)}" if self.likes_map.get(pid, 0) else ""
+                lines.append(
+                    f"{prefix} {online_icon} **{nickname}** ({number_id})  ─  "
+                    f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
+                    f"{likes_text}"
+                )
+            lines.append("")
+
+        lines.append(f"📊 Filtered from current report data.")
+
+        inner = [
+            TextDisplay("\n".join(lines)),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay("_This message is only visible to you._"),
+        ]
+        container = Container(*inner, accent_color=ACCENT_BLURPLE)
+        result_view = LayoutView(timeout=60)
+        result_view.add_item(container)
+        await interaction.followup.send(view=result_view, ephemeral=True)
 
 
 # ---------------------------------------------------------------------------
