@@ -2937,6 +2937,28 @@ class LiveChatCog(commands.Cog):
                                 self.seen_head_map.add((str(head_part), bt))
                         except (TypeError, ValueError):
                             continue
+                    # ── Cleanup: remove spurious gender entries ──
+                    # The legacy migration used to add BOTH genders for each old
+                    # flat head_id entry. If a head_id now has both (0) and (1)
+                    # in seen_head_map but only one gender actually has a mapped
+                    # avatar file on disk, drop the incorrect entry so the
+                    # missing-gender picker button can appear again.
+                    head_ids_with_both = {}
+                    for h, bt in self.seen_head_map:
+                        if bt not in (0, 1):
+                            continue
+                        head_ids_with_both.setdefault(h, set()).add(bt)
+                    for h, bts in head_ids_with_both.items():
+                        if bts != {0, 1}:
+                            continue
+                        # Both genders present — check which ones actually have files
+                        has_female = self._avatar_path(h, BODY_TYPE_FEMALE) is not None
+                        has_male = self._avatar_path(h, BODY_TYPE_MALE) is not None
+                        if has_female and not has_male:
+                            self.seen_head_map.discard((h, BODY_TYPE_MALE))
+                        elif has_male and not has_female:
+                            self.seen_head_map.discard((h, BODY_TYPE_FEMALE))
+                        # If neither or both have files, leave as-is (both mapped or both missing)
                     # 3) Read seen_emotion_ids (flat list of emotion_id strings).
                     for eid in config.get('seen_emotion_ids', []) or []:
                         eid_str = str(eid).strip()
