@@ -26,6 +26,8 @@ from googletrans import Translator
 
 VERIFICATION_DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 AVATARS_DIR = BASE_DIR / "data" / "avatars"
+EMOTION_DIR = BASE_DIR / "data" / "emotion"
+EMOTION_PENDING_DIR = BASE_DIR / "data" / "emotion" / "pending"
 
 # Channel where avatar-mapping approval requests are sent for admins to review
 ADMIN_AVATAR_CHANNEL_ID = 1500005539256602774
@@ -1645,6 +1647,368 @@ class AdminConfirmView(LayoutView):
 
 
 
+class UploadEmotionModal(discord.ui.Modal, title="Upload Custom Emotion"):
+    """Modal that lets the user upload an emotion image from their computer.
+
+    Much simpler than UploadAvatarModal because emotions don't need subfolders
+    or body_type. The file is saved as `{emotion_id}.{ext}` in data/emotion/pending/
+    and then sent to admins for approval.
+    """
+
+    def __init__(
+        self,
+        *,
+        cog: "LiveChatCog",
+        emotion_id: str,
+        sender_nickname: str,
+        sender_pid: Optional[str],
+    ):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.emotion_id = str(emotion_id)
+        self.sender_nickname = sender_nickname
+        self.sender_pid = sender_pid
+
+        self.emotion_file = discord.ui.FileUpload(
+            required=True,
+            min_values=1,
+            max_values=1,
+        )
+        self.add_item(
+            Label(
+                text="Upload emotion image (PNG/WEBP, max 10 MB)",
+                component=self.emotion_file,
+            )
+        )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        attachments = self.emotion_file.values
+        if not attachments:
+            await interaction.response.send_message(
+                "❌ No file was attached.", ephemeral=True
+            )
+            return
+        attachment: discord.Attachment = attachments[0]
+
+        if attachment.size > 10 * 1024 * 1024:
+            await interaction.response.send_message(
+                f"❌ File too large ({attachment.size // 1024} KB; max 10 MB).",
+                ephemeral=True,
+            )
+            return
+        fname_lower = attachment.filename.lower()
+        if not (fname_lower.endswith(".png") or fname_lower.endswith(".webp")):
+            await interaction.response.send_message(
+                "❌ File must be a `.png` or `.webp`.", ephemeral=True
+            )
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            upload_data = await attachment.read()
+        except Exception as e:
+            await interaction.followup.send(f"❌ Failed to read attachment: {e}", ephemeral=True)
+            return
+
+        class _ReReadableAttachment:
+            def __init__(self, data: bytes, filename: str):
+                self._data = data
+                self.filename = filename
+            async def read(self):
+                return self._data
+
+        re_readable = _ReReadableAttachment(upload_data, attachment.filename)
+        ok, err_or_filename = await self.cog._stage_emotion_upload(
+            attachment=re_readable,  # type: ignore[arg-type]
+            emotion_id=self.emotion_id,
+            suggested_by=interaction.user,
+            sender_nickname=self.sender_nickname,
+            sender_pid=self.sender_pid,
+            source_message_jump_url=None,
+        )
+        if not ok:
+            await interaction.followup.send(f"❌ {err_or_filename}", ephemeral=True)
+            return
+
+        self.cog.seen_emotion_ids.add(self.emotion_id)
+        self.cog.save_config()
+
+        await interaction.followup.send(
+            f"✅ Saved `{err_or_filename}` and sent to admins for approval for emotion_id `{self.emotion_id}`.",
+            ephemeral=True,
+        )
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception):
+        logger.error(f"UploadEmotionModal on_error: {error}", exc_info=True)
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(
+                    f"❌ Upload failed: {error}", ephemeral=True
+                )
+        except Exception:
+            pass
+
+
+class AdminEmotionConfirmView(LayoutView):
+    """Persistent Components V2 view that admins use to approve or reject a proposed emotion.
+
+    `emotion_id` is the numeric/string ID from the game. The approve flow copies
+    the pending file to `data/emotion/{emotion_id}.{ext}`.
+    """
+
+    def __init__(
+        self,
+        *,
+        cog: "LiveChatCog",
+        emotion_id: str,
+        pending_filename: str,
+        target_filename: str,
+        suggested_by_id: Optional[int],
+        source_message_jump_url: Optional[str],
+    ):
+        super().__init__(timeout=None)
+        self.cog = cog
+        self.emotion_id = emotion_id
+        self.pending_filename = pending_filename
+        self.target_filename = target_filename
+        self.suggested_by_id = suggested_by_id
+        self.source_message_jump_url = source_message_jump_url
+
+        self.action_row = ActionRow()
+        approve_btn = Button(
+            label="✅ Approve",
+            style=discord.ButtonStyle.success,
+            custom_id=f"emotion_admin_approve:{emotion_id}:{pending_filename}",
+        )
+        approve_btn.callback = self._on_approve
+        self.action_row.add_item(approve_btn)
+
+        reject_btn = Button(
+            label="❌ Reject",
+            style=discord.ButtonStyle.danger,
+            custom_id=f"emotion_admin_reject:{emotion_id}",
+        )
+        reject_btn.callback = self._on_reject
+        self.action_row.add_item(reject_btn)
+
+    def _disable(self) -> None:
+        for item in self.action_row.children:
+            if isinstance(item, Button):
+                item.disabled = True
+
+    async def _on_approve(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ Admins only.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=False)
+
+        source_path = EMOTION_DIR / "pending" / self.pending_filename
+        target_path = EMOTION_DIR / self.target_filename
+        if not source_path.exists() or not source_path.is_file():
+            logger.error(f"Source emotion missing on disk: {source_path}")
+            self._disable()
+            err_container = Container(
+                TextDisplay(
+                    f"❌ Source file `data/emotion/pending/{self.pending_filename}` is missing on disk."
+                ),
+                accent_color=0xE74C3C,
+            )
+            err_view = LayoutView(timeout=None)
+            err_view.add_item(err_container)
+            await interaction.edit_original_response(
+                view=err_view,
+                attachments=[],
+            )
+            return
+
+        try:
+            shutil.copy2(str(source_path), str(target_path))
+            # Remove the pending file so it doesn't get re-listed
+            try:
+                source_path.unlink()
+            except OSError:
+                pass
+        except Exception as e:
+            logger.error(f"Failed to copy emotion for emotion_id {self.emotion_id}: {e}")
+            self._disable()
+            err_container = Container(
+                TextDisplay(
+                    f"❌ Failed to copy `{self.pending_filename}` → "
+                    f"`data/emotion/{self.target_filename}`: {e}"
+                ),
+                accent_color=0xE74C3C,
+            )
+            err_view = LayoutView(timeout=None)
+            err_view.add_item(err_container)
+            await interaction.edit_original_response(
+                view=err_view,
+                attachments=[],
+            )
+            return
+
+        # Mark as seen so we don't re-prompt
+        self.cog.seen_emotion_ids.add(self.emotion_id)
+        self.cog.save_config()
+
+        summary_lines = [
+            f"✅ **Approved** by {interaction.user.mention}",
+            "",
+            f"• `emotion_id`: **{self.emotion_id}**",
+            f"• Saved to: `data/emotion/{self.target_filename}`",
+        ]
+        if self.suggested_by_id:
+            summary_lines.append(f"• Suggested by: <@{self.suggested_by_id}>")
+        if self.source_message_jump_url:
+            summary_lines.append(f"• Original message: {self.source_message_jump_url}")
+        summary_text = "\n".join(summary_lines)
+
+        try:
+            ok_container = Container(
+                TextDisplay(summary_text),
+                accent_color=0x2ECC71,
+            )
+            ok_view = LayoutView(timeout=None)
+            ok_view.add_item(ok_container)
+            await interaction.edit_original_response(
+                view=ok_view,
+                attachments=[],
+            )
+        except Exception:
+            pass
+
+        logger.info(
+            f"✅ Emotion approved: emotion_id={self.emotion_id} → {self.target_filename}"
+        )
+
+    async def _on_reject(self, interaction: discord.Interaction):
+        if not interaction.user.guild_permissions.administrator:
+            await interaction.response.send_message("❌ Admins only.", ephemeral=True)
+            return
+        await interaction.response.defer(ephemeral=False)
+
+        # Remove the pending file
+        try:
+            source_path = EMOTION_DIR / "pending" / self.pending_filename
+            if source_path.exists():
+                try:
+                    source_path.unlink()
+                except OSError:
+                    pass
+        except Exception:
+            pass
+
+        # Remove from seen_emotion_ids so we can re-prompt
+        self.cog.seen_emotion_ids.discard(self.emotion_id)
+        self.cog.save_config()
+
+        summary_lines = [
+            f"❌ **Rejected** by {interaction.user.mention}",
+            "",
+            f"• `emotion_id`: **{self.emotion_id}**",
+            f"• Rejected file: `{self.pending_filename}`",
+        ]
+        if self.suggested_by_id:
+            summary_lines.append(f"• Suggested by: <@{self.suggested_by_id}>")
+        if self.source_message_jump_url:
+            summary_lines.append(f"• Original message: {self.source_message_jump_url}")
+        summary_text = "\n".join(summary_lines)
+
+        try:
+            reject_container = Container(
+                TextDisplay(summary_text),
+                accent_color=0xE74C3C,
+            )
+            reject_view = LayoutView(timeout=None)
+            reject_view.add_item(reject_container)
+            await interaction.edit_original_response(
+                view=reject_view,
+                attachments=[],
+            )
+        except Exception:
+            pass
+        logger.info(f"❌ Emotion rejected: emotion_id={self.emotion_id}")
+
+
+class EmotionUploadView(LayoutView):
+    """Wraps a normal chat message and adds a "Set Emote" button for unmapped emotions.
+
+    Times out after 180 seconds. When clicked, opens the UploadEmotionModal.
+    """
+
+    PICKER_TIMEOUT = 180.0
+
+    def __init__(
+        self,
+        *,
+        base_view: ChatMessageView,
+        emotion_id: str,
+        sender_nickname: str,
+        sender_pid: Optional[str],
+    ):
+        super().__init__(timeout=self.PICKER_TIMEOUT)
+        self.base_view = base_view
+        self.emotion_id = str(emotion_id)
+        self.sender_nickname = sender_nickname
+        self.sender_pid = sender_pid
+
+        for item in list(base_view.children):
+            self.add_item(item)
+
+        action_row = ActionRow()
+        button = Button(
+            label="😀 Set Emote",
+            style=discord.ButtonStyle.primary,
+            custom_id=f"emotion_upload:{self.emotion_id}",
+        )
+        button.callback = self._on_click
+        action_row.add_item(button)
+        self.add_item(action_row)
+
+        self._files: List[discord.File] = list(getattr(base_view, "_files", []))
+
+    def _resolve_files(self) -> List[discord.File]:
+        return list(self._files)
+
+    async def _on_click(self, interaction: discord.Interaction):
+        cog = interaction.client.get_cog("LiveChatCog")
+        if cog is None:
+            await interaction.response.send_message("❌ LiveChatCog is not loaded.", ephemeral=True)
+            return
+
+        await interaction.response.send_modal(
+            UploadEmotionModal(
+                cog=cog,
+                emotion_id=self.emotion_id,
+                sender_nickname=self.sender_nickname,
+                sender_pid=self.sender_pid,
+            )
+        )
+
+    async def on_timeout(self) -> None:
+        bt_part = self.emotion_id
+        target_custom_id = f"emotion_upload:{bt_part}"
+        rows_to_remove = [
+            child for child in self.children
+            if isinstance(child, ActionRow)
+            and any(isinstance(item, Button) and item.custom_id == target_custom_id
+                   for item in child.children)
+        ]
+        for row in rows_to_remove:
+            self.remove_item(row)
+
+        live_msg = getattr(self, "message", None)
+        if live_msg is not None:
+            try:
+                await live_msg.edit(
+                    view=self,
+                    allowed_mentions=discord.AllowedMentions.none(),
+                )
+            except Exception:
+                pass
+
+
 class DuplicateCheckView(LayoutView):
     """Ephemeral Components V2 view that shows an uploaded file vs. an existing local file
     side-by-side and asks the user if they are the same.
@@ -1907,6 +2271,8 @@ class LiveChatCog(commands.Cog):
         # (0/1/None). The first time a particular body_type is requested we
         # populate it; subsequent calls reuse it unless `force_refresh=True`.
         self._avatar_files_cache: dict = {}  # body_type -> Optional[List[str]]
+        # emotion_id strings we've already prompted the user to map.
+        self.seen_emotion_ids: Set[str] = set()
 
         # Configuration
         self.CONFIG_FILE = "data/live_chat_config.json"
@@ -1923,6 +2289,12 @@ class LiveChatCog(commands.Cog):
 
         # Ensure data directory exists
         os.makedirs("data", exist_ok=True)
+        # Make sure the emotion dirs exist
+        try:
+            EMOTION_DIR.mkdir(parents=True, exist_ok=True)
+            EMOTION_PENDING_DIR.mkdir(parents=True, exist_ok=True)
+        except Exception as e:
+            logger.warning(f"Could not create emotion subfolder: {e}")
         # Make sure the 6 avatar source subfolders + the 6 mapped subfolders
         # exist on disk so the picker and lookup logic never trip over a
         # missing directory.
@@ -2563,10 +2935,16 @@ class LiveChatCog(commands.Cog):
                                 self.seen_head_map.add((str(head_part), bt))
                         except (TypeError, ValueError):
                             continue
+                    # 3) Read seen_emotion_ids (flat list of emotion_id strings).
+                    for eid in config.get('seen_emotion_ids', []) or []:
+                        eid_str = str(eid).strip()
+                        if eid_str:
+                            self.seen_emotion_ids.add(eid_str)
                 logger.debug(
                     f"Loaded live chat config: enabled={self.is_running}, "
                     f"channel={self.CHANNEL_ID}, last_max_ts={self._last_seen_max_ts}, "
-                    f"seen_head_map={len(self.seen_head_map)}"
+                    f"seen_head_map={len(self.seen_head_map)}, "
+                    f"seen_emotion_ids={len(self.seen_emotion_ids)}"
                 )
             except Exception as e:
                 logger.error(f"Failed to load live chat config: {str(e)}")
@@ -2592,6 +2970,7 @@ class LiveChatCog(commands.Cog):
                 'last_max_ts': self._last_seen_max_ts,
                 'seen_head_ids': legacy_flat,
                 'seen_head_map': seen_head_map_serialized,
+                'seen_emotion_ids': sorted(self.seen_emotion_ids),
             }
             with open(self.CONFIG_FILE, 'w') as f:
                 json.dump(config, f, indent=4)
@@ -2690,6 +3069,25 @@ class LiveChatCog(commands.Cog):
                     )
                     files = view._resolve_files()
                     handled_separately = True
+                elif self._should_offer_emotion_upload(str(emotion_id)):
+                    # Unmapped emotion → offer the upload button
+                    base_view = ChatMessageView(
+                        author_name=author_name,
+                        body_text=(ext.get("emotion_msg") or "").strip() or f"*[Emotion {emotion_id}]*",
+                        ts=ts,
+                        discord_mention=discord_mention,
+                        head_id=str(head_id) if head_id is not None else None,
+                        head_avatar_path=head_avatar_path,
+                        accent_color=0x9B59B6,
+                    )
+                    view = EmotionUploadView(
+                        base_view=base_view,
+                        emotion_id=str(emotion_id),
+                        sender_nickname=nickname,
+                        sender_pid=sender_pid,
+                    )
+                    files = view._resolve_files()
+                    handled_separately = True
 
         # ── Exhibition (dance video) messages ──
         if not handled_separately and msg_type == "msg_artwork_card" and msg_label == "[Exhibition]":
@@ -2773,9 +3171,11 @@ class LiveChatCog(commands.Cog):
                 files=files,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
-            # Stash a reference to the live message on the head-picker view so
-            # `on_timeout` can push the button-removal update to Discord.
+            # Stash a reference to the live message on views that need to
+            # edit themselves on timeout (button removal).
             if isinstance(view, HeadPickerRequestView):
+                view.message = sent_message
+            if isinstance(view, EmotionUploadView):
                 view.message = sent_message
         except Exception as e:
             logger.error(f"Failed to send V2 message: {e}", exc_info=True)
@@ -3068,6 +3468,169 @@ class LiveChatCog(commands.Cog):
                 return existing
 
         return None
+
+    def _emotion_path(self, emotion_id: str) -> Optional[str]:
+        """Return absolute path to a local emotion file, or None."""
+        if not emotion_id:
+            return None
+        eid = str(emotion_id).strip()
+        if not eid:
+            return None
+        for ext in (".png", ".webp"):
+            candidate = EMOTION_DIR / f"{eid}{ext}"
+            if candidate.exists() and candidate.is_file():
+                return str(candidate)
+        return None
+
+    def _should_offer_emotion_upload(self, emotion_id: str) -> bool:
+        """True if this is an unmapped emotion_id worth offering the upload for."""
+        if not emotion_id:
+            return False
+        eid = str(emotion_id).strip()
+        if not eid:
+            return False
+        # Already on disk
+        if self._emotion_path(eid) is not None:
+            return False
+        # Already prompted
+        if eid in self.seen_emotion_ids:
+            return False
+        return True
+
+    async def _stage_emotion_upload(
+        self,
+        *,
+        attachment: discord.Attachment,
+        emotion_id: str,
+        suggested_by: discord.abc.User,
+        sender_nickname: str,
+        sender_pid: Optional[str],
+        source_message_jump_url: Optional[str],
+    ) -> Tuple[bool, str]:
+        """Stage an uploaded emotion file and route to admin approval.
+
+        Returns `(True, saved_filename)` on success or `(False, error_message)`.
+        """
+        eid = str(emotion_id).strip()
+        if not eid:
+            return False, "Invalid emotion_id"
+
+        try:
+            data = await attachment.read()
+        except Exception as e:
+            logger.error(f"Failed to read emotion upload: {e}", exc_info=True)
+            return False, f"Failed to read file: {e}"
+        if len(data) > 10 * 1024 * 1024:
+            return False, "File too large (max 10 MB)"
+
+        ext = None
+        fn_lower = attachment.filename.lower()
+        if fn_lower.endswith(".png"):
+            ext = ".png"
+        elif fn_lower.endswith(".webp"):
+            ext = ".webp"
+        elif data.startswith(b"\x89PNG\r\n\x1a\n"):
+            ext = ".png"
+        elif len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+            ext = ".webp"
+        if ext is None:
+            return False, "Not a recognized PNG/WEBP"
+
+        target_filename = f"{eid}{ext}"
+        target_path = EMOTION_DIR / "pending" / target_filename
+        try:
+            EMOTION_PENDING_DIR.mkdir(parents=True, exist_ok=True)
+            target_path.write_bytes(data)
+        except Exception as e:
+            logger.error(f"Failed to write emotion file {target_path}: {e}", exc_info=True)
+            return False, f"Could not save file: {e}"
+
+        await self._send_admin_emotion_approval(
+            emotion_id=eid,
+            pending_filename=target_filename,
+            suggested_by=suggested_by,
+            source_message_jump_url=source_message_jump_url,
+            sender_nickname=sender_nickname,
+            sender_pid=sender_pid,
+        )
+        return True, target_filename
+
+    async def _send_admin_emotion_approval(
+        self,
+        *,
+        emotion_id: str,
+        pending_filename: str,
+        suggested_by: discord.abc.User,
+        source_message_jump_url: Optional[str],
+        sender_nickname: str,
+        sender_pid: Optional[str],
+    ) -> None:
+        """Send admin approval request for an emotion upload."""
+        channel = self.bot.get_channel(ADMIN_AVATAR_CHANNEL_ID)
+        if channel is None:
+            logger.error(f"Admin channel {ADMIN_AVATAR_CHANNEL_ID} not found")
+            return
+
+        source_path = EMOTION_DIR / "pending" / pending_filename
+        if not source_path.exists():
+            logger.error(f"Pending emotion missing: {source_path}")
+            return
+
+        target_filename = pending_filename  # same name, just moved from pending/
+        ext = os.path.splitext(pending_filename)[1] or ".png"
+
+        confirm_view = AdminEmotionConfirmView(
+            cog=self,
+            emotion_id=emotion_id,
+            pending_filename=pending_filename,
+            target_filename=target_filename,
+            suggested_by_id=suggested_by.id if suggested_by else None,
+            source_message_jump_url=source_message_jump_url,
+        )
+
+        with open(str(source_path), "rb") as f:
+            file_bytes = f.read()
+        file = discord.File(io.BytesIO(file_bytes), filename=pending_filename)
+
+        info_lines = [
+            f"**New emotion_id upload request**",
+            f"• `emotion_id`: **{emotion_id}**",
+            f"• Suggested by: {suggested_by.mention if suggested_by else 'unknown'}",
+            f"• Sender nickname: **{sender_nickname}**" + (f" (PID: `{sender_pid}`)" if sender_pid else ""),
+        ]
+        if source_message_jump_url:
+            info_lines.append(f"• Original message: {source_message_jump_url}")
+        info_lines.append(
+            f"\n📎 File: `{pending_filename}`"
+            f"\n✅ Approve will copy to `data/emotion/{target_filename}`."
+        )
+
+        container = Container(
+            TextDisplay("\n".join(info_lines)),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay("**Proposed emotion:**"),
+            accent_color=0xE67E22,
+        )
+        container.add_item(MediaGallery())
+        container.children[-1].add_item(
+            media=f"attachment://{pending_filename}",
+            description=f"Proposed emotion for emotion_id {emotion_id}",
+        )
+
+        view = LayoutView(timeout=None)
+        view.add_item(container)
+        view.add_item(confirm_view.action_row)
+        view._files = [file]
+
+        try:
+            await channel.send(
+                view=view,
+                file=file,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+            logger.info(f"📤 Emotion approval sent for emotion_id={emotion_id}")
+        except Exception as e:
+            logger.error(f"Failed to send emotion approval: {e}")
 
     def _should_offer_avatar_picker(self, head_id, body_type: Optional[int] = None) -> bool:
         """True if this is a new (unmapped) (head_id, body_type) worth offering the picker for."""
