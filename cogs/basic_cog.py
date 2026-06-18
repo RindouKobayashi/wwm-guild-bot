@@ -87,5 +87,28 @@ class BasicCog(commands.Cog):
             logger.error(f"Error deleting messages: {e}")
             await interaction.followup.send(f"An error occurred while deleting messages: {e}", ephemeral=True)
 
+    @app_commands.command(name="status", description="Check the status of the bot.")
+    async def status(self, interaction: discord.Interaction):
+        """Check the status of the bot."""
+        logger.info(f"Command /status invoked by {interaction.user}")
+        logger.debug(f"Checking authorization for user {interaction.user.id}")
+        if interaction.user.id != BOT_OWNER_ID:
+            await interaction.response.send_message("You are not authorized to use this command.", ephemeral=True)
+            return
+
+        # Get number of discord guilds the bot is in
+        guild_count = len(self.bot.guilds)
+        await interaction.response.send_message(f"The bot is currently in {guild_count} guilds.", ephemeral=True)
+
+        # Leave all servers except for whitelisted ones
+        for guild in self.bot.guilds:
+            if guild.id not in settings.WHITELISTED_DISCORD_SERVERS:
+                await guild.leave()
+                logger.info(f"Left guild {guild.id}")
+                await interaction.channel.send(f"Left guild {guild.name} ({guild.id})")
+            else:
+                logger.info(f"Guild {guild.id} is whitelisted.")
+                await interaction.channel.send(f"Guild {guild.name} ({guild.id}) is whitelisted")
+
 async def setup(bot: commands.Bot):
     await bot.add_cog(BasicCog(bot))

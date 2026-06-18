@@ -61,6 +61,11 @@ SPECIAL_ROLES = {
 
 GMT8_TZ = datetime.timezone(datetime.timedelta(hours=8))
 
+WHITELISTED_DISCORD_SERVERS = [
+    409959440616390668, # My test server
+    1442853062871089265, # Guild server
+]
+
 CLUB_ID = os.getenv("CLUB_ID")
 
 BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
