@@ -2913,13 +2913,15 @@ class LiveChatCog(commands.Cog):
                     self._last_seen_max_ts = config.get('last_max_ts', 0)
 
                     # --- Migrate seen_head_ids → seen_head_map ---
-                    # 1) Read the legacy flat list (Set[str]) and register
-                    #    each entry for BOTH body_types.
+                    # 1) Read the legacy flat list (Set[str]). The old entries had
+                    #    no gender information, so we register them as (head_id, None)
+                    #    which means "may have been handled but we don't know which
+                    #    gender" — these do NOT suppress the picker for any gender.
                     legacy_seen = config.get('seen_head_ids', []) or []
                     for h in legacy_seen:
                         head_str = str(h)
-                        self.seen_head_map.add((head_str, BODY_TYPE_FEMALE))
-                        self.seen_head_map.add((head_str, BODY_TYPE_MALE))
+                        if head_str:
+                            self.seen_head_map.add((head_str, None))
                     # 2) Read the new (head_id, body_type) list, format is
                     #    "head_id_str|body_type_int" (body_type_int may be
                     #    the string "0", "1", or "" for None).
@@ -2957,10 +2959,13 @@ class LiveChatCog(commands.Cog):
         head_ids only) so any external tools that read it keep working.
         """
         try:
+            # Strip legacy (head_id, None) placeholders before persisting — they
+            # were only meaningful during migration and should not accumulate.
+            concrete_entries = {(h, bt) for (h, bt) in self.seen_head_map if bt is not None}
             # Flat view of seen_head_map for the legacy field.
-            legacy_flat = sorted({h for (h, _bt) in self.seen_head_map})
+            legacy_flat = sorted({h for (h, _bt) in concrete_entries})
             seen_head_map_serialized = sorted(
-                f"{h}|{'' if bt is None else bt}" for (h, bt) in self.seen_head_map
+                f"{h}|{'' if bt is None else bt}" for (h, bt) in concrete_entries
             )
             config = {
                 'channel_id': self.CHANNEL_ID,
