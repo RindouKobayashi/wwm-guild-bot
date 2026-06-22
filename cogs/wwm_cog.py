@@ -1,5 +1,7 @@
 import discord
 import datetime
+import os
+import tempfile
 from discord import app_commands
 from discord.ext import commands, tasks
 from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow, Thumbnail, Section, MediaGallery, Button, Select
@@ -9,6 +11,7 @@ import json
 from collections import defaultdict
 from typing import Optional
 from deepdiff import DeepDiff
+import aiohttp
 
 import settings
 from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id
@@ -815,6 +818,7 @@ class PlayerProfileView(LayoutView):
         create_time: int = 0,
         player_signature: str = None,
         cover_img: str = None,
+        cover_img_path: str = None,
         # Social
         birthday_str: str = None,
         jieyi_name: str = None,
@@ -883,6 +887,7 @@ class PlayerProfileView(LayoutView):
         self.create_time = create_time
         self.player_signature = player_signature
         self.cover_img = cover_img
+        self.cover_img_path = cover_img_path
         self.birthday_str = birthday_str
         self.jieyi_name = jieyi_name
         self.jieyi_text = jieyi_text
@@ -1000,13 +1005,18 @@ class PlayerProfileView(LayoutView):
         # Header: MediaGallery first if available
         if self.cover_img:
             gallery = MediaGallery()
-            gallery.add_item(media=self.cover_img, description="Fashion Cover")
+            # Prefer locally downloaded file (cover_img_path) so Discord can render it
+            if self.cover_img_path and os.path.exists(self.cover_img_path):
+                cover_filename = os.path.basename(self.cover_img_path)
+                self._files.append(discord.File(self.cover_img_path, filename=cover_filename))
+                gallery.add_item(media=f"attachment://{cover_filename}", description="Fashion Cover")
+            else:
+                gallery.add_item(media=self.cover_img, description="Fashion Cover")
             inner.append(gallery)
         
         # Header: text display (with optional head avatar thumbnail)
         header_text = self._build_header_text()
         if self.head_avatar_path:
-            import os
             head_ext = os.path.splitext(self.head_avatar_path)[1] or ".png"
             head_filename = f"head_pfp{head_ext}"
             self._files.append(discord.File(self.head_avatar_path, filename=head_filename))
@@ -1808,12 +1818,38 @@ class WWMCog(commands.Cog):
             
             # ── Fetch extra data: fashion plan, fashion score, likes ──
             cover_img = None
+            cover_img_path = None
             try:
                 if player_pid:
                     fashion_data = await get_fashion_plan(player_pid, hostnum=player_hostnum)
                     if fashion_data:
                         if fashion_data.get('code') == 0 and 'result' in fashion_data:
                             cover_img = fashion_data['result'].get('cover_img')
+                            logger.debug(f"Found fashion cover image for {player_pid}: {cover_img}")
+                            # Download cover image so Discord can render it
+                            if cover_img:
+                                try:
+                                    async with aiohttp.ClientSession() as session:
+                                        async with session.get(cover_img, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+                                            if resp.status == 200:
+                                                data_bytes = await resp.read()
+                                                suffix = ".png"
+                                                ct = resp.headers.get('Content-Type', '')
+                                                if 'webp' in ct:
+                                                    suffix = ".webp"
+                                                elif 'jpg' in ct or 'jpeg' in ct:
+                                                    suffix = ".jpg"
+                                                # Save cover image to project-local temp folder
+                                                temp_dir = BASE_DIR / "data" / "temp"
+                                                temp_dir.mkdir(parents=True, exist_ok=True)
+                                                fd, tmp_path = tempfile.mkstemp(suffix=suffix, prefix="wwm_cover_", dir=str(temp_dir))
+                                                with os.fdopen(fd, 'wb') as f:
+                                                    f.write(data_bytes)
+                                                cover_img_path = tmp_path
+                                                logger.debug(f"Cover image downloaded for {player_pid} -> {cover_img_path}")
+                                except Exception as dl_err:
+                                    logger.warning(f"Failed to download cover image for {player_pid}: {dl_err}")
+                                    cover_img_path = None
             except Exception as fashion_err:
                 logger.warning(f"Failed to get fashion cover image: {str(fashion_err)}")
 
@@ -2107,6 +2143,7 @@ class WWMCog(commands.Cog):
                 create_time=create_time,
                 player_signature=player_signature,
                 cover_img=cover_img,
+                cover_img_path=cover_img_path,
                 birthday_str=birthday_str,
                 jieyi_name=jieyi_name,
                 jieyi_text=jieyi_text,
@@ -2160,8 +2197,20 @@ class WWMCog(commands.Cog):
                 view=view,
                 attachments=view_files,
             )
+            # Clean up temp cover image file after successful send
+            if cover_img_path and os.path.exists(cover_img_path):
+                try:
+                    os.unlink(cover_img_path)
+                except Exception:
+                    pass
 
         except Exception as e:
+            # Clean up temp cover image file on failure too
+            if cover_img_path and os.path.exists(cover_img_path):
+                try:
+                    os.unlink(cover_img_path)
+                except Exception:
+                    pass
             logger.error(f"Player search failed: {str(e)}")
             embed = discord.Embed(
                 title="❌ API Error",
