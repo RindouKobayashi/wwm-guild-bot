@@ -95,7 +95,9 @@ class GuildStatusBoard(LayoutView):
                  gvg_points: int, online_count: int, weekly_leaderboard: list,
                  pending_apps: int, now_ts: int, next_update_ts: int,
                  birthdays_this_week: list = None,
-                 press_count: int = 0):
+                 press_count: int = 0,
+                 ranked_match_score: int = 0,
+                 league_info: dict = None):
         super().__init__(timeout=None)
         self.cog = cog
         self.guild_name = guild_name
@@ -104,6 +106,8 @@ class GuildStatusBoard(LayoutView):
         self.pending_apps = pending_apps
         self.birthdays_this_week = birthdays_this_week or []
         self.press_count = press_count
+        self.ranked_match_score = ranked_match_score
+        self.league_info = league_info or {}
 
         # ── Build section texts ──
         # Identity section
@@ -115,11 +119,30 @@ class GuildStatusBoard(LayoutView):
 
         # Leadership section (currently not gathered — skipped)
         leadership_text = None
-        # Finances section
-        finances_text = (
-            f"💰 **Funds:** __**{funds:,}**__    📈 **Fame:** __**{total_fame:,}**__\n"
-            f"🔥 **Weekly:** __**{week_fame:,}**__    ⚔️ **GvG:** __**{gvg_points:,}**__"
-        )
+        # Finances + League section
+        league_score = self.league_info.get('small_score', 0)
+        league_rank = self.league_info.get('rank', 0)
+        league_wins = self.league_info.get('win_count', 0)
+
+        finance_parts = [
+            f"💰 **Funds:** __**{funds:,}**__",
+            f"📈 **Fame:** __**{total_fame:,}**__",
+            f"🔥 **Weekly:** __**{week_fame:,}**__",
+            f"⚔️ **GvG:** __**{gvg_points:,}**__",
+        ]
+        if ranked_match_score:
+            finance_parts.append(f"🏆 **Ranked:** __**{ranked_match_score:,}**__")
+        if league_score or league_rank or league_wins:
+            league_parts = []
+            if league_score:
+                league_parts.append(f"Score: __**{league_score:,}**__")
+            if league_rank:
+                league_parts.append(f"Rank: __**#{league_rank:,}**__")
+            if league_wins:
+                league_parts.append(f"Wins: __**{league_wins:,}**__")
+            finance_parts.append(f"⚔️ **League:** {' | '.join(league_parts)}")
+
+        finances_text = "\n".join(finance_parts)
 
         # Online status section
         status_text = (
@@ -243,16 +266,13 @@ class GuildStatusBoard(LayoutView):
 
             all_pids = list(member_list.keys())
 
-            # Fetch rank info (custom posts) from guild
+            # Extract rank info (custom posts) directly from cached guild state — no extra API call
             ranks_data = {}
             try:
-                guild_ranks = await get_custom_guild_info(
-                    settings.CLUB_ID, 10103, {'members': ['custom_posts']}
-                )
-                if guild_ranks and 'result' in guild_ranks:
-                    ranks_data = guild_ranks['result'].get('members', {}).get('custom_posts', {})
-            except Exception as rank_err:
-                logger.warning(f"Failed to fetch guild ranks: {rank_err}")
+                cached_members = self.cog.last_guild_state.get('result', {}).get('members', {})
+                ranks_data = cached_members.get('custom_posts', {})
+            except Exception as cache_err:
+                logger.debug(f"Could not extract cached ranks: {cache_err}")
 
             # Custom rank name mapping (from live_chat_cog.py)
             custom_rank_names = {
@@ -273,6 +293,11 @@ class GuildStatusBoard(LayoutView):
                     rid, rname = player_ranks[0]
                     return custom_rank_names.get(rid, rname)
                 return None
+
+            # Extract league info from cached guild state — no extra API call
+            cached_play = self.cog.last_guild_state.get('result', {}).get('play', {})
+            ranked_match_score = cached_play.get('pk_match_info', {}).get('battle_score', 0)
+            league_info = cached_play.get('league_info', {}) or {}
 
             # Fetch player data with base + kongfu fields
             bulk_data = await get_bulk_players_info(all_pids, fields=["base", "kongfu"])
@@ -343,6 +368,8 @@ class GuildStatusBoard(LayoutView):
                 next_update_ts=now_ts + 60,
                 birthdays_this_week=board_data['birthdays_this_week'],
                 press_count=cog.online_players_button_presses,
+                ranked_match_score=board_data.get('ranked_match_score', 0),
+                league_info=board_data.get('league_info', {}),
             )
             await cog.monitor_message.edit(content=None, embeds=[], attachments=[], view=new_view)
         except Exception as e:
@@ -2187,6 +2214,8 @@ class WWMCog(commands.Cog):
                 next_update_ts=now_ts + 60,
                 birthdays_this_week=board_data['birthdays_this_week'],
                 press_count=self.online_players_button_presses,
+                ranked_match_score=board_data.get('ranked_match_score', 0),
+                league_info=board_data.get('league_info', {}),
             )
             
             try:
@@ -2463,6 +2492,9 @@ class WWMCog(commands.Cog):
             # Sort by days then month/day
             birthdays_this_week.sort(key=lambda x: (x[3], x[1], x[2]))
 
+        ranked_match_score = play.get('pk_match_info', {}).get('battle_score', 0)
+        league_info = play.get('league_info', {}) or {}
+
         return {
             'guild_name': base.get('name', 'Unknown'),
             'guild_level': base.get('level', 0),
@@ -2477,6 +2509,8 @@ class WWMCog(commands.Cog):
             'pending_apps': len(applys),
             'players_data': players_data,
             'birthdays_this_week': birthdays_this_week,
+            'ranked_match_score': ranked_match_score,
+            'league_info': league_info,
         }
     
     async def _process_changes(self, diff, new_data):
@@ -2555,6 +2589,8 @@ class WWMCog(commands.Cog):
                                 next_update_ts=now_ts + 60,
                                 birthdays_this_week=board_data['birthdays_this_week'],
                                 press_count=self.online_players_button_presses,
+                                ranked_match_score=board_data.get('ranked_match_score', 0),
+                                league_info=board_data.get('league_info', {}),
                             )
                             self.monitor_message = await self.monitor_channel.send(content=None, embeds=[], view=view)
                             await self._save_config()
@@ -2587,6 +2623,8 @@ class WWMCog(commands.Cog):
                 next_update_ts=now_ts + 60,
                 birthdays_this_week=board_data['birthdays_this_week'],
                 press_count=self.online_players_button_presses,
+                ranked_match_score=board_data.get('ranked_match_score', 0),
+                league_info=board_data.get('league_info', {}),
             )
             self.monitor_message = await channel.send(content=None, embeds=[], view=view)
             self.last_guild_state = guild_data
