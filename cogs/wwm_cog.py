@@ -1552,7 +1552,7 @@ class WWMCog(commands.Cog):
                 rank_medal = medals[idx] if idx < len(medals) else f"{idx+1}."
 
                 # Build value string
-                value_parts = [f"Lv.{level}  |  Score: **{score:,}**  |  ID: {number_id}"]
+                value_parts = [f"Lv.{level}  |  Votes: **{score:,}**  |  ID: {number_id}"]
                 value_str = "  |  ".join(value_parts)
                 embed.add_field(
                     name=f"{rank_medal} {nickname}",
