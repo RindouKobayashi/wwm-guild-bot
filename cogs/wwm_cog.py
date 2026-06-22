@@ -3425,6 +3425,205 @@ class WWMCog(commands.Cog):
             logger.error(f"Failed to generate stats graph: {str(e)}", exc_info=True)
             await interaction.followup.send(f"❌ Failed to generate graph: `{str(e)}`")
 
+    @guild_group.command(name="info", description="Get detailed guild info with member activity stats and leader profiles")
+    @admin_or_staff()
+    @app_commands.describe(
+        search="Optional guild name or numeric ID to search for (leave empty for our guild)"
+    )
+    async def guild_info(self, interaction: discord.Interaction, search: str = None):
+        """Display comprehensive guild information including activity stats, league data, and leader profiles."""
+        await interaction.response.defer()
+
+        try:
+            # Step 1: Resolve guild
+            target_club_id = CLUB_ID
+            target_hostnum = 10103
+            guild_name_for_header = None
+
+            if search:
+                search_term = search.strip()
+                if search_term.isdigit():
+                    guild_lookup = await get_club_by_number_id(int(search_term))
+                    if guild_lookup:
+                        target_club_id = guild_lookup.get('club_id')
+                        target_hostnum = guild_lookup.get('hostnum', 10103)
+                else:
+                    clubs = await get_club_by_name(search_term, limit=1)
+                    if clubs and len(clubs) > 0:
+                        target_club_id = clubs[0].get('club_id')
+                        target_hostnum = clubs[0].get('hostnum', 10103)
+
+            if not target_club_id:
+                await interaction.followup.send("❌ Could not find the specified guild.")
+                return
+
+            # Step 2: Fetch guild data with all fields
+            guild_data = await get_full_guild_info(target_club_id, hostnum=target_hostnum)
+
+            if not guild_data or 'result' not in guild_data:
+                await interaction.followup.send("❌ Failed to fetch guild data or guild not found.")
+                return
+
+            result = guild_data['result']
+            base = result.get('base', {})
+            members = result.get('members', {})
+            play = result.get('play', {})
+
+            # Step 3: Extract core info
+            guild_name = base.get('name', 'Unknown Guild')
+            guild_level = base.get('level', 0)
+            member_count = members.get('member_num', 0)
+            apprentice_count = members.get('apprentice_num', 0)
+            create_ts = base.get('create_ts', 0)
+            funds = base.get('fund', 0)
+            total_fame = base.get('fame', 0)
+
+            # Step 4: Ranked match + league stats
+            pk_match = play.get('pk_match_info', {})
+            ranked_match_score = pk_match.get('battle_score', 0)
+
+            league_info = play.get('league_info', {}) or {}
+            league_score = league_info.get('small_score', 0)
+            league_rank = league_info.get('rank', 0)
+            league_wins = league_info.get('win_count', 0)
+
+            # Step 5: Identify leader and vice PIDs + number_ids
+            member_list = members.get('members', {})
+            leader_pid = None
+            vice_pid = None
+            for pid, member in member_list.items():
+                post_list = member.get('post', [])
+                if 1 in post_list:
+                    leader_pid = pid
+                if 2 in post_list:
+                    vice_pid = pid
+
+            # Step 6: Fetch ALL members' data for activity + leadership info
+            all_pids = list(member_list.keys())
+            bulk_data = await get_bulk_players_info(all_pids, fields=["base", "club"])
+
+            leader_name = "None"
+            leader_number_id = None
+            vice_name = "None"
+            vice_number_id = None
+            active_members = []
+
+            now_ts = int(discord.utils.utcnow().timestamp())
+            seven_days_ago = now_ts - (7 * 24 * 3600)
+
+            if bulk_data and bulk_data.get('code') == 0:
+                players_result = bulk_data.get('result', {})
+
+                for pid, player_data in players_result.items():
+                    data_base = player_data.get('base', {})
+                    data_club = player_data.get('club', {})
+
+                    nickname = data_base.get('nickname', 'Unknown')
+                    number_id = str(data_base.get('number_id', ''))
+                    level = data_base.get('level', 0)
+                    is_online = data_base.get('is_online', 0) == 1
+                    logout_time = data_base.get('logout_time', 0) or 0
+                    liveness = data_club.get('liveness', 0)
+
+                    # Track leader/vice number_ids
+                    if pid == leader_pid:
+                        leader_name = nickname
+                        leader_number_id = number_id
+                    if pid == vice_pid:
+                        vice_name = nickname
+                        vice_number_id = number_id
+
+                    # Check if active in last 7 days
+                    if is_online or logout_time >= seven_days_ago:
+                        active_members.append({
+                            'pid': pid,
+                            'nickname': nickname,
+                            'level': level,
+                            'number_id': number_id,
+                            'is_online': is_online,
+                            'logout_time': logout_time,
+                            'liveness': liveness,
+                        })
+
+            # Step 7: Calculate average activity
+            online_count_7d = len(active_members)
+            avg_activity = 0
+            if active_members:
+                total_liveness = sum(m.get('liveness', 0) for m in active_members)
+                avg_activity = total_liveness // len(active_members)
+
+            # Step 7b: Compute inactive lists by week with schedule-aware validity
+            this_week_start = self.get_weekly_reset_ts()
+            last_week_start = this_week_start - 7 * 24 * 3600
+
+            inactive_this_week = []
+            inactive_last_week = []
+
+            for pid, data in players_result.items():
+                data_club = data.get('club', {})
+                data_base = data.get('base', {})
+                nickname = data_base.get('nickname', 'Unknown')
+                number_id = str(data_base.get('number_id', ''))
+                level = data_base.get('level', 0)
+                is_online = data_base.get('is_online', 0) == 1
+                logout_time = data_base.get('logout_time', 0) or 0
+                liveness = data_club.get('liveness', 0)
+                last_liveness = data_club.get('last_liveness', 0)
+
+                valid_this_week = is_online or logout_time >= this_week_start
+                valid_last_week = logout_time >= last_week_start
+
+                # Last week score: last_liveness if data updated this week, else liveness
+                last_week_score = last_liveness if valid_this_week else liveness
+
+                if valid_this_week and liveness == 0:
+                    inactive_this_week.append({
+                        'pid': pid, 'nickname': nickname, 'level': level,
+                        'number_id': number_id, 'is_online': is_online,
+                        'logout_time': logout_time, 'liveness': liveness,
+                    })
+                if valid_last_week and last_week_score == 0:
+                    inactive_last_week.append({
+                        'pid': pid, 'nickname': nickname, 'level': level,
+                        'number_id': number_id, 'is_online': is_online,
+                        'logout_time': logout_time, 'liveness': last_week_score,
+                    })
+
+            # Step 8: Extract guild area and build the view
+            guild_area = base.get('classify_info', {}).get('area', None)
+
+            view = GuildInfoView(
+                cog=self,
+                guild_name=guild_name,
+                guild_level=guild_level,
+                member_count=member_count,
+                apprentice_count=apprentice_count,
+                create_ts=create_ts,
+                funds=funds,
+                total_fame=total_fame,
+                ranked_match_score=ranked_match_score,
+                league_score=league_score,
+                league_rank=league_rank,
+                league_wins=league_wins,
+                leader_name=leader_name,
+                leader_number_id=leader_number_id if leader_number_id else None,
+                vice_name=vice_name,
+                vice_number_id=vice_number_id if vice_number_id else None,
+                online_count_7d=online_count_7d,
+                total_members=member_count + apprentice_count,
+                avg_activity=avg_activity,
+                active_members=active_members,
+                inactive_this_week=inactive_this_week,
+                inactive_last_week=inactive_last_week,
+                guild_area=guild_area,
+            )
+
+            await interaction.followup.send(view=view)
+
+        except Exception as e:
+            logger.error(f"Guild info command failed: {str(e)}", exc_info=True)
+            await interaction.followup.send(f"❌ Failed to load guild info: `{str(e)}`")
+
     @guild_group.command(name="region", description="Sort and display guild members grouped by region (admin only)")
     @admin_or_staff()
     @app_commands.describe(name="Optional guild name to search for (leave empty to use our guild)")
@@ -3944,6 +4143,727 @@ class GuildDetailView(LayoutView):
     async def _handle_back(self, interaction: discord.Interaction):
         await interaction.response.defer()
         await interaction.edit_original_response(view=self.back_view)
+
+
+class GuildInfoView(LayoutView):
+    """Components V2 LayoutView for /guild info — comprehensive guild profile with active member tracking."""
+
+    ITEMS_PER_PAGE = 10
+    ACCENT = 0x5865F2
+
+    def __init__(
+        self,
+        cog,
+        guild_name: str,
+        guild_level: int,
+        member_count: int,
+        apprentice_count: int,
+        create_ts: int,
+        funds: int,
+        total_fame: int,
+        ranked_match_score: int,
+        league_score: int,
+        league_rank: int,
+        league_wins: int,
+        leader_name: str,
+        leader_number_id: str = None,
+        vice_name: str = None,
+        vice_number_id: str = None,
+        online_count_7d: int = 0,
+        total_members: int = 0,
+        avg_activity: int = 0,
+        active_members: list = None,
+        inactive_this_week: list = None,
+        inactive_last_week: list = None,
+        guild_area: str = None,
+    ):
+        super().__init__(timeout=180)
+        self.cog = cog
+        self.guild_name = guild_name
+        self.leader_name = leader_name
+        self.leader_number_id = leader_number_id
+        self.vice_name = vice_name
+        self.vice_number_id = vice_number_id
+        self.online_count_7d = online_count_7d
+        self.total_members = total_members
+        self.avg_activity = avg_activity
+
+        # Active members data: list of dicts with keys:
+        # nickname, level, number_id, is_online, logout_time, liveness
+        self.active_members = active_members or []
+        self.inactive_this_week = inactive_this_week or []
+        self.inactive_last_week = inactive_last_week or []
+
+        # Pagination + sort state
+        self.page = 0
+        self.sort_by = "points_desc"  # points_desc, points_asc, name_az, logout_newest, logout_oldest
+        self.display_mode = "active"  # active, inactive_this_week, inactive_last_week
+
+        # Build the overview — combine text into fewer TextDisplays to stay under 40-child limit
+        self._identity_text = (
+            f"# 🏰 Guild Info — {guild_name}\n\n"
+            f"📛 **Name:** __**{guild_name}**__\n"
+            f"⭐ **Level:** __{guild_level}__    👥 **Members:** __{member_count}/100__    🎓 **Apps:** __{apprentice_count}__\n"
+            + (f"🌍 **Area:** __{guild_area}__\n" if guild_area else "")
+            + (f"📅 **Created:** <t:{create_ts}:R>" if create_ts else "📅 **Created:** Unknown")
+        )
+
+        self._stats_text = (
+            f"💰 **Funds:** __{funds:,}__    📈 **Prosperity:** __{total_fame:,}__\n"
+            f"🏆 **Ranked Match:** __{ranked_match_score:,}__    ⚔️ **League:** __{league_score:,}__\n"
+            f"⚔️ **League Rank:** __{league_rank:,}__    **Wins:** __{league_wins:,}__"
+        )
+
+        # Compute richer activity stats
+        zero_activity_count = 0
+        max_activity = 0
+        median_activity = 0
+        if active_members:
+            liveness_values = sorted([m.get('liveness', 0) for m in active_members])
+            zero_activity_count = sum(1 for v in liveness_values if v == 0)
+            max_activity = liveness_values[-1] if liveness_values else 0
+            n = len(liveness_values)
+            median_activity = (
+                liveness_values[n // 2]
+                if n % 2 == 1
+                else (liveness_values[n // 2 - 1] + liveness_values[n // 2]) // 2
+            )
+
+        self._activity_summary_text = (
+            f"📅 **Active (last 7d):** __{online_count_7d}/{total_members}__\n"
+            f"💤 **Zero Activity:** __{zero_activity_count}__\n"
+            f"📊 **Avg:** __{avg_activity:,}__ pts    "
+            f"📈 **Median:** __{median_activity:,}__ pts    "
+            f"🏆 **Peak:** __{max_activity:,}__ pts"
+        )
+
+        self.inner_items = [
+            TextDisplay(self._identity_text),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay(self._stats_text),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay(self._activity_summary_text),
+            Separator(spacing=discord.SeparatorSpacing.small),
+        ]
+
+        # Leader/Vice — Section with button accessory
+        if leader_number_id:
+            leader_btn = Button(
+                label=f"🔍 View Profile",
+                style=discord.ButtonStyle.secondary,
+                custom_id="guild_info_view_leader",
+            )
+            leader_btn.callback = self._handle_view_leader
+            leader_section = Section(
+                TextDisplay(f"👑 **Leader:** __{leader_name}__"),
+                accessory=leader_btn,
+            )
+            self.inner_items.append(leader_section)
+        else:
+            self.inner_items.append(TextDisplay(f"👑 **Leader:** __{leader_name}__"))
+
+        if vice_number_id:
+            vice_btn = Button(
+                label=f"🔍 View Profile",
+                style=discord.ButtonStyle.secondary,
+                custom_id="guild_info_view_vice",
+            )
+            vice_btn.callback = self._handle_view_vice
+            vice_section = Section(
+                TextDisplay(f"⚔️ **Vice:** __{vice_name or 'None'}__"),
+                accessory=vice_btn,
+            )
+            self.inner_items.append(vice_section)
+            self.inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+        else:
+            self.inner_items.append(TextDisplay(f"⚔️ **Vice:** __{vice_name or 'None'}__"))
+            self.inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # View toggle buttons
+        toggle_row = ActionRow()
+        active_btn = Button(
+            style=discord.ButtonStyle.primary if self.display_mode == "active" else discord.ButtonStyle.secondary,
+            label=f"Active (7d)",
+            custom_id="guild_info_mode_active",
+            disabled=self.display_mode == "active",
+        )
+        active_btn.callback = self._handle_mode_active
+        toggle_row.add_item(active_btn)
+
+        inactive_this_week_btn = Button(
+            style=discord.ButtonStyle.primary if self.display_mode == "inactive_this_week" else discord.ButtonStyle.secondary,
+            label=f"Inactive This Week ({len(self.inactive_this_week)})",
+            custom_id="guild_info_mode_this_week",
+            disabled=self.display_mode == "inactive_this_week",
+        )
+        inactive_this_week_btn.callback = self._handle_mode_this_week
+        toggle_row.add_item(inactive_this_week_btn)
+
+        inactive_last_week_btn = Button(
+            style=discord.ButtonStyle.primary if self.display_mode == "inactive_last_week" else discord.ButtonStyle.secondary,
+            label=f"Inactive Last Week ({len(self.inactive_last_week)})",
+            custom_id="guild_info_mode_last_week",
+            disabled=self.display_mode == "inactive_last_week",
+        )
+        inactive_last_week_btn.callback = self._handle_mode_last_week
+        toggle_row.add_item(inactive_last_week_btn)
+        self.inner_items.append(toggle_row)
+        self.inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Active member list header
+        self.inner_items.append(TextDisplay(f"### Active Members (last 7 days) — sorted by activity ▼"))
+
+        # Build sort + pagination controls (also adds the container to the view)
+        self._rebuild_member_list()
+
+    def _get_sorted_members(self):
+        """Return the current member list sorted by current sort criterion."""
+        if self.display_mode == "inactive_this_week":
+            members = list(self.inactive_this_week)
+        elif self.display_mode == "inactive_last_week":
+            members = list(self.inactive_last_week)
+        else:
+            members = list(self.active_members)
+
+        if self.sort_by == "points_desc":
+            members.sort(key=lambda m: m.get('liveness', 0), reverse=True)
+        elif self.sort_by == "points_asc":
+            members.sort(key=lambda m: m.get('liveness', 0))
+        elif self.sort_by == "name_az":
+            members.sort(key=lambda m: m.get('nickname', '').lower())
+        elif self.sort_by == "logout_newest":
+            members.sort(key=lambda m: m.get('logout_time', 0), reverse=True)
+        elif self.sort_by == "logout_oldest":
+            members.sort(key=lambda m: m.get('logout_time', 0))
+        return members
+
+    def _rebuild_member_list(self):
+        """Build the initial member list page. Called from __init__."""
+        self._rebuild_page()
+
+    def _rebuild_page(self):
+        """Rebuild the entire GuildInfoView layout from scratch."""
+        sorted_members = self._get_sorted_members()
+        total_pages = max(1, (len(sorted_members) + self.ITEMS_PER_PAGE - 1) // self.ITEMS_PER_PAGE)
+        self.page = max(0, min(self.page, total_pages - 1))
+        start = self.page * self.ITEMS_PER_PAGE
+        end = start + self.ITEMS_PER_PAGE
+        page_items = sorted_members[start:end]
+
+        # Build member lines
+        member_lines = []
+        for m in page_items:
+            online_icon = "🟢" if m.get('is_online') else "⚫"
+            nick = m.get('nickname', 'Unknown')
+            lv = m.get('level', 0)
+            pts = m.get('liveness', 0)
+            member_lines.append(f"{online_icon} **{nick}** Lv.{lv} | Activity: **{pts:,}** pts")
+        members_text = "\n".join(member_lines) if member_lines else "*No active members found.*"
+
+        # Header text
+        if self.display_mode == "inactive_this_week":
+            header_text = "### Inactive This Week — sorted by activity ▼"
+        elif self.display_mode == "inactive_last_week":
+            header_text = "### Inactive Last Week — sorted by activity ▼"
+        else:
+            header_text = "### Active Members (last 7 days) — sorted by activity ▼"
+
+        # Build the full layout from scratch, including the toggle row before the header.
+        new_inner = [
+            TextDisplay(self._identity_text),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay(self._stats_text),
+            Separator(spacing=discord.SeparatorSpacing.small),
+            TextDisplay(self._activity_summary_text),
+            Separator(spacing=discord.SeparatorSpacing.small),
+        ]
+
+        # Leader / Vice sections (preserved from init)
+        if self.leader_number_id:
+            leader_btn = Button(
+                label="🔍 View Profile",
+                style=discord.ButtonStyle.secondary,
+                custom_id="guild_info_view_leader",
+            )
+            leader_btn.callback = self._handle_view_leader
+            leader_section = Section(
+                TextDisplay(f"👑 **Leader:** __{self.leader_name}__"),
+                accessory=leader_btn,
+            )
+            new_inner.append(leader_section)
+        else:
+            new_inner.append(TextDisplay(f"👑 **Leader:** __{self.leader_name}__"))
+
+        if self.vice_number_id:
+            vice_btn = Button(
+                label="🔍 View Profile",
+                style=discord.ButtonStyle.secondary,
+                custom_id="guild_info_view_vice",
+            )
+            vice_btn.callback = self._handle_view_vice
+            vice_section = Section(
+                TextDisplay(f"⚔️ **Vice:** __{self.vice_name or 'None'}__"),
+                accessory=vice_btn,
+            )
+            new_inner.append(vice_section)
+            new_inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+        else:
+            new_inner.append(TextDisplay(f"⚔️ **Vice:** __{self.vice_name or 'None'}__"))
+            new_inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Toggle buttons
+        toggle_row = ActionRow()
+        active_btn = Button(
+            style=discord.ButtonStyle.primary if self.display_mode == "active" else discord.ButtonStyle.secondary,
+            label=f"Active (7d)",
+            custom_id="guild_info_mode_active",
+            disabled=self.display_mode == "active",
+        )
+        active_btn.callback = self._handle_mode_active
+        toggle_row.add_item(active_btn)
+
+        inactive_this_week_btn = Button(
+            style=discord.ButtonStyle.primary if self.display_mode == "inactive_this_week" else discord.ButtonStyle.secondary,
+            label=f"Inactive This Week ({len(self.inactive_this_week)})",
+            custom_id="guild_info_mode_this_week",
+            disabled=self.display_mode == "inactive_this_week",
+        )
+        inactive_this_week_btn.callback = self._handle_mode_this_week
+        toggle_row.add_item(inactive_this_week_btn)
+
+        inactive_last_week_btn = Button(
+            style=discord.ButtonStyle.primary if self.display_mode == "inactive_last_week" else discord.ButtonStyle.secondary,
+            label=f"Inactive Last Week ({len(self.inactive_last_week)})",
+            custom_id="guild_info_mode_last_week",
+            disabled=self.display_mode == "inactive_last_week",
+        )
+        inactive_last_week_btn.callback = self._handle_mode_last_week
+        toggle_row.add_item(inactive_last_week_btn)
+        new_inner.append(toggle_row)
+        new_inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Header
+        new_inner.append(TextDisplay(header_text))
+
+        # Member list text
+        new_inner.append(TextDisplay(members_text))
+
+        # Sort select
+        sort_options = [
+            discord.SelectOption(label="Points (High→Low)", value="points_desc", emoji="⬇️"),
+            discord.SelectOption(label="Points (Low→High)", value="points_asc", emoji="⬆️"),
+            discord.SelectOption(label="Name (A→Z)", value="name_az", emoji="🔤"),
+            discord.SelectOption(label="Logout (Newest)", value="logout_newest", emoji="🆕"),
+            discord.SelectOption(label="Logout (Oldest)", value="logout_oldest", emoji="⏰"),
+        ]
+        sort_row = ActionRow()
+        sort_select = Select(
+            placeholder=f"Sort: {self.sort_by}",
+            options=sort_options,
+            custom_id="guild_info_sort",
+        )
+        sort_select.callback = self._handle_sort
+        sort_row.add_item(sort_select)
+        new_inner.append(sort_row)
+
+        # Pagination row
+        nav_row = ActionRow()
+        prev_btn = Button(
+            style=discord.ButtonStyle.secondary,
+            label="◀ Prev",
+            custom_id="guild_info_prev",
+            disabled=self.page <= 0,
+        )
+        prev_btn.callback = self._handle_prev
+        nav_row.add_item(prev_btn)
+
+        page_label = Button(
+            style=discord.ButtonStyle.secondary,
+            label=f"Page {self.page + 1}/{total_pages}",
+            custom_id="guild_info_page_label",
+            disabled=True,
+        )
+        nav_row.add_item(page_label)
+
+        next_btn = Button(
+            style=discord.ButtonStyle.secondary,
+            label="Next ▶",
+            custom_id="guild_info_next",
+            disabled=self.page >= total_pages - 1,
+        )
+        next_btn.callback = self._handle_next
+        nav_row.add_item(next_btn)
+        new_inner.append(nav_row)
+
+        self.clear_items()
+        container = Container(*new_inner, accent_color=self.ACCENT)
+        self.add_item(container)
+
+    async def _handle_mode_active(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        self.display_mode = "active"
+        self.page = 0
+        self.sort_by = "points_desc"
+        self._rebuild_page()
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_mode_this_week(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        self.display_mode = "inactive_this_week"
+        self.page = 0
+        self.sort_by = "points_asc"
+        self._rebuild_page()
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_mode_last_week(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        self.display_mode = "inactive_last_week"
+        self.page = 0
+        self.sort_by = "points_asc"
+        self._rebuild_page()
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_sort(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        selected = interaction.data.get("values", ["points_desc"])
+        self.sort_by = selected[0]
+        self.page = 0
+        self._rebuild_page()
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_prev(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        if self.page > 0:
+            self.page -= 1
+            self._rebuild_page()
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_next(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        sorted_members = self._get_sorted_members()
+        total_pages = max(1, (len(sorted_members) + self.ITEMS_PER_PAGE - 1) // self.ITEMS_PER_PAGE)
+        if self.page < total_pages - 1:
+            self.page += 1
+            self._rebuild_page()
+        await interaction.edit_original_response(view=self)
+
+    async def _show_player_profile(self, interaction: discord.Interaction, number_id: str, nickname_label: str):
+        """Fetch player full data and show an ephemeral PlayerProfileView with all stats
+        (masteries, attributes, combat, kongfu, guild, etc.) — matching /player search output."""
+        await interaction.response.defer(ephemeral=True)
+
+        try:
+            # Step 1: Resolve Number ID to PID (with force_search)
+            pid_result = await get_player_info(number_id, force_search=True)
+            if not pid_result:
+                await interaction.followup.send(f"❌ Could not resolve Number ID for {nickname_label}", ephemeral=True)
+                return
+
+            player_pid = pid_result.get('result', {}).get('id') if isinstance(pid_result, dict) else None
+            player_hostnum = pid_result.get('result', {}).get('hostnum', 10403) if isinstance(pid_result, dict) else 10403
+
+            if not player_pid:
+                await interaction.followup.send(f"❌ Could not resolve PID for {nickname_label}", ephemeral=True)
+                return
+
+            # Step 2: Fetch full player data (same as /player search)
+            raw_data = await fetch_player_data_by_pid(player_pid, hostnum=player_hostnum)
+            if not raw_data:
+                await interaction.followup.send(f"❌ Could not load profile data for {nickname_label}", ephemeral=True)
+                return
+
+            data = raw_data.get('result', raw_data) if isinstance(raw_data, dict) else raw_data
+            base_data = data.get('base', {})
+            if not base_data:
+                base_data = data
+
+            player_nickname = base_data.get('nickname', nickname_label)
+            player_number_id = base_data.get('number_id', number_id)
+            lv = base_data.get('level', 0)
+            is_invisible = base_data.get('invisible', False)
+            is_online = base_data.get('is_online', 0) == 1
+            oversea_tag = base_data.get('oversea_tag', 'N/A')
+            online_hours = round(base_data.get('online_time', 0) / 3600, 1)
+            create_time = base_data.get('create_time', 0)
+            school_id = base_data.get('school', 0)
+            body_type = base_data.get('body_type')
+
+            # Check verification
+            async with aiosqlite.connect(DB_PATH) as conn:
+                cursor = await conn.execute("SELECT 1 FROM verified_members WHERE user_id = ?", (interaction.user.id,))
+                is_verified = (await cursor.fetchone()) is not None
+
+            from utility.api_constants import SCHOOL_EMOTES, SCHOOL_NAMES, SCHOOL_RANKING
+            school_emoji = SCHOOL_EMOTES.get(school_id, "")
+            school_name = SCHOOL_NAMES.get(school_id)
+            school_rank = None
+            school_data = data.get('school', {})
+            if isinstance(school_data, dict):
+                school_status = school_data.get('status', 0)
+                if school_status in SCHOOL_RANKING:
+                    school_rank = SCHOOL_RANKING[school_status]
+
+            # ── Masteries ──
+            attr = data.get('attr', {})
+            martial_mastery = round(attr.get('XIUWEI_KUNGFU', 0), 1) if is_verified else 0
+            scholar_mastery = round(attr.get('XIUWEI_TRADE3', 0), 1) if is_verified else 0
+            healer_mastery = round(attr.get('XIUWEI_TRADE4', 0), 1) if is_verified else 0
+            explore_mastery = round(attr.get('XIUWEI_EXPLORE', 0), 1) if is_verified else 0
+
+            # ── Attributes ──
+            attr_str = round(attr.get('STR', 0), 1) if is_verified else 0
+            attr_con = round(attr.get('CON', 0), 1) if is_verified else 0
+            attr_bas = round(attr.get('BAS', 0), 1) if is_verified else 0
+            attr_cri = round(attr.get('CRI', 0), 1) if is_verified else 0
+            attr_agi = round(attr.get('AGI', 0), 1) if is_verified else 0
+
+            # ── Combat ──
+            GRADE_NAMES = {
+                1: "Beginner", 2: "Novice", 3: "Silver", 4: "Adept",
+                5: "Expert", 6: "Veteran", 7: "Master", 8: "Grandmaster",
+                9: "Legend", 10: "Mythic",
+            }
+            SMALL_GRADE_SUFFIXES = {0: "", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
+            def _fmt_rank(grade, small_grade):
+                g = GRADE_NAMES.get(grade, f"Unknown ({grade})")
+                s = SMALL_GRADE_SUFFIXES.get(small_grade, str(small_grade))
+                return f"{g} {s}" if s else g
+
+            arena_1v1_rank = None
+            arena_1v1_max_winning_streak = 0
+            arena_3v3_rank = None
+            pvp_score = 0
+            group_strategy = 0
+            assist_points = 0
+
+            lunjian = data.get('lunjian', {})
+            if lunjian and 'grade' in lunjian:
+                arena_1v1_rank = _fmt_rank(lunjian['grade'], lunjian.get('small_grade', 0))
+                arena_1v1_max_winning_streak = lunjian.get('max_winning_streak', 0)
+            lunjian3v3 = data.get('lunjian3v3_prop', {})
+            if lunjian3v3 and 'grade' in lunjian3v3:
+                arena_3v3_rank = _fmt_rank(lunjian3v3['grade'], lunjian3v3.get('small_grade', 0))
+            fight_shoulder = data.get('fight_shoulder', {})
+            if fight_shoulder and 'score' in fight_shoulder:
+                group_strategy = fight_shoulder['score']
+            coop_score = data.get('coop_score', {})
+            if coop_score and 'score' in coop_score:
+                assist_points = coop_score['score']
+            gameplay = data.get('gameplay_trail', {})
+            played = gameplay.get('played', [])
+            for match in played:
+                if 'score' in match:
+                    pvp_score = match['score']
+                    break
+
+            # ── Kongfu ──
+            kongfu_main = None
+            kongfu_sub = None
+            kongfu_role = None
+            try:
+                from utility.api_constants import KONGFU_WEAPON_MAP
+                kongfu_data = data.get('kongfu', {})
+                if kongfu_data:
+                    main_id = kongfu_data.get('kongfu_main')
+                    sub_id = kongfu_data.get('kongfu_sub')
+                    if main_id:
+                        kongfu_main = KONGFU_WEAPON_MAP.get(main_id, f"Unknown ({main_id})")
+                    if sub_id:
+                        kongfu_sub = KONGFU_WEAPON_MAP.get(sub_id, f"Unknown ({sub_id})")
+                    weapon_ids = get_kongfu_ids_from_player(data)
+                    if weapon_ids:
+                        kongfu_role = classify_kongfu_role(weapon_ids)
+            except Exception:
+                pass
+
+            # ── Birthday ──
+            birthday_str = None
+            if is_verified:
+                birthday_data = data.get('birthday', {})
+                if birthday_data and isinstance(birthday_data, dict):
+                    visible_flag = birthday_data.get('visible', 0)
+                    if visible_flag == 0:
+                        month = birthday_data.get('month', 0)
+                        day = birthday_data.get('day', 0)
+                        if month > 0 and day > 0:
+                            birthday_str = _format_birthday(month, day)
+
+            # ── Social ──
+            jieyi_name = None
+            jieyi_text = None
+            if is_verified:
+                jieyi = data.get('jieyi', {})
+                jieyi_name = jieyi.get('jieyi_name')
+                jieyi_text = jieyi.get('jieyi_text')
+
+            likes_count = 0
+            likes_data_raw = {}
+            if is_verified:
+                try:
+                    likes_data = await get_topics_likes(target_uuid=player_pid, target_hostnum=player_hostnum)
+                    if likes_data and 'result' in likes_data:
+                        likes_data_res = likes_data['result']
+                        likes_count = sum(topic.get('n_likes', 0) for topic in likes_data_res.values())
+                        likes_data_raw = likes_data_res
+                except Exception:
+                    pass
+
+            # ── Guild info ──
+            guild_name_p = None
+            is_our_guild = False
+            guild_level_p = 0
+            guild_leader = None
+            guild_vice_leader = None
+            guild_members = 0
+            guild_funds = 0
+            guild_fame = 0
+            guild_announcement = None
+            if is_verified:
+                try:
+                    club_data = await get_club_hostnums(player_pid)
+                    player_club_id = None
+                    club_hostnum = 10103
+                    if club_data:
+                        result_data = club_data.get('result', {})
+                        player_club_data = result_data.get(player_pid, {})
+                        club_info = player_club_data.get('club', {})
+                        player_club_id = club_info.get('club_id')
+                        club_hostnum = club_info.get('hostnum', 10103)
+                    if player_club_id:
+                        guild_full_data = await get_full_guild_info(player_club_id, hostnum=club_hostnum)
+                        if guild_full_data:
+                            guild_result = guild_full_data.get('result', {})
+                            guild_base = guild_result.get('base', {})
+                            guild_name_p = guild_base.get('name', 'Unknown Guild')
+                            guild_level_p = guild_base.get('level', 0)
+                            guild_members = guild_base.get('member_num', 0)
+                            guild_funds = guild_base.get('fund', 0)
+                            guild_fame = guild_base.get('fame', 0)
+                            guild_announcement = guild_result.get('gonggao_info', {}).get('msg', None)
+                            member_list_g = guild_result.get('members', {}).get('members', {})
+                            leader_pid_g = None
+                            vice_pid_g = None
+                            for mp, member in member_list_g.items():
+                                post_list = member.get('post', [])
+                                if 1 in post_list:
+                                    leader_pid_g = mp
+                                if 2 in post_list:
+                                    vice_pid_g = mp
+                            g_pids = [p for p in (leader_pid_g, vice_pid_g) if p]
+                            if g_pids:
+                                g_bulk = await get_bulk_players_info(g_pids, fields=["base"])
+                                if g_bulk and g_bulk.get('code') == 0:
+                                    g_players = g_bulk.get('result', {})
+                                    if leader_pid_g in g_players:
+                                        guild_leader = g_players[leader_pid_g].get('base', {}).get('nickname', 'Unknown')
+                                    if vice_pid_g in g_players:
+                                        guild_vice_leader = g_players[vice_pid_g].get('base', {}).get('nickname', 'Unknown')
+                    if player_club_id == CLUB_ID:
+                        is_our_guild = True
+                except Exception:
+                    pass
+
+            # ── Head avatar ──
+            head_avatar_path = None
+            head_id_value = None
+            bt_val = None
+            try:
+                head_data = data.get('head', {})
+                if isinstance(head_data, dict):
+                    head_id_value = head_data.get('head')
+                    raw_bt = base_data.get('body_type') if isinstance(base_data, dict) else None
+                    bt_val = raw_bt if raw_bt in (0, 1) else None
+            except Exception:
+                pass
+
+            # ── Fashion score ──
+            fashion_score = 0
+            if is_verified:
+                try:
+                    fashion_data = await get_fashion_score(player_pid, hostnum=player_hostnum)
+                    if fashion_data and 'result' in fashion_data:
+                        score = fashion_data['result']
+                        if isinstance(score, dict):
+                            score = score.get('score', 0)
+                        fashion_score = score
+                except Exception:
+                    pass
+
+            # Discord user_id
+            discord_user_id = None
+            async with aiosqlite.connect(DB_PATH) as conn:
+                cursor = await conn.execute("SELECT user_id FROM verified_members WHERE player_pid = ?", (player_pid,))
+                row = await cursor.fetchone()
+                discord_user_id = row[0] if row else None
+
+            view = PlayerProfileView(
+                player_nickname=player_nickname,
+                number_id=player_number_id,
+                discord_user_id=discord_user_id,
+                level=lv,
+                is_online=is_online,
+                is_invisible=is_invisible,
+                oversea_tag=oversea_tag,
+                online_hours=online_hours,
+                create_time=create_time,
+                player_signature=data.get('name_card', {}).get('sign'),
+                cover_img=None,
+                birthday_str=birthday_str,
+                jieyi_name=jieyi_name,
+                jieyi_text=jieyi_text,
+                likes_count=likes_count,
+                likes_data_raw=likes_data_raw,
+                martial_mastery=martial_mastery,
+                scholar_mastery=scholar_mastery,
+                healer_mastery=healer_mastery,
+                explore_mastery=explore_mastery,
+                attr_str=attr_str,
+                attr_con=attr_con,
+                attr_bas=attr_bas,
+                attr_cri=attr_cri,
+                attr_agi=attr_agi,
+                school_emoji=school_emoji,
+                school_name=school_name,
+                school_rank=school_rank,
+                fashion_score=fashion_score if is_verified else 0,
+                arena_1v1_rank=arena_1v1_rank,
+                arena_1v1_max_winning_streak=arena_1v1_max_winning_streak,
+                arena_3v3_rank=arena_3v3_rank,
+                pvp_score=pvp_score,
+                group_strategy=group_strategy,
+                assist_points=assist_points,
+                guild_name=guild_name_p,
+                is_our_guild=is_our_guild,
+                guild_level=guild_level_p,
+                guild_leader=guild_leader,
+                guild_vice_leader=guild_vice_leader,
+                guild_members=guild_members,
+                guild_funds=guild_funds,
+                guild_fame=guild_fame,
+                guild_announcement=guild_announcement,
+                kongfu_main=kongfu_main,
+                kongfu_sub=kongfu_sub,
+                kongfu_role=kongfu_role,
+                is_verified=is_verified,
+                head_avatar_path=head_avatar_path,
+                head_id=head_id_value,
+                body_type=bt_val,
+                sender_pid=str(player_pid) if player_pid else None,
+            )
+
+            view_files = view._resolve_files()
+            view._original_message = None
+            await interaction.followup.send(view=view, files=view_files, ephemeral=True)
+
+        except Exception as e:
+            logger.error(f"Failed to show profile for {nickname_label} (number_id={number_id}): {e}", exc_info=True)
+            await interaction.followup.send(f"❌ Failed to load profile: `{str(e)}`", ephemeral=True)
+
+    async def _handle_view_leader(self, interaction: discord.Interaction):
+        await self._show_player_profile(interaction, self.leader_number_id, self.leader_name)
+
+    async def _handle_view_vice(self, interaction: discord.Interaction):
+        await self._show_player_profile(interaction, self.vice_number_id, self.vice_name)
 
 
 from cogs.view_registry import register

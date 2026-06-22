@@ -196,13 +196,13 @@ async def _wwm_api_post(
 # -----------------------------------------------------------------------------
 # Public API Functions
 # -----------------------------------------------------------------------------
-async def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[str] = None, api_url: Optional[str] = None, fields: Optional[List[str]] = None) -> Optional[Dict[str, Any]]:
+async def get_player_info(number_id: str, uid: Optional[str] = None, token: Optional[str] = None, api_url: Optional[str] = None, fields: Optional[List[str]] = None, force_search: bool = False) -> Optional[Dict[str, Any]]:
     """
     Get full player info by Number ID (two step lookup)
     1. Resolve Number ID to PID
     2. Fetch full player data from Redis endpoint
     """
-    logger.debug(f"Resolving Number ID {number_id} to PID")
+    logger.debug(f"Resolving Number ID {number_id} to PID (force_search={force_search})")
 
     # Step 1: Resolve Number ID to PID
     pid_result = await _wwm_api_post(
@@ -210,7 +210,7 @@ async def get_player_info(number_id: str, uid: Optional[str] = None, token: Opti
         {
             "uid": uid if uid else WWM_UID,
             "number_id": number_id,
-            "force_search": False
+            "force_search": force_search
         },
         uid=uid,
         token=token

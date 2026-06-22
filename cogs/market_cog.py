@@ -13,6 +13,28 @@ import settings
 from settings import BASE_DIR, CLUB_ID, WWM_UID, logger, GMT8_TZ
 from utility.wwm import get_full_guild_info, get_bulk_hoard_data, get_bulk_players_info, _wwm_api_post, get_topics_likes, get_player_info, find_people_by_nickname
 
+
+async def is_admin_or_staff(interaction: discord.Interaction) -> bool:
+    """Return True if the user is an administrator OR has any staff role from settings."""
+    if interaction.user.guild_permissions.administrator:
+        return True
+    try:
+        from settings import STAFF_ROLES
+        staff_role_ids = set(STAFF_ROLES.values())
+    except (ImportError, AttributeError):
+        return False
+    member_role_ids = {r.id for r in interaction.user.roles}
+    return bool(staff_role_ids & member_role_ids)
+
+
+def admin_or_staff():
+    """Check if the user is an administrator OR has any of the staff roles defined in settings."""
+    async def predicate(interaction: discord.Interaction) -> bool:
+        if not await is_admin_or_staff(interaction):
+            raise app_commands.MissingPermissions(["administrator"])
+        return True
+    return app_commands.check(predicate)
+
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
@@ -419,7 +441,7 @@ class GoodNameAdminConfirmView:
                 item.disabled = True
 
     async def _on_approve(self, interaction: discord.Interaction):
-        if not interaction.user.guild_permissions.administrator:
+        if not await is_admin_or_staff(interaction):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
             return
         await interaction.response.defer()
@@ -451,7 +473,7 @@ class GoodNameAdminConfirmView:
         await self.cog._refresh_dashboard()
 
     async def _on_reject(self, interaction: discord.Interaction):
-        if not interaction.user.guild_permissions.administrator:
+        if not await is_admin_or_staff(interaction):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
             return
         await interaction.response.defer()
@@ -507,7 +529,7 @@ class MarketPlayerAdminConfirmView:
                 item.disabled = True
 
     async def _on_approve(self, interaction: discord.Interaction):
-        if not interaction.user.guild_permissions.administrator:
+        if not await is_admin_or_staff(interaction):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
             return
         await interaction.response.defer()
@@ -541,7 +563,7 @@ class MarketPlayerAdminConfirmView:
         await self.cog._refresh_dashboard()
 
     async def _on_reject(self, interaction: discord.Interaction):
-        if not interaction.user.guild_permissions.administrator:
+        if not await is_admin_or_staff(interaction):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
             return
         await interaction.response.defer()
@@ -1215,7 +1237,7 @@ class WatchlistPaginatedView(LayoutView):
             await interaction.response.edit_message(view=self)
 
     async def _on_remove(self, interaction: discord.Interaction):
-        if not interaction.user.guild_permissions.administrator:
+        if not await is_admin_or_staff(interaction):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
             return
 
@@ -1859,7 +1881,7 @@ class MarketCog(commands.Cog):
 
     # -- Slash commands ---------------------------------------------------
     @market_group.command(name="report", description="Force-trigger a fresh market price report")
-    @app_commands.checks.has_permissions(administrator=True)
+    @admin_or_staff()
     async def market_report(self, interaction: discord.Interaction):
         """Manually trigger a market report."""
         await interaction.response.defer()
@@ -1871,7 +1893,7 @@ class MarketCog(commands.Cog):
             await interaction.followup.send(f"❌ Failed to generate report: `{e}`", ephemeral=True)
 
     @market_group.command(name="set-channel", description="Set the channel for daily market reports")
-    @app_commands.checks.has_permissions(administrator=True)
+    @admin_or_staff()
     async def market_set_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         """Configure the channel where daily reports are posted."""
         self.market_channel = channel
@@ -1880,7 +1902,7 @@ class MarketCog(commands.Cog):
         logger.info(f"Market cog: channel set to {channel.id} by {interaction.user}")
 
     @market_group.command(name="set-admin-channel", description="Set the admin channel for market approvals")
-    @app_commands.checks.has_permissions(administrator=True)
+    @admin_or_staff()
     async def market_set_admin_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
         """Configure the admin channel for market approval requests."""
         self._admin_channel_id = channel.id
@@ -1915,7 +1937,7 @@ class MarketCog(commands.Cog):
         await interaction.response.send_message(embed=embed, ephemeral=True)
 
     @market_group.command(name="watchlist", description="Show/remove manually added players on the market watchlist")
-    @app_commands.checks.has_permissions(administrator=True)
+    @admin_or_staff()
     async def market_watchlist(self, interaction: discord.Interaction):
         """Show all manually-added players on the watchlist, with pagination (10 per page) and removal Select."""
         await interaction.response.defer()
@@ -1975,7 +1997,14 @@ class MarketCog(commands.Cog):
 
     async def _watchlist_remove_callback(self, interaction: discord.Interaction):
         """Remove a player from the watchlist via Select menu."""
-        if not interaction.user.guild_permissions.administrator:
+        try:
+            from settings import STAFF_ROLES
+            staff_role_ids = set(STAFF_ROLES.values())
+        except (ImportError, AttributeError):
+            staff_role_ids = set()
+        is_admin = interaction.user.guild_permissions.administrator
+        is_staff = bool({r.id for r in interaction.user.roles} & staff_role_ids)
+        if not (is_admin or is_staff):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
             return
 
