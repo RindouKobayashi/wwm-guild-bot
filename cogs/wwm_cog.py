@@ -96,7 +96,6 @@ class GuildStatusBoard(LayoutView):
                  pending_apps: int, now_ts: int, next_update_ts: int,
                  birthdays_this_week: list = None,
                  press_count: int = 0,
-                 ranked_match_score: int = 0,
                  league_info: dict = None):
         super().__init__(timeout=None)
         self.cog = cog
@@ -106,7 +105,6 @@ class GuildStatusBoard(LayoutView):
         self.pending_apps = pending_apps
         self.birthdays_this_week = birthdays_this_week or []
         self.press_count = press_count
-        self.ranked_match_score = ranked_match_score
         self.league_info = league_info or {}
 
         # ── Build section texts ──
@@ -128,10 +126,9 @@ class GuildStatusBoard(LayoutView):
             f"💰 **Funds:** __**{funds:,}**__",
             f"📈 **Fame:** __**{total_fame:,}**__",
             f"🔥 **Weekly:** __**{week_fame:,}**__",
-            f"⚔️ **GvG:** __**{gvg_points:,}**__",
         ]
-        if ranked_match_score:
-            finance_parts.append(f"🏆 **Ranked:** __**{ranked_match_score:,}**__")
+        if gvg_points:
+            finance_parts.append(f"🏆 **Ranked:** __**{gvg_points:,}**__")
         if league_score or league_rank or league_wins:
             league_parts = []
             if league_score:
@@ -368,7 +365,6 @@ class GuildStatusBoard(LayoutView):
                 next_update_ts=now_ts + 60,
                 birthdays_this_week=board_data['birthdays_this_week'],
                 press_count=cog.online_players_button_presses,
-                ranked_match_score=board_data.get('ranked_match_score', 0),
                 league_info=board_data.get('league_info', {}),
             )
             await cog.monitor_message.edit(content=None, embeds=[], attachments=[], view=new_view)
@@ -2214,7 +2210,6 @@ class WWMCog(commands.Cog):
                 next_update_ts=now_ts + 60,
                 birthdays_this_week=board_data['birthdays_this_week'],
                 press_count=self.online_players_button_presses,
-                ranked_match_score=board_data.get('ranked_match_score', 0),
                 league_info=board_data.get('league_info', {}),
             )
             
@@ -2589,7 +2584,6 @@ class WWMCog(commands.Cog):
                                 next_update_ts=now_ts + 60,
                                 birthdays_this_week=board_data['birthdays_this_week'],
                                 press_count=self.online_players_button_presses,
-                                ranked_match_score=board_data.get('ranked_match_score', 0),
                                 league_info=board_data.get('league_info', {}),
                             )
                             self.monitor_message = await self.monitor_channel.send(content=None, embeds=[], view=view)
@@ -2619,13 +2613,12 @@ class WWMCog(commands.Cog):
                     online_count=board_data['online_count'],
                     weekly_leaderboard=board_data['weekly_leaderboard'],
                     pending_apps=board_data['pending_apps'],
-                now_ts=now_ts,
-                next_update_ts=now_ts + 60,
-                birthdays_this_week=board_data['birthdays_this_week'],
-                press_count=self.online_players_button_presses,
-                ranked_match_score=board_data.get('ranked_match_score', 0),
-                league_info=board_data.get('league_info', {}),
-            )
+                    now_ts=now_ts,
+                    next_update_ts=now_ts + 60,
+                    birthdays_this_week=board_data['birthdays_this_week'],
+                    press_count=self.online_players_button_presses,
+                    league_info=board_data.get('league_info', {}),
+                )
             self.monitor_message = await channel.send(content=None, embeds=[], view=view)
             self.last_guild_state = guild_data
         
@@ -2777,7 +2770,7 @@ class WWMCog(commands.Cog):
             embed.add_field(name="💰 Guild Funds", value=f"`{base.get('fund', 0):,}`", inline=True)
             embed.add_field(name="📈 Total Fame", value=f"`{base.get('fame', 0):,}`", inline=True)
             embed.add_field(name="🔥 Weekly Activity", value=f"`{base.get('week_fame', 0):,}`", inline=True)
-            embed.add_field(name="⚔️ GvG Points", value=f"`{play.get('pk_match_info', {}).get('battle_score', 0)}`", inline=True)
+            embed.add_field(name="🏆 Ranked Points", value=f"`{play.get('pk_match_info', {}).get('battle_score', 0)}`", inline=True)
 
             leader_name = "None"
             vice_leader_name = "None"
@@ -4134,7 +4127,7 @@ class GuildProfileView(LayoutView):
         # Finances
         inner_items.append(TextDisplay(
             f"💰 **Funds:** __{funds:,}__    📈 **Fame:** __{total_fame:,}__\n"
-            f"🔥 **Weekly:** __{week_fame:,}__    ⚔️ **GvG:** __{gvg_points:,}__"
+            f"🔥 **Weekly:** __{week_fame:,}__    🏆 **Ranked:** __{gvg_points:,}__"
         ))
         inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
 
