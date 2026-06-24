@@ -106,7 +106,7 @@ class GoodNameModal(Modal, title="Suggest a Good Name"):
                 f"# 🏷️ Good Name Suggestion\n\n"
                 f"• **Good ID:** `{self.good_id}`\n"
                 f"• **Suggested Name:** `{suggested_name}`\n"
-                f"• **Suggested by:** {interaction.user.mention} (`{interaction.user}`)\n\n"
+                f"• Suggested by: {interaction.user.mention} (`{interaction.user}`)\n\n"
                 f"Approve to save this mapping and refresh the dashboard."
             ),
             Separator(spacing=discord.SeparatorSpacing.small),
@@ -245,9 +245,10 @@ class _BulkPlayerLookupModal(Modal, title="Look Up Players"):
 class _BulkPlayerConfirmView:
     """Confirmation view for bulk player lookup with stats and add-to-watchlist option."""
 
-    def __init__(self, cog: "MarketCog", players: List[Dict[str, Any]]):
+    def __init__(self, cog: "MarketCog", players: List[Dict[str, Any]], authorized_user_id: int):
         self.cog = cog
         self.players = players
+        self.authorized_user_id = authorized_user_id
 
         self.action_row = ActionRow()
         add_btn = Button(
@@ -279,7 +280,8 @@ class _BulkPlayerConfirmView:
             status = "✅ In report" if p['is_on_watchlist'] else "⚪ Not in report"
             good_label = f"{p['good_name']} (#{p['main_good']})" if p['good_name'] else f"#{p['main_good']}"
 
-            player_lines = [f"• **{p['nickname']}** ({p['number_id']})  │  {status}"]
+            coop_prefix = "[COOP ✅] " if p.get('mode') == 17 else ""
+            player_lines = [f"• **{coop_prefix}{p['nickname']}** ({p['number_id']})  │  {status}"]
             if p['guild_name'] and p['guild_name'] != 'Unknown':
                 player_lines.append(f"  **Guild:** *{p['guild_name']}*")
             player_lines.append(f"  **Main Good:** `{good_label}`")
@@ -296,6 +298,9 @@ class _BulkPlayerConfirmView:
         return Container(*inner, accent_color=ACCENT_BLURPLE)
 
     async def _on_add_all(self, interaction: discord.Interaction):
+        if interaction.user.id != self.authorized_user_id:
+            await interaction.response.send_message("❌ Only the person who used the command can use this button.", ephemeral=True)
+            return
         await interaction.response.defer(ephemeral=True)
         added = 0
         for p in self.players:
@@ -325,6 +330,9 @@ class _BulkPlayerConfirmView:
         await self.cog._refresh_dashboard()
 
     async def _on_close(self, interaction: discord.Interaction):
+        if interaction.user.id != self.authorized_user_id:
+            await interaction.response.send_message("❌ Only the person who used the command can use this button.", ephemeral=True)
+            return
         await interaction.response.defer(ephemeral=True)
         self._disable()
         container = Container(
@@ -603,6 +611,7 @@ class MarketPlayerView(LayoutView):
         good_name: str = "",
         likes: int = 0,
         guild_name: str = "",
+        mode: int = 0,
     ):
         super().__init__(timeout=180)
         self.cog = cog
@@ -613,11 +622,13 @@ class MarketPlayerView(LayoutView):
         self.price_history = price_history or []
         self.good_name = good_name or ""
         self.guild_name = guild_name or ""
+        self.mode = mode
 
         inner: list = []
 
         # Stats text
-        lines = [f"# 📈 Market Stats — {nickname}"]
+        coop_prefix = "[COOP ✅] " if self.mode == 17 else ""
+        lines = [f"# 📈 Market Stats — {coop_prefix}**{nickname}**"]
         if self.guild_name and self.guild_name != 'Unknown':
             lines.append(f"**Guild:** *{self.guild_name}*")
         lines.append(f"**Number ID:** `{number_id}`")
@@ -677,7 +688,8 @@ class MarketPlayerView(LayoutView):
         inner: list = []
 
         # Stats text (same as constructor)
-        lines = [f"# 📈 Market Stats — {self.nickname}"]
+        coop_prefix = "[COOP ✅] " if self.mode == 17 else ""
+        lines = [f"# 📈 Market Stats — {coop_prefix}{self.nickname}"]
         lines.append(f"**Number ID:** `{self.number_id}`")
         good_label = f"{self.good_name} (#{self.main_good})" if self.good_name else f"#{self.main_good}"
         lines.append(f"**Main Good:** `{good_label}`")
@@ -720,7 +732,7 @@ class MarketReportView(LayoutView):
     def __init__(
         self,
         cog: "MarketCog",
-        grouped_data: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str]]],
+        grouped_data: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str, int]]],
         total_players: int,
         report_ts: int,
         next_update_ts: int,
@@ -767,7 +779,7 @@ class MarketReportView(LayoutView):
 
             # Build leaderboard lines
             lines = []
-            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name) in enumerate(players[:10], 1):
+            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode) in enumerate(players[:10], 1):
                 if rank == 1:
                     prefix = "🥇"
                 elif rank == 2:
@@ -779,10 +791,11 @@ class MarketReportView(LayoutView):
 
                 sign = "+" if pct >= 0 else ""
                 online_icon = "🟢" if is_online else "⚫"
+                coop_prefix = "[COOP ✅] " if mode == 17 else ""
                 guild_display = f" — *{guild_name}*" if guild_name and guild_name != 'Unknown' else ""
                 likes_text = f"  │  👍 {self.likes_map.get(pid, 0)}" if self.likes_map.get(pid, 0) else ""
                 lines.append(
-                    f"{prefix} {online_icon} **{nickname}** ({number_id}){guild_display}  ─  "
+                    f"{prefix} {online_icon} **{coop_prefix}{nickname}** ({number_id}){guild_display}  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                     f"{likes_text}"
                 )
@@ -807,7 +820,9 @@ class MarketReportView(LayoutView):
 
         # Footer
         inner_items.append(TextDisplay(
-            f"📊 Report generated: <t:{report_ts}:R>  •  🔄 Updates every 3 minutes"
+            f"📊 Report generated: <t:{report_ts}:R>  •  🔄 Updates every 3 minutes\n"
+            f"ℹ️ Players displayed have valid prices (currently logged in or logged in after price update)\n"
+            f"🤝 [COOP ✅] indicates player is in coop world — likely open to trade requests"
         ))
 
         # Add to watchlist button
@@ -852,7 +867,7 @@ class MarketReportView(LayoutView):
         await interaction.response.defer(ephemeral=True)
 
         # Filter each good group to only include online players
-        filtered: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str]]] = {}
+        filtered: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str, int]]] = {}
         total_filtered = 0
         for good_id, players in self.grouped_data.items():
             online_players = [p for p in players if p[6]]  # is_online is index 6
@@ -875,13 +890,14 @@ class MarketReportView(LayoutView):
             label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
 
             lines.append(f"### {emoji} {label} — {len(players)} online")
-            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name) in enumerate(players[:10], 1):
+            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode) in enumerate(players[:10], 1):
                 prefix = ["🥇", "🥈", "🥉"][rank - 1] if rank <= 3 else f"`{rank}.`"
                 sign = "+" if pct >= 0 else ""
+                coop_prefix = "[COOP ✅] " if mode == 17 else ""
                 guild_display = f" — *{guild_name}*" if guild_name and guild_name != 'Unknown' else ""
                 likes_text = f"  │  👍 {self.likes_map.get(pid, 0)}" if self.likes_map.get(pid, 0) else ""
                 lines.append(
-                    f"{prefix} 🟢 **{nickname}** ({number_id}){guild_display}  ─  "
+                    f"{prefix} 🟢 **{coop_prefix}{nickname}** ({number_id}){guild_display}  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                     f"{likes_text}"
                 )
@@ -935,7 +951,7 @@ class MarketReportView(LayoutView):
         bound_guild_name = None
         for good_id, players in self.grouped_data.items():
             for player_tuple in players:
-                # player_tuple: (pid, nickname, number_id, original_price, current_price, pct, is_online, hostnum, guild_name)
+                # player_tuple: (pid, nickname, number_id, original_price, current_price, pct, is_online, hostnum, guild_name, mode)
                 if player_tuple[0] == bound_pid:
                     bound_guild_name = player_tuple[8]
                     break
@@ -951,7 +967,7 @@ class MarketReportView(LayoutView):
             return
 
         # Filter each good group to only include players from the same guild
-        filtered: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str]]] = {}
+        filtered: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str, int]]] = {}
         total_filtered = 0
         for good_id, players in self.grouped_data.items():
             guild_players = [p for p in players if p[8] == bound_guild_name]
@@ -976,13 +992,14 @@ class MarketReportView(LayoutView):
             label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
 
             lines.append(f"### {emoji} {label} — {len(players)} player(s)")
-            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name) in enumerate(players[:10], 1):
+            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode) in enumerate(players[:10], 1):
                 prefix = ["🥇", "🥈", "🥉"][rank - 1] if rank <= 3 else f"`{rank}.`"
                 sign = "+" if pct >= 0 else ""
                 online_icon = "🟢" if is_online else "⚫"
+                coop_prefix = "[COOP ✅] " if mode == 17 else ""
                 likes_text = f"  │  👍 {self.likes_map.get(pid, 0)}" if self.likes_map.get(pid, 0) else ""
                 lines.append(
-                    f"{prefix} {online_icon} **{nickname}** ({number_id})  ─  "
+                    f"{prefix} {online_icon} **{coop_prefix}{nickname}** ({number_id})  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                     f"{likes_text}"
                 )
@@ -1311,17 +1328,6 @@ class MarketCog(commands.Cog):
                 )
             """)
             await db.execute("""
-                CREATE TABLE IF NOT EXISTS good_name_suggestions (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    good_id TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    suggested_by INTEGER,
-                    status TEXT DEFAULT 'pending',
-                    reviewed_by INTEGER,
-                    created_at INTEGER
-                )
-            """)
-            await db.execute("""
                 CREATE TABLE IF NOT EXISTS market_watchlist (
                     pid TEXT PRIMARY KEY,
                     nickname TEXT NOT NULL,
@@ -1624,7 +1630,8 @@ class MarketCog(commands.Cog):
                 'base': base,
                 'is_online': is_online,
                 'guild_name': guild_name,
-                'hostnum': player_hostnum
+                'hostnum': player_hostnum,
+                'mode': base.get('mode', 0)
             })
 
         if not qualifying_players:
@@ -1713,7 +1720,8 @@ class MarketCog(commands.Cog):
                 good_groups[main_good].append((
                     pid, nickname, number_id,
                     original_price, current_price, pct,
-                    is_online, hostnum, qp['guild_name']
+                    is_online, hostnum, qp['guild_name'],
+                    qp['mode']
                 ))
 
             logger.debug(
@@ -1995,38 +2003,6 @@ class MarketCog(commands.Cog):
             logger.error(f"Market cog: watchlist command failed: {e}", exc_info=True)
             await interaction.followup.send(f"❌ Error: `{e}`", ephemeral=True)
 
-    async def _watchlist_remove_callback(self, interaction: discord.Interaction):
-        """Remove a player from the watchlist via Select menu."""
-        try:
-            from settings import STAFF_ROLES
-            staff_role_ids = set(STAFF_ROLES.values())
-        except (ImportError, AttributeError):
-            staff_role_ids = set()
-        is_admin = interaction.user.guild_permissions.administrator
-        is_staff = bool({r.id for r in interaction.user.roles} & staff_role_ids)
-        if not (is_admin or is_staff):
-            await interaction.response.send_message("❌ Admins only.", ephemeral=True)
-            return
-
-        pid = interaction.data.get("values", [None])[0]
-        if not pid:
-            return
-
-        await interaction.response.defer(ephemeral=True)
-
-        async with aiosqlite.connect(self.db_path) as db:
-            cursor = await db.execute("SELECT nickname FROM market_watchlist WHERE pid = ?", (pid,))
-            row = await cursor.fetchone()
-            if row:
-                nickname = row[0]
-                await db.execute("DELETE FROM market_watchlist WHERE pid = ?", (pid,))
-                await db.commit()
-                await interaction.followup.send(f"✅ Removed **{nickname}** from the watchlist.", ephemeral=True)
-                # Force refresh dashboard since this player is no longer force-included
-                await self._refresh_dashboard()
-            else:
-                await interaction.followup.send("❌ Player not found on watchlist.", ephemeral=True)
-
     @market_group.command(name="player", description="Look up specific players' market stats")
     @app_commands.describe(
         query="One or more player UIDs or nicknames, comma-separated (optional if using the modal)",
@@ -2149,6 +2125,7 @@ class MarketCog(commands.Cog):
                 "good_name": good_name or "",
                 "likes": likes,
                 "guild_name": guild_name,
+                "mode": base.get('mode', 0),
             })
 
         if not final_players:
@@ -2156,7 +2133,7 @@ class MarketCog(commands.Cog):
             return
 
         # Confirmation view
-        confirm_view = _BulkPlayerConfirmView(cog=self, players=final_players)
+        confirm_view = _BulkPlayerConfirmView(cog=self, players=final_players, authorized_user_id=interaction.user.id)
         container = confirm_view.build_container()
         confirm_layout = LayoutView(timeout=180)
         confirm_layout.add_item(container)
