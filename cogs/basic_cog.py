@@ -32,6 +32,22 @@ class BasicCog(commands.Cog):
             total += int(num) * units[unit.lower()]
         return total
 
+    @app_commands.command(name="my_reminders", description="List your pending reminders")
+    async def my_reminders(self, interaction: discord.Interaction):
+        """List the caller's pending reminders."""
+        now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute("SELECT * FROM reminders WHERE user_id = ? AND status = 'pending' AND trigger_at > ? ORDER BY trigger_at ASC", (interaction.user.id, now))
+            rows = await cursor.fetchall()
+        if not rows:
+            await interaction.response.send_message("You have no pending reminders.", ephemeral=True)
+            return
+        lines = []
+        for row in rows:
+            lines.append(f"• <t:{row['trigger_at']}:R>: {row['message']}")
+        await interaction.response.send_message("\n".join(lines), ephemeral=True)
+
     @app_commands.command(name="remindme", description="Set a personal reminder. Examples: /remindme 3h Take a break, /remindme 90m Meeting")
     @app_commands.describe(time="Time specification such as '3h', '90m', '1h 30m', '2 days'", message="What should I remind you about?")
     async def remindme(self, interaction: discord.Interaction, time: str, message: str):
