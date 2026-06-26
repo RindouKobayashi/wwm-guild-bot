@@ -239,7 +239,8 @@ LIKES = {
     112: "Profile",
     111: "Performance",
     129: "Market",
-    151: "Kitty"
+    151: "Kitty",
+    172: "Pet"
 }
 
 BOSS_NAMES = {
