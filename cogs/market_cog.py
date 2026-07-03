@@ -164,6 +164,9 @@ class AddToWatchlistModal(Modal, title="Add Player to Watchlist"):
             return
 
         self.pending_entries = []
+        banned_skipped = []
+        banned_pids = await self.cog._get_banned_pids()
+
         for entry in entries:
             pid = None
             nickname = None
@@ -190,16 +193,28 @@ class AddToWatchlistModal(Modal, title="Add Player to Watchlist"):
                     logger.debug(f"Watchlist add lookup failed for nickname {entry}: {e}")
 
             if pid:
-                self.pending_entries.append((pid, nickname or entry, str(number_id) if number_id else ""))
+                entry_data = (pid, nickname or entry, str(number_id) if number_id else "")
+                if pid in banned_pids:
+                    banned_skipped.append(entry_data)
+                else:
+                    self.pending_entries.append(entry_data)
 
-        if not self.pending_entries:
+        if not self.pending_entries and not banned_skipped:
             await interaction.followup.send("❌ Could not resolve any entries to players.", ephemeral=True)
             return
 
         # Confirmation view
-        lines = ["# 🧾 Confirm Add to Watchlist", f"**{len(self.pending_entries)} player(s) will be added:**\n"]
-        lines += [f"• **{n}** (`{nid}`)" for _, n, nid in self.pending_entries]
-        lines.append("\nPlease confirm to proceed.")
+        lines = ["# 🧾 Confirm Add to Watchlist"]
+        if self.pending_entries:
+            lines.append(f"**{len(self.pending_entries)} player(s) will be added:**\n")
+            lines += [f"• **{n}** (`{nid}`)" for _, n, nid in self.pending_entries]
+            lines.append("")
+        if banned_skipped:
+            lines.append(f"⚠️ **{len(banned_skipped)} player(s) are banned — skipped:**\n")
+            for _, n, nid in banned_skipped:
+                lines.append(f"• ~~**{n}** (`{nid}`)~~ — on banned list")
+            lines.append("")
+        lines.append("Please confirm to proceed.")
         container = Container(
             TextDisplay("\n".join(lines)),
             accent_color=ACCENT_BLURPLE,
@@ -302,9 +317,14 @@ class _BulkPlayerConfirmView:
             await interaction.response.send_message("❌ Only the person who used the command can use this button.", ephemeral=True)
             return
         await interaction.response.defer(ephemeral=True)
+        banned_pids = await self.cog._get_banned_pids()
         added = 0
+        skipped_banned = 0
         for p in self.players:
             if p['is_on_watchlist']:
+                continue
+            if p['pid'] in banned_pids:
+                skipped_banned += 1
                 continue
             async with aiosqlite.connect(DB_PATH) as db:
                 await db.execute(
@@ -315,18 +335,19 @@ class _BulkPlayerConfirmView:
             added += 1
 
         self._disable()
+        result_lines = [f"✅ **Watchlist Updated** by {interaction.user.mention}"]
+        result_lines.append(f"**{added} player(s) added** to the market watchlist.")
+        if skipped_banned:
+            result_lines.append(f"⚠️ **{skipped_banned} player(s) skipped** — on banned list.")
         container = Container(
-            TextDisplay(
-                f"✅ **Watchlist Updated** by {interaction.user.mention}\n\n"
-                f"**{added} player(s) added** to the market watchlist."
-            ),
+            TextDisplay("\n".join(result_lines)),
             accent_color=ACCENT_GREEN,
         )
         done_view = LayoutView(timeout=None)
         done_view.add_item(container)
         await interaction.edit_original_response(view=done_view)
 
-        logger.info(f"Market watchlist bulk add from player command: {added} players by {interaction.user}")
+        logger.info(f"Market watchlist bulk add from player command: {added} players, {skipped_banned} banned skipped by {interaction.user}")
         await self.cog._refresh_dashboard()
 
     async def _on_close(self, interaction: discord.Interaction):
@@ -674,6 +695,15 @@ class MarketPlayerView(LayoutView):
     async def _on_include(self, interaction: discord.Interaction):
         await interaction.response.defer(ephemeral=True)
 
+        # Check if player is banned first
+        if await self.cog._is_player_banned(self.pid):
+            await interaction.edit_original_response(content=None)
+            await interaction.followup.send(
+                f"❌ **{self.nickname}** is on the banned list and cannot be added to the watchlist.",
+                ephemeral=True
+            )
+            return
+
         # Directly add to watchlist (no admin approval needed)
         async with aiosqlite.connect(DB_PATH) as db:
             await db.execute(
@@ -739,6 +769,7 @@ class MarketReportView(LayoutView):
         known_goods: Set[str] = None,
         good_names_map: Dict[str, str] = None,
         likes_map: Dict[str, int] = None,
+        pending_report_pids: Set[str] = None,
     ):
         super().__init__(timeout=None)
         self.cog = cog
@@ -749,6 +780,7 @@ class MarketReportView(LayoutView):
         self.known_goods = known_goods or set()
         self.good_names_map = good_names_map or {}
         self.likes_map = likes_map or {}
+        self.pending_report_pids = pending_report_pids or set()
 
         inner_items: list = []
 
@@ -777,6 +809,9 @@ class MarketReportView(LayoutView):
             good_name = self.good_names_map.get(good_id, "")
             label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
 
+            # Get pending report PIDs for dashboard warnings
+            pending_report_pids = self.pending_report_pids or set()
+
             # Build leaderboard lines
             lines = []
             for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode) in enumerate(players[:10], 1):
@@ -792,10 +827,11 @@ class MarketReportView(LayoutView):
                 sign = "+" if pct >= 0 else ""
                 online_icon = "🟢" if is_online else "⚫"
                 coop_prefix = "[COOP ✅] " if mode == 17 else ""
+                reported_prefix = "[⚠️] " if pid in pending_report_pids else ""
                 guild_display = f" — *{guild_name}*" if guild_name and guild_name != 'Unknown' else ""
                 likes_text = f"  │  👍 {self.likes_map.get(pid, 0)}" if self.likes_map.get(pid, 0) else ""
                 lines.append(
-                    f"{prefix} {online_icon} **{coop_prefix}{nickname}** ({number_id}){guild_display}  ─  "
+                    f"{prefix} {online_icon} **{reported_prefix}{coop_prefix}{nickname}** ({number_id}){guild_display}  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                     f"{likes_text}"
                 )
@@ -822,7 +858,8 @@ class MarketReportView(LayoutView):
         inner_items.append(TextDisplay(
             f"📊 Report generated: <t:{report_ts}:R>  •  🔄 Updates every 3 minutes\n"
             f"ℹ️ Players displayed have valid prices (currently logged in or logged in after price update)\n"
-            f"🤝 [COOP ✅] indicates player is in coop world — likely open to trade requests"
+            f"🤝 [COOP ✅] indicates player is in coop world — likely open to trade requests\n"
+            f"⚠️ Players with [⚠️] had been reported to staff and is awaiting review\n"
         ))
 
         # Add to watchlist button
@@ -834,6 +871,14 @@ class MarketReportView(LayoutView):
         )
         add_btn.callback = self._on_add_watchlist
         add_row.add_item(add_btn)
+
+        report_btn = Button(
+            label="🚨 Report Player",
+            style=discord.ButtonStyle.danger,
+            custom_id="market_report_player",
+        )
+        report_btn.callback = self._on_report_player
+        add_row.add_item(report_btn)
         inner_items.append(add_row)
 
         # Filter button row
@@ -860,6 +905,10 @@ class MarketReportView(LayoutView):
 
     async def _on_add_watchlist(self, interaction: discord.Interaction):
         modal = AddToWatchlistModal(cog=self.cog)
+        await interaction.response.send_modal(modal)
+
+    async def _on_report_player(self, interaction: discord.Interaction):
+        modal = ReportPlayerModal(cog=self.cog)
         await interaction.response.send_modal(modal)
 
     async def _on_filter_online(self, interaction: discord.Interaction):
@@ -1209,6 +1258,17 @@ class WatchlistPaginatedView(LayoutView):
             select_row.add_item(remove_select)
             inner.append(select_row)
 
+        # Banned list button
+        banned_row = ActionRow()
+        banned_btn = Button(
+            label="🚫 Show Banned List",
+            style=discord.ButtonStyle.danger,
+            custom_id="watchlist_show_banned",
+        )
+        banned_btn.callback = self._on_show_banned
+        banned_row.add_item(banned_btn)
+        inner.append(banned_row)
+
         # Navigation buttons
         nav_row = ActionRow()
         prev_btn = Button(
@@ -1253,6 +1313,22 @@ class WatchlistPaginatedView(LayoutView):
             self._build()
             await interaction.response.edit_message(view=self)
 
+    async def _on_show_banned(self, interaction: discord.Interaction):
+        if not await is_admin_or_staff(interaction):
+            await interaction.response.send_message("❌ Admins only.", ephemeral=True)
+            return
+        await interaction.response.defer()
+        try:
+            banned_entries = await self.cog._get_banned_list()
+            if not banned_entries:
+                await interaction.followup.send("🚫 Banned list is empty.")
+                return
+            view = BannedListPaginatedView(cog=self.cog, all_entries=banned_entries)
+            await interaction.followup.send(view=view)
+        except Exception as e:
+            logger.error(f"Failed to show banned list: {e}", exc_info=True)
+            await interaction.followup.send(f"❌ Error: `{e}`", ephemeral=True)
+
     async def _on_remove(self, interaction: discord.Interaction):
         if not await is_admin_or_staff(interaction):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
@@ -1282,6 +1358,635 @@ class WatchlistPaginatedView(LayoutView):
                 await self.cog._refresh_dashboard()
             else:
                 await interaction.followup.send("❌ Player not found on watchlist.", ephemeral=True)
+
+
+# ---------------------------------------------------------------------------
+# Report Player Modal
+# ---------------------------------------------------------------------------
+class ReportPlayerModal(Modal, title="Report Player(s)"):
+    """Modal to report one or more players by UID or nickname with a reason."""
+
+    identifiers = TextInput(
+        label="Player UIDs or Nicknames",
+        placeholder="e.g. 4036668451, 4025937269, 0032906407, TjTreacher",
+        required=True,
+        style=discord.TextStyle.paragraph,
+        max_length=1000,
+    )
+
+    reason = TextInput(
+        label="Reason for Report",
+        placeholder="e.g. Deathtrap, coop request closed, etc.",
+        required=True,
+        style=discord.TextStyle.paragraph,
+        max_length=2000,
+    )
+
+    def __init__(self, cog: "MarketCog"):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.resolved_players: List[Dict[str, Any]] = []
+        self.banned_skipped: List[Dict[str, Any]] = []
+
+    async def on_submit(self, interaction: discord.Interaction):
+        raw = self.identifiers.value.strip()
+        reason_text = self.reason.value.strip()
+        if not raw:
+            await interaction.response.send_message("❌ Please enter at least one UID or nickname.", ephemeral=True)
+            return
+        if not reason_text:
+            await interaction.response.send_message("❌ Please provide a reason for the report.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+
+        entries = [part.strip() for part in raw.split(",") if part.strip()]
+        if not entries:
+            await interaction.followup.send("❌ No valid entries found.", ephemeral=True)
+            return
+
+        self.resolved_players = []
+        self.banned_skipped = []
+        banned_pids = await self.cog._get_banned_pids()
+
+        for entry in entries:
+            pid = None
+            nickname = None
+            number_id = None
+            if entry.isdigit():
+                try:
+                    player_data = await get_player_info(entry, fields=["base", "hoard_profiteer", "space_data"])
+                    if player_data and 'result' in player_data and 'base' in player_data['result']:
+                        pid = player_data['result'].get('id')
+                        base = player_data['result'].get('base', {})
+                        nickname = base.get('nickname')
+                        number_id = base.get('number_id')
+                except Exception as e:
+                    logger.debug(f"Report lookup failed for number_id {entry}: {e}")
+            if not pid:
+                try:
+                    nick_data = await find_people_by_nickname(entry)
+                    if nick_data and 'result' in nick_data:
+                        pid = nick_data['result'].get('id')
+                        if pid:
+                            nickname = nick_data['result'].get('nickname', nickname or entry)
+                            number_id = nick_data['result'].get('number_id', number_id)
+                except Exception as e:
+                    logger.debug(f"Report lookup failed for nickname {entry}: {e}")
+
+            if pid:
+                player_info = {
+                    "pid": pid,
+                    "nickname": nickname or entry,
+                    "number_id": str(number_id) if number_id else "",
+                }
+                if pid in banned_pids:
+                    self.banned_skipped.append(player_info)
+                else:
+                    self.resolved_players.append(player_info)
+
+        if not self.resolved_players and not self.banned_skipped:
+            await interaction.followup.send("❌ Could not resolve any entries to players.", ephemeral=True)
+            return
+
+        # Build confirmation view
+        lines = ["# 🚨 Confirm Player Report", f"**Reason:** {reason_text}\n"]
+
+        if self.resolved_players:
+            lines.append(f"**{len(self.resolved_players)} player(s) to report:**\n")
+            for p in self.resolved_players:
+                lines.append(f"• **{p['nickname']}** (`{p['number_id']}`)")
+            lines.append("")
+
+        if self.banned_skipped:
+            lines.append(f"⚠️ **{len(self.banned_skipped)} player(s) already banned — skipped:**\n")
+            for p in self.banned_skipped:
+                lines.append(f"• ~~**{p['nickname']}** (`{p['number_id']}`)~~ — already banned")
+            lines.append("")
+
+        lines.append("Please confirm to send the report to staff for review.")
+
+        container = Container(
+            TextDisplay("\n".join(lines)),
+            accent_color=ACCENT_RED,
+        )
+        confirm_view = _ReportConfirmView(
+            cog=self.cog,
+            players=self.resolved_players,
+            reason=reason_text,
+            reporter_id=interaction.user.id,
+        )
+        confirm_layout = LayoutView(timeout=120)
+        confirm_layout.add_item(container)
+        confirm_layout.add_item(confirm_view.action_row)
+        await interaction.followup.send(view=confirm_layout, ephemeral=True)
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception):
+        logger.error(f"ReportPlayerModal error: {error}", exc_info=True)
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(f"❌ Error: {error}", ephemeral=True)
+        except Exception:
+            pass
+
+
+class _ReportConfirmView:
+    """Holds confirm/cancel buttons for report submission."""
+
+    def __init__(self, cog: "MarketCog", players: List[Dict[str, Any]], reason: str, reporter_id: int):
+        self.cog = cog
+        self.players = players
+        self.reason = reason
+        self.reporter_id = reporter_id
+
+        self.action_row = ActionRow()
+        approve_btn = Button(
+            label="✅ Confirm – Send Report",
+            style=discord.ButtonStyle.danger,
+            custom_id="report_confirm_send",
+        )
+        approve_btn.callback = self._on_confirm
+        self.action_row.add_item(approve_btn)
+
+        reject_btn = Button(
+            label="❌ Cancel",
+            style=discord.ButtonStyle.secondary,
+            custom_id="report_cancel",
+        )
+        reject_btn.callback = self._on_cancel
+        self.action_row.add_item(reject_btn)
+
+    def _disable(self):
+        for item in self.action_row.children:
+            if isinstance(item, Button):
+                item.disabled = True
+
+    async def _on_confirm(self, interaction: discord.Interaction):
+        if interaction.user.id != self.reporter_id:
+            await interaction.response.send_message("❌ Only the person who submitted can confirm.", ephemeral=True)
+            return
+        await interaction.response.defer(ephemeral=True)
+
+        now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+
+        # Insert report
+        async with aiosqlite.connect(DB_PATH) as db:
+            cursor = await db.execute(
+                "INSERT INTO market_reports (reporter_id, reason, created_at) VALUES (?, ?, ?)",
+                (self.reporter_id, self.reason, now_ts)
+            )
+            report_id = cursor.lastrowid
+
+            # Insert each player
+            for p in self.players:
+                await db.execute(
+                    "INSERT INTO market_report_players (report_id, pid, nickname, number_id, status) VALUES (?, ?, ?, ?, 'pending')",
+                    (report_id, p['pid'], p['nickname'], p['number_id'])
+                )
+            await db.commit()
+
+        self._disable()
+        container = Container(
+            TextDisplay(
+                f"✅ **Report Submitted**\n\n"
+                f"**{len(self.players)} player(s)** reported to staff for review.\n"
+                f"**Reason:** {self.reason}"
+            ),
+            accent_color=ACCENT_GREEN,
+        )
+        done_view = LayoutView(timeout=None)
+        done_view.add_item(container)
+        await interaction.edit_original_response(view=done_view)
+
+        logger.info(f"Market report #{report_id} submitted by {interaction.user} for {len(self.players)} players")
+
+        # Send to approval channel
+        await self.cog._send_report_to_approval_channel(
+            interaction=interaction,
+            report_id=report_id,
+            players=self.players,
+            reason=self.reason,
+            reporter_id=self.reporter_id,
+        )
+
+        # Refresh dashboard to show [REPORTED ⚠️] warnings
+        await self.cog._refresh_dashboard()
+
+    async def _on_cancel(self, interaction: discord.Interaction):
+        if interaction.user.id != self.reporter_id:
+            await interaction.response.send_message("❌ Only the person who submitted can cancel.", ephemeral=True)
+            return
+        await interaction.response.defer(ephemeral=True)
+        self._disable()
+        container = Container(
+            TextDisplay("❌ **Report Cancelled**\n\nNo report was submitted."),
+            accent_color=ACCENT_RED,
+        )
+        done_view = LayoutView(timeout=None)
+        done_view.add_item(container)
+        await interaction.edit_original_response(view=done_view)
+
+
+# ---------------------------------------------------------------------------
+# Rejection Reason Modal
+# ---------------------------------------------------------------------------
+class RejectionReasonModal(Modal, title="Reject Report — Provide Reason"):
+    """Modal for mod to provide a reason when rejecting a report."""
+
+    rejection_reason = TextInput(
+        label="Rejection Reason",
+        placeholder="e.g. Insufficient evidence, false report...",
+        required=True,
+        style=discord.TextStyle.paragraph,
+        max_length=1000,
+    )
+
+    def __init__(self, cog: "MarketCog", report_player_id: int, pid: str, nickname: str, number_id: str, report_id: int, admin_msg_view: LayoutView):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.report_player_id = report_player_id
+        self.pid = pid
+        self.nickname = nickname
+        self.number_id = number_id
+        self.report_id = report_id
+        self.admin_msg_view = admin_msg_view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        reason = self.rejection_reason.value.strip()
+        if not reason:
+            await interaction.response.send_message("❌ Reason cannot be empty.", ephemeral=True)
+            return
+
+        await interaction.response.defer()
+
+        now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                "UPDATE market_report_players SET status = 'rejected', reviewed_by = ?, reviewed_at = ?, rejection_reason = ? WHERE id = ?",
+                (interaction.user.id, now_ts, reason, self.report_player_id)
+            )
+            await db.commit()
+
+        # Update the admin message to show rejection
+        await self._update_admin_message(interaction, reason)
+
+        logger.info(f"Report player {self.nickname} ({self.pid}) REJECTED by {interaction.user}: {reason}")
+        await self.cog._refresh_dashboard()
+
+    async def on_error(self, interaction: discord.Interaction, error: Exception):
+        logger.error(f"RejectionReasonModal error: {error}", exc_info=True)
+        try:
+            if not interaction.response.is_done():
+                await interaction.response.send_message(f"❌ Error: {error}", ephemeral=True)
+        except Exception:
+            pass
+
+    async def _update_admin_message(self, interaction: discord.Interaction, reason: str):
+        """Update the admin approval message to show this player was rejected."""
+        # We need to find and update the specific player's section in the admin message
+        # The admin_msg_view contains the container with all players
+        # We'll rebuild the view with updated status
+        async with aiosqlite.connect(DB_PATH) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                "SELECT rp.id, rp.pid, rp.nickname, rp.number_id, rp.status, rp.reviewed_by, rp.rejection_reason, "
+                "mr.reason as report_reason, mr.reporter_id "
+                "FROM market_report_players rp "
+                "JOIN market_reports mr ON rp.report_id = mr.id "
+                "WHERE rp.report_id = ? ORDER BY rp.id",
+                (self.report_id,)
+            )
+            rows = await cursor.fetchall()
+
+        if not rows:
+            return
+
+        players_data = []
+        for row in rows:
+            players_data.append({
+                "id": row["id"],
+                "pid": row["pid"],
+                "nickname": row["nickname"],
+                "number_id": row["number_id"],
+                "status": row["status"],
+                "reviewed_by": row["reviewed_by"],
+                "rejection_reason": row["rejection_reason"],
+            })
+
+        report_reason = rows[0]["report_reason"]
+        reporter_id = rows[0]["reporter_id"]
+
+        # Build new approval view
+        new_view = _ReportApprovalView(
+            cog=self.cog,
+            report_id=self.report_id,
+            players=players_data,
+            reason=report_reason,
+            reporter_id=reporter_id,
+        )
+        await interaction.edit_original_response(view=new_view)
+
+
+# ---------------------------------------------------------------------------
+# Report Approval View (per-player approve/reject)
+# ---------------------------------------------------------------------------
+class _ReportApprovalView(LayoutView):
+    """LayoutView with per-player approve/reject buttons for a report."""
+
+    def __init__(self, cog: "MarketCog", report_id: int, players: List[Dict[str, Any]], reason: str, reporter_id: int):
+        super().__init__(timeout=None)
+        self.cog = cog
+        self.report_id = report_id
+        self.players = players
+        self.reason = reason
+        self.reporter_id = reporter_id
+
+        self._build()
+
+    def _build(self) -> None:
+        self.clear_items()
+        inner_items: list = []
+
+        # Header
+        lines = [
+            f"# 🚨 Player Report #{self.report_id}",
+            f"**Reason:** {self.reason}",
+            f"**Reported by:** <@{self.reporter_id}>",
+            f"**Players:** {len(self.players)}\n",
+        ]
+        inner_items.append(TextDisplay("\n".join(lines)))
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        for p in self.players:
+            status_emoji = {
+                "pending": "⏳",
+                "approved": "✅",
+                "rejected": "❌",
+            }.get(p["status"], "⏳")
+
+            player_lines = [
+                f"### {status_emoji} **{p['nickname']}** (`{p['number_id']}`)",
+                f"**PID:** `{p['pid']}`",
+                f"**Status:** `{p['status']}`",
+            ]
+
+            if p["status"] == "rejected" and p.get("rejection_reason"):
+                player_lines.append(f"**Rejection Reason:** {p['rejection_reason']}")
+            if p["status"] == "approved":
+                player_lines.append(f"✅ **Approved** — removed from watchlist")
+            if p["status"] == "rejected":
+                player_lines.append(f"❌ **Rejected** — player remains on watchlist")
+
+            inner_items.append(TextDisplay("\n".join(player_lines)))
+
+            # Only show action buttons for pending players
+            if p["status"] == "pending":
+                action_row = ActionRow()
+                approve_ban_btn = Button(
+                    label="✅ Approve & Ban",
+                    style=discord.ButtonStyle.success,
+                    custom_id=f"report_approve_ban:{self.report_id}:{p['id']}:{p['pid'][:20]}",
+                )
+                approve_ban_btn.callback = self._make_approve_ban_callback(p)
+                action_row.add_item(approve_ban_btn)
+
+                approve_remove_btn = Button(
+                    label="✅ Approve & Remove",
+                    style=discord.ButtonStyle.primary,
+                    custom_id=f"report_approve_remove:{self.report_id}:{p['id']}:{p['pid'][:20]}",
+                )
+                approve_remove_btn.callback = self._make_approve_remove_callback(p)
+                action_row.add_item(approve_remove_btn)
+
+                reject_btn = Button(
+                    label="❌ Reject",
+                    style=discord.ButtonStyle.danger,
+                    custom_id=f"report_reject:{self.report_id}:{p['id']}:{p['pid'][:20]}",
+                )
+                reject_btn.callback = self._make_reject_callback(p)
+                action_row.add_item(reject_btn)
+
+                inner_items.append(action_row)
+
+            inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        container = Container(*inner_items, accent_color=ACCENT_RED)
+        self.add_item(container)
+
+    def _make_approve_ban_callback(self, player: Dict[str, Any]):
+        async def callback(interaction: discord.Interaction):
+            if not await is_admin_or_staff(interaction):
+                await interaction.response.send_message("❌ Admins only.", ephemeral=True)
+                return
+            await interaction.response.defer()
+
+            now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+            pid = player["pid"]
+            nickname = player["nickname"]
+            number_id = player["number_id"]
+
+            async with aiosqlite.connect(DB_PATH) as db:
+                # Update report status
+                await db.execute(
+                    "UPDATE market_report_players SET status = 'approved', reviewed_by = ?, reviewed_at = ? WHERE id = ?",
+                    (interaction.user.id, now_ts, player["id"])
+                )
+                # Remove from watchlist if present
+                await db.execute("DELETE FROM market_watchlist WHERE pid = ?", (pid,))
+                # Add to banned list
+                await db.execute(
+                    "REPLACE INTO market_banned_list (pid, nickname, number_id, banned_by, banned_at, reason) VALUES (?, ?, ?, ?, ?, ?)",
+                    (pid, nickname, number_id, interaction.user.id, now_ts, self.reason)
+                )
+                await db.commit()
+
+            logger.info(f"Report player {nickname} ({pid}) APPROVED and banned by {interaction.user}")
+
+            # Rebuild the admin message with updated status
+            async with aiosqlite.connect(DB_PATH) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute(
+                    "SELECT rp.id, rp.pid, rp.nickname, rp.number_id, rp.status, rp.reviewed_by, rp.rejection_reason "
+                    "FROM market_report_players rp WHERE rp.report_id = ? ORDER BY rp.id",
+                    (self.report_id,)
+                )
+                rows = await cursor.fetchall()
+
+            updated_players = [dict(row) for row in rows]
+            new_view = _ReportApprovalView(
+                cog=self.cog,
+                report_id=self.report_id,
+                players=updated_players,
+                reason=self.reason,
+                reporter_id=self.reporter_id,
+            )
+            await interaction.edit_original_response(view=new_view)
+
+            await self.cog._refresh_dashboard()
+
+        return callback
+
+    def _make_approve_remove_callback(self, player: Dict[str, Any]):
+        """Approve report: remove from watchlist but do NOT add to banned list."""
+        async def callback(interaction: discord.Interaction):
+            if not await is_admin_or_staff(interaction):
+                await interaction.response.send_message("❌ Admins only.", ephemeral=True)
+                return
+            await interaction.response.defer()
+
+            now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+            pid = player["pid"]
+            nickname = player["nickname"]
+            number_id = player["number_id"]
+
+            async with aiosqlite.connect(DB_PATH) as db:
+                # Update report status to 'approved'
+                await db.execute(
+                    "UPDATE market_report_players SET status = 'approved', reviewed_by = ?, reviewed_at = ? WHERE id = ?",
+                    (interaction.user.id, now_ts, player["id"])
+                )
+                # Remove from watchlist if present
+                await db.execute("DELETE FROM market_watchlist WHERE pid = ?", (pid,))
+                # Do NOT add to banned list - just approve and remove
+                await db.commit()
+
+            logger.info(f"Report player {nickname} ({pid}) APPROVED and removed (no ban) by {interaction.user}")
+
+            # Rebuild the admin message with updated status
+            async with aiosqlite.connect(DB_PATH) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute(
+                    "SELECT rp.id, rp.pid, rp.nickname, rp.number_id, rp.status, rp.reviewed_by, rp.rejection_reason "
+                    "FROM market_report_players rp WHERE rp.report_id = ? ORDER BY rp.id",
+                    (self.report_id,)
+                )
+                rows = await cursor.fetchall()
+
+            updated_players = [dict(row) for row in rows]
+            new_view = _ReportApprovalView(
+                cog=self.cog,
+                report_id=self.report_id,
+                players=updated_players,
+                reason=self.reason,
+                reporter_id=self.reporter_id,
+            )
+            await interaction.edit_original_response(view=new_view)
+
+            await self.cog._refresh_dashboard()
+
+        return callback
+
+    def _make_reject_callback(self, player: Dict[str, Any]):
+        async def callback(interaction: discord.Interaction):
+            if not await is_admin_or_staff(interaction):
+                await interaction.response.send_message("❌ Admins only.", ephemeral=True)
+                return
+
+            # Open rejection reason modal
+            modal = RejectionReasonModal(
+                cog=self.cog,
+                report_player_id=player["id"],
+                pid=player["pid"],
+                nickname=player["nickname"],
+                number_id=player["number_id"],
+                report_id=self.report_id,
+                admin_msg_view=self,
+            )
+            await interaction.response.send_modal(modal)
+
+        return callback
+
+
+# ---------------------------------------------------------------------------
+# Banned List Paginated View
+# ---------------------------------------------------------------------------
+class BannedListPaginatedView(LayoutView):
+    """Paginated view for the market banned list showing 10 entries per page."""
+
+    def __init__(
+        self,
+        cog: "MarketCog",
+        all_entries: List[Dict[str, Any]],
+    ):
+        super().__init__(timeout=180)
+        self.cog = cog
+        self.all_entries = all_entries
+        self.page_size = 10
+        self.current_page = 0
+        self.total_pages = max(1, (len(all_entries) + self.page_size - 1) // self.page_size)
+
+        self._build()
+
+    def _build(self) -> None:
+        self.clear_items()
+
+        start = self.current_page * self.page_size
+        end = min((self.current_page + 1) * self.page_size, len(self.all_entries))
+        page = self.all_entries[start:end]
+
+        lines: List[str] = []
+        lines.append(f"# 🚫 Market Banned List\n")
+        lines.append(f"**Total:** {len(self.all_entries)} entries  •  **Page {self.current_page + 1}/{self.total_pages}** (showing {start + 1}-{end})\n")
+
+        if not page:
+            lines.append("No entries on this page.")
+        else:
+            for entry in page:
+                lines.append(
+                    f"• **{entry['nickname']}** ({entry['number_id']})  —  "
+                    f"banned <t:{entry['banned_at']}:R> by <@{entry['banned_by']}>"
+                )
+                if entry.get('reason'):
+                    lines.append(f"  **Reason:** {entry['reason']}")
+                lines.append("")
+
+        inner: list = []
+        inner.append(TextDisplay("\n".join(lines)))
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Navigation buttons
+        nav_row = ActionRow()
+        prev_btn = Button(
+            label="◀ Previous",
+            style=discord.ButtonStyle.secondary,
+            custom_id="banned_prev",
+            disabled=self.current_page == 0,
+        )
+        prev_btn.callback = self._on_prev
+        nav_row.add_item(prev_btn)
+
+        page_btn = Button(
+            label=f"{self.current_page + 1}/{self.total_pages}",
+            style=discord.ButtonStyle.secondary,
+            custom_id="banned_page",
+            disabled=True,
+        )
+        nav_row.add_item(page_btn)
+
+        next_btn = Button(
+            label="Next ▶",
+            style=discord.ButtonStyle.secondary,
+            custom_id="banned_next",
+            disabled=self.current_page >= self.total_pages - 1,
+        )
+        next_btn.callback = self._on_next
+        nav_row.add_item(next_btn)
+        inner.append(nav_row)
+
+        container = Container(*inner, accent_color=ACCENT_RED)
+        self.add_item(container)
+
+    async def _on_prev(self, interaction: discord.Interaction):
+        if self.current_page > 0:
+            self.current_page -= 1
+            self._build()
+            await interaction.response.edit_message(view=self)
+
+    async def _on_next(self, interaction: discord.Interaction):
+        if self.current_page < self.total_pages - 1:
+            self.current_page += 1
+            self._build()
+            await interaction.response.edit_message(view=self)
 
 
 # ---------------------------------------------------------------------------
@@ -1343,6 +2048,38 @@ class MarketCog(commands.Cog):
                     guild_name TEXT NOT NULL,
                     last_updated INTEGER NOT NULL,
                     PRIMARY KEY (club_id, hostnum)
+                )
+            """)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS market_reports (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    reporter_id INTEGER NOT NULL,
+                    reason TEXT NOT NULL,
+                    created_at INTEGER NOT NULL
+                )
+            """)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS market_report_players (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    report_id INTEGER NOT NULL,
+                    pid TEXT NOT NULL,
+                    nickname TEXT NOT NULL,
+                    number_id TEXT NOT NULL DEFAULT '',
+                    status TEXT NOT NULL DEFAULT 'pending',
+                    reviewed_by INTEGER,
+                    reviewed_at INTEGER,
+                    rejection_reason TEXT,
+                    FOREIGN KEY (report_id) REFERENCES market_reports(id)
+                )
+            """)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS market_banned_list (
+                    pid TEXT PRIMARY KEY,
+                    nickname TEXT NOT NULL,
+                    number_id TEXT NOT NULL DEFAULT '',
+                    banned_by INTEGER NOT NULL,
+                    banned_at INTEGER NOT NULL,
+                    reason TEXT NOT NULL DEFAULT ''
                 )
             """)
             await db.commit()
@@ -1413,6 +2150,39 @@ class MarketCog(commands.Cog):
         if name:
             return f"{name} (#{good_id})"
         return f"Good #{good_id}"
+
+    # -- Report / Ban helpers ---------------------------------------------
+    async def _get_banned_pids(self) -> Set[str]:
+        """Return the set of PIDs on the banned list."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT pid FROM market_banned_list")
+            rows = await cursor.fetchall()
+            return {row[0] for row in rows}
+
+    async def _is_player_banned(self, pid: str) -> bool:
+        """Check if a player is on the banned list."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute("SELECT 1 FROM market_banned_list WHERE pid = ?", (pid,))
+            return await cursor.fetchone() is not None
+
+    async def _get_pending_report_pids(self) -> Set[str]:
+        """Return the set of PIDs that have pending reports."""
+        async with aiosqlite.connect(self.db_path) as db:
+            cursor = await db.execute(
+                "SELECT DISTINCT pid FROM market_report_players WHERE status = 'pending'"
+            )
+            rows = await cursor.fetchall()
+            return {row[0] for row in rows}
+
+    async def _get_banned_list(self) -> List[Dict[str, Any]]:
+        """Return all entries from the banned list, ordered by banned_at DESC."""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                "SELECT pid, nickname, number_id, banned_by, banned_at, reason FROM market_banned_list ORDER BY banned_at DESC"
+            )
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
 
     # -- Cog lifecycle ----------------------------------------------------
     async def cog_load(self):
@@ -1777,6 +2547,7 @@ class MarketCog(commands.Cog):
             total_players = sum(len(v) for v in grouped.values())
             # Concurrently fetch market likes for all players
             likes_map = await self._fetch_all_market_likes(grouped)
+            pending_report_pids = await self._get_pending_report_pids()
             view = MarketReportView(
                 cog=self,
                 grouped_data=grouped,
@@ -1786,6 +2557,7 @@ class MarketCog(commands.Cog):
                 known_goods=known_goods,
                 good_names_map=good_names_map,
                 likes_map=likes_map,
+                pending_report_pids=pending_report_pids,
             )
 
         try:
@@ -1886,6 +2658,41 @@ class MarketCog(commands.Cog):
     @refresh_guild_names.before_loop
     async def before_refresh_guild_names(self):
         await self.bot.wait_until_ready()
+
+    # -- Send report to approval channel ----------------------------------
+    async def _send_report_to_approval_channel(
+        self,
+        interaction: discord.Interaction,
+        report_id: int,
+        players: List[Dict[str, Any]],
+        reason: str,
+        reporter_id: int,
+    ):
+        """Send a report to the admin approval channel for mod review."""
+        admin_channel_id = getattr(self, '_admin_channel_id', None) or ADMIN_AVATAR_CHANNEL_ID
+        admin_channel = interaction.guild.get_channel(admin_channel_id)
+        if not admin_channel:
+            logger.warning(f"Market cog: admin channel {admin_channel_id} not found for report approval")
+            return
+
+        approval_view = _ReportApprovalView(
+            cog=self,
+            report_id=report_id,
+            players=[{
+                "id": i + 1,
+                "pid": p["pid"],
+                "nickname": p["nickname"],
+                "number_id": p["number_id"],
+                "status": "pending",
+                "reviewed_by": None,
+                "rejection_reason": None,
+            } for i, p in enumerate(players)],
+            reason=reason,
+            reporter_id=reporter_id,
+        )
+
+        await admin_channel.send(view=approval_view)
+        logger.info(f"Market cog: report #{report_id} sent to approval channel {admin_channel_id}")
 
     # -- Slash commands ---------------------------------------------------
     @market_group.command(name="report", description="Force-trigger a fresh market price report")
