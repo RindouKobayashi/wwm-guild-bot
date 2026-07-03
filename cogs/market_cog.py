@@ -1649,7 +1649,7 @@ class MarketCog(commands.Cog):
             price_history = hoard.get('price_change_history', [])
             if len(price_history) == 1:
                 average_price = hoard.get('average_price', {})
-                if len(average_price) >= 3:
+                if len(average_price) == 3:
                     new_week_good_ids = sorted(
                         (str(gid) for gid in average_price.keys()),
                         key=lambda x: int(x)
@@ -1666,12 +1666,12 @@ class MarketCog(commands.Cog):
                 price_history = hoard.get('price_change_history', [])
                 if len(price_history) == 1:
                     average_price = hoard.get('average_price', {})
-                    if average_price:
+                    if len(average_price) == 3:
                         new_week_good_ids = sorted(
                             (str(gid) for gid in average_price.keys()),
                             key=lambda x: int(x)
                         )[:3]
-                        logger.info(
+                        logger.debug(
                             f"Market cog: NEW WEEK detected via player {qp['pid']} — "
                             f"goods: {new_week_good_ids}"
                         )
