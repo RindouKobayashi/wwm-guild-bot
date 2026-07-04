@@ -1944,6 +1944,29 @@ class BannedListPaginatedView(LayoutView):
         inner.append(TextDisplay("\n".join(lines)))
         inner.append(Separator(spacing=discord.SeparatorSpacing.small))
 
+        # Remove button (only for entries on current page)
+        remove_options: List[discord.SelectOption] = []
+        for entry in page:
+            label = f"{entry['nickname']} ({entry['number_id']})"[:90]
+            remove_options.append(
+                discord.SelectOption(
+                    label=label,
+                    description=f"Remove from banned list",
+                    value=str(entry['pid']),
+                )
+            )
+
+        if remove_options:
+            remove_row = ActionRow()
+            remove_select = Select(
+                placeholder="Select a player to remove from banned list…",
+                options=remove_options[:25],
+                custom_id="banned_remove_select",
+            )
+            remove_select.callback = self._on_remove
+            remove_row.add_item(remove_select)
+            inner.append(remove_row)
+
         # Navigation buttons
         nav_row = ActionRow()
         prev_btn = Button(
@@ -1975,6 +1998,35 @@ class BannedListPaginatedView(LayoutView):
 
         container = Container(*inner, accent_color=ACCENT_RED)
         self.add_item(container)
+
+    async def _on_remove(self, interaction: discord.Interaction):
+        if not await is_admin_or_staff(interaction):
+            await interaction.response.send_message("❌ Admins only.", ephemeral=True)
+            return
+        await interaction.response.defer(ephemeral=True)
+
+        pid = interaction.data.get("values", [None])[0]
+        if not pid:
+            return
+
+        async with aiosqlite.connect(self.cog.db_path) as db:
+            cursor = await db.execute("SELECT nickname FROM market_banned_list WHERE pid = ?", (pid,))
+            row = await cursor.fetchone()
+            if row:
+                nickname = row[0]
+                await db.execute("DELETE FROM market_banned_list WHERE pid = ?", (pid,))
+                await db.commit()
+                await interaction.followup.send(f"✅ Removed **{nickname}** from the banned list.", ephemeral=True)
+                # Update local entries and refresh view
+                self.all_entries = [e for e in self.all_entries if e['pid'] != pid]
+                self.total_pages = max(1, (len(self.all_entries) + self.page_size - 1) // self.page_size)
+                if self.current_page >= self.total_pages:
+                    self.current_page = max(0, self.total_pages - 1)
+                self._build()
+                await interaction.edit_original_response(view=self)
+                await self.cog._refresh_dashboard()
+            else:
+                await interaction.followup.send("❌ Player not found on banned list.", ephemeral=True)
 
     async def _on_prev(self, interaction: discord.Interaction):
         if self.current_page > 0:
