@@ -24,6 +24,19 @@ from utility.api_constants import get_kongfu_ids_from_player, format_kongfu_disp
 from googletrans import Translator
 
 
+async def is_admin_or_staff(interaction: discord.Interaction) -> bool:
+    """Return True if the user is an administrator OR has any staff role from settings."""
+    if interaction.user.guild_permissions.administrator:
+        return True
+    try:
+        from settings import STAFF_ROLES
+        staff_role_ids = set(STAFF_ROLES.values())
+    except (ImportError, AttributeError):
+        return False
+    member_role_ids = {r.id for r in interaction.user.roles}
+    return bool(staff_role_ids & member_role_ids)
+
+
 VERIFICATION_DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 AVATARS_DIR = BASE_DIR / "data" / "avatars"
 EMOTION_DIR = BASE_DIR / "data" / "emotion"
@@ -1439,7 +1452,7 @@ class AdminConfirmView(LayoutView):
         return ""
 
     async def _on_approve(self, interaction: discord.Interaction):
-        if not interaction.user.guild_permissions.administrator:
+        if not await is_admin_or_staff(interaction):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
             return
 
@@ -1567,7 +1580,7 @@ class AdminConfirmView(LayoutView):
         )
 
     async def _on_reject(self, interaction: discord.Interaction):
-        if not interaction.user.guild_permissions.administrator:
+        if not await is_admin_or_staff(interaction):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
             return
         await interaction.response.defer(ephemeral=False)
@@ -1798,7 +1811,7 @@ class AdminEmotionConfirmView(LayoutView):
                 item.disabled = True
 
     async def _on_approve(self, interaction: discord.Interaction):
-        if not interaction.user.guild_permissions.administrator:
+        if not await is_admin_or_staff(interaction):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
             return
 
@@ -1883,7 +1896,7 @@ class AdminEmotionConfirmView(LayoutView):
         )
 
     async def _on_reject(self, interaction: discord.Interaction):
-        if not interaction.user.guild_permissions.administrator:
+        if not await is_admin_or_staff(interaction):
             await interaction.response.send_message("❌ Admins only.", ephemeral=True)
             return
         await interaction.response.defer(ephemeral=False)
@@ -2286,6 +2299,7 @@ class LiveChatCog(commands.Cog):
         self.TEAMUP_ROLE_ID = 1470861369107681587     # Team Up role
         self.TEAMUP_KEYWORD = "@teamup"               # Trigger keyword
         self.TEAMUP_EMBED_COLOR = 0xE74C3C            # Red
+        self.DISCORD_FORWARD_KEYWORD = "#discord"      # Forward message to teamup channel
 
         # Ensure data directory exists
         os.makedirs("data", exist_ok=True)
@@ -2843,6 +2857,23 @@ class LiveChatCog(commands.Cog):
         await teamup_channel.send(embed=embed)
         logger.info(f"📢 Team-up alert sent for {nickname} in #{teamup_channel.name}")
 
+    async def discord_forward_alert(
+        self,
+        teamup_channel: discord.TextChannel,
+        view: LayoutView,
+        files: List[discord.File],
+    ) -> None:
+        """Forward live chat message to teamup channel when #discord keyword is used."""
+        try:
+            await teamup_channel.send(
+                view=view,
+                files=files,
+                allowed_mentions=discord.AllowedMentions.none(),
+            )
+            logger.debug(f"Forwarded #discord message to teamup channel")
+        except Exception as e:
+            logger.error(f"Failed to forward #discord message: {e}")
+
     def _get_discord_mention(self, sender_pid: str) -> str:
         """Return a Discord mention string if the sender PID is bound to a Discord user"""
         if sender_pid and sender_pid in self.pid_to_discord_user:
@@ -3213,6 +3244,9 @@ class LiveChatCog(commands.Cog):
         if teamup_channel is not None and self.TEAMUP_KEYWORD in raw_msg:
             await self.send_teamup_alert(msg, teamup_channel)
 
+        # Check for #discord keyword - forward the live message to teamup channel
+        if teamup_channel is not None and self.DISCORD_FORWARD_KEYWORD in raw_msg:
+            await self.discord_forward_alert(teamup_channel, view, files)
 
     def _get_rank_name(self, sender_pid: Optional[str]) -> str:
         """Look up the highest custom rank name for the given PID."""
