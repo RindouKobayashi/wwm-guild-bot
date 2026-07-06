@@ -760,6 +760,13 @@ class HomesteadCog(commands.Cog):
                         f"Use `/homestead config` to customize your notification settings.",
                 reason=f"Homestead notification setup for user {user_id}",
             )
+
+            # Add the user as a participant to their own thread
+            member = thread.guild.get_member(user_id)
+            if member:
+                await thread.add_user(member)
+                logger.debug(f"Added user {user_id} to thread {thread.id}")
+
             return thread
         except Exception as e:
             logger.error(f"Failed to create forum thread for user {user_id}: {e}")
