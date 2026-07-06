@@ -284,7 +284,7 @@ class ScheduleCog(commands.Cog):
         """Get current week number (Monday reset)"""
         return self.get_current_week_info()[1]
     
-    async def get_recent_bosses(self, weeks_back=2):
+    async def get_recent_bosses(self, weeks_back=4):
         """Get bosses that were used in the last N weeks"""
         current_week = self.get_current_week_number()
         async with aiosqlite.connect(self.db_path) as db:
@@ -295,25 +295,12 @@ class ScheduleCog(commands.Cog):
             rows = await cursor.fetchall()
             return [row[0] for row in rows]
     
-    def roll_new_bosses(self):
-        """Roll 2 unique new bosses that haven't been used in past 2 weeks"""
+    async def roll_new_bosses(self):
+        """Roll 2 unique new bosses that haven't been used in past 4 weeks"""
         all_bosses = self.load_boss_list()
         import random
         
-        # We need the recent bosses, so call the async method synchronously
-        # or we can use the blocking version here since this is called from sync context
-        recent_bosses = []
-        try:
-            import asyncio
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # If we're in an async context, we can't just run_until_complete
-                # Instead, we'll get recent bosses from the DB directly
-                recent_bosses = [b for b in all_bosses if b not in all_bosses]  # fallback empty
-            else:
-                recent_bosses = loop.run_until_complete(self.get_recent_bosses(2))
-        except:
-            pass
+        recent_bosses = await self.get_recent_bosses(4)
         
         available = [boss for boss in all_bosses if boss not in recent_bosses]
         
@@ -353,7 +340,7 @@ class ScheduleCog(commands.Cog):
                             return await button_interaction.response.send_message("Only you can confirm this.")
                         
                         self.confirmed = True
-                        bosses = self.cog.roll_new_bosses()
+                        bosses = await self.cog.roll_new_bosses()
                         
                         if not bosses:
                             return await button_interaction.response.edit_message(content="❌ Not enough available bosses left!", view=None)
@@ -397,12 +384,12 @@ class ScheduleCog(commands.Cog):
                                 if button_interaction.user.id != self.user_id:
                                     return await button_interaction.response.send_message("Only you can reroll.")
                                 
-                                new_bosses = self.cog.roll_new_bosses()
+                                new_bosses = await self.cog.roll_new_bosses()
                                 if not new_bosses:
                                     return await button_interaction.response.send_message("❌ Not enough available bosses left!", ephemeral=True)
                                 
                                 self.boss1, self.boss2 = new_bosses
-                                await button_interaction.response.edit_message(content=f"🎲 {self.boss1} | {self.boss2}\nNeither used in past 2 weeks.", view=self)
+                                await button_interaction.response.edit_message(content=f"🎲 {self.boss1} | {self.boss2}\nNeither used in past 4 weeks.", view=self)
                             
                             @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.red)
                             async def cancel(self, button_interaction: discord.Interaction, button: discord.ui.Button):
@@ -411,7 +398,7 @@ class ScheduleCog(commands.Cog):
                                 await button_interaction.response.edit_message(content="Roll cancelled.", view=None)
                         
                         view = BossConfirmView(self.cog, bosses, week_num, year, self.user_id)
-                        await button_interaction.response.edit_message(content=f"🎲 {boss1} | {boss2}\nNeither used in past 2 weeks.", view=view)
+                        await button_interaction.response.edit_message(content=f"🎲 {boss1} | {boss2}\nNeither used in past 4 weeks.", view=view)
                     
                     @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.gray)
                     async def cancel(self, button_interaction: discord.Interaction, button: discord.ui.Button):
@@ -423,10 +410,10 @@ class ScheduleCog(commands.Cog):
                 view = RerollConfirmView(self, interaction.user.id)
                 return await interaction.response.send_message(f"⚠️ This week already has: {current_bosses}\nDo you want to reroll?", view=view)
         
-        bosses = self.roll_new_bosses()
+        bosses = await self.roll_new_bosses()
         
         if not bosses:
-            return await interaction.response.send_message("❌ Not enough available bosses left! Need at least 2 bosses not used in past 2 weeks.", ephemeral=True)
+            return await interaction.response.send_message("❌ Not enough available bosses left! Need at least 2 bosses not used in past 4 weeks.", ephemeral=True)
         
         boss1, boss2 = bosses
         
@@ -467,12 +454,12 @@ class ScheduleCog(commands.Cog):
                 if button_interaction.user.id != self.user_id:
                     return await button_interaction.response.send_message("Only you can reroll.", ephemeral=True)
                 
-                new_bosses = self.cog.roll_new_bosses()
+                new_bosses = await self.cog.roll_new_bosses()
                 if not new_bosses:
                     return await button_interaction.response.send_message("❌ Not enough available bosses left!", ephemeral=True)
                 
                 self.boss1, self.boss2 = new_bosses
-                await button_interaction.response.edit_message(content=f"🎲 {self.boss1} | {self.boss2}\nNeither used in past 2 weeks.", view=self)
+                await button_interaction.response.edit_message(content=f"🎲 {self.boss1} | {self.boss2}\nNeither used in past 4 weeks.", view=self)
             
             @discord.ui.button(label="❌ Cancel", style=discord.ButtonStyle.red)
             async def cancel(self, button_interaction: discord.Interaction, button: discord.ui.Button):
@@ -483,7 +470,7 @@ class ScheduleCog(commands.Cog):
         view = BossConfirmView(self, bosses, week_num, year, interaction.user.id)
         
         await interaction.response.send_message(
-            f"🎲 {boss1} | {boss2}\nNeither used in past 2 weeks.",
+            f"🎲 {boss1} | {boss2}\nNeither used in past 4 weeks.",
             view=view
         )
 
@@ -569,29 +556,106 @@ class ScheduleCog(commands.Cog):
         async with aiosqlite.connect(self.db_path) as db:
             db.row_factory = aiosqlite.Row
             cursor = await db.execute("""
-                SELECT week_number, boss_name, locked, rolled_at
+                SELECT week_number, boss_name, locked, rolled_at, rolled_by_user_id
                 FROM breaking_army_bosses 
-                ORDER BY week_number DESC 
-                LIMIT 15
+                ORDER BY week_number DESC, id ASC
             """)
-            history = await cursor.fetchall()
+            all_history = await cursor.fetchall()
         
-        lines = ["**Breaking Army Boss History:**\n"]
+        if not all_history:
+            return await interaction.response.send_message("📜 **Breaking Army Boss History**\n\nNo boss history found yet.", ephemeral=True)
         
-        last_week = None
-        for entry in history:
-            if entry['week_number'] != last_week:
-                year = datetime.datetime.fromtimestamp(entry['rolled_at']).isocalendar()[0]
-                lines.append(f"\n**{year} Week {entry['week_number']}:**")
-                last_week = entry['week_number']
+        # Group by week
+        weeks = {}
+        for entry in all_history:
+            week_num = entry['week_number']
+            if week_num not in weeks:
+                weeks[week_num] = []
+            weeks[week_num].append(entry)
+        
+        # Get current week to mark it
+        current_week = self.get_current_week_number()
+        
+        # Build pages (2 weeks per page)
+        week_numbers = sorted(weeks.keys(), reverse=True)
+        pages = []
+        for i in range(0, len(week_numbers), 2):
+            pages.append(week_numbers[i:i+2])
+        
+        class HistoryPaginatorView(discord.ui.View):
+            def __init__(self, cog, pages_data, total_weeks):
+                super().__init__(timeout=180)
+                self.cog = cog
+                self.pages = pages_data
+                self.total_weeks = total_weeks
+                self.current_page = 0
+                self.update_buttons()
             
-            status = "🔒" if entry['locked'] else "⏳"
-            lines.append(f"- {entry['boss_name']} {status}")
+            def update_buttons(self):
+                self.prev_page.disabled = self.current_page == 0
+                self.next_page.disabled = self.current_page >= len(self.pages) - 1
+            
+            def build_embed(self):
+                embed = discord.Embed(
+                    title="📜 Breaking Army Boss History",
+                    color=discord.Color.gold(),
+                    description=""
+                )
+                
+                week_nums = self.pages[self.current_page]
+                for week_num in week_nums:
+                    entries = weeks[week_num]
+                    # Get year from first entry's timestamp
+                    first_ts = entries[0]['rolled_at']
+                    year = datetime.datetime.fromtimestamp(first_ts).isocalendar()[0]
+                    
+                    is_current = week_num == current_week
+                    week_label = f"{year} Week {week_num}"
+                    if is_current:
+                        week_label += " 👈 Current"
+                    
+                    # Build boss lines for this week
+                    boss_lines = []
+                    for entry in entries:
+                        boss_name = entry['boss_name']
+                        locked = entry['locked']
+                        rolled_at = entry['rolled_at']
+                        user_id = entry['rolled_by_user_id']
+                        
+                        status_emoji = "🔒" if locked else "⏳"
+                        user_mention = f"<@{user_id}>" if user_id else "Unknown"
+                        relative_time = f"<t:{rolled_at}:R>"
+                        boss_lines.append(f"{status_emoji} **{boss_name}** — by {user_mention} {relative_time}")
+                    
+                    embed.add_field(
+                        name=week_label,
+                        value="\n".join(boss_lines),
+                        inline=False
+                    )
+                
+                embed.set_footer(text=f"Page {self.current_page + 1}/{len(self.pages)} • {self.total_weeks} weeks tracked")
+                return embed
+            
+            @discord.ui.button(label="◀️", style=discord.ButtonStyle.gray)
+            async def prev_page(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                if self.current_page > 0:
+                    self.current_page -= 1
+                    self.update_buttons()
+                    await button_interaction.response.edit_message(embed=self.build_embed(), view=self)
+            
+            @discord.ui.button(label="▶️", style=discord.ButtonStyle.gray)
+            async def next_page(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                if self.current_page < len(self.pages) - 1:
+                    self.current_page += 1
+                    self.update_buttons()
+                    await button_interaction.response.edit_message(embed=self.build_embed(), view=self)
+            
+            @discord.ui.button(label="🗑️ Close", style=discord.ButtonStyle.red)
+            async def close(self, button_interaction: discord.Interaction, button: discord.ui.Button):
+                await button_interaction.response.edit_message(view=None)
         
-        if not history:
-            lines.append("No boss history found.")
-        
-        await interaction.response.send_message("\n".join(lines), ephemeral=True)
+        view = HistoryPaginatorView(self, pages, len(weeks))
+        await interaction.response.send_message(embed=view.build_embed(), view=view, ephemeral=True)
 
     @breaking_army.command(name="force", description="Force set a specific boss for Breaking Army")
     @app_commands.describe(
