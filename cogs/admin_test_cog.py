@@ -20,9 +20,9 @@ class AdminCog(commands.Cog):
 
     
 
-    @app_commands.describe(type="currently only 1 or 2", id="player id to look up")
+    @app_commands.describe(type="currently only 1 or 2", id="player id to look up", sub_type="sub type for filtering")
     @app_commands.command(name="list_game_history", description="List game history for a specific player")
-    async def list_game_history(self, interaction: discord.Interaction, type: int, id: str):
+    async def list_game_history(self, interaction: discord.Interaction, type: int, id: str, sub_type: int = None):
         """List game history for a specific player"""
         if not await is_admin_or_staff(interaction):
             await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
@@ -48,6 +48,8 @@ class AdminCog(commands.Cog):
             "start": 0,
             "uid": "1",
         }
+        if sub_type:
+            payload["sub_type"] = sub_type
 
         result = await _wwm_api_post(settings.WWM_LIST_GAME_HISTORY_URL, payload)
         if result:
