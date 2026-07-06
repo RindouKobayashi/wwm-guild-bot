@@ -3248,17 +3248,16 @@ class LiveChatCog(commands.Cog):
         if teamup_channel is not None and self.DISCORD_FORWARD_KEYWORD in raw_msg:
             # Re-create File objects since they are consumed by channel.send() —
             # discord.File reads from its fp during send and the underlying
-            # stream is exhausted. We rebuild fresh ones from the original
-            # file paths or rewind BytesIO-backed files.
+            # stream is exhausted. After send, f.fp is a closed BufferedReader
+            # whose .name attribute still holds the original file path string.
             fresh_files: List[discord.File] = []
             for f in files:
                 fp = f.fp
-                if isinstance(fp, (str, os.PathLike)):
-                    fresh_files.append(discord.File(fp, filename=f.filename))
-                elif hasattr(fp, "seek"):
+                # After send, fp is a closed BufferedReader; its .name is the
+                # original path string we passed to discord.File(path, ...).
+                if fp is not None and hasattr(fp, "name") and isinstance(fp.name, str):
                     try:
-                        fp.seek(0)
-                        fresh_files.append(discord.File(fp, filename=f.filename))
+                        fresh_files.append(discord.File(fp.name, filename=f.filename))
                     except Exception:
                         fresh_files.append(f)
                 else:
