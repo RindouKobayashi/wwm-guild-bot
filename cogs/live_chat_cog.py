@@ -163,10 +163,7 @@ class ChatMessageView(LayoutView):
         image_files: Optional[List[discord.File]] = None,
     ):
         super().__init__(timeout=None)
-        # Store paths for re-opening files when needed (e.g., forwarding to another channel)
-        self._file_paths: List[Tuple[str, str]] = []  # (disk_path, filename) pairs
-        self.head_avatar_path = head_avatar_path
-        self.head_id = head_id
+        self._files: List[discord.File] = list(image_files) if image_files else []
 
         container_children: list = []
 
@@ -174,8 +171,7 @@ class ChatMessageView(LayoutView):
             # Preserve original extension so animated .webp avatars stay animated
             thumb_ext = os.path.splitext(head_avatar_path)[1] or ".png"
             thumb_filename = f"head_{head_id}{thumb_ext}"
-            self._file_paths.append((head_avatar_path, thumb_filename))
-            self._files: List[discord.File] = [discord.File(head_avatar_path, filename=thumb_filename)]
+            self._files.append(discord.File(head_avatar_path, filename=thumb_filename))
             # Group the author name and the message body (which already includes
             # the [Translated] block from format_message_embed) into a single
             # Section so they render alongside the avatar thumbnail as one
@@ -186,7 +182,6 @@ class ChatMessageView(LayoutView):
             container_children.append(section)
         else:
             container_children.append(TextDisplay(f"**{author_name}**"))
-            self._files = []
             if body_text:
                 container_children.append(TextDisplay(body_text))
 
@@ -204,10 +199,7 @@ class ChatMessageView(LayoutView):
         container = Container(*container_children, accent_color=accent_color)
         self.add_item(container)
 
-    def _resolve_files(self, force_fresh: bool = False) -> List[discord.File]:
-        """Return file objects. If force_fresh=True, re-read from disk to avoid I/O on closed file."""
-        if force_fresh and self._file_paths:
-            return [discord.File(path, filename=filename) for path, filename in self._file_paths]
+    def _resolve_files(self) -> List[discord.File]:
         return list(self._files)
 
 
@@ -250,11 +242,6 @@ class EmotionMessageView(LayoutView):
         super().__init__(timeout=None)
         ext = os.path.splitext(emotion_path)[1] or ".png"
         filename = f"{emotion_id}{ext}"
-        # Store paths for re-opening files when needed (e.g., forwarding to another channel)
-        self._file_paths: List[Tuple[str, str]] = [(emotion_path, filename)]
-        self.emotion_path = emotion_path
-        self.head_avatar_path = head_avatar_path
-        self.head_id = head_id
         self._files: List[discord.File] = [
             discord.File(emotion_path, filename=filename)
         ]
@@ -274,7 +261,6 @@ class EmotionMessageView(LayoutView):
             # Preserve original extension so animated .webp avatars stay animated
             thumb_ext = os.path.splitext(head_avatar_path)[1] or ".png"
             thumb_filename = f"head_{head_id}{thumb_ext}"
-            self._file_paths.append((head_avatar_path, thumb_filename))
             self._files.append(discord.File(head_avatar_path, filename=thumb_filename))
             section = Section(accessory=Thumbnail(media=f"attachment://{thumb_filename}"))
             section.add_item(TextDisplay(f"**{author_name}**"))
@@ -289,10 +275,7 @@ class EmotionMessageView(LayoutView):
         container = Container(*container_children, accent_color=0x9B59B6)
         self.add_item(container)
 
-    def _resolve_files(self, force_fresh: bool = False) -> List[discord.File]:
-        """Return file objects. If force_fresh=True, re-read from disk to avoid I/O on closed file."""
-        if force_fresh and self._file_paths:
-            return [discord.File(path, filename=filename) for path, filename in self._file_paths]
+    def _resolve_files(self) -> List[discord.File]:
         return list(self._files)
 
 
@@ -628,14 +611,10 @@ class HeadPickerRequestView(LayoutView):
         action_row.add_item(button)
         self.add_item(action_row)
 
-        # Carry file paths across so the avatar thumbnail can be re-opened when needed
-        self._file_paths: List[Tuple[str, str]] = list(getattr(base_view, "_file_paths", []))
+        # Carry files across so the avatar thumbnail keeps working
         self._files: List[discord.File] = list(getattr(base_view, "_files", []))
 
-    def _resolve_files(self, force_fresh: bool = False) -> List[discord.File]:
-        """Return file objects. If force_fresh=True, re-read from disk to avoid I/O on closed file."""
-        if force_fresh and self._file_paths:
-            return [discord.File(path, filename=filename) for path, filename in self._file_paths]
+    def _resolve_files(self) -> List[discord.File]:
         return list(self._files)
 
     async def _on_click(self, interaction: discord.Interaction):
@@ -2000,14 +1979,9 @@ class EmotionUploadView(LayoutView):
         action_row.add_item(button)
         self.add_item(action_row)
 
-        # Carry file paths across so the avatar thumbnail can be re-opened when needed
-        self._file_paths: List[Tuple[str, str]] = list(getattr(base_view, "_file_paths", []))
         self._files: List[discord.File] = list(getattr(base_view, "_files", []))
 
-    def _resolve_files(self, force_fresh: bool = False) -> List[discord.File]:
-        """Return file objects. If force_fresh=True, re-read from disk to avoid I/O on closed file."""
-        if force_fresh and self._file_paths:
-            return [discord.File(path, filename=filename) for path, filename in self._file_paths]
+    def _resolve_files(self) -> List[discord.File]:
         return list(self._files)
 
     async def _on_click(self, interaction: discord.Interaction):
@@ -2887,21 +2861,13 @@ class LiveChatCog(commands.Cog):
         self,
         teamup_channel: discord.TextChannel,
         view: LayoutView,
-        _files: Optional[List[discord.File]] = None,
+        files: List[discord.File],
     ) -> None:
         """Forward live chat message to teamup channel when #discord keyword is used."""
         try:
-            if _files is not None:
-                # Use the provided fresh file list
-                fresh_files = _files
-            elif hasattr(view, "_file_paths"):
-                # Views that store file paths can re-resolve them fresh from disk
-                fresh_files = view._resolve_files(force_fresh=True)
-            else:
-                fresh_files = []
             await teamup_channel.send(
                 view=view,
-                files=fresh_files,
+                files=files,
                 allowed_mentions=discord.AllowedMentions.none(),
             )
             logger.debug(f"Forwarded #discord message to teamup channel")
@@ -3280,7 +3246,24 @@ class LiveChatCog(commands.Cog):
 
         # Check for #discord keyword - forward the live message to teamup channel
         if teamup_channel is not None and self.DISCORD_FORWARD_KEYWORD in raw_msg:
-            await self.discord_forward_alert(teamup_channel, view, files)
+            # Re-create File objects since they are consumed by channel.send() —
+            # discord.File reads from its fp during send and the underlying
+            # stream is exhausted. We rebuild fresh ones from the original
+            # file paths or rewind BytesIO-backed files.
+            fresh_files: List[discord.File] = []
+            for f in files:
+                fp = f.fp
+                if isinstance(fp, (str, os.PathLike)):
+                    fresh_files.append(discord.File(fp, filename=f.filename))
+                elif hasattr(fp, "seek"):
+                    try:
+                        fp.seek(0)
+                        fresh_files.append(discord.File(fp, filename=f.filename))
+                    except Exception:
+                        fresh_files.append(f)
+                else:
+                    fresh_files.append(f)
+            await self.discord_forward_alert(teamup_channel, view, fresh_files)
 
     def _get_rank_name(self, sender_pid: Optional[str]) -> str:
         """Look up the highest custom rank name for the given PID."""
