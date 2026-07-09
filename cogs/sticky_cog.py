@@ -1027,6 +1027,25 @@ class StickyCog(commands.Cog):
                                     last_message_time=now)
             await self._start_sticky_timer(sticky_id)
 
+    @commands.Cog.listener()
+    async def on_interaction(self, interaction: discord.Interaction):
+        """Watch for interactions in channels that have active stickies."""
+        if interaction.user.bot:
+            return
+        if not interaction.channel or not isinstance(interaction.channel, discord.TextChannel):
+            return
+
+        stickies = await StickyManager.get_stickies_for_channel(interaction.channel.id)
+        if not stickies:
+            return
+
+        now = time.time()
+        for sticky in stickies:
+            sticky_id = sticky['id']
+            await StickyManager.set_state(sticky_id,
+                                    last_message_time=now)
+            await self._start_sticky_timer(sticky_id)
+
 
 async def setup(bot: commands.Bot):
     await bot.add_cog(StickyCog(bot))
