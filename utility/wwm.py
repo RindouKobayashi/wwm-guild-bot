@@ -50,7 +50,9 @@ ALL_KNOWN_FIELDS = [
     "coop_score", "ququs", "baiye_season_simple_statics", "region_collect_prop",
     "fight_shoulder", "lunjian2v2_prop", "lunjian3v3_prop", "chiji", "huiwu",
     "skill_sets", "combat_plan", "social_frozen", "road_sign",
-    "hoard_profiteer", "activity"
+    "hoard_profiteer", "activity", "activity_tm", "achievement", "aid",
+    "chat", "publish_songs", "gang", "guise", "newspaper", "region", "huajian", "refresh_data",
+    "pet", "weapon_list", "cc_redis",
 ]
 
 # Default Guild FIELDS
