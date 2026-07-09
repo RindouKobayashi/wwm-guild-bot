@@ -80,7 +80,7 @@ class AdminCog(commands.Cog):
         Returns (player_data_dict, pid) or (None, None).
         """
         # Try as number_id first
-        player_data = await get_player_info(identifier, fields=["base"])
+        player_data = await get_player_info(identifier, fields=["base"], force_search=True)
         if player_data and player_data.get('result') and player_data['result'].get('id'):
             result = player_data['result']
             pid = result.get('id')
@@ -88,7 +88,7 @@ class AdminCog(commands.Cog):
             return result, pid
 
         # Fallback: try as nickname
-        nickname_result = await find_people_by_nickname(identifier)
+        nickname_result = await find_people_by_nickname(identifier, force_search=True)
         if nickname_result and nickname_result.get('result'):
             result = nickname_result['result']
             pid = result.get('id')

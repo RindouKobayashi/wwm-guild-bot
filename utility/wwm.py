@@ -564,7 +564,7 @@ async def get_club_by_name(club_name: str, limit: int = 5, start: int = 0) -> Op
     return None
 
 
-async def find_people_by_nickname(nickname: str) -> Optional[Dict[str, Any]]:
+async def find_people_by_nickname(nickname: str, force_search: bool = False) -> Optional[Dict[str, Any]]:
     """
     Search for a player by their in-game nickname.
     Returns player info including 'id' (PID) and 'hostnum'.
@@ -578,7 +578,7 @@ async def find_people_by_nickname(nickname: str) -> Optional[Dict[str, Any]]:
     payload = {
         "nickname": nickname,
         "uid": WWM_UID,
-        "force_search": False
+        "force_search": force_search
     }
 
     response = await _wwm_api_post(WWM_FIND_PEOPLE_BY_NICKNAME_URL, payload)
