@@ -14,6 +14,14 @@ from settings import logger, BASE_DIR, BOT_OWNER_ID, WWM_REDIS_PLAYER_URL, WWM_U
 from utility.wwm import _wwm_api_post, close_session, get_player_info, find_people_by_nickname, ALL_KNOWN_FIELDS
 import json
 
+def _prepare_for_json_sort(obj):
+    """Recursively convert dict keys to strings to enable sorting with sort_keys=True"""
+    if isinstance(obj, dict):
+        return {str(k): _prepare_for_json_sort(v) for k, v in obj.items()}
+    elif isinstance(obj, list):
+        return [_prepare_for_json_sort(item) for item in obj]
+    return obj
+
 class AdminCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -55,7 +63,7 @@ class AdminCog(commands.Cog):
         result = await _wwm_api_post(settings.WWM_LIST_GAME_HISTORY_URL, payload)
         if result:
             # send the result as a json file
-            await interaction.followup.send(file=discord.File(io.BytesIO(json.dumps(result, indent=4, ensure_ascii=False, sort_keys=True, default=str).encode()), "game_history.json"))
+            await interaction.followup.send(file=discord.File(io.BytesIO(json.dumps(_prepare_for_json_sort(result), indent=4, ensure_ascii=False, sort_keys=True, default=str).encode()), "game_history.json"))
         else:
             await interaction.followup.send(f"Could not find game history for player {id}")
         await interaction.edit_original_response(content=f"Game history for player {id} has been sent as a file.", view=None)
@@ -269,7 +277,7 @@ class AdminCog(commands.Cog):
         }
 
         # Send as a downloadable JSON file
-        json_bytes = json.dumps(output, indent=4, ensure_ascii=False, sort_keys=True, default=str).encode()
+        json_bytes = json.dumps(_prepare_for_json_sort(output), indent=4, ensure_ascii=False, sort_keys=True, default=str).encode()
         filename = f"player_data_{pid}.json"
         file = discord.File(io.BytesIO(json_bytes), filename=filename)
 
