@@ -948,7 +948,7 @@ class StickyCog(commands.Cog):
                 message = await channel.send(content=sticky.get('plain_text') or "(empty)")
 
             await StickyManager.set_state(sticky_id, sticky_message_id=message.id)
-            logger.info(f"Sticky #{sticky_id} posted in #{channel.name} (ID: {message.id})")
+            logger.debug(f"Sticky #{sticky_id} posted in #{channel.name} (ID: {message.id})")
         except discord.Forbidden:
             logger.warning(f"Cannot post sticky #{sticky_id} in #{channel.name} — no permission")
         except Exception as e:
@@ -997,11 +997,11 @@ class StickyCog(commands.Cog):
                 elapsed = now - last_msg_time if last_msg_time > 0 else timeout
 
                 if elapsed >= timeout:
-                    logger.info(f"Sticky #{sticky_id} overdue — posting now")
+                    logger.debug(f"Sticky #{sticky_id} overdue — posting now")
                     await self._post_sticky(sticky_id)
                 else:
                     remaining = timeout - elapsed
-                    logger.info(f"Sticky #{sticky_id} will post in {remaining:.0f}s")
+                    logger.debug(f"Sticky #{sticky_id} will post in {remaining:.0f}s")
                     task = asyncio.create_task(self._idle_timeout_task(sticky_id, remaining))
                     self.active_tasks[sticky_id] = task
 
