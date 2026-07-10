@@ -389,29 +389,32 @@ class SectCog(commands.Cog):
             'total_candidates': total_candidates if total_candidates > 0 else len(new_snapshot)
         }
     
-    @tasks.loop(minutes=1)
+    @tasks.loop(time=[datetime.time(hour=i, minute=0, tzinfo=GMT8_TZ) for i in range(24)])
     async def sect_hourly_task(self):
-        """Run every minute, but only post every 3 minutes for testing."""
+        """Run every hour on the dot (GMT+8)."""
         now = datetime.datetime.now(GMT8_TZ)
-        
-        # Only run every 3 minutes (minute % 3 == 0) for testing
-        if now.minute % 3 != 0:
-            return
         
         # Loop through all configured sects
         for key, channel_id in settings.SECT_CHANNELS.items():
-            # Map channel key to school_id using SCHOOL_NAMES reverse lookup by matching keys semantically
             school_id = self._resolve_school_id_from_key(key)
             if school_id is None:
                 continue
             self._current_sect_id = school_id
             state = self.sect_states.setdefault(school_id, {})
             last_ts = state.get('last_snapshot_ts')
-            current_window_ts = int(now.timestamp() // 180 * 180)
-            if last_ts and last_ts // 180 == current_window_ts // 180:
+            
+            # First run: no previous snapshot → always run
+            if not last_ts:
+                logger.info(f"Sect election first run for {key} (school_id={school_id})")
+                await self._run_feed_update(school_id=school_id)
                 continue
             
-            logger.debug(f"Sect election task triggered for {key} (school_id={school_id}) at {now.strftime('%H:%M')}")
+            # Only post if we haven't posted this hour yet
+            current_hour_ts = int(now.timestamp() // 3600 * 3600)
+            if last_ts // 3600 == current_hour_ts // 3600:
+                continue
+            
+            logger.info(f"Sect election hourly update for {key} (school_id={school_id}) at {now.strftime('%H:%M')}")
             await self._run_feed_update(school_id=school_id)
         
         self._current_sect_id = WELL_OF_HEAVEN_ID
