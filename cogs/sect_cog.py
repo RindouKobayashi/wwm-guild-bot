@@ -389,9 +389,9 @@ class SectCog(commands.Cog):
             'total_candidates': total_candidates if total_candidates > 0 else len(new_snapshot)
         }
     
-    @tasks.loop(time=[datetime.time(hour=i, minute=0, tzinfo=GMT8_TZ) for i in range(24)])
+    @tasks.loop(minutes=10)
     async def sect_hourly_task(self):
-        """Run every hour on the dot (GMT+8)."""
+        """Run every 10 minutes (GMT+8)."""
         now = datetime.datetime.now(GMT8_TZ)
         
         # Loop through all configured sects
@@ -405,16 +405,16 @@ class SectCog(commands.Cog):
             
             # First run: no previous snapshot → always run
             if not last_ts:
-                logger.info(f"Sect election first run for {key} (school_id={school_id})")
+                logger.debug(f"Sect election first run for {key} (school_id={school_id})")
                 await self._run_feed_update(school_id=school_id)
                 continue
             
-            # Only post if we haven't posted this hour yet
-            current_hour_ts = int(now.timestamp() // 3600 * 3600)
-            if last_ts // 3600 == current_hour_ts // 3600:
+            # Only post if we haven't posted in this 10-minute window yet
+            current_window_ts = int(now.timestamp() // 600 * 600)  # 600 seconds = 10 minutes
+            if last_ts // 600 == current_window_ts // 600:
                 continue
             
-            logger.info(f"Sect election hourly update for {key} (school_id={school_id}) at {now.strftime('%H:%M')}")
+            logger.debug(f"Sect election update for {key} (school_id={school_id}) at {now.strftime('%H:%M')}")
             await self._run_feed_update(school_id=school_id)
         
         self._current_sect_id = WELL_OF_HEAVEN_ID
