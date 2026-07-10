@@ -252,12 +252,17 @@ class SectCog(commands.Cog):
             await db.commit()
     
     async def _get_today_10am_snapshot(self, school_id: int = WELL_OF_HEAVEN_ID) -> Tuple[Optional[list], Optional[int]]:
-        """Get or create today's 10am GMT+8 baseline snapshot for a given school."""
+        """Get or create today's 10am GMT+8 baseline snapshot for a given school.
+        
+        If today's snapshot doesn't exist yet (before 10am), fall back to yesterday's
+        so the 'since 10am' bracket persists across midnight.
+        """
         now = datetime.datetime.now(GMT8_TZ)
         today_10am = now.replace(hour=10, minute=0, second=0, microsecond=0)
         date_str = today_10am.strftime("%Y-%m-%d")
         
         async with aiosqlite.connect(self.db_path) as db:
+            # Try today's snapshot first
             cursor = await db.execute(
                 "SELECT ts, snapshot_json FROM sect_election_daily WHERE date = ? AND school_id = ?",
                 (date_str, school_id)
@@ -269,6 +274,24 @@ class SectCog(commands.Cog):
                 logger.debug(f"Loaded today's 10am snapshot from {date_str}")
                 return json.loads(snapshot_json), ts
             
+            # If before 10am, try yesterday's snapshot to keep the bracket alive across midnight
+            if now < today_10am:
+                yesterday = now - datetime.timedelta(days=1)
+                yesterday_10am = yesterday.replace(hour=10, minute=0, second=0, microsecond=0)
+                yesterday_str = yesterday_10am.strftime("%Y-%m-%d")
+                
+                cursor = await db.execute(
+                    "SELECT ts, snapshot_json FROM sect_election_daily WHERE date = ? AND school_id = ?",
+                    (yesterday_str, school_id)
+                )
+                row = await cursor.fetchone()
+                
+                if row:
+                    ts, snapshot_json = row
+                    logger.debug(f"Loaded yesterday's 10am snapshot from {yesterday_str} (after midnight fallback)")
+                    return json.loads(snapshot_json), ts
+            
+            # If we're past 10am today and no snapshot exists, create one
             if now >= today_10am:
                 current_data = await self._fetch_election_data(limit=SNAPSHOT_LIMIT, school_id=school_id)
                 if current_data:
