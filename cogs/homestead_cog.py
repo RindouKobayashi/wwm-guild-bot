@@ -338,9 +338,17 @@ class HomesteadCog(commands.Cog):
             )
             return
 
-        # 4. Store/update subscription in DB
+        # 4. Store/update subscription in DB (preserve last_history_id if already exists)
         now = datetime.datetime.utcnow()
         async with aiosqlite.connect(HOMESTEAD_DB_PATH) as conn:
+            # Check if we already have a last_history_id to preserve
+            cursor = await conn.execute(
+                "SELECT last_history_id FROM homestead_subscriptions WHERE user_id = ?",
+                (user_id,)
+            )
+            row = await cursor.fetchone()
+            existing_last_history_id = row[0] if row else None
+
             await conn.execute('''
                 INSERT OR REPLACE INTO homestead_subscriptions
                 (user_id, character_uid, player_pid, avatar, thread_id, last_history_id, created_at, updated_at)
@@ -351,7 +359,7 @@ class HomesteadCog(commands.Cog):
                 player_pid,
                 avatar,
                 thread.id,
-                None,
+                existing_last_history_id,
                 now,
                 now,
             ))
@@ -727,6 +735,31 @@ class HomesteadCog(commands.Cog):
 
     async def _get_or_create_forum_thread(self, nickname: str, user_id: int) -> discord.Thread:
         """Get existing thread for this user, or create a new one in the forum channel."""
+        forum_channel = self.bot.get_channel(FORUM_CHANNEL_ID)
+        if not forum_channel:
+            forum_channel = await self.bot.fetch_channel(FORUM_CHANNEL_ID)
+
+        if not forum_channel:
+            logger.error(f"Could not find forum channel {FORUM_CHANNEL_ID}")
+            return None
+
+        # Helper to grant forum access to a member
+        async def _grant_forum_access(member):
+            try:
+                await forum_channel.set_permissions(
+                    member,
+                    view_channel=True,
+                    read_message_history=True,
+                    send_messages=False,
+                    reason=f"Homestead notification setup for user {user_id}"
+                )
+                logger.debug(f"Granted forum access to user {user_id}")
+            except discord.Forbidden:
+                logger.warning(f"Failed to grant forum access to user {user_id}: Missing permissions")
+            except Exception as perm_error:
+                logger.error(f"Failed to grant forum access to user {user_id}: {perm_error}")
+
+        # Check for existing thread
         async with aiosqlite.connect(HOMESTEAD_DB_PATH) as conn:
             cursor = await conn.execute(
                 "SELECT thread_id FROM homestead_subscriptions WHERE user_id = ? AND thread_id IS NOT NULL",
@@ -740,18 +773,15 @@ class HomesteadCog(commands.Cog):
                     if not thread:
                         thread = await self.bot.fetch_channel(thread_id)
                     if thread:
+                        # Ensure user has access to the forum channel even for existing threads
+                        member = thread.guild.get_member(user_id)
+                        if member:
+                            await _grant_forum_access(member)
                         return thread
                 except (discord.NotFound, discord.Forbidden):
                     logger.warning(f"Stored thread {thread_id} not found for user {user_id}, creating new one")
 
-        forum_channel = self.bot.get_channel(FORUM_CHANNEL_ID)
-        if not forum_channel:
-            forum_channel = await self.bot.fetch_channel(FORUM_CHANNEL_ID)
-
-        if not forum_channel:
-            logger.error(f"Could not find forum channel {FORUM_CHANNEL_ID}")
-            return None
-
+        # Create new thread
         try:
             thread, message = await forum_channel.create_thread(
                 name=f"🌾 {nickname}'s Homestead",
@@ -768,21 +798,13 @@ class HomesteadCog(commands.Cog):
                 logger.debug(f"Added user {user_id} to thread {thread.id}")
 
             # Grant the user permission to view and access the forum channel
-            try:
-                await forum_channel.set_permissions(
-                    member,
-                    view_channel=True,
-                    read_message_history=True,
-                    send_messages=False,
-                    reason=f"Homestead notification setup for user {user_id}"
-                )
-                logger.debug(f"Granted forum access to user {user_id}")
-            except discord.Forbidden:
-                logger.warning(f"Failed to grant forum access to user {user_id}: Missing permissions")
-            except Exception as perm_error:
-                logger.error(f"Failed to grant forum access to user {user_id}: {perm_error}")
+            if member:
+                await _grant_forum_access(member)
 
             return thread
+        except discord.Forbidden as e:
+            logger.error(f"Failed to create forum thread for user {user_id}: 403 Forbidden - Bot may lack 'Manage Threads' permission in the forum channel")
+            return None
         except Exception as e:
             logger.error(f"Failed to create forum thread for user {user_id}: {e}")
             return None
