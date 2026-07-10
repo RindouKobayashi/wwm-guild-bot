@@ -35,6 +35,15 @@ if branch == "main":
     }
     GVG_LEAGUE_NOTICE_CHANNEL_ID = 1442853064053756028
     GVG_PING_ROLE_ID = 1469963666370859009
+    SECT_CHANNELS = {
+        "well_of_heaven": 1524959440334225498,
+        "silver_needle": 1524959524551790663,
+        "raging_tides": 1524959578310049904,
+        "midnight_blades": 1524959617321402538,
+        "nine_mortal_ways": 1524959653983682691,
+        "velvet_shade": 1524959701727580253,
+        "masked_troupe": 1524959734933880872,
+    }
 else:
     DISCORD_API_TOKEN = os.getenv("DISCORD_API_TOKEN_DEV")
     AUTO_TRANSLATE_CHANNELS = {
@@ -48,6 +57,9 @@ else:
     MOD_CHANNEL_LOG_ID = 414234388776353828
     GVG_LEAGUE_NOTICE_CHANNEL_ID = 409959440616390670
     GVG_PING_ROLE_ID = 414362774765043712
+    SECT_CHANNELS = {
+        "well_of_heaven": 1525067744117264425,
+    }
 
 BASE_DIR = pathlib.Path(__file__).parent
 COGS_DIR = BASE_DIR / "cogs"
