@@ -417,21 +417,18 @@ class SectCog(commands.Cog):
         self._current_sect_id = WELL_OF_HEAVEN_ID
     
     def _resolve_school_id_from_key(self, key: str) -> Optional[int]:
-        """Resolve school_id from SECT_CHANNELS key by matching SCHOOL_NAMES keys."""
-        # settings SCHOOL_NAMES keys are like "1001", "1002", etc.
-        # SECT_CHANNELS keys are semantic names.
-        # Build and cache a reverse mapping on the cog if needed.
+        """Resolve school_id from SECT_CHANNELS key by matching SCHOOL_NAMES IDs from api_constants."""
         if not hasattr(self, '_key_to_school_id'):
-            mapping = {
+            # These MUST match SCHOOL_NAMES in utility/api_constants.py
+            self._key_to_school_id = {
                 'well_of_heaven': 1,
-                'silver_needle': 2,
+                'silver_needle': 4,
                 'raging_tides': 3,
-                'midnight_blades': 4,
-                'nine_mortal_ways': 5,
-                'velvet_shade': 6,
-                'masked_troupe': 7,
+                'midnight_blades': 6,
+                'nine_mortal_ways': 11,
+                'velvet_shade': 12,
+                'masked_troupe': 2,
             }
-            self._key_to_school_id = mapping
         return self._key_to_school_id.get(key)
     
     async def _run_feed_update(self, school_id: int = WELL_OF_HEAVEN_ID):
