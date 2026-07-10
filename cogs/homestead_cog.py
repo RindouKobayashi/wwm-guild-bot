@@ -819,24 +819,33 @@ class HomesteadCog(commands.Cog):
                         f"Use `/homestead config` to customize your notification settings.",
                 reason=f"Homestead notification setup for user {user_id}",
             )
-
-            # Add the user as a participant to their own thread
-            member = thread.guild.get_member(user_id)
-            if member:
-                await thread.add_user(member)
-                logger.debug(f"Added user {user_id} to thread {thread.id}")
-
-            # Grant the user permission to view and access the forum channel
-            if member:
-                await _grant_forum_access(member)
-
-            return thread
         except discord.Forbidden as e:
             logger.error(f"Failed to create forum thread for user {user_id}: 403 Forbidden - Bot may lack 'Manage Threads' permission in the forum channel")
             return None
         except Exception as e:
             logger.error(f"Failed to create forum thread for user {user_id}: {e}")
             return None
+
+        # Add the user as a participant to their own thread
+        member = thread.guild.get_member(user_id)
+        if member:
+            try:
+                await thread.add_user(member)
+                logger.debug(f"Added user {user_id} to thread {thread.id}")
+            except Exception as e:
+                logger.warning(f"Failed to add user {user_id} to thread {thread.id}: {e}")
+
+        # Grant the user permission to view and access the forum channel
+        # This is best-effort: thread access via add_user may already be sufficient
+        if member:
+            try:
+                await _grant_forum_access(member)
+            except discord.Forbidden:
+                logger.warning(f"Failed to grant forum channel access to user {user_id}: Bot lacks Manage Permissions in forum channel. User should still access via thread membership.")
+            except Exception as perm_error:
+                logger.warning(f"Failed to grant forum channel access to user {user_id}: {perm_error}")
+
+        return thread
 
 
 async def setup(bot: commands.Bot):
