@@ -767,6 +767,21 @@ class HomesteadCog(commands.Cog):
                 await thread.add_user(member)
                 logger.debug(f"Added user {user_id} to thread {thread.id}")
 
+            # Grant the user permission to view and access the forum channel
+            try:
+                await forum_channel.set_permissions(
+                    member,
+                    view_channel=True,
+                    read_message_history=True,
+                    send_messages=False,
+                    reason=f"Homestead notification setup for user {user_id}"
+                )
+                logger.debug(f"Granted forum access to user {user_id}")
+            except discord.Forbidden:
+                logger.warning(f"Failed to grant forum access to user {user_id}: Missing permissions")
+            except Exception as perm_error:
+                logger.error(f"Failed to grant forum access to user {user_id}: {perm_error}")
+
             return thread
         except Exception as e:
             logger.error(f"Failed to create forum thread for user {user_id}: {e}")
