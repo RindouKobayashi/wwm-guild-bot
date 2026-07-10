@@ -743,6 +743,35 @@ class HomesteadCog(commands.Cog):
             logger.error(f"Could not find forum channel {FORUM_CHANNEL_ID}")
             return None
 
+        # Verify channel type and bot permissions before attempting thread creation
+        if not isinstance(forum_channel, discord.ForumChannel):
+            logger.error(
+                f"Channel {FORUM_CHANNEL_ID} is type {type(forum_channel).__name__}, not ForumChannel"
+            )
+            return None
+
+        # Sanity check: admin bots should still be able to create threads
+        bot_member = forum_channel.guild.me
+        if not bot_member:
+            logger.error(f"Could not resolve bot member in guild {forum_channel.guild.id}")
+            return None
+
+        perms = forum_channel.permissions_for(bot_member)
+        if not perms.send_messages or not perms.manage_threads:
+            logger.error(
+                f"Bot lacks send_messages={perms.send_messages} or manage_threads={perms.manage_threads} "
+                f"in forum channel {FORUM_CHANNEL_ID}"
+            )
+            return None
+
+        # Check if forum is archived/locked — admins can still create threads unless locked
+        try:
+            if getattr(forum_channel, 'archived', False):
+                logger.error(f"Forum channel {FORUM_CHANNEL_ID} is archived")
+                return None
+        except Exception:
+            pass
+
         # Helper to grant forum access to a member
         async def _grant_forum_access(member):
             try:
