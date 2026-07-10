@@ -293,8 +293,10 @@ KONGFU_WEAPON_MAP = {
     20603: "Everspring Umbrella",
     20701: "Mortal Rope Dart",
     20702: "Unfettered Rope Dart",
+    20703: "Skygrasp Rope Dart",
     20801: "Snowparting Blade",
-    20900: "Gaunlet (?)"
+    20900: "Gaunlet (?)",
+    20901: "Heavenwill Gauntlets"
 }
 
 HEALER_WEAPONS = {10301, 20602}
