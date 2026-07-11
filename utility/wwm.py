@@ -14,7 +14,8 @@ from settings import (
     WWM_CLUB_BRIEF_INFO_BATCH_URL, WWM_CLUB_CHAT_URL,
     WWM_FIND_PEOPLE_BY_NICKNAME_URL, WWM_HOST, logger,
     WWM_FASHION_SCORE_URL, WWM_FILM_PLAN_URL, WWM_TEAMS_INFO_URL,
-    WWM_GET_CLUB_BY_NUMBER_ID_URL, RANK_GET_RANKLIST_URL
+    WWM_GET_CLUB_BY_NUMBER_ID_URL, RANK_GET_RANKLIST_URL,
+    WWM_HOMELAND_INFO_URL
 )
 
 # -----------------------------------------------------------------------------
@@ -35,6 +36,7 @@ DEFAULT_FIELDS = [
     "kongfu", "ride", "mentor", "jieyuan_info", "jieyi",
     "jieyi_misc", "gameplay_trail", "pvp_battle", "attr",
     "lunjian", "birthday", "school", "lunjian3v3_prop", "fight_shoulder", "coop_score",
+    "homeworld_data"
 ]
 
 # Complete list of ALL known fields (kept for reference / debugging)
@@ -308,6 +310,24 @@ async def get_topics_likes(target_uuid: str, target_hostnum: int) -> Optional[Di
                 10008, 120, 121, 122, 124, 132,
                 133, 139, 140, 142, 129,
             ]
+        },
+        timeout=20,
+    )
+
+async def get_homeland_info(hostnum2pids: Dict[int, List[str]]) -> Optional[Dict[str, Any]]:
+    """Get homeland info for multiple players in one API call"""
+    logger.debug(f"Getting homeland info for hostnum2pids: {hostnum2pids}")
+
+    return await _wwm_api_post(
+        WWM_HOMELAND_INFO_URL,
+        {
+            "fields": [
+                "homeland_base",
+                "homeland_mate",
+                "taoyuan_description",
+            ],
+            "hostnum2pids": hostnum2pids,
+            "uid": "",
         },
         timeout=20,
     )

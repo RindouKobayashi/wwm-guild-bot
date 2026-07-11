@@ -14,9 +14,9 @@ from deepdiff import DeepDiff
 import aiohttp
 
 import settings
-from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id
+from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id, get_homeland_info
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
-from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, format_kongfu_display, classify_kongfu_role
+from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, classify_kongfu_role
 from utility.wwm import get_sect_election_ranking
 
 
@@ -869,6 +869,8 @@ class PlayerProfileView(LayoutView):
         head_id=None,
         body_type=None,
         sender_pid: str = None,
+        # Homestead
+        homeland_info: dict = None,
     ):
         super().__init__(timeout=180)
         
@@ -929,7 +931,8 @@ class PlayerProfileView(LayoutView):
         self.head_id = head_id
         self.body_type = body_type
         self.sender_pid = sender_pid
-        
+        self.homeland_info = homeland_info
+
         self._build_overview()
     
     def _build_header_text(self) -> str:
@@ -1053,6 +1056,9 @@ class PlayerProfileView(LayoutView):
             btn_guild = discord.ui.Button(label="Guild Profile", emoji="🏰", style=discord.ButtonStyle.secondary, custom_id="player_guild")
             btn_guild.callback = self._handle_guild
             row2.add_item(btn_guild)
+            btn_homestead = discord.ui.Button(label="Homestead", emoji="🏡", style=discord.ButtonStyle.secondary, custom_id="player_homestead")
+            btn_homestead.callback = self._handle_homestead
+            row2.add_item(btn_homestead)
             btn_likes = discord.ui.Button(label="Likes", emoji="❤️", style=discord.ButtonStyle.secondary, custom_id="player_likes")
             btn_likes.callback = self._handle_likes
             row2.add_item(btn_likes)
@@ -1236,6 +1242,41 @@ class PlayerProfileView(LayoutView):
             lines.append("*No likes data available*")
 
         self._show_detail("❤️ Likes Breakdown", lines, accent=0xE74C3C)
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_homestead(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        lines = []
+        if self.homeland_info:
+            homeland_base = self.homeland_info.get('homeland_base', {})
+            homeland_mate = self.homeland_info.get('homeland_mate', {})
+            taoyuan_desc_data = self.homeland_info.get('taoyuan_description', {})
+            
+            if homeland_base:
+                base_level = homeland_base.get('level', 0)
+                base_name = homeland_base.get('name', 'Homestead')
+                lines.append(f"🏡 **Homestead:** {base_name}")
+                lines.append(f"⭐ **Level:** {base_level}")
+                lines.append(f"🪙 **Bounty Gourd:** {homeland_base.get('token', 0):,}")
+                lines.append(f"🌟 **Prosperity:** {homeland_base.get('prosperity', 0):,}")
+            
+            # Handle mate info - check nested mate_info dict
+            if homeland_mate and isinstance(homeland_mate, dict):
+                mate_info = homeland_mate.get('mate_info', {})
+                if mate_info and isinstance(mate_info, dict):
+                    mate_name = mate_info.get('nickname')
+                    if mate_name:
+                        lines.append(f"👫 **Mate:** {mate_name}")
+            
+            # Handle taoyuan description - it's a dict with 'description' key
+            if taoyuan_desc_data and isinstance(taoyuan_desc_data, dict):
+                description_text = taoyuan_desc_data.get('description', '')
+                if description_text and description_text.strip():
+                    lines.append(f"\n📝 **Description:**\n{description_text}")
+        else:
+            lines.append("*No homestead data available*")
+        
+        self._show_detail("🏡 Homestead", lines, accent=0xE67E22)
         await interaction.edit_original_response(view=self)
 
     async def _handle_guild(self, interaction: discord.Interaction):
@@ -1682,16 +1723,516 @@ class WWMCog(commands.Cog):
         if self.gvg_league_notice_task.is_running():
             self.gvg_league_notice_task.cancel()
 
-    @player_group.command(name="search", description="Search for a WWM player by their Number ID or nickname")
-    @app_commands.describe(
-        number_id="The player's 10-digit Number ID (use this OR nickname)",
-        nickname="The player's in-game nickname (use this OR number_id)"
-    )
-    async def player_search(self, interaction: discord.Interaction, number_id: str = None, nickname: str = None):
-        await interaction.response.send_message("🔍 Searching for player...")
+    async def _resolve_player_identifier(self, identifier: str) -> tuple:
+        """
+        Resolve a player identifier (number ID or nickname) to PID and hostnum.
+        Smart routing: if exactly 10 digits → number ID API, else → nickname API.
+        Returns (pid, hostnum, player_data_dict) or (None, None, None).
+        """
+        # Smart routing based on format
+        if identifier.isdigit() and len(identifier) == 10:
+            # Exactly 10 digits → treat as Number ID
+            player_data = await get_player_info(identifier, fields=["base"], force_search=True)
+            if player_data and player_data.get('result') and player_data['result'].get('id'):
+                result = player_data['result']
+                pid = result.get('id')
+                hostnum = result.get('hostnum', 10595)
+                logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via number_id")
+                return pid, hostnum, result
 
-        # If no parameters provided, try to look up the caller's own account
-        if number_id is None and nickname is None:
+        # Otherwise → treat as nickname
+        nickname_data = await find_people_by_nickname(identifier, force_search=True)
+        if nickname_data and nickname_data.get('result'):
+            result = nickname_data['result']
+            pid = result.get('id')
+            hostnum = result.get('hostnum', 10595)
+            logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via nickname")
+            return pid, hostnum, result
+
+        logger.warning(f"Could not resolve identifier '{identifier}'")
+        return None, None, None
+
+    async def _fetch_player_profile_data(self, player_pid: str, player_hostnum: int, interaction: discord.Interaction = None) -> dict:
+        """
+        Fetch all player data and build a complete profile data dict.
+        Returns dict with all fields needed for PlayerProfileView.
+        
+        The 'is_verified' flag refers to whether the VIEWED player has a bound Discord account,
+        which controls Discord mention display. Access to stats is controlled by the command
+        user's verification status in the calling command.
+        """
+        # Fetch full player data
+        raw_data = await fetch_player_data_by_pid(player_pid, hostnum=player_hostnum)
+        if not raw_data:
+            raise ValueError("Failed to fetch player data from API")
+
+        data = raw_data.get('result', raw_data) if isinstance(raw_data, dict) else raw_data
+        base_data = data.get('base', {})
+        if not base_data and 'nickname' in data:
+            base_data = data
+
+        player_nickname = base_data.get('nickname', 'Unknown')
+        player_number_id = base_data.get('number_id', 'N/A')
+        lv = base_data.get('level', 0)
+        is_invisible = base_data.get('invisible', False)
+        is_online = base_data.get('is_online', 0) == 1
+        oversea_tag = base_data.get('oversea_tag', 'N/A')
+        online_hours = round(base_data.get('online_time', 0) / 3600, 1)
+        create_time = base_data.get('create_time', 0)
+        school_id = base_data.get('school', 0)
+        body_type = base_data.get('body_type')
+        homeworld_data = data.get('homeworld_data', {})
+
+        # Check if the VIEWED player (not the command user) has a verified Discord account
+        # This controls Discord mention display and fashion cover image availability
+        viewed_player_verified = False
+        discord_user_id = None
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute("SELECT user_id FROM verified_members WHERE player_pid = ?", (player_pid,))
+            row = await cursor.fetchone()
+            viewed_player_verified = row is not None
+            discord_user_id = row[0] if row else None
+        
+        # Check if the COMMAND USER (not the viewed player) is verified
+        # This controls what stats the command user can see
+        command_user_verified = False
+        if interaction:
+            async with aiosqlite.connect(DB_PATH) as conn2:
+                cursor2 = await conn2.execute("SELECT user_id FROM verified_members WHERE user_id = ?", (interaction.user.id,))
+                row2 = await cursor2.fetchone()
+                command_user_verified = row2 is not None
+
+        # Sect info
+        school_emoji = ""
+        school_name = None
+        school_rank = None
+        if school_id in SCHOOL_NAMES:
+            school_emoji = SCHOOL_EMOTES.get(school_id, "")
+            school_name = SCHOOL_NAMES[school_id]
+            school_data = data.get('school', {})
+            if isinstance(school_data, dict):
+                school_status = school_data.get('status', 0)
+                if school_status in SCHOOL_RANKING:
+                    school_rank = SCHOOL_RANKING[school_status]
+
+        # Masteries - always fetch (public stats, no verification gating)
+        attr = data.get('attr', {})
+        martial_mastery = round(attr.get('XIUWEI_KUNGFU', 0), 1)
+        scholar_mastery = round(attr.get('XIUWEI_TRADE3', 0), 1)
+        healer_mastery = round(attr.get('XIUWEI_TRADE4', 0), 1)
+        explore_mastery = round(attr.get('XIUWEI_EXPLORE', 0), 1)
+
+        # Attributes - ALWAYS fetch full stats
+        attr_str = round(attr.get('STR', 0), 1)
+        attr_con = round(attr.get('CON', 0), 1)
+        attr_bas = round(attr.get('BAS', 0), 1)
+        attr_cri = round(attr.get('CRI', 0), 1)
+        attr_agi = round(attr.get('AGI', 0), 1)
+
+        # Combat
+        arena_1v1_rank = None
+        arena_1v1_max_winning_streak = 0
+        arena_3v3_rank = None
+        pvp_score = 0
+        group_strategy = 0
+        assist_points = 0
+
+        lunjian = data.get('lunjian', {})
+        if lunjian and 'grade' in lunjian:
+            arena_1v1_rank = PlayerProfileView._format_rank(lunjian['grade'], lunjian.get('small_grade', 0))
+            arena_1v1_max_winning_streak = lunjian.get('max_winning_streak', 0)
+        lunjian3v3 = data.get('lunjian3v3_prop', {})
+        if lunjian3v3 and 'grade' in lunjian3v3:
+            arena_3v3_rank = PlayerProfileView._format_rank(lunjian3v3['grade'], lunjian3v3.get('small_grade', 0))
+        fight_shoulder = data.get('fight_shoulder', {})
+        if fight_shoulder and 'score' in fight_shoulder:
+            group_strategy = fight_shoulder['score']
+        coop_score = data.get('coop_score', {})
+        if coop_score and 'score' in coop_score:
+            assist_points = coop_score['score']
+        gameplay = data.get('gameplay_trail', {})
+        played = gameplay.get('played', [])
+        for match in played:
+            if 'score' in match:
+                pvp_score = match['score']
+                break
+
+        # Kongfu data
+        kongfu_main = None
+        kongfu_sub = None
+        kongfu_role = None
+        try:
+            from utility.api_constants import KONGFU_WEAPON_MAP
+            kongfu_data = data.get('kongfu', {})
+            if kongfu_data:
+                main_id = kongfu_data.get('kongfu_main')
+                sub_id = kongfu_data.get('kongfu_sub')
+                if main_id:
+                    kongfu_main = KONGFU_WEAPON_MAP.get(main_id, f"Unknown ({main_id})")
+                if sub_id:
+                    kongfu_sub = KONGFU_WEAPON_MAP.get(sub_id, f"Unknown ({sub_id})")
+                weapon_ids = get_kongfu_ids_from_player(data)
+                if weapon_ids:
+                    kongfu_role = classify_kongfu_role(weapon_ids) if weapon_ids else ""
+        except Exception as kongfu_err:
+            logger.warning(f"Failed to parse kongfu data: {kongfu_err}")
+
+        # Guild info - always fetch (public game data)
+        guild_name = None
+        is_our_guild = False
+        guild_level = 0
+        guild_leader = None
+        guild_vice_leader = None
+        guild_members = 0
+        guild_funds = 0
+        guild_fame = 0
+        guild_announcement = None
+        
+        if player_pid:
+            try:
+                club_data = await get_club_hostnums(player_pid)
+                player_club_id = None
+                club_hostnum = 10103
+                
+                if club_data:
+                    result_data = club_data.get('result', {})
+                    player_club_data = result_data.get(player_pid, {})
+                    club_info = player_club_data.get('club', {})
+                    player_club_id = club_info.get('club_id')
+                    club_hostnum = club_info.get('hostnum', 10103)
+                
+                if player_club_id:
+                    guild_full_data = await get_full_guild_info(player_club_id, hostnum=club_hostnum)
+                    
+                    if guild_full_data:
+                        guild_result = guild_full_data.get('result', {})
+                        guild_base = guild_result.get('base', {})
+                        guild_name = guild_base.get('name', 'Unknown Guild')
+                        guild_level = guild_base.get('level', 0)
+                        guild_members = guild_base.get('member_num', 0)
+                        guild_funds = guild_base.get('fund', 0)
+                        guild_fame = guild_base.get('fame', 0)
+                        guild_announcement = guild_result.get('gonggao_info', {}).get('msg', None)
+                        
+                        # Get leadership
+                        member_list = guild_result.get('members', {}).get('members', {})
+                        leader_pid = None
+                        vice_leader_pid = None
+                        for pid, member in member_list.items():
+                            post_list = member.get('post', [])
+                            if 1 in post_list:
+                                leader_pid = pid
+                            if 2 in post_list:
+                                vice_leader_pid = pid
+                        
+                        pids_to_fetch = []
+                        if leader_pid:
+                            pids_to_fetch.append(leader_pid)
+                        if vice_leader_pid:
+                            pids_to_fetch.append(vice_leader_pid)
+                        
+                        if pids_to_fetch:
+                            bulk_lookup = await get_bulk_players_info(pids_to_fetch, fields=["base"])
+                            if bulk_lookup and bulk_lookup.get('code') == 0:
+                                players = bulk_lookup.get('result', {})
+                                if leader_pid and leader_pid in players:
+                                    guild_leader = players[leader_pid].get('base', {}).get('nickname', 'Unknown')
+                                if vice_leader_pid and vice_leader_pid in players:
+                                    guild_vice_leader = players[vice_leader_pid].get('base', {}).get('nickname', 'Unknown')
+                
+                if player_club_id == CLUB_ID:
+                    is_our_guild = True
+                
+            except Exception as club_err:
+                logger.warning(f"Failed to get club info: {str(club_err)}")
+
+        # Birthday - always fetch (public)
+        birthday_str = None
+        jieyi_name = None
+        jieyi_text = None
+        birthday_data = data.get('birthday', {})
+        if birthday_data and isinstance(birthday_data, dict):
+            visible_flag = birthday_data.get('visible', 0)
+            if visible_flag == 0:
+                month = birthday_data.get('month', 0)
+                day = birthday_data.get('day', 0)
+                if month > 0 and day > 0:
+                    birthday_str = _format_birthday(month, day)
+        
+        jieyi = data.get('jieyi', {})
+        jieyi_name = jieyi.get('jieyi_name')
+        jieyi_text = jieyi.get('jieyi_text')
+
+        # Likes - always fetch (public)
+        likes_count = 0
+        likes_data_raw = {}
+        try:
+            likes_data = await get_topics_likes(target_uuid=player_pid, target_hostnum=player_hostnum)
+            if likes_data and 'result' in likes_data:
+                likes_data_res = likes_data['result']
+                likes_count = sum(topic.get('n_likes', 0) for topic in likes_data_res.values())
+                likes_data_raw = likes_data_res
+        except Exception:
+            pass
+
+        # Fashion score - always fetch (public)
+        fashion_score = 0
+        try:
+            fashion_score_data = await get_fashion_score(player_pid, hostnum=player_hostnum)
+            if fashion_score_data and 'result' in fashion_score_data:
+                score = fashion_score_data['result']
+                if isinstance(score, dict):
+                    score = score.get('score', 0)
+                fashion_score = score
+        except Exception:
+            pass
+
+        # Head avatar
+        head_avatar_path = None
+        head_id_value = None
+        body_type_val = None
+        try:
+            head_data = data.get('head', {}) if isinstance(data, dict) else {}
+            if isinstance(head_data, dict):
+                head_id_value = head_data.get('head')
+                if head_id_value:
+                    raw_bt = base_data.get('body_type') if isinstance(base_data, dict) else None
+                    body_type_val = raw_bt if raw_bt in (0, 1) else None
+                    candidates = []
+                    if body_type_val in (0, 1):
+                        from utility.avatar_paths import (
+                            AVATARS_MAPPED_LOOKUP_ORDER_BY_BODY_TYPE,
+                        )
+                        for d in AVATARS_MAPPED_LOOKUP_ORDER_BY_BODY_TYPE[body_type_val]:
+                            for ext in (".png", ".webp"):
+                                candidates.append(d / f"{head_id_value}{ext}")
+                    else:
+                        from utility.avatar_paths import (
+                            AVATARS_MAPPED_STILL_MALE_DIR,
+                            AVATARS_MAPPED_ANIMATED_MALE_DIR,
+                            AVATARS_MAPPED_STILL_FEMALE_DIR,
+                            AVATARS_MAPPED_ANIMATED_FEMALE_DIR,
+                            AVATARS_MAPPED_STILL_SHARED_DIR,
+                            AVATARS_MAPPED_ANIMATED_SHARED_DIR,
+                        )
+                        for d in (
+                            AVATARS_MAPPED_STILL_MALE_DIR,
+                            AVATARS_MAPPED_ANIMATED_MALE_DIR,
+                            AVATARS_MAPPED_STILL_FEMALE_DIR,
+                            AVATARS_MAPPED_ANIMATED_FEMALE_DIR,
+                            AVATARS_MAPPED_STILL_SHARED_DIR,
+                            AVATARS_MAPPED_ANIMATED_SHARED_DIR,
+                        ):
+                            for ext in (".png", ".webp"):
+                                candidates.append(d / f"{head_id_value}{ext}")
+                    from utility.avatar_paths import AVATARS_MAPPED_DIR
+                    for ext in (".png", ".webp"):
+                        candidates.append(AVATARS_MAPPED_DIR / f"{head_id_value}{ext}")
+                    for candidate in candidates:
+                        if candidate.exists() and candidate.is_file():
+                            head_avatar_path = str(candidate)
+                            break
+        except Exception as head_err:
+            logger.warning(f"Failed to resolve head avatar: {head_err}")
+
+        # Fashion cover image - available when viewed player is verified OR command user is verified
+        cover_img = None
+        cover_img_path = None
+        if viewed_player_verified or command_user_verified:
+            try:
+                fashion_data = await get_fashion_plan(player_pid, hostnum=player_hostnum)
+                if fashion_data and fashion_data.get('code') == 0 and 'result' in fashion_data:
+                    cover_img = fashion_data['result'].get('cover_img')
+                    if cover_img:
+                        try:
+                            async with aiohttp.ClientSession() as session:
+                                async with session.get(cover_img, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+                                    if resp.status == 200:
+                                        data_bytes = await resp.read()
+                                        suffix = ".png"
+                                        ct = resp.headers.get('Content-Type', '')
+                                        if 'webp' in ct:
+                                            suffix = ".webp"
+                                        elif 'jpg' in ct or 'jpeg' in ct:
+                                            suffix = ".jpg"
+                                        temp_dir = BASE_DIR / "data" / "temp"
+                                        temp_dir.mkdir(parents=True, exist_ok=True)
+                                        fd, tmp_path = tempfile.mkstemp(suffix=suffix, prefix="wwm_cover_", dir=str(temp_dir))
+                                        with os.fdopen(fd, 'wb') as f:
+                                            f.write(data_bytes)
+                                        cover_img_path = tmp_path
+                        except Exception as dl_err:
+                            logger.warning(f"Failed to download cover image for {player_pid}: {dl_err}")
+            except Exception as fashion_err:
+                logger.warning(f"Failed to get fashion cover image: {str(fashion_err)}")
+
+        # Fetch player homestead info
+        homeland_info = None
+        home_info = homeworld_data.get('home_info', {}) if isinstance(homeworld_data, dict) else {}
+        home_id = next(iter(home_info.keys()), None)
+
+        try:
+            homeland_data = await get_homeland_info(hostnum2pids={player_hostnum: [home_id]})
+            if homeland_data and 'result' in homeland_data:
+                result = homeland_data['result']
+                # API returns data keyed by PID when multiple PIDs are requested
+                # Extract the specific player's data
+                if home_id in result:
+                    homeland_info = result[home_id]
+                # If result is already the player data (direct response), use it
+                elif isinstance(result, dict) and 'homeland_base' in result:
+                    homeland_info = result
+        except Exception as homeland_err:
+            logger.warning(f"Failed to get homeland info: {homeland_err}")
+
+        return {
+            'player_pid': player_pid,
+            'player_nickname': player_nickname,
+            'number_id': player_number_id,
+            'discord_user_id': discord_user_id,  # Viewed player's Discord ID
+            'level': lv,
+            'is_online': is_online,
+            'is_invisible': is_invisible,
+            'oversea_tag': oversea_tag,
+            'online_hours': online_hours,
+            'create_time': create_time,
+            'player_signature': data.get('name_card', {}).get('sign'),
+            'birthday_str': birthday_str,
+            'jieyi_name': jieyi_name,
+            'jieyi_text': jieyi_text,
+            'likes_count': likes_count,
+            'likes_data_raw': likes_data_raw,
+            'martial_mastery': martial_mastery,
+            'scholar_mastery': scholar_mastery,
+            'healer_mastery': healer_mastery,
+            'explore_mastery': explore_mastery,
+            'attr_str': attr_str,
+            'attr_con': attr_con,
+            'attr_bas': attr_bas,
+            'attr_cri': attr_cri,
+            'attr_agi': attr_agi,
+            'school_emoji': school_emoji,
+            'school_name': school_name,
+            'school_rank': school_rank,
+            'fashion_score': fashion_score,
+            'arena_1v1_rank': arena_1v1_rank,
+            'arena_1v1_max_winning_streak': arena_1v1_max_winning_streak,
+            'arena_3v3_rank': arena_3v3_rank,
+            'pvp_score': pvp_score,
+            'group_strategy': group_strategy,
+            'assist_points': assist_points,
+            'guild_name': guild_name,
+            'is_our_guild': is_our_guild,
+            'guild_level': guild_level,
+            'guild_leader': guild_leader,
+            'guild_vice_leader': guild_vice_leader,
+            'guild_members': guild_members,
+            'guild_funds': guild_funds,
+            'guild_fame': guild_fame,
+            'guild_announcement': guild_announcement,
+            'kongfu_main': kongfu_main,
+            'kongfu_sub': kongfu_sub,
+            'kongfu_role': kongfu_role,
+            'is_verified': command_user_verified,
+            'head_avatar_path': head_avatar_path,
+            'head_id': head_id_value,
+            'body_type': body_type_val,
+            'sender_pid': str(player_pid) if player_pid else None,
+            'cover_img': cover_img,
+            'cover_img_path': cover_img_path,
+            'homeland_info': homeland_info or {},
+        }
+
+    async def _build_player_profile_view(self, identifier: str, interaction: discord.Interaction = None, ephemeral: bool = False) -> tuple:
+        """
+        Complete player lookup workflow: resolve identifier, fetch data, build view.
+        Returns (PlayerProfileView, files_list) or (None, None) on failure.
+        """
+        # Resolve identifier to PID
+        pid, hostnum, _ = await self._resolve_player_identifier(identifier)
+        if not pid:
+            return None, None
+
+        # Fetch all player data
+        try:
+            profile_data = await self._fetch_player_profile_data(pid, hostnum, interaction)
+        except Exception as e:
+            logger.error(f"Failed to fetch player profile data: {e}")
+            return None, None
+
+        # Create PlayerProfileView
+        # discord_user_id = the VIEWED player's Discord (if they're bound), not the command user's
+        view = PlayerProfileView(
+            player_nickname=profile_data['player_nickname'],
+            number_id=profile_data['number_id'],
+            discord_user_id=profile_data['discord_user_id'],  # Viewed player's Discord ID
+            level=profile_data['level'],
+            is_online=profile_data['is_online'],
+            is_invisible=profile_data['is_invisible'],
+            oversea_tag=profile_data['oversea_tag'],
+            online_hours=profile_data['online_hours'],
+            create_time=profile_data['create_time'],
+            player_signature=profile_data['player_signature'],
+            cover_img=profile_data['cover_img'],
+            cover_img_path=profile_data['cover_img_path'],
+            birthday_str=profile_data['birthday_str'],
+            jieyi_name=profile_data['jieyi_name'],
+            jieyi_text=profile_data['jieyi_text'],
+            likes_count=profile_data['likes_count'],
+            likes_data_raw=profile_data['likes_data_raw'],
+            martial_mastery=profile_data['martial_mastery'],
+            scholar_mastery=profile_data['scholar_mastery'],
+            healer_mastery=profile_data['healer_mastery'],
+            explore_mastery=profile_data['explore_mastery'],
+            attr_str=profile_data['attr_str'],
+            attr_con=profile_data['attr_con'],
+            attr_bas=profile_data['attr_bas'],
+            attr_cri=profile_data['attr_cri'],
+            attr_agi=profile_data['attr_agi'],
+            school_emoji=profile_data['school_emoji'],
+            school_name=profile_data['school_name'],
+            school_rank=profile_data['school_rank'],
+            fashion_score=profile_data['fashion_score'],
+            arena_1v1_rank=profile_data['arena_1v1_rank'],
+            arena_1v1_max_winning_streak=profile_data['arena_1v1_max_winning_streak'],
+            arena_3v3_rank=profile_data['arena_3v3_rank'],
+            pvp_score=profile_data['pvp_score'],
+            group_strategy=profile_data['group_strategy'],
+            assist_points=profile_data['assist_points'],
+            guild_name=profile_data['guild_name'],
+            is_our_guild=profile_data['is_our_guild'],
+            guild_level=profile_data['guild_level'],
+            guild_leader=profile_data['guild_leader'],
+            guild_vice_leader=profile_data['guild_vice_leader'],
+            guild_members=profile_data['guild_members'],
+            guild_funds=profile_data['guild_funds'],
+            guild_fame=profile_data['guild_fame'],
+            guild_announcement=profile_data['guild_announcement'],
+            kongfu_main=profile_data['kongfu_main'],
+            kongfu_sub=profile_data['kongfu_sub'],
+            kongfu_role=profile_data['kongfu_role'],
+            is_verified=profile_data['is_verified'],
+            head_avatar_path=profile_data['head_avatar_path'],
+            head_id=profile_data['head_id'],
+            body_type=profile_data['body_type'],
+            sender_pid=profile_data['sender_pid'],
+            homeland_info=profile_data['homeland_info'],
+        )
+
+        files = view._resolve_files()
+        return view, files
+
+    @player_group.command(name="search", description="Search for a WWM player by Number ID or nickname")
+    @app_commands.describe(
+        identifier="Player's 10-digit Number ID or in-game nickname (auto-detects)"
+    )
+    async def player_search(self, interaction: discord.Interaction, identifier: str = None):
+        """Search for a player and display their full profile."""
+        await interaction.response.send_message("🔍 Searching for player...", ephemeral=False)
+
+        # If no identifier provided, try to look up the caller's own account
+        if not identifier or not identifier.strip():
+            # Check if command user is verified (allows them to use this feature)
             async with aiosqlite.connect(DB_PATH) as conn:
                 cursor = await conn.execute(
                     "SELECT character_uid FROM verified_members WHERE user_id = ?",
@@ -1701,7 +2242,7 @@ class WWMCog(commands.Cog):
 
             if row is None:
                 embed = discord.Embed(
-                    title="❌ Missing Arguments",
+                    title="❌ Account Not Bound",
                     description="You must provide either a **Number ID** or a **nickname** to search by, "
                                 "or bind your account first in <#1469961307154288703> to look up yourself.",
                     color=discord.Color.red()
@@ -1709,25 +2250,8 @@ class WWMCog(commands.Cog):
                 await interaction.followup.send(embed=embed)
                 return
 
-            # User is verified — use their own character_uid (Number ID)
-            number_id = row[0]
-            self_lookup = True
-        else:
-            self_lookup = False
-
-        if number_id is not None and nickname is not None:
-            embed = discord.Embed(
-                title="❌ Too Many Arguments",
-                description="Please provide only **one** of: Number ID **or** nickname, not both.",
-                color=discord.Color.red()
-            )
-            await interaction.followup.send(embed=embed)
-            return
-
-        async with aiosqlite.connect(DB_PATH) as conn:
-            cursor = await conn.execute("SELECT 1 FROM verified_members WHERE user_id = ?", (interaction.user.id,))
-            row = await cursor.fetchone()
-            is_verified = row is not None
+            # Command user is verified — use their own character_uid (Number ID)
+            identifier = row[0]
 
         if not WWM_UID or not WWM_TOKEN:
             embed = discord.Embed(
@@ -1739,481 +2263,34 @@ class WWMCog(commands.Cog):
             return
 
         try:
-            if number_id is not None:
-                # --- Lookup by Number ID ---
-                if not number_id.isdigit() or len(number_id) != 10:
-                    embed = discord.Embed(
-                        title="❌ Invalid Number ID",
-                        description="Number ID must be exactly 10 digits long",
-                        color=discord.Color.red()
-                    )
-                    await interaction.followup.send(embed=embed)
-                    return
-
-                await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...")
-                raw_data = await get_player_info(number_id, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
-                
-                if not raw_data:
-                    embed = discord.Embed(title="❌ Player not found", color=discord.Color.red())
-                    await interaction.followup.send(embed=embed)
-                    return
-
-                data = raw_data.get('result', raw_data) if isinstance(raw_data, dict) else raw_data
-                player_pid = data.get('id')
-                player_hostnum = data.get('hostnum', 10403)
-            else:
-                # --- Lookup by Nickname ---
-                await interaction.edit_original_response(content="✅ Found by nickname\n📦 Loading player profile...")
-                
-                nickname_data = await find_people_by_nickname(nickname)
-                
-                if not nickname_data or 'result' not in nickname_data or not nickname_data['result']:
-                    embed = discord.Embed(
-                        title="❌ Player not found",
-                        description=f"No player found with nickname `{nickname}`",
-                        color=discord.Color.red()
-                    )
-                    await interaction.edit_original_response(content=None, embed=embed)
-                    return
-                
-                people_info = nickname_data['result']
-                player_pid = people_info.get('id')
-                player_hostnum = people_info.get('hostnum', 10403)
-                
-                if not player_pid:
-                    embed = discord.Embed(
-                        title="❌ Player not found",
-                        description=f"Could not resolve nickname `{nickname}` to a player ID",
-                        color=discord.Color.red()
-                    )
-                    await interaction.followup.send(embed=embed)
-                    return
-                
-                raw_data = await fetch_player_data_by_pid(player_pid, hostnum=10595)
-                
-                if not raw_data:
-                    embed = discord.Embed(title="❌ Failed to load player data", color=discord.Color.red())
-                    await interaction.followup.send(embed=embed)
-                    return
-                
-                data = raw_data.get('result', raw_data) if isinstance(raw_data, dict) else raw_data
-                # Preserve hostnum from nickname lookup
-                data['hostnum'] = player_hostnum
-
-            logger.debug(f"API Response received for PID: {player_pid}")
-
-            # Check if targeted player is verified by cross-referencing with our verified members database.
-            discord_user_id = None
-            async with aiosqlite.connect(DB_PATH) as conn:
-                cursor = await conn.execute("SELECT user_id FROM verified_members WHERE player_pid = ?", (player_pid,))
-                row = await cursor.fetchone()
-                discord_user_id = row[0] if row else None
-            base_data = data.get('base', {})
-            school_data = data.get('school', {})
-            if isinstance(base_data, list) and len(base_data) > 0:
-                base_data = base_data[0]
-            if not base_data and 'nickname' in data:
-                base_data = data
-            player_nickname = base_data.get('nickname', data.get('nickname', nickname or 'Unknown'))
+            # Use shared helper - it handles:
+            # 1. Smart routing (10-digit → number_id API, else → nickname API)
+            # 2. Full data fetching
+            # 3. Correct discord_user_id (viewed player's Discord, not command user's)
+            view, files = await self._build_player_profile_view(identifier, interaction, ephemeral=False)
             
-            # ── Fetch extra data: fashion plan, fashion score, likes ──
-            cover_img = None
-            cover_img_path = None
-            try:
-                if player_pid:
-                    fashion_data = await get_fashion_plan(player_pid, hostnum=player_hostnum)
-                    if fashion_data:
-                        if fashion_data.get('code') == 0 and 'result' in fashion_data:
-                            cover_img = fashion_data['result'].get('cover_img')
-                            logger.debug(f"Found fashion cover image for {player_pid}: {cover_img}")
-                            # Download cover image so Discord can render it
-                            if cover_img:
-                                try:
-                                    async with aiohttp.ClientSession() as session:
-                                        async with session.get(cover_img, timeout=aiohttp.ClientTimeout(total=15)) as resp:
-                                            if resp.status == 200:
-                                                data_bytes = await resp.read()
-                                                suffix = ".png"
-                                                ct = resp.headers.get('Content-Type', '')
-                                                if 'webp' in ct:
-                                                    suffix = ".webp"
-                                                elif 'jpg' in ct or 'jpeg' in ct:
-                                                    suffix = ".jpg"
-                                                # Save cover image to project-local temp folder
-                                                temp_dir = BASE_DIR / "data" / "temp"
-                                                temp_dir.mkdir(parents=True, exist_ok=True)
-                                                fd, tmp_path = tempfile.mkstemp(suffix=suffix, prefix="wwm_cover_", dir=str(temp_dir))
-                                                with os.fdopen(fd, 'wb') as f:
-                                                    f.write(data_bytes)
-                                                cover_img_path = tmp_path
-                                                logger.debug(f"Cover image downloaded for {player_pid} -> {cover_img_path}")
-                                except Exception as dl_err:
-                                    logger.warning(f"Failed to download cover image for {player_pid}: {dl_err}")
-                                    cover_img_path = None
-            except Exception as fashion_err:
-                logger.warning(f"Failed to get fashion cover image: {str(fashion_err)}")
-
-            name_card = data.get('name_card', {})
-            player_signature = name_card.get('sign', None)
+            if not view:
+                embed = discord.Embed(
+                    title="❌ Player Not Found",
+                    description=f"No player found matching '{identifier}'. Try a 10-digit Number ID or exact nickname.",
+                    color=discord.Color.red()
+                )
+                await interaction.followup.send(embed=embed)
+                return
             
-            school_id = base_data.get('school', 0)
-            logger.debug(f"[PLAYER SEARCH] {player_nickname} (PID: {player_pid}) — School ID: {school_id}")
-            
-            # ── Extract all view data ──
-            
-            # Basic
-            lv = base_data.get('level', 0)
-            is_invisible = base_data.get('invisible', False)
-            is_online = base_data.get('is_online', 0) == 1
-            oversea_tag = base_data.get('oversea_tag', 'N/A')
-            online_hours = round(base_data.get('online_time', 0) / 3600, 1)
-            create_time = base_data.get('create_time', 0)
-            
-            # Birthday
-            birthday_str = None
-            jieyi_name = None
-            jieyi_text = None
-            if is_verified:
-                birthday_data = data.get('birthday', {})
-                if birthday_data and isinstance(birthday_data, dict):
-                    visible_flag = birthday_data.get('visible', 0)
-                    if visible_flag == 0:
-                        month = birthday_data.get('month', 0)
-                        day = birthday_data.get('day', 0)
-                        if month > 0 and day > 0:
-                            birthday_str = _format_birthday(month, day)
-                
-                jieyi = data.get('jieyi', {})
-                jieyi_name = jieyi.get('jieyi_name')
-                jieyi_text = jieyi.get('jieyi_text')
-            
-            # Sect / School
-            school_emoji = ""
-            school_name = None
-            school_rank = None
-            if school_id in SCHOOL_NAMES:
-                school_emoji = SCHOOL_EMOTES.get(school_id, "")
-                school_name = SCHOOL_NAMES[school_id]
-                school_status = school_data.get('status', 0)
-                logger.debug(f"Player {player_nickname} (PID: {player_pid}) — Sect ID: {school_id}, Sect Status: {school_status}")
-                if school_status in SCHOOL_RANKING:
-                    school_rank = SCHOOL_RANKING[school_status]
-            
-            # Elegance / Fashion Score
-            fashion_score = 0
-            if is_verified:
-                try:
-                    fashion_score_data = await get_fashion_score(player_pid, hostnum=player_hostnum)
-                    if fashion_score_data and 'result' in fashion_score_data:
-                        score = fashion_score_data['result']
-                        if isinstance(score, dict):
-                            score = score.get('score', 0)
-                        fashion_score = score
-                except Exception:
-                    pass
-            
-            # Likes
-            likes_count = 0
-            likes_data_raw = {}
-            if is_verified:
-                try:
-                    likes_data = await get_topics_likes(target_uuid=player_pid, target_hostnum=player_hostnum)
-                    if likes_data and 'result' in likes_data:
-                        likes_data_res = likes_data['result']
-                        likes_count = sum(topic.get('n_likes', 0) for topic in likes_data_res.values())
-                        likes_data_raw = likes_data_res
-                except Exception:
-                    pass
-            
-            # Attributes
-            attr = data.get('attr', {})
-            martial_mastery = round(attr.get('XIUWEI_KUNGFU', 0), 1)
-            scholar_mastery = round(attr.get('XIUWEI_TRADE3', 0), 1)
-            healer_mastery = round(attr.get('XIUWEI_TRADE4', 0), 1)
-            explore_mastery = round(attr.get('XIUWEI_EXPLORE', 0), 1)
-            attr_str = round(attr.get('STR', 0), 1)
-            attr_con = round(attr.get('CON', 0), 1)
-            attr_bas = round(attr.get('BAS', 0), 1)
-            attr_cri = round(attr.get('CRI', 0), 1)
-            attr_agi = round(attr.get('AGI', 0), 1)
-            
-            # Combat
-            GRADE_NAMES = {
-                1: "Beginner", 2: "Novice", 3: "Silver", 4: "Adept",
-                5: "Expert", 6: "Veteran", 7: "Master", 8: "Grandmaster",
-                9: "Legend", 10: "Mythic",
-            }
-            SMALL_GRADE_SUFFIXES = {0: "", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
-            
-            def _fmt_rank(grade: int, small_grade: int) -> str:
-                grade_name = GRADE_NAMES.get(grade, f"Unknown ({grade})")
-                small_suffix = SMALL_GRADE_SUFFIXES.get(small_grade, str(small_grade))
-                return f"{grade_name} {small_suffix}" if small_suffix else grade_name
-            
-            arena_1v1_rank = None
-            arena_1v1_max_winning_streak = 0
-            arena_3v3_rank = None
-            pvp_score = 0
-            group_strategy = 0
-            assist_points = 0
-            
-            lunjian = data.get('lunjian', {})
-            if lunjian and 'grade' in lunjian:
-                arena_1v1_rank = _fmt_rank(lunjian['grade'], lunjian.get('small_grade', 0))
-                arena_1v1_max_winning_streak = lunjian.get('max_winning_streak', 0)
-            
-            lunjian3v3 = data.get('lunjian3v3_prop', {})
-            if lunjian3v3 and 'grade' in lunjian3v3:
-                arena_3v3_rank = _fmt_rank(lunjian3v3['grade'], lunjian3v3.get('small_grade', 0))
-            
-            fight_shoulder = data.get('fight_shoulder', {})
-            if fight_shoulder and 'score' in fight_shoulder:
-                group_strategy = fight_shoulder['score']
-            
-            coop_score = data.get('coop_score', {})
-            if coop_score and 'score' in coop_score:
-                assist_points = coop_score['score']
-            
-            gameplay = data.get('gameplay_trail', {})
-            played = gameplay.get('played', [])
-            for match in played:
-                if 'score' in match:
-                    pvp_score = match['score']
-                    break
-            
-            # Kongfu data
-            kongfu_main = None
-            kongfu_sub = None
-            kongfu_role = None
-            try:
-                kongfu_data = data.get('kongfu', {})
-                if kongfu_data:
-                    from utility.api_constants import KONGFU_WEAPON_MAP
-                    main_id = kongfu_data.get('kongfu_main')
-                    sub_id = kongfu_data.get('kongfu_sub')
-                    if main_id:
-                        kongfu_main = KONGFU_WEAPON_MAP.get(main_id, f"Unknown ({main_id})")
-                    if sub_id:
-                        kongfu_sub = KONGFU_WEAPON_MAP.get(sub_id, f"Unknown ({sub_id})")
-                    weapon_ids = get_kongfu_ids_from_player(data)
-                    if weapon_ids:
-                        kongfu_role = classify_kongfu_role(weapon_ids) if weapon_ids else ""
-            except Exception as kongfu_err:
-                logger.warning(f"Failed to parse kongfu data: {kongfu_err}")
-            
-            # ── Guild Info ──
-            guild_name = None
-            is_our_guild = False
-            guild_level = 0
-            guild_leader = None
-            guild_vice_leader = None
-            guild_members = 0
-            guild_funds = 0
-            guild_fame = 0
-            guild_announcement = None
-            
-            if player_pid and is_verified:
-                try:
-                    await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...\n🏰 Checking guild info...")
-                    club_data = await get_club_hostnums(player_pid)
-                    
-                    player_club_id = None
-                    club_hostnum = 10103
-                    
-                    if club_data:
-                        result_data = club_data.get('result', {})
-                        player_club_data = result_data.get(player_pid, {})
-                        club_info = player_club_data.get('club', {})
-                        player_club_id = club_info.get('club_id')
-                        club_hostnum = club_info.get('hostnum', 10103)
-                    
-                    if player_club_id:
-                        await interaction.edit_original_response(content="✅ Found player\n📦 Loading player profile...\n🏰 Checking guild info...\n📋 Loading guild data...")
-                        guild_full_data = await get_full_guild_info(player_club_id, hostnum=club_hostnum)
-                        
-                        if guild_full_data:
-                            guild_result = guild_full_data.get('result', {})
-                            guild_base = guild_result.get('base', {})
-                            guild_name = guild_base.get('name', 'Unknown Guild')
-                            guild_level = guild_base.get('level', 0)
-                            guild_members = guild_base.get('member_num', 0)
-                            guild_funds = guild_base.get('fund', 0)
-                            guild_fame = guild_base.get('fame', 0)
-                            guild_announcement = guild_result.get('gonggao_info', {}).get('msg', None)
-                            
-                            # Get leadership
-                            member_list = guild_result.get('members', {}).get('members', {})
-                            leader_pid = None
-                            vice_leader_pid = None
-                            for pid, member in member_list.items():
-                                post_list = member.get('post', [])
-                                if 1 in post_list:
-                                    leader_pid = pid
-                                if 2 in post_list:
-                                    vice_leader_pid = pid
-                            
-                            pids_to_fetch = []
-                            if leader_pid:
-                                pids_to_fetch.append(leader_pid)
-                            if vice_leader_pid:
-                                pids_to_fetch.append(vice_leader_pid)
-                            
-                            if pids_to_fetch:
-                                bulk_lookup = await get_bulk_players_info(pids_to_fetch, fields=["base"])
-                                if bulk_lookup and bulk_lookup.get('code') == 0:
-                                    players = bulk_lookup.get('result', {})
-                                    if leader_pid and leader_pid in players:
-                                        guild_leader = players[leader_pid].get('base', {}).get('nickname', 'Unknown')
-                                    if vice_leader_pid and vice_leader_pid in players:
-                                        guild_vice_leader = players[vice_leader_pid].get('base', {}).get('nickname', 'Unknown')
-                    
-                    if player_club_id == CLUB_ID:
-                        is_our_guild = True
-                    
-                except Exception as club_err:
-                    logger.warning(f"Failed to get club info: {str(club_err)}")
-            
-            # ── Resolve head avatar from data/avatars/mapped/<sub>/ (if any) ──
-            # Body-type aware: a male and a female with the same head_id may
-            # have different avatar files in their respective subfolders.
-            head_avatar_path = None
-            head_id_value = None
-            body_type = None
-            try:
-                head_data = data.get('head', {}) if isinstance(data, dict) else {}
-                if isinstance(head_data, dict):
-                    head_id_value = head_data.get('head')
-                    if head_id_value:
-                        # body_type lives in `base` (0=female, 1=male, None=unknown).
-                        raw_bt = base_data.get('body_type') if isinstance(base_data, dict) else None
-                        body_type = raw_bt if raw_bt in (0, 1) else None
-                        candidates = []  # (priority-ordered) absolute paths to try
-                        if body_type in (0, 1):
-                            from utility.avatar_paths import (
-                                AVATARS_MAPPED_LOOKUP_ORDER_BY_BODY_TYPE,
-                            )
-                            for d in AVATARS_MAPPED_LOOKUP_ORDER_BY_BODY_TYPE[body_type]:
-                                for ext in (".png", ".webp"):
-                                    candidates.append(d / f"{head_id_value}{ext}")
-                        else:
-                            # Unknown / missing body_type → search ALL 6 mapped
-                            # subfolders (both genders + shared), then legacy flat,
-                            # so a gender-specific avatar file is still found even
-                            # when body_type is not available from the API.
-                            from utility.avatar_paths import (
-                                AVATARS_MAPPED_STILL_MALE_DIR,
-                                AVATARS_MAPPED_ANIMATED_MALE_DIR,
-                                AVATARS_MAPPED_STILL_FEMALE_DIR,
-                                AVATARS_MAPPED_ANIMATED_FEMALE_DIR,
-                                AVATARS_MAPPED_STILL_SHARED_DIR,
-                                AVATARS_MAPPED_ANIMATED_SHARED_DIR,
-                            )
-                            for d in (
-                                AVATARS_MAPPED_STILL_MALE_DIR,
-                                AVATARS_MAPPED_ANIMATED_MALE_DIR,
-                                AVATARS_MAPPED_STILL_FEMALE_DIR,
-                                AVATARS_MAPPED_ANIMATED_FEMALE_DIR,
-                                AVATARS_MAPPED_STILL_SHARED_DIR,
-                                AVATARS_MAPPED_ANIMATED_SHARED_DIR,
-                            ):
-                                for ext in (".png", ".webp"):
-                                    candidates.append(d / f"{head_id_value}{ext}")
-                        # Legacy flat-file fallback for any pre-existing mappings.
-                        from utility.avatar_paths import AVATARS_MAPPED_DIR
-                        for ext in (".png", ".webp"):
-                            candidates.append(AVATARS_MAPPED_DIR / f"{head_id_value}{ext}")
-                        for candidate in candidates:
-                            if candidate.exists() and candidate.is_file():
-                                head_avatar_path = str(candidate)
-                                break
-            except Exception as head_err:
-                logger.warning(f"Failed to resolve head avatar: {head_err}")
-
-
-            # ── Build and send PlayerProfileView ──
-            view = PlayerProfileView(
-                player_nickname=player_nickname,
-                number_id=base_data.get('number_id', number_id or 'N/A'),
-                discord_user_id=discord_user_id,
-                level=lv,
-                is_online=is_online,
-                is_invisible=is_invisible,
-                oversea_tag=oversea_tag,
-                online_hours=online_hours,
-                create_time=create_time,
-                player_signature=player_signature,
-                cover_img=cover_img,
-                cover_img_path=cover_img_path,
-                birthday_str=birthday_str,
-                jieyi_name=jieyi_name,
-                jieyi_text=jieyi_text,
-                likes_count=likes_count,
-                likes_data_raw=likes_data_raw,
-                martial_mastery=float(martial_mastery) if is_verified else 0,
-                scholar_mastery=float(scholar_mastery) if is_verified else 0,
-                healer_mastery=float(healer_mastery) if is_verified else 0,
-                explore_mastery=float(explore_mastery) if is_verified else 0,
-                attr_str=float(attr_str) if is_verified else 0,
-                attr_con=float(attr_con) if is_verified else 0,
-                attr_bas=float(attr_bas) if is_verified else 0,
-                attr_cri=float(attr_cri) if is_verified else 0,
-                attr_agi=float(attr_agi) if is_verified else 0,
-                school_emoji=school_emoji,
-                school_name=school_name,
-                school_rank=school_rank,
-                fashion_score=fashion_score,
-                arena_1v1_rank=arena_1v1_rank,
-                arena_1v1_max_winning_streak=arena_1v1_max_winning_streak,
-                arena_3v3_rank=arena_3v3_rank,
-                pvp_score=pvp_score,
-                group_strategy=group_strategy,
-                assist_points=assist_points,
-                guild_name=guild_name,
-                is_our_guild=is_our_guild,
-                guild_level=guild_level,
-                guild_leader=guild_leader,
-                guild_vice_leader=guild_vice_leader,
-                guild_members=guild_members,
-                guild_funds=guild_funds,
-                guild_fame=guild_fame,
-                guild_announcement=guild_announcement,
-                kongfu_main=kongfu_main,
-                kongfu_sub=kongfu_sub,
-                kongfu_role=kongfu_role,
-                is_verified=is_verified,
-                head_avatar_path=head_avatar_path,
-                head_id=head_id_value if head_data and isinstance(head_data, dict) else None,
-                body_type=body_type if body_type in (0, 1) else None,
-                sender_pid=str(player_pid) if player_pid else None,
-            )
-            
-            view_files = view._resolve_files()
             # Cache the original message on the view so on_timeout() can edit it
-            # when the buttons expire and need to be visually disabled.
             view._original_message = await interaction.original_response()
             await interaction.edit_original_response(
                 content=None,
                 embed=None,
                 view=view,
-                attachments=view_files,
+                attachments=files,
             )
-            # Clean up temp cover image file after successful send
-            if cover_img_path and os.path.exists(cover_img_path):
-                try:
-                    os.unlink(cover_img_path)
-                except Exception:
-                    pass
 
         except Exception as e:
-            # Clean up temp cover image file on failure too
-            if cover_img_path and os.path.exists(cover_img_path):
-                try:
-                    os.unlink(cover_img_path)
-                except Exception:
-                    pass
-            logger.error(f"Player search failed: {str(e)}")
+            logger.error(f"Player search failed: {str(e)}", exc_info=True)
             embed = discord.Embed(
-                title="❌ API Error",
+                title="❌ Search Error",
                 description=f"Failed to search for player: `{str(e)}`",
                 color=discord.Color.red()
             )
@@ -2386,7 +2463,7 @@ class WWMCog(commands.Cog):
                     try:
                         if birthday_role not in member.roles:
                             await member.add_roles(birthday_role)
-                            logger.info(f"🎂 Assigned birthday role to {member} (PID: {player_pid})")
+                            logger.debug(f"🎂 Assigned birthday role to {member} (PID: {player_pid})")
                     except Exception as e:
                         logger.error(f"Failed to assign birthday role to {member}: {e}")
 
@@ -2396,7 +2473,7 @@ class WWMCog(commands.Cog):
                 if birthday_role in member.roles and member.id not in verified_user_ids:
                     try:
                         await member.remove_roles(birthday_role)
-                        logger.info(f"🗑️ Removed birthday role from {member} (no birthday this week)")
+                        logger.debug(f"🗑️ Removed birthday role from {member} (no birthday this week)")
                     except Exception as e:
                         logger.error(f"Failed to remove birthday role from {member}: {e}")
         except Exception as e:
@@ -4633,307 +4710,15 @@ class GuildInfoView(LayoutView):
         await interaction.response.defer(ephemeral=True)
 
         try:
-            # Step 1: Resolve Number ID to PID (with force_search)
-            pid_result = await get_player_info(number_id, force_search=True)
-            if not pid_result:
-                await interaction.followup.send(f"❌ Could not resolve Number ID for {nickname_label}", ephemeral=True)
+            # Use the shared helper
+            view, files = await self._build_player_profile_view(number_id, interaction, ephemeral=True)
+            
+            if not view:
+                await interaction.followup.send(f"❌ Could not load profile for {nickname_label}", ephemeral=True)
                 return
-
-            player_pid = pid_result.get('result', {}).get('id') if isinstance(pid_result, dict) else None
-            player_hostnum = pid_result.get('result', {}).get('hostnum', 10403) if isinstance(pid_result, dict) else 10403
-
-            if not player_pid:
-                await interaction.followup.send(f"❌ Could not resolve PID for {nickname_label}", ephemeral=True)
-                return
-
-            # Step 2: Fetch full player data (same as /player search)
-            raw_data = await fetch_player_data_by_pid(player_pid, hostnum=player_hostnum)
-            if not raw_data:
-                await interaction.followup.send(f"❌ Could not load profile data for {nickname_label}", ephemeral=True)
-                return
-
-            data = raw_data.get('result', raw_data) if isinstance(raw_data, dict) else raw_data
-            base_data = data.get('base', {})
-            if not base_data:
-                base_data = data
-
-            player_nickname = base_data.get('nickname', nickname_label)
-            player_number_id = base_data.get('number_id', number_id)
-            lv = base_data.get('level', 0)
-            is_invisible = base_data.get('invisible', False)
-            is_online = base_data.get('is_online', 0) == 1
-            oversea_tag = base_data.get('oversea_tag', 'N/A')
-            online_hours = round(base_data.get('online_time', 0) / 3600, 1)
-            create_time = base_data.get('create_time', 0)
-            school_id = base_data.get('school', 0)
-            body_type = base_data.get('body_type')
-
-            # Check verification
-            async with aiosqlite.connect(DB_PATH) as conn:
-                cursor = await conn.execute("SELECT 1 FROM verified_members WHERE user_id = ?", (interaction.user.id,))
-                is_verified = (await cursor.fetchone()) is not None
-
-            from utility.api_constants import SCHOOL_EMOTES, SCHOOL_NAMES, SCHOOL_RANKING
-            school_emoji = SCHOOL_EMOTES.get(school_id, "")
-            school_name = SCHOOL_NAMES.get(school_id)
-            school_rank = None
-            school_data = data.get('school', {})
-            if isinstance(school_data, dict):
-                school_status = school_data.get('status', 0)
-                if school_status in SCHOOL_RANKING:
-                    school_rank = SCHOOL_RANKING[school_status]
-
-            # ── Masteries ──
-            attr = data.get('attr', {})
-            martial_mastery = round(attr.get('XIUWEI_KUNGFU', 0), 1) if is_verified else 0
-            scholar_mastery = round(attr.get('XIUWEI_TRADE3', 0), 1) if is_verified else 0
-            healer_mastery = round(attr.get('XIUWEI_TRADE4', 0), 1) if is_verified else 0
-            explore_mastery = round(attr.get('XIUWEI_EXPLORE', 0), 1) if is_verified else 0
-
-            # ── Attributes ──
-            attr_str = round(attr.get('STR', 0), 1) if is_verified else 0
-            attr_con = round(attr.get('CON', 0), 1) if is_verified else 0
-            attr_bas = round(attr.get('BAS', 0), 1) if is_verified else 0
-            attr_cri = round(attr.get('CRI', 0), 1) if is_verified else 0
-            attr_agi = round(attr.get('AGI', 0), 1) if is_verified else 0
-
-            # ── Combat ──
-            GRADE_NAMES = {
-                1: "Beginner", 2: "Novice", 3: "Silver", 4: "Adept",
-                5: "Expert", 6: "Veteran", 7: "Master", 8: "Grandmaster",
-                9: "Legend", 10: "Mythic",
-            }
-            SMALL_GRADE_SUFFIXES = {0: "", 1: "I", 2: "II", 3: "III", 4: "IV", 5: "V"}
-            def _fmt_rank(grade, small_grade):
-                g = GRADE_NAMES.get(grade, f"Unknown ({grade})")
-                s = SMALL_GRADE_SUFFIXES.get(small_grade, str(small_grade))
-                return f"{g} {s}" if s else g
-
-            arena_1v1_rank = None
-            arena_1v1_max_winning_streak = 0
-            arena_3v3_rank = None
-            pvp_score = 0
-            group_strategy = 0
-            assist_points = 0
-
-            lunjian = data.get('lunjian', {})
-            if lunjian and 'grade' in lunjian:
-                arena_1v1_rank = _fmt_rank(lunjian['grade'], lunjian.get('small_grade', 0))
-                arena_1v1_max_winning_streak = lunjian.get('max_winning_streak', 0)
-            lunjian3v3 = data.get('lunjian3v3_prop', {})
-            if lunjian3v3 and 'grade' in lunjian3v3:
-                arena_3v3_rank = _fmt_rank(lunjian3v3['grade'], lunjian3v3.get('small_grade', 0))
-            fight_shoulder = data.get('fight_shoulder', {})
-            if fight_shoulder and 'score' in fight_shoulder:
-                group_strategy = fight_shoulder['score']
-            coop_score = data.get('coop_score', {})
-            if coop_score and 'score' in coop_score:
-                assist_points = coop_score['score']
-            gameplay = data.get('gameplay_trail', {})
-            played = gameplay.get('played', [])
-            for match in played:
-                if 'score' in match:
-                    pvp_score = match['score']
-                    break
-
-            # ── Kongfu ──
-            kongfu_main = None
-            kongfu_sub = None
-            kongfu_role = None
-            try:
-                from utility.api_constants import KONGFU_WEAPON_MAP
-                kongfu_data = data.get('kongfu', {})
-                if kongfu_data:
-                    main_id = kongfu_data.get('kongfu_main')
-                    sub_id = kongfu_data.get('kongfu_sub')
-                    if main_id:
-                        kongfu_main = KONGFU_WEAPON_MAP.get(main_id, f"Unknown ({main_id})")
-                    if sub_id:
-                        kongfu_sub = KONGFU_WEAPON_MAP.get(sub_id, f"Unknown ({sub_id})")
-                    weapon_ids = get_kongfu_ids_from_player(data)
-                    if weapon_ids:
-                        kongfu_role = classify_kongfu_role(weapon_ids)
-            except Exception:
-                pass
-
-            # ── Birthday ──
-            birthday_str = None
-            if is_verified:
-                birthday_data = data.get('birthday', {})
-                if birthday_data and isinstance(birthday_data, dict):
-                    visible_flag = birthday_data.get('visible', 0)
-                    if visible_flag == 0:
-                        month = birthday_data.get('month', 0)
-                        day = birthday_data.get('day', 0)
-                        if month > 0 and day > 0:
-                            birthday_str = _format_birthday(month, day)
-
-            # ── Social ──
-            jieyi_name = None
-            jieyi_text = None
-            if is_verified:
-                jieyi = data.get('jieyi', {})
-                jieyi_name = jieyi.get('jieyi_name')
-                jieyi_text = jieyi.get('jieyi_text')
-
-            likes_count = 0
-            likes_data_raw = {}
-            if is_verified:
-                try:
-                    likes_data = await get_topics_likes(target_uuid=player_pid, target_hostnum=player_hostnum)
-                    if likes_data and 'result' in likes_data:
-                        likes_data_res = likes_data['result']
-                        likes_count = sum(topic.get('n_likes', 0) for topic in likes_data_res.values())
-                        likes_data_raw = likes_data_res
-                except Exception:
-                    pass
-
-            # ── Guild info ──
-            guild_name_p = None
-            is_our_guild = False
-            guild_level_p = 0
-            guild_leader = None
-            guild_vice_leader = None
-            guild_members = 0
-            guild_funds = 0
-            guild_fame = 0
-            guild_announcement = None
-            if is_verified:
-                try:
-                    club_data = await get_club_hostnums(player_pid)
-                    player_club_id = None
-                    club_hostnum = 10103
-                    if club_data:
-                        result_data = club_data.get('result', {})
-                        player_club_data = result_data.get(player_pid, {})
-                        club_info = player_club_data.get('club', {})
-                        player_club_id = club_info.get('club_id')
-                        club_hostnum = club_info.get('hostnum', 10103)
-                    if player_club_id:
-                        guild_full_data = await get_full_guild_info(player_club_id, hostnum=club_hostnum)
-                        if guild_full_data:
-                            guild_result = guild_full_data.get('result', {})
-                            guild_base = guild_result.get('base', {})
-                            guild_name_p = guild_base.get('name', 'Unknown Guild')
-                            guild_level_p = guild_base.get('level', 0)
-                            guild_members = guild_base.get('member_num', 0)
-                            guild_funds = guild_base.get('fund', 0)
-                            guild_fame = guild_base.get('fame', 0)
-                            guild_announcement = guild_result.get('gonggao_info', {}).get('msg', None)
-                            member_list_g = guild_result.get('members', {}).get('members', {})
-                            leader_pid_g = None
-                            vice_pid_g = None
-                            for mp, member in member_list_g.items():
-                                post_list = member.get('post', [])
-                                if 1 in post_list:
-                                    leader_pid_g = mp
-                                if 2 in post_list:
-                                    vice_pid_g = mp
-                            g_pids = [p for p in (leader_pid_g, vice_pid_g) if p]
-                            if g_pids:
-                                g_bulk = await get_bulk_players_info(g_pids, fields=["base"])
-                                if g_bulk and g_bulk.get('code') == 0:
-                                    g_players = g_bulk.get('result', {})
-                                    if leader_pid_g in g_players:
-                                        guild_leader = g_players[leader_pid_g].get('base', {}).get('nickname', 'Unknown')
-                                    if vice_pid_g in g_players:
-                                        guild_vice_leader = g_players[vice_pid_g].get('base', {}).get('nickname', 'Unknown')
-                    if player_club_id == CLUB_ID:
-                        is_our_guild = True
-                except Exception:
-                    pass
-
-            # ── Head avatar ──
-            head_avatar_path = None
-            head_id_value = None
-            bt_val = None
-            try:
-                head_data = data.get('head', {})
-                if isinstance(head_data, dict):
-                    head_id_value = head_data.get('head')
-                    raw_bt = base_data.get('body_type') if isinstance(base_data, dict) else None
-                    bt_val = raw_bt if raw_bt in (0, 1) else None
-            except Exception:
-                pass
-
-            # ── Fashion score ──
-            fashion_score = 0
-            if is_verified:
-                try:
-                    fashion_data = await get_fashion_score(player_pid, hostnum=player_hostnum)
-                    if fashion_data and 'result' in fashion_data:
-                        score = fashion_data['result']
-                        if isinstance(score, dict):
-                            score = score.get('score', 0)
-                        fashion_score = score
-                except Exception:
-                    pass
-
-            # Discord user_id
-            discord_user_id = None
-            async with aiosqlite.connect(DB_PATH) as conn:
-                cursor = await conn.execute("SELECT user_id FROM verified_members WHERE player_pid = ?", (player_pid,))
-                row = await cursor.fetchone()
-                discord_user_id = row[0] if row else None
-
-            view = PlayerProfileView(
-                player_nickname=player_nickname,
-                number_id=player_number_id,
-                discord_user_id=discord_user_id,
-                level=lv,
-                is_online=is_online,
-                is_invisible=is_invisible,
-                oversea_tag=oversea_tag,
-                online_hours=online_hours,
-                create_time=create_time,
-                player_signature=data.get('name_card', {}).get('sign'),
-                cover_img=None,
-                birthday_str=birthday_str,
-                jieyi_name=jieyi_name,
-                jieyi_text=jieyi_text,
-                likes_count=likes_count,
-                likes_data_raw=likes_data_raw,
-                martial_mastery=martial_mastery,
-                scholar_mastery=scholar_mastery,
-                healer_mastery=healer_mastery,
-                explore_mastery=explore_mastery,
-                attr_str=attr_str,
-                attr_con=attr_con,
-                attr_bas=attr_bas,
-                attr_cri=attr_cri,
-                attr_agi=attr_agi,
-                school_emoji=school_emoji,
-                school_name=school_name,
-                school_rank=school_rank,
-                fashion_score=fashion_score if is_verified else 0,
-                arena_1v1_rank=arena_1v1_rank,
-                arena_1v1_max_winning_streak=arena_1v1_max_winning_streak,
-                arena_3v3_rank=arena_3v3_rank,
-                pvp_score=pvp_score,
-                group_strategy=group_strategy,
-                assist_points=assist_points,
-                guild_name=guild_name_p,
-                is_our_guild=is_our_guild,
-                guild_level=guild_level_p,
-                guild_leader=guild_leader,
-                guild_vice_leader=guild_vice_leader,
-                guild_members=guild_members,
-                guild_funds=guild_funds,
-                guild_fame=guild_fame,
-                guild_announcement=guild_announcement,
-                kongfu_main=kongfu_main,
-                kongfu_sub=kongfu_sub,
-                kongfu_role=kongfu_role,
-                is_verified=is_verified,
-                head_avatar_path=head_avatar_path,
-                head_id=head_id_value,
-                body_type=bt_val,
-                sender_pid=str(player_pid) if player_pid else None,
-            )
-
-            view_files = view._resolve_files()
+            
             view._original_message = None
-            await interaction.followup.send(view=view, files=view_files, ephemeral=True)
+            await interaction.followup.send(view=view, files=files, ephemeral=True)
 
         except Exception as e:
             logger.error(f"Failed to show profile for {nickname_label} (number_id={number_id}): {e}", exc_info=True)
