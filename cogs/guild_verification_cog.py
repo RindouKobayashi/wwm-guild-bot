@@ -1249,7 +1249,7 @@ class VerifySignatureView(discord.ui.View):
         await interaction.response.defer(ephemeral=True)
         
         try:
-            player_data = await get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+            player_data = await get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL, force_search=True)
             
             if not player_data or 'result' not in player_data:
                 await interaction.followup.send(
