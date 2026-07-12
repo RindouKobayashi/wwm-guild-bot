@@ -241,18 +241,21 @@ class DataExplorerView(discord.ui.View):
         self.clear_items()
         node = self.current_node
 
-        # Row 0: Back, Send Raw, Cancel, page nav
+        # Row 0: essential controls (max 5)
         if self.path:
-            self.add_item(ExplorerButton("⬅️ Back", "back", discord.ButtonStyle.secondary, self))
-        self.add_item(ExplorerButton("📄 Send Raw", "send_raw", discord.ButtonStyle.secondary, self))
-        self.add_item(ExplorerButton("❌ Cancel", "cancel", discord.ButtonStyle.danger, self))
+            self.add_item(ExplorerButton("⬅️ Back", "back", discord.ButtonStyle.secondary, self, row=0))
+        self.add_item(ExplorerButton("🔄 Refresh", "refresh", discord.ButtonStyle.secondary, self, row=0))
+        self.add_item(ExplorerButton("📄 Raw", "send_raw", discord.ButtonStyle.secondary, self, row=0))
+        self.add_item(ExplorerButton("🗺️ Mapped", "send_mapped", discord.ButtonStyle.success, self, row=0))
+        self.add_item(ExplorerButton("❌ Cancel", "cancel", discord.ButtonStyle.danger, self, row=0))
+        # Row 4: page nav (separate to avoid exceeding 5/row)
         if isinstance(node, (dict, list)):
             total = len(node)
             m = max(0, (total - 1) // self.items_per_page)
             if self.page > 0:
-                self.add_item(ExplorerButton("◀ Prev", "prev", discord.ButtonStyle.primary, self))
+                self.add_item(ExplorerButton("◀ Prev", "prev", discord.ButtonStyle.primary, self, row=4))
             if self.page < m:
-                self.add_item(ExplorerButton("Next ▶", "next", discord.ButtonStyle.primary, self))
+                self.add_item(ExplorerButton("Next ▶", "next", discord.ButtonStyle.primary, self, row=4))
 
         # Row 1: Navigate dropdown
         if isinstance(node, dict):
@@ -352,6 +355,22 @@ class DataExplorerView(discord.ui.View):
             return await interaction.followup.send(
                 content=f"📄 **{self.source_name}** — {self.player_name} (`{self.pid}`)",
                 file=discord.File(io.BytesIO(b), filename=fn))
+        if cid == "send_mapped":
+            mapped_data = await affix_mapper.map_data(self.root_data)
+            b = json.dumps(_prepare_for_json_sort(mapped_data), indent=4, ensure_ascii=False, sort_keys=True, default=str).encode()
+            fn = f"{self.source_name.lower().replace(' ', '_')}_{self.pid}_mapped.json"
+            em = discord.Embed(title="🗺️ Mapped Data Sent", color=discord.Color.green())
+            for c in self.children:
+                c.disabled = True
+            await interaction.response.edit_message(embed=em, view=self)
+            return await interaction.followup.send(
+                content=f"🗺️ **{self.source_name}** — {self.player_name} (`{self.pid}`)",
+                file=discord.File(io.BytesIO(b), filename=fn))
+        if cid == "refresh":
+            self.page = 0
+            self._rebuild_ui()
+            embed = await self._build_embed()
+            return await interaction.response.edit_message(embed=embed, view=self)
         if cid == "back":
             p = self._go_back()
             if p:
@@ -373,8 +392,8 @@ class DataExplorerView(discord.ui.View):
 
 
 class ExplorerButton(discord.ui.Button):
-    def __init__(self, label: str, cid: str, style: discord.ButtonStyle, explorer: DataExplorerView):
-        super().__init__(label=label, style=style, row=0)
+    def __init__(self, label: str, cid: str, style: discord.ButtonStyle, explorer: DataExplorerView, row: int = 0):
+        super().__init__(label=label, style=style, row=row)
         self._exp = explorer
         self._cid = cid
 
