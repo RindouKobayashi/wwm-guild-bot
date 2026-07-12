@@ -76,27 +76,32 @@ class AdminCog(commands.Cog):
 
     async def _resolve_player(self, identifier: str):
         """
-        Try to resolve a player by number_id first, then by nickname.
-        Returns (player_data_dict, pid) or (None, None).
+        Resolve a player identifier (number ID or nickname) to PID and hostnum.
+        Smart routing: if exactly 10 digits → number ID API, else → nickname API.
+        returns (player_result, pid, hostnum) or (None, None, None) if not found.
         """
-        # Try as number_id first
-        player_data = await get_player_info(identifier, fields=["base"], force_search=True)
-        if player_data and player_data.get('result') and player_data['result'].get('id'):
-            result = player_data['result']
-            pid = result.get('id')
-            logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via number_id")
-            return result, pid
+        # Smart routing: if identifier is exactly 10 digits, treat as number ID
+        if identifier.isdigit() and len(identifier) == 10:
+            # Exactly 10 digits, treat as number ID
+            player_result = await get_player_info(identifier, fields=["base"], force_search=True)
+            if player_result and player_result.get('result') and player_result['result'].get('id'):
+                pid = player_result['result']['id']
+                hostnum = player_result['result'].get('hostnum', 10595)  # Default hostnum if not present
+                logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via number ID")
+                return player_result['result'], pid, hostnum
+                
 
-        # Fallback: try as nickname
-        nickname_result = await find_people_by_nickname(identifier, force_search=True)
-        if nickname_result and nickname_result.get('result'):
-            result = nickname_result['result']
+        # Otherwise, treat as nickname and use the find_people_by_nickname API
+        player_result = await find_people_by_nickname(identifier, force_search=True)
+        if player_result and player_result.get('result'):
+            result = player_result['result']
             pid = result.get('id')
-            logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via nickname")
-            return result, pid
+            hostnum = result.get('hostnum', 10595)  # Default hostnum if not present
+            logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via nickname search")
+            return result, pid, hostnum
 
         logger.warning(f"Could not resolve identifier '{identifier}'")
-        return None, None
+        return None, None, None
 
     async def _parse_field_list(self, fields_str: str) -> list:
         """
@@ -200,7 +205,7 @@ class AdminCog(commands.Cog):
         await interaction.response.defer(ephemeral=False)
 
         # Step 1: Resolve player identifier to PID
-        player_result, pid = await self._resolve_player(identifier)
+        player_result, pid, hostnum = await self._resolve_player(identifier)
         if not player_result or not pid:
             await interaction.followup.send(f"❌ Could not find a player matching '{identifier}'. Try a number ID or in-game name.")
             return
@@ -303,6 +308,51 @@ class AdminCog(commands.Cog):
             content=summary,
             file=file
         )
+
+    @app_commands.describe(identifier="Player identifier to look up")
+    @app_commands.command(name="get_player_combat_plan", description="Fetch a player's combat plan")
+    async def get_player_combat_plan(self, interaction: discord.Interaction, identifier: str):
+        """Fetch a player's combat plan by name or ID"""
+        if not await is_admin_or_staff(interaction):
+            await interaction.response.send_message("You do not have permission to use this command.", ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=False)
+
+        # Step 1: Resolve player identifier to PID
+        player_result, pid, hostnum = await self._resolve_player(identifier)
+        if not player_result or not pid:
+            await interaction.followup.send(f"❌ Could not find a player matching '{identifier}'. Try a number ID or in-game name.")
+            return
+
+        player_name = player_result.get("name", player_result.get("nickname", identifier))
+        logger.info(f"get_player_combat_plan: Resolved '{identifier}' → {player_name} (PID: {pid})")
+
+        # Step 2: Fetch the combat plan from the API
+        payload = {
+            "uid": WWM_UID,
+            "pid": pid,
+            "hostnum": hostnum
+        }
+
+        combat_plan_response = await _wwm_api_post(settings.WWM_GET_PLAYER_COMBAT_PLAN_URL, payload, timeout=30)
+
+        if not combat_plan_response or not isinstance(combat_plan_response, dict):
+            await interaction.followup.send(f"❌ API returned no data or an unexpected format for combat plan of player '{player_name}'.")
+            return
+
+        # Send as a downloadable JSON file
+        json_bytes = json.dumps(_prepare_for_json_sort(combat_plan_response), indent=4, ensure_ascii=False, sort_keys=True, default=str).encode()
+        filename = f"combat_plan_{pid}.json"
+        file = discord.File(io.BytesIO(json_bytes), filename=filename)
+
+        summary = f"✅ **{player_name}** (`{pid}`) | 📦 Combat Plan fetched successfully."
+
+        await interaction.followup.send(
+            content=summary,
+            file=file
+        )
+        
 
 
 async def setup(bot: commands.Bot):
