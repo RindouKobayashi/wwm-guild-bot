@@ -36,7 +36,7 @@ DEFAULT_FIELDS = [
     "kongfu", "ride", "mentor", "jieyuan_info", "jieyi",
     "jieyi_misc", "gameplay_trail", "pvp_battle", "attr",
     "lunjian", "birthday", "school", "lunjian3v3_prop", "fight_shoulder", "coop_score",
-    "homeworld_data"
+    "homeworld_data", "achievement"
 ]
 
 # Complete list of ALL known fields (kept for reference / debugging)
@@ -350,11 +350,11 @@ async def get_club_hostnums(player_pid: str) -> Optional[Dict[str, Any]]:
 
 
 async def get_bulk_players_info(pid_list: List[str], fields: Optional[List[str]] = None, hostnum: int = 10595) -> Optional[Dict[str, Any]]:
-    """Bulk fetch multiple players info in one API call"""
+    """Bulk fetch multiple players info in one API call (single hostnum)."""
     if fields is None:
         fields = ["base"]
 
-    logger.debug(f"Bulk fetching {len(pid_list)} players")
+    logger.debug(f"Bulk fetching {len(pid_list)} players (single hostnum={hostnum})")
 
     return await _wwm_api_post(
         WWM_CLUB_HOSTNUMS_URL,
@@ -363,6 +363,38 @@ async def get_bulk_players_info(pid_list: List[str], fields: Optional[List[str]]
             "hostnum2pids": {
                 hostnum: pid_list
             },
+            "uid": WWM_UID
+        }
+    )
+
+
+async def get_bulk_players_info_multi_hostnum(
+    hostnum2pids: Dict[int, List[str]],
+    fields: Optional[List[str]] = None,
+) -> Optional[Dict[str, Any]]:
+    """Bulk fetch multiple players across different hostnums in one API call.
+
+    Groups PIDs by their hostnum so the API can resolve all of them at once.
+    Example: {10403: ["pid1", "pid2"], 10595: ["pid3"]}
+
+    Args:
+        hostnum2pids: Dict mapping hostnum -> list of PIDs on that hostnum.
+        fields: List of field groups to fetch (default ["base"]).
+
+    Returns:
+        API response dict with 'result' keyed by PID, or None on failure.
+    """
+    if fields is None:
+        fields = ["base"]
+
+    total_pids = sum(len(pids) for pids in hostnum2pids.values())
+    logger.debug(f"Bulk fetching {total_pids} players across {len(hostnum2pids)} hostnums")
+
+    return await _wwm_api_post(
+        WWM_CLUB_HOSTNUMS_URL,
+        {
+            "fields": fields,
+            "hostnum2pids": hostnum2pids,
             "uid": WWM_UID
         }
     )
@@ -856,6 +888,34 @@ async def get_bulk_guild_names(
             name = result['result'].get('base', {}).get('name', 'Unknown')
         names[(cid, hnum)] = name
     return names
+
+
+async def get_school_chief_history(school_id: int, skip: int = 0, limit: int = 50) -> Optional[Dict[str, Any]]:
+    """Fetch historical election results for a given sect/school.
+
+    The API returns past election sessions. skip=0 is the most recent,
+    skip=1 is one before that, etc.
+
+    Args:
+        school_id: The numeric school ID (e.g. 1, 2, 3, 4, 6, 11, 12).
+        skip: How many sessions to skip (0 = most recent).
+        limit: Max number of election sessions to return.
+
+    Returns:
+        API response dict with 'code' and 'result', or None on failure.
+        result is a list of dicts, each with 'ts' (float timestamp) and 'chief' (dict).
+    """
+    from settings import WWM_SCHOOL_CHIEF_HISTORY_GET_URL
+    url = WWM_SCHOOL_CHIEF_HISTORY_GET_URL
+    payload = {
+        "group_number": 10001,
+        "uid": "",
+        "limit": limit,
+        "school": school_id,
+        "skip": skip
+    }
+    logger.debug(f"Fetching school chief history: school_id={school_id}, skip={skip}, limit={limit}")
+    return await _wwm_api_post(url, payload, uid="", token="")
 
 
 async def get_sect_election_ranking(school_id: int, limit: int = 5) -> Optional[Dict[str, Any]]:

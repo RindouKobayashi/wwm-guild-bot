@@ -871,6 +871,8 @@ class PlayerProfileView(LayoutView):
         sender_pid: str = None,
         # Homestead
         homeland_info: dict = None,
+        # Achievements
+        achievement_data: dict = None,
     ):
         super().__init__(timeout=180)
         
@@ -932,6 +934,7 @@ class PlayerProfileView(LayoutView):
         self.body_type = body_type
         self.sender_pid = sender_pid
         self.homeland_info = homeland_info
+        self.achievement_data = achievement_data
 
         self._build_overview()
     
@@ -1050,6 +1053,9 @@ class PlayerProfileView(LayoutView):
             btn_kongfu = discord.ui.Button(label="Kongfu & Role", emoji="🔧", style=discord.ButtonStyle.primary, custom_id="player_kongfu")
             btn_kongfu.callback = self._handle_kongfu
             row1.add_item(btn_kongfu)
+            btn_achievement = discord.ui.Button(label="Achievements", emoji="🏆", style=discord.ButtonStyle.primary, custom_id="player_achievements")
+            btn_achievement.callback = self._handle_achievements
+            row1.add_item(btn_achievement)
             inner.append(row1)
             
             row2 = ActionRow()
@@ -1306,6 +1312,25 @@ class PlayerProfileView(LayoutView):
         
         self._show_detail("🏰 Guild Profile", lines, accent=BLURPLE)
         await interaction.edit_original_response(view=self)
+
+    async def _handle_achievements(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        lines = []
+        quantity = self.achievement_data.get('quantity', {})
+        if quantity:
+            if quantity.get(3):
+                lines.append(f"🏆 **Expert:** {quantity.get(3)}")
+            if quantity.get(2):
+                lines.append(f"🏆 **Hard**: {quantity.get(2)}")
+            if quantity.get(1):
+                lines.append(f"🏆 **Normal**: {quantity.get(1)}")
+        else:
+            lines.append("*No achievement data available*")
+        
+        self._show_detail("🏆 Achievements", lines, accent=0x3498DB)
+        await interaction.edit_original_response(view=self)
+
+
 
 class Inactive(LayoutView):
     """LayoutView displaying guild members below an activity-point threshold,
@@ -1782,6 +1807,8 @@ class WWMCog(commands.Cog):
         school_id = base_data.get('school', 0)
         body_type = base_data.get('body_type')
         homeworld_data = data.get('homeworld_data', {})
+        achievement_data = data.get('achievement', {})
+        logger.info(achievement_data)
 
         # Check if the VIEWED player (not the command user) has a verified Discord account
         # This controls Discord mention display and fashion cover image availability
@@ -2141,6 +2168,7 @@ class WWMCog(commands.Cog):
             'cover_img': cover_img,
             'cover_img_path': cover_img_path,
             'homeland_info': homeland_info or {},
+            'achievement_data': achievement_data or {},
         }
 
     async def _build_player_profile_view(self, identifier: str, interaction: discord.Interaction = None, ephemeral: bool = False) -> tuple:
@@ -2217,6 +2245,7 @@ class WWMCog(commands.Cog):
             body_type=profile_data['body_type'],
             sender_pid=profile_data['sender_pid'],
             homeland_info=profile_data['homeland_info'],
+            achievement_data=profile_data['achievement_data'],
         )
 
         files = view._resolve_files()
