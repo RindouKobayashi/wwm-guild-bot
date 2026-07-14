@@ -1,3 +1,4 @@
+import asyncio
 import discord
 import datetime
 import json
@@ -10,12 +11,13 @@ from typing import Optional, Dict, List, Tuple
 from deepdiff import DeepDiff
 
 import settings
-from utility.wwm import get_sect_election_ranking, get_school_chief_history, get_bulk_players_info_multi_hostnum
-from utility.api_constants import SCHOOL_NAMES, SCHOOL_EMOTES
+from utility.wwm import get_sect_election_ranking, get_school_chief_history, get_bulk_players_info_multi_hostnum, get_bulk_players_info
+from utility.api_constants import SCHOOL_NAMES, SCHOOL_EMOTES, SCHOOL_RANKING, VOTE_COUNTS
 from settings import logger, BASE_DIR
 
 # Database for sect election snapshots
 SECT_DB_PATH = BASE_DIR / "data" / "sect_monitor.db"
+MARKET_DB_PATH = BASE_DIR / "data" / "market.db"
 
 WELL_OF_HEAVEN_ID = 1
 
@@ -179,11 +181,15 @@ class SectCog(commands.Cog):
         # Backfill historical election data for all configured sects
         await self._backfill_all_election_history()
         self.sect_hourly_task.start()
+        self.sect_weekly_check.start()
         logger.debug("Sect election hourly task started for all configured sects")
+        logger.debug("Sect election weekly check task started")
         
     async def cog_unload(self):
         if self.sect_hourly_task.is_running():
             self.sect_hourly_task.cancel()
+        if self.sect_weekly_check.is_running():
+            self.sect_weekly_check.cancel()
     
     async def _init_database(self):
         (BASE_DIR / "data").mkdir(exist_ok=True)
@@ -271,6 +277,62 @@ class SectCog(commands.Cog):
                 continue
             await self._backfill_school_election_history(school_id)
         logger.info("Election history backfill complete for all sects")
+
+    async def _check_new_elections(self):
+        """Weekly check for new election sessions across all sects.
+        Fetches skip=0 (most recent) for each sect and compares with the latest
+        known session. If a new one is found, appends it as a new session.
+        """
+        for school_id in SCHOOL_NAMES:
+            if school_id == 100:
+                continue
+            try:
+                await self._check_school_new_election(school_id)
+            except Exception as e:
+                logger.error(f"Failed to check new election for school_id={school_id}: {e}")
+
+    async def _check_school_new_election(self, school_id: int):
+        """Check if there's a new election session for one school and append it."""
+        # Fetch the most recent election (skip=0)
+        response = await get_school_chief_history(school_id, skip=0, limit=1)
+        if not response:
+            logger.debug(f"No response checking new election for school_id={school_id}")
+            return
+
+        result_list = response.get('result', [])
+        if not isinstance(result_list, list) or len(result_list) == 0:
+            return
+
+        entry = result_list[0]
+        ts_raw = entry.get('ts')
+        chief = entry.get('chief', {})
+        if not ts_raw or not chief:
+            return
+
+        new_ts = int(ts_raw)
+
+        async with aiosqlite.connect(self.db_path) as db:
+            # Get the latest known session for this school
+            cursor = await db.execute(
+                "SELECT MAX(session_number), MAX(timestamp) FROM sect_election_history WHERE school_id = ?",
+                (school_id,)
+            )
+            row = await cursor.fetchone()
+            max_session = row[0] if row and row[0] else 0
+            max_ts = row[1] if row and row[1] else 0
+
+            # If the new timestamp is different from the latest known, it's a new election
+            if new_ts > max_ts:
+                new_session = max_session + 1
+                logger.info(f"New election detected for school_id={school_id}: session {new_session} (ts={new_ts})")
+                await db.execute(
+                    "INSERT OR REPLACE INTO sect_election_history (school_id, session_number, timestamp, election_data_json) VALUES (?, ?, ?, ?)",
+                    (school_id, new_session, new_ts, json.dumps(chief, ensure_ascii=False))
+                )
+                await db.commit()
+                logger.info(f"Appended new session {new_session} for school_id={school_id}")
+            else:
+                logger.debug(f"No new election for school_id={school_id} (latest ts={max_ts})")
 
     async def _backfill_school_election_history(self, school_id: int):
         """Backfill historical election data for one school.
@@ -737,7 +799,31 @@ class SectCog(commands.Cog):
     @sect_hourly_task.before_loop
     async def before_sect_hourly(self):
         await self.bot.wait_until_ready()
-    
+
+    @tasks.loop(time=datetime.time(hour=10, minute=0, tzinfo=GMT8_TZ), count=1)
+    async def sect_weekly_check(self):
+        """Check for new election sessions every Monday at 10:00 GMT+8.
+        Runs once per week using the loop's built-in scheduling.
+        """
+        now = datetime.datetime.now(GMT8_TZ)
+        # Only run on Monday
+        if now.weekday() == 0:
+            logger.info("Running weekly new election check...")
+            await self._check_new_elections()
+        else:
+            logger.debug("Skipping weekly check (not Monday)")
+
+    @sect_weekly_check.before_loop
+    async def before_sect_weekly_check(self):
+        await self.bot.wait_until_ready()
+        # Wait until next Monday 10:00 GMT+8 before first run
+        now = datetime.datetime.now(GMT8_TZ)
+        next_monday = now + datetime.timedelta(days=(7 - now.weekday()) % 7 or 7)
+        next_monday = next_monday.replace(hour=10, minute=0, second=0, microsecond=0)
+        wait_seconds = (next_monday - now).total_seconds()
+        logger.info(f"Sect weekly check will run in {wait_seconds / 3600:.1f} hours (next Monday 10:00 GMT+8)")
+        await asyncio.sleep(wait_seconds)
+
     # ── Commands ──────────────────────────────────────────────────────
     
     @app_commands.command(name="sect-feed", description="Post a sect election feed update")
@@ -1251,6 +1337,343 @@ class SectCog(commands.Cog):
 
         # Store the message for later edits
         view._message = await interaction.original_response()
+
+    # ── Sect Votes Command ──────────────────────────────────────────
+
+    @app_commands.command(name="sect-votes", description="Check remaining votes for players in the market watchlist by sect")
+    @admin_or_staff()
+    @app_commands.describe(sect="Which sect to check")
+    @app_commands.choices(sect=[
+        app_commands.Choice(name=name, value=str(sid))
+        for sid, name in SCHOOL_NAMES.items() if sid not in (100, 2, 6)
+    ])
+    async def sect_votes(self, interaction: discord.Interaction, sect: str):
+        """Check remaining votes for all watchlist players of a given sect."""
+        try:
+            school_id = int(sect)
+        except ValueError:
+            await interaction.response.send_message("❌ Invalid sect.", ephemeral=True)
+            return
+
+        school_name = SCHOOL_NAMES.get(school_id, 'Unknown')
+        school_emoji = SCHOOL_EMOTES.get(school_id, '')
+
+        await interaction.response.defer()
+
+        # 1. Fetch all PIDs from market watchlist
+        pids = []
+        watchlist_entries = []  # (pid, nickname, number_id)
+        try:
+            async with aiosqlite.connect(MARKET_DB_PATH) as db:
+                cursor = await db.execute(
+                    "SELECT pid, nickname, number_id FROM market_watchlist ORDER BY added_at DESC"
+                )
+                rows = await cursor.fetchall()
+                for row in rows:
+                    pids.append(row[0])
+                    watchlist_entries.append((row[0], row[1], row[2]))
+        except Exception as e:
+            logger.error(f"sect-votes: failed to read market watchlist: {e}")
+            await interaction.edit_original_response(content=f"❌ Failed to read market watchlist: `{e}`")
+            return
+
+        if not pids:
+            await interaction.edit_original_response(content="📋 Market watchlist is empty. No players to check.")
+            return
+
+        logger.debug(f"sect-votes: fetching school data for {len(pids)} watchlist players (school_id={school_id})")
+
+        # 2. Bulk-fetch player data with fields ["base", "school"]
+        # "base" preset already includes is_online and last_online_ts
+        try:
+            raw_data = await get_bulk_players_info(pids, fields=["base", "school"])
+        except Exception as e:
+            logger.error(f"sect-votes: bulk fetch failed: {e}")
+            await interaction.edit_original_response(content=f"❌ Failed to fetch player data: `{e}`")
+            return
+
+        if not raw_data or 'result' not in raw_data:
+            await interaction.edit_original_response(content="❌ No player data returned from API.")
+            return
+
+        players_data = raw_data['result']
+
+        # 3. Process each player
+        results = []  # list of dicts for display
+        for pid, nickname, number_id in watchlist_entries:
+            player_entry = players_data.get(pid)
+            if not player_entry:
+                continue
+
+            base = player_entry.get('base', {})
+            player_school_id = base.get('school', 0)
+
+            # Filter by selected school
+            if player_school_id != school_id:
+                continue
+
+            # Get school status and vote info
+            school_data = player_entry.get('school', {})
+            if not isinstance(school_data, dict):
+                continue
+
+            status = school_data.get('status', '')
+            if not status:
+                continue
+
+            chief_campaign = school_data.get('chief_campaign', {})
+            if not isinstance(chief_campaign, dict):
+                continue
+
+            vote_num = chief_campaign.get('vote_num', 0)  # votes already used
+            if not isinstance(vote_num, int):
+                vote_num = int(vote_num) if vote_num else 0
+
+            # Look up expected votes
+            expected = VOTE_COUNTS.get(status, 0)
+            remaining = expected - vote_num
+
+            rank_name = SCHOOL_RANKING.get(status, status)
+
+            # Calculate online recency (within last 7 days)
+            now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+            last_online = base.get('last_online_ts', 0) or 0
+            is_online = base.get('is_online', 0) == 1
+            online_recent = (now_ts - last_online) <= (7 * 24 * 3600)  # within 7 days
+
+            results.append({
+                'nickname': nickname or base.get('nickname', 'Unknown'),
+                'number_id': number_id or str(base.get('number_id', '')),
+                'rank_name': rank_name,
+                'vote_num': vote_num,
+                'expected': expected,
+                'remaining': remaining,
+                'is_online': is_online,
+                'online_recent': online_recent,
+            })
+
+        if not results:
+            await interaction.edit_original_response(
+                content=f"{school_emoji} No players from **{school_name}** found in the market watchlist."
+            )
+            return
+
+        # Sort: players with remaining votes first, then by remaining desc
+        results.sort(key=lambda x: (-x['remaining'], x['nickname']))
+        results_with_remaining = [r for r in results if r['remaining'] > 0]
+        results_no_remaining = [r for r in results if r['remaining'] <= 0]
+
+        # Pagination settings
+        PAGE_SIZE = 10
+        total_pages = max(1, (len(results) + PAGE_SIZE - 1) // PAGE_SIZE)
+
+        # Build single-page view
+        view = self.SectVotesView(school_emoji, school_name, results, results_with_remaining, results_no_remaining, PAGE_SIZE)
+        await view._show_page(interaction, 1, total_pages)
+
+    class SectVotesView(discord.ui.View):
+        """Paginated view for sect vote check results with smart filter toggles."""
+
+        def __init__(self, school_emoji: str, school_name: str, all_results: list, with_remaining: list, no_remaining: list, page_size: int):
+            super().__init__(timeout=300)
+            self.school_emoji = school_emoji
+            self.school_name = school_name
+            self.all_results = all_results
+            self.with_remaining = with_remaining
+            self.no_remaining = no_remaining
+            self.page_size = page_size
+            self.current_page = 0
+            self.total_pages = max(1, (len(all_results) + page_size - 1) // page_size)
+            # Smart filter state: set of active filters
+            # "online" and "online_7d" are mutually exclusive (only one can be active)
+            # "has_remaining" can stack with either time filter
+            self.active_filters = set()
+
+        def _apply_filter(self) -> list:
+            """Apply all active filters (AND logic, with mutual exclusion for time filters)."""
+            if not self.active_filters:
+                return self.all_results
+            filtered = list(self.all_results)
+            # Time filters (mutually exclusive in UI, but both here for safety)
+            if "online" in self.active_filters:
+                filtered = [r for r in filtered if r.get('is_online')]
+            if "online_7d" in self.active_filters:
+                filtered = [r for r in filtered if r.get('is_online') or r.get('online_recent')]
+            # Independent filter
+            if "has_remaining" in self.active_filters:
+                filtered = [r for r in filtered if r['remaining'] > 0]
+            return filtered
+
+        async def _show_page(self, interaction: discord.Interaction, page: int, total_pages: int, filter_mode: str = None):
+            if filter_mode is not None:
+                # "online" and "online_7d" are mutually exclusive — clicking one clears the other
+                # "has_remaining" can stack with either time filter
+                if filter_mode in ("online", "online_7d"):
+                    # "online" and "online_7d" are mutually exclusive
+                    was_active = filter_mode in self.active_filters
+                    # Clear both time filters first
+                    self.active_filters.discard("online")
+                    self.active_filters.discard("online_7d")
+                    # Toggle: if it was active, leave it off; otherwise turn it on
+                    if not was_active:
+                        self.active_filters.add(filter_mode)
+                elif filter_mode == "has_remaining":
+                    # Toggle independently
+                    if "has_remaining" in self.active_filters:
+                        self.active_filters.discard("has_remaining")
+                    else:
+                        self.active_filters.add("has_remaining")
+                elif filter_mode == "all":
+                    self.active_filters.clear()
+
+            self.current_page = page
+            filtered = self._apply_filter()
+            total_pages = max(1, (len(filtered) + self.page_size - 1) // self.page_size)
+            if page > total_pages:
+                page = total_pages
+            if page < 1:
+                page = 1
+            self.current_page = page
+
+            start = (page - 1) * self.page_size
+            end = min(start + self.page_size, len(filtered))
+            page_results = filtered[start:end]
+
+            lines = [
+                f"# {self.school_emoji} Vote Check — {self.school_name}",
+                f"Showing **{start + 1}–{end}** of **{len(filtered)}** players",
+            ]
+            if self.active_filters:
+                filter_labels = {
+                    "online": "🟢 Online",
+                    "online_7d": "🕐 7 Days",
+                    "has_remaining": "🗳️ Remaining",
+                }
+                active_labels = []
+                if "online" in self.active_filters:
+                    active_labels.append(filter_labels["online"])
+                if "online_7d" in self.active_filters:
+                    active_labels.append(filter_labels["online_7d"])
+                if "has_remaining" in self.active_filters:
+                    active_labels.append(filter_labels["has_remaining"])
+                lines.append(f"*Filters: {' + '.join(active_labels)}*")
+            lines.append("")
+
+            for r in page_results:
+                lines.append(
+                    f"• **{r['nickname']}** (`{r['number_id']}`) — {r['rank_name']} — "
+                    f"{r['vote_num']}/{r['expected']} used"
+                )
+
+            embed = discord.Embed(
+                title=f"{self.school_emoji} {self.school_name} — Vote Check",
+                color=PURPLE,
+                description="\n".join(lines)
+            )
+            embed.set_footer(text=f"Page {page}/{total_pages} • {len(filtered)} total players")
+
+            # Build buttons
+            self.clear_items()
+
+            # Filter toggles (row 0)
+            all_btn = discord.ui.Button(
+                label="All",
+                style=discord.ButtonStyle.primary if not self.active_filters else discord.ButtonStyle.secondary,
+                row=0,
+            )
+            async def all_cb(i: discord.Interaction):
+                if i.user.id != interaction.user.id:
+                    await i.response.send_message("❌ Not your menu.", ephemeral=False)
+                    return
+                await i.response.defer()
+                await self._show_page(i, 1, total_pages, filter_mode="all")
+            all_btn.callback = all_cb
+            self.add_item(all_btn)
+
+            online_btn = discord.ui.Button(
+                label="🟢 Online",
+                style=discord.ButtonStyle.primary if "online" in self.active_filters else discord.ButtonStyle.secondary,
+                row=0,
+            )
+            async def online_cb(i: discord.Interaction):
+                if i.user.id != interaction.user.id:
+                    await i.response.send_message("❌ Not your menu.", ephemeral=False)
+                    return
+                await i.response.defer()
+                await self._show_page(i, 1, total_pages, filter_mode="online")
+            online_btn.callback = online_cb
+            self.add_item(online_btn)
+
+            online_7d_btn = discord.ui.Button(
+                label="🕐 7 Days",
+                style=discord.ButtonStyle.primary if "online_7d" in self.active_filters else discord.ButtonStyle.secondary,
+                row=0,
+            )
+            async def online_7d_cb(i: discord.Interaction):
+                if i.user.id != interaction.user.id:
+                    await i.response.send_message("❌ Not your menu.", ephemeral=False)
+                    return
+                await i.response.defer()
+                await self._show_page(i, 1, total_pages, filter_mode="online_7d")
+            online_7d_btn.callback = online_7d_cb
+            self.add_item(online_7d_btn)
+
+            has_remaining_btn = discord.ui.Button(
+                label="🗳️ Remaining",
+                style=discord.ButtonStyle.primary if "has_remaining" in self.active_filters else discord.ButtonStyle.secondary,
+                row=0,
+            )
+            async def has_remaining_cb(i: discord.Interaction):
+                if i.user.id != interaction.user.id:
+                    await i.response.send_message("❌ Not your menu.", ephemeral=False)
+                    return
+                await i.response.defer()
+                await self._show_page(i, 1, total_pages, filter_mode="has_remaining")
+            has_remaining_btn.callback = has_remaining_cb
+            self.add_item(has_remaining_btn)
+
+            # Pagination row
+            prev_btn = discord.ui.Button(
+                label="◀ Previous",
+                style=discord.ButtonStyle.secondary,
+                disabled=(page <= 1),
+                row=1,
+            )
+            async def prev_cb(i: discord.Interaction):
+                if i.user.id != interaction.user.id:
+                    await i.response.send_message("❌ Not your menu.", ephemeral=False)
+                    return
+                await i.response.defer()
+                await self._show_page(i, max(1, page - 1), total_pages)
+            prev_btn.callback = prev_cb
+
+            page_btn = discord.ui.Button(
+                label=f"{page}/{total_pages}",
+                style=discord.ButtonStyle.secondary,
+                disabled=True,
+                row=1,
+            )
+
+            next_btn = discord.ui.Button(
+                label="Next ▶",
+                style=discord.ButtonStyle.secondary,
+                disabled=(page >= total_pages),
+                row=1,
+            )
+            async def next_cb(i: discord.Interaction):
+                if i.user.id != interaction.user.id:
+                    await i.response.send_message("❌ Not your menu.", ephemeral=False)
+                    return
+                await i.response.defer()
+                await self._show_page(i, min(total_pages, page + 1), total_pages)
+            next_btn.callback = next_cb
+
+            self.add_item(prev_btn)
+            self.add_item(page_btn)
+            self.add_item(next_btn)
+
+            # Always edit the original response (interaction is already deferred from command/button)
+            await interaction.edit_original_response(embed=embed, view=self)
 
 
 async def setup(bot: commands.Bot):

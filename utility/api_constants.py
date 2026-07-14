@@ -187,6 +187,38 @@ else:
     SCHOOL_ROLES = None
 
 
+VOTE_COUNTS = {
+    "1_1": 2,   # Average Brother
+    "1_2": 2,   # Ironclad Buddy
+    "1_3": 4,   # Good Pal
+    "1_4": 4,   # Deputy Master
+    "1_5": 5,   # Hall Master
+
+    "3_1": 1,   # Solider
+    "3_2": 3,   # Squad Leader
+    "3_3": 6,   # Platoon Leader
+    "3_4": 9,   # Brigade Commander
+    "3_5": 27,   # Division General
+
+    "4_1": 1,   # Keeper
+    "4_2": 1,   # Physician
+    "4_3": 4,   # Chief Physician
+    "4_4": 6,   # Medical Scholar
+    "4_5": 6,   # Divine Healer
+
+    "11_1": 0,   # Outer Prentice
+    "11_2": 2,   # Inner Disciple
+    "11_3": 2,   # Core Prentice
+    "11_4": 6,   # Faction Master
+    "11_5": 6,   # Clan Master
+    
+    "12_1": 1,   # First Crimson Blossom
+    "12_2": 3,   # Twin Lotuses
+    "12_3": 3,   # Charming Trio
+    "12_4": 4,   # Four-Fragrance
+    "12_5": 4,   # Flower Messenger
+}
+
 SCHOOL_RANKING = {
     "1_1": "Average Brother",
     "1_2": "Ironclad Buddy",
