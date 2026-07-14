@@ -1808,7 +1808,6 @@ class WWMCog(commands.Cog):
         body_type = base_data.get('body_type')
         homeworld_data = data.get('homeworld_data', {})
         achievement_data = data.get('achievement', {})
-        logger.info(achievement_data)
 
         # Check if the VIEWED player (not the command user) has a verified Discord account
         # This controls Discord mention display and fashion cover image availability
