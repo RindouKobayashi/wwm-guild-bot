@@ -187,8 +187,9 @@ class AddToWatchlistModal(Modal, title="Add Player to Watchlist"):
                     if nick_data and 'result' in nick_data:
                         pid = nick_data['result'].get('id')
                         if pid:
-                            nickname = nick_data['result'].get('nickname', nickname or entry)
-                            number_id = nick_data['result'].get('number_id', number_id)
+                            base = nick_data['result'].get('base', {})
+                            nickname = base.get('nickname', nickname or entry)
+                            number_id = base.get('number_id', number_id)
                 except Exception as e:
                     logger.debug(f"Watchlist add lookup failed for nickname {entry}: {e}")
 
@@ -856,7 +857,7 @@ class MarketReportView(LayoutView):
 
         # Footer
         inner_items.append(TextDisplay(
-            f"📊 Report generated: <t:{report_ts}:R>  •  🔄 Updates every 3 minutes\n"
+            f"📊 Report generated: <t:{report_ts}:R>  •  🔄 Updates every 1 minute\n"
             f"ℹ️ Players displayed have valid prices (currently logged in or logged in after price update)\n"
             f"🤝 [COOP ✅] indicates player is in coop world — likely open to trade requests\n"
             f"⚠️ Players with [⚠️] had been reported to staff and is awaiting review\n"
@@ -879,6 +880,14 @@ class MarketReportView(LayoutView):
         )
         report_btn.callback = self._on_report_player
         add_row.add_item(report_btn)
+
+        refresh_btn = Button(
+            label="🔄 Refresh",
+            style=discord.ButtonStyle.primary,
+            custom_id="market_refresh",
+        )
+        refresh_btn.callback = self._on_refresh
+        add_row.add_item(refresh_btn)
         inner_items.append(add_row)
 
         # Filter button row
@@ -910,6 +919,10 @@ class MarketReportView(LayoutView):
     async def _on_report_player(self, interaction: discord.Interaction):
         modal = ReportPlayerModal(cog=self.cog)
         await interaction.response.send_modal(modal)
+
+    async def _on_refresh(self, interaction: discord.Interaction):
+        await interaction.response.send_message("🔄 Refreshing dashboard...", ephemeral=True)
+        await self.cog._refresh_dashboard()
 
     async def _on_filter_online(self, interaction: discord.Interaction):
         """Filter the report to show only online players, sent as an ephemeral message."""
@@ -1139,11 +1152,19 @@ class NewWeekMarketView(LayoutView):
         )
         add_btn.callback = self._on_add_watchlist
         add_row.add_item(add_btn)
+
+        refresh_btn = Button(
+            label="🔄 Refresh",
+            style=discord.ButtonStyle.primary,
+            custom_id="newwk_market_refresh",
+        )
+        refresh_btn.callback = self._on_refresh
+        add_row.add_item(refresh_btn)
         inner_items.append(add_row)
 
         # Footer
         inner_items.append(TextDisplay(
-            f"📊 Generated: <t:{report_ts}:R>  •  🔄 Updates every 3 minutes"
+            f"📊 Generated: <t:{report_ts}:R>  •  🔄 Updates every 1 minute"
         ))
 
         container = Container(*inner_items, accent_color=ACCENT_GREEN)
@@ -1152,6 +1173,10 @@ class NewWeekMarketView(LayoutView):
     async def _on_add_watchlist(self, interaction: discord.Interaction):
         modal = AddToWatchlistModal(cog=self.cog)
         await interaction.response.send_modal(modal)
+
+    async def _on_refresh(self, interaction: discord.Interaction):
+        await interaction.response.send_message("🔄 Refreshing dashboard...", ephemeral=True)
+        await self.cog._refresh_dashboard()
 
     def _make_suggest_callback(self, good_id: str):
         async def callback(interaction: discord.Interaction):
@@ -2676,9 +2701,9 @@ class MarketCog(commands.Cog):
         return likes_map
 
     # -- Scheduled task ---------------------------------------------------
-    @tasks.loop(minutes=3)
+    @tasks.loop(minutes=1)
     async def daily_market_report(self):
-        """Market report refreshes every 3 minutes."""
+        """Market report refreshes every 1 minute."""
         logger.debug("Market cog: running report refresh")
         try:
             await self._build_and_send_report()
