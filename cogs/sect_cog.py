@@ -1437,7 +1437,7 @@ class SectCog(commands.Cog):
 
             # Calculate online recency (within last 7 days)
             now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
-            last_online = base.get('last_online_ts', 0) or 0
+            last_online = base.get('logout_time', 0) or 0
             is_online = base.get('is_online', 0) == 1
             online_recent = (now_ts - last_online) <= (7 * 24 * 3600)  # within 7 days
 
