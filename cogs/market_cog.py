@@ -955,7 +955,7 @@ class MarketReportView(LayoutView):
             label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
 
             lines.append(f"### {emoji} {label} — {len(players)} online")
-            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode) in enumerate(players[:10], 1):
+            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode, _other_search) in enumerate(players[:10], 1):
                 prefix = ["🥇", "🥈", "🥉"][rank - 1] if rank <= 3 else f"`{rank}.`"
                 sign = "+" if pct >= 0 else ""
                 coop_prefix = "[COOP ✅] " if mode == 17 else ""
@@ -1057,7 +1057,7 @@ class MarketReportView(LayoutView):
             label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
 
             lines.append(f"### {emoji} {label} — {len(players)} player(s)")
-            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode) in enumerate(players[:10], 1):
+            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode, _other_search) in enumerate(players[:10], 1):
                 prefix = ["🥇", "🥈", "🥉"][rank - 1] if rank <= 3 else f"`{rank}.`"
                 sign = "+" if pct >= 0 else ""
                 online_icon = "🟢" if is_online else "⚫"
@@ -2823,7 +2823,7 @@ class MarketCog(commands.Cog):
         )
         embed.add_field(
             name="Schedule",
-            value="Every 3 minutes" if self.daily_market_report.is_running() else "❌ Stopped",
+            value="Every 1 minute" if self.daily_market_report.is_running() else "❌ Stopped",
             inline=True
         )
         embed.add_field(
