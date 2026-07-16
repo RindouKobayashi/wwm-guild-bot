@@ -1594,12 +1594,12 @@ class WWMCog(commands.Cog):
     )
 
     @sect_group.command(name="election", description="View the top election candidates for a sect")
-    @app_commands.describe(sect_name="The name of the sect to check election rankings for", count="How many candidates to show (default 5, max 20)")
+    @app_commands.describe(sect_name="The name of the sect to check election rankings for", count="How many candidates to show (default 15, max 20)")
     @app_commands.choices(sect_name=[
         app_commands.Choice(name=name, value=str(sid))
         for sid, name in sorted(SCHOOL_NAMES.items()) if sid != 100
     ])
-    async def sect_election(self, interaction: discord.Interaction, sect_name: app_commands.Choice[str], count: int = 5):
+    async def sect_election(self, interaction: discord.Interaction, sect_name: app_commands.Choice[str], count: int = 15):
         """Fetch and display the top election candidates for the chosen sect."""
         school_id = int(sect_name.value)
         # Clamp count between 1 and 20
