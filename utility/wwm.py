@@ -299,8 +299,8 @@ async def get_topics_likes(target_uuid: str, target_hostnum: int) -> Optional[Di
         WWM_TOPICS_LIKES_URL,
         {
             "group_number": 10001, # Assuming a default group number
-            "uid": random.randint(1,99999999),
-            "token": random.randint(1,99999999),
+            "uid": "",
+            "token": "",
             "uuid": target_uuid,
             "hostnum": target_hostnum,
             "fromid": '',
@@ -312,6 +312,8 @@ async def get_topics_likes(target_uuid: str, target_hostnum: int) -> Optional[Di
             ]
         },
         timeout=20,
+        uid="",
+        token=""
     )
 
 async def get_homeland_info(hostnum2pids: Dict[int, List[str]]) -> Optional[Dict[str, Any]]:
@@ -431,9 +433,11 @@ async def get_bulk_hoard_data(pid_list: List[str], hostnum: int = 10595) -> Opti
                 "hostnum2pids": {
                     hostnum: batch_pids
                 },
-                "uid": WWM_UID
+                "uid": ""
             },
             timeout=TIMEOUT,
+            uid="",
+            token=""
         )
 
     results = await run_concurrent(
