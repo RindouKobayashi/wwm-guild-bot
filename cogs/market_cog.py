@@ -763,7 +763,7 @@ class MarketReportView(LayoutView):
     def __init__(
         self,
         cog: "MarketCog",
-        grouped_data: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str, int]]],
+        grouped_data: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str, int, int]]],
         total_players: int,
         report_ts: int,
         next_update_ts: int,
@@ -815,7 +815,7 @@ class MarketReportView(LayoutView):
 
             # Build leaderboard lines
             lines = []
-            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode) in enumerate(players[:10], 1):
+            for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode, other_search) in enumerate(players[:10], 1):
                 if rank == 1:
                     prefix = "🥇"
                 elif rank == 2:
@@ -831,8 +831,10 @@ class MarketReportView(LayoutView):
                 reported_prefix = "[⚠️] " if pid in pending_report_pids else ""
                 guild_display = f" — *{guild_name}*" if guild_name and guild_name != 'Unknown' else ""
                 likes_text = f"  │  👍 {self.likes_map.get(pid, 0)}" if self.likes_map.get(pid, 0) else ""
+                no_search_strike = "~~" if other_search == 0 else ""
+                no_search_end = "~~" if other_search == 0 else ""
                 lines.append(
-                    f"{prefix} {online_icon} **{reported_prefix}{coop_prefix}{nickname}** ({number_id}){guild_display}  ─  "
+                    f"{prefix} {online_icon} **{reported_prefix}{coop_prefix}{no_search_strike}{nickname}{no_search_end}** ({number_id}){guild_display}  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                     f"{likes_text}"
                 )
@@ -861,6 +863,7 @@ class MarketReportView(LayoutView):
             f"ℹ️ Players displayed have valid prices (currently logged in or logged in after price update)\n"
             f"🤝 [COOP ✅] indicates player is in coop world — likely open to trade requests\n"
             f"⚠️ Players with [⚠️] had been reported to staff and is awaiting review\n"
+            f"⛔️ ~~Strikethrough~~ indicates player has player search disabled — cannot request coop\n"
         ))
 
         # Add to watchlist button
@@ -2401,6 +2404,7 @@ class MarketCog(commands.Cog):
             goods from that player's average_price keys.
           - Otherwise (all qualifying players have >=2 data points): return
             {"mode": "active", "groups": {good_id: [(player_data...), ...]}}
+            Each player tuple: (pid, nickname, number_id, original_price, current_price, pct, is_online, hostnum, guild_name, mode, other_search)
 
         Returns None if no qualifying player data.
         """
@@ -2564,11 +2568,12 @@ class MarketCog(commands.Cog):
 
                 pct = ((current_price - original_price) / original_price) * 100.0
 
+                other_search = base.get('other_search', 1)
                 good_groups[main_good].append((
                     pid, nickname, number_id,
                     original_price, current_price, pct,
                     is_online, hostnum, qp['guild_name'],
-                    qp['mode']
+                    qp['mode'], other_search
                 ))
 
             logger.debug(
