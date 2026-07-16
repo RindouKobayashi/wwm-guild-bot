@@ -1341,7 +1341,6 @@ class SectCog(commands.Cog):
     # ── Sect Votes Command ──────────────────────────────────────────
 
     @app_commands.command(name="sect-votes", description="Check remaining votes for players in the market watchlist by sect")
-    @admin_or_staff()
     @app_commands.describe(sect="Which sect to check")
     @app_commands.choices(sect=[
         app_commands.Choice(name=name, value=str(sid))
