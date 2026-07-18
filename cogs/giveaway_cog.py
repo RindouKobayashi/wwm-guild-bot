@@ -51,6 +51,21 @@ async def _get_participant_pids(giveaway_id: int) -> List[int]:
             return [row[0] for row in rows]
 
 
+async def _get_game_id_by_user(user_id: int) -> Optional[str]:
+    """Get the in-game character UID (game ID) for a Discord user from the verification database."""
+    if not os.path.exists(VERIFICATION_DB_PATH):
+        return None
+    try:
+        async with aiosqlite.connect(VERIFICATION_DB_PATH) as db:
+            async with db.execute(
+                "SELECT character_uid FROM verified_members WHERE user_id = ?", (user_id,)
+            ) as cursor:
+                row = await cursor.fetchone()
+                return row[0] if row else None
+    except Exception:
+        return None
+
+
 def _parse_db_datetime(db_str: str) -> datetime.datetime:
     """Parse a datetime string and return an aware UTC datetime."""
     try:
@@ -164,7 +179,15 @@ async def _select_winners(
     k = min(total, winners_count)
     winners_list = _weighted_sample_without_replacement(participants, weights, k)
 
-    mentions = ", ".join(f"<@{uid}>" for uid in winners_list)
+    # Build mentions with Game Character UID for each winner
+    enriched = []
+    for uid in winners_list:
+        game_id = await _get_game_id_by_user(uid)
+        if game_id:
+            enriched.append(f"<@{uid}> (Game ID: {game_id})")
+        else:
+            enriched.append(f"<@{uid}>")
+    mentions = ", ".join(enriched)
     return winners_list, mentions, winners_list
 
 
@@ -226,7 +249,7 @@ async def init_db():
         await db.commit()
 
 
-async def _cleanup_old_giveaways(days: int = 30):
+async def _cleanup_old_giveaways(days: int = 365):
     """Delete giveaways older than `days` that are ended or cancelled."""
     cutoff = datetime.datetime.now(timezone.utc) - timedelta(days=days)
     cutoff_str = _serialize_db_datetime(cutoff)
@@ -1028,7 +1051,7 @@ class GiveawayCog(commands.Cog):
     async def cleanup_loop(self):
         if not self.bot.is_ready():
             return
-        await _cleanup_old_giveaways(days=30)
+        await _cleanup_old_giveaways(days=365)
 
     @cleanup_loop.before_loop
     async def _before_cleanup(self):
