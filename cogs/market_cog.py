@@ -2078,6 +2078,79 @@ class BannedListPaginatedView(LayoutView):
 
 
 # ---------------------------------------------------------------------------
+# Goods Paginated View
+# ---------------------------------------------------------------------------
+class GoodsPaginatedView(LayoutView):
+    """Paginated view for mapped goods, 10 per page."""
+
+    def __init__(self, rows: List[aiosqlite.Row]):
+        super().__init__(timeout=180)
+        self.rows = rows
+        self.page_size = 10
+        self.current_page = 0
+        self.total_pages = max(1, (len(rows) + self.page_size - 1) // self.page_size)
+        self._build()
+
+    def _build(self) -> None:
+        self.clear_items()
+        start = self.current_page * self.page_size
+        end = min(start + self.page_size, len(self.rows))
+        page = self.rows[start:end]
+
+        lines: List[str] = []
+        lines.append(f"# 📦 Mapped Goods ({len(self.rows)} total)")
+        lines.append(f"**Page {self.current_page + 1}/{self.total_pages}** (showing {start + 1}–{end})\n")
+
+        for row in page:
+            lines.append(f"• **{row['name']}** (`{row['good_id']}`)")
+
+        inner: list = []
+        inner.append(TextDisplay("\n".join(lines)))
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Navigation
+        nav_row = ActionRow()
+        prev_btn = Button(
+            label="◀ Previous",
+            style=discord.ButtonStyle.secondary,
+            disabled=self.current_page == 0,
+        )
+        prev_btn.callback = self._on_prev
+        nav_row.add_item(prev_btn)
+
+        page_btn = Button(
+            label=f"{self.current_page + 1}/{self.total_pages}",
+            style=discord.ButtonStyle.secondary,
+            disabled=True,
+        )
+        nav_row.add_item(page_btn)
+
+        next_btn = Button(
+            label="Next ▶",
+            style=discord.ButtonStyle.secondary,
+            disabled=self.current_page >= self.total_pages - 1,
+        )
+        next_btn.callback = self._on_next
+        nav_row.add_item(next_btn)
+        inner.append(nav_row)
+
+        container = Container(*inner, accent_color=ACCENT_BLURPLE)
+        self.add_item(container)
+
+    async def _on_prev(self, interaction: discord.Interaction):
+        if self.current_page > 0:
+            self.current_page -= 1
+            self._build()
+            await interaction.response.edit_message(view=self)
+
+    async def _on_next(self, interaction: discord.Interaction):
+        if self.current_page < self.total_pages - 1:
+            self.current_page += 1
+            self._build()
+            await interaction.response.edit_message(view=self)
+
+
+# ---------------------------------------------------------------------------
 # Market Cog
 # ---------------------------------------------------------------------------
 class MarketCog(commands.Cog):
@@ -2902,8 +2975,8 @@ class MarketCog(commands.Cog):
 
     @market_group.command(name="goods", description="Show all mapped goods with their IDs and names")
     async def market_goods(self, interaction: discord.Interaction):
-        """Show all goods that have been mapped with their IDs and names."""
-        await interaction.response.defer(ephemeral=True)
+        """Show all goods that have been mapped with their IDs and names (paginated, 10 per page)."""
+        await interaction.response.defer()
         try:
             async with aiosqlite.connect(self.db_path) as db:
                 db.row_factory = aiosqlite.Row
@@ -2913,32 +2986,12 @@ class MarketCog(commands.Cog):
                 rows = await cursor.fetchall()
 
             if not rows:
-                await interaction.followup.send("📦 No goods have been mapped yet.", ephemeral=True)
+                await interaction.followup.send("📦 No goods have been mapped yet.")
                 return
 
-            lines = [f"# 📦 Mapped Goods ({len(rows)} total)\n"]
-            
-            for row in rows:
-                good_id = row['good_id']
-                name = row['name']
-                approved_by = row['approved_by']
-                approved_at = row['approved_at']
-                
-                lines.append(f"• **{name}** (ID: `{good_id}`)")
-                if approved_by:
-                    lines.append(f"  - Approved by <@{approved_by}> <t:{approved_at}:R>")
-            
-            lines.append(f"\n📊 Total: {len(rows)} mapped goods")
-            
-            inner = [
-                TextDisplay("\n".join(lines)),
-                Separator(spacing=discord.SeparatorSpacing.small),
-                TextDisplay("_This message is only visible to you._"),
-            ]
-            container = Container(*inner, accent_color=ACCENT_BLURPLE)
-            view = LayoutView(timeout=60)
-            view.add_item(container)
-            await interaction.followup.send(view=view, ephemeral=True)
+            # Build paginated view
+            view = GoodsPaginatedView(rows=rows)
+            await interaction.followup.send(view=view)
 
         except Exception as e:
             logger.error(f"Market cog: goods command failed: {e}", exc_info=True)
