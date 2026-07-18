@@ -23,7 +23,7 @@ WELL_OF_HEAVEN_ID = 1
 
 # Top N for snapshot vs top M for diff display
 SNAPSHOT_LIMIT = 50
-DIFF_DISPLAY_LIMIT = 15
+DIFF_DISPLAY_LIMIT = 10
 
 BLURPLE = 0x5865F2
 PURPLE = 0x9B59B6
@@ -89,7 +89,7 @@ class SectFeedView(LayoutView):
         dropped = self.diff_data.get('dropped', [])
         unchanged = self.diff_data.get('unchanged', [])
         
-        # Section: New entries (promoted into top 10)
+        # Section: New entries (entered top 10)
         if new_entries:
             lines = []
             for entry in new_entries[:5]:  # Show max 5 new entries
@@ -98,7 +98,9 @@ class SectFeedView(LayoutView):
                 votes = entry['votes']
                 change = entry.get('vote_change', 0)
                 change_str = f"+{change:,}" if change >= 0 else f"{change:,}"
-                lines.append(f"**#{rank}** 🆕 **{nickname}** — {votes:,} votes ({change_str})")
+                prev_rank = entry.get('previous_rank')
+                prev_str = f" (was #{prev_rank} previously)" if prev_rank else ""
+                lines.append(f"**#{rank}** 🆕 **{nickname}** — {votes:,} votes ({change_str}){prev_str}")
             inner_items.append(TextDisplay(f"### 🆕 New in Top 10\n\n" + "\n".join(lines)))
             inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
         
@@ -109,7 +111,13 @@ class SectFeedView(LayoutView):
                 rank = entry.get('previous_rank', '?')
                 nickname = entry['nickname']
                 votes = entry['votes']
-                lines.append(f"**~#{rank}** ❌ **{nickname}** — {votes:,} votes (fell out)")
+                # Check if still in top 50
+                current_votes = entry.get('current_votes', 0)
+                current_rank = entry.get('current_rank')
+                if current_rank:
+                    lines.append(f"**~#{rank}** ❌ **{nickname}** — {votes:,} votes (fell out, currently #{current_rank} with {current_votes:,} votes)")
+                else:
+                    lines.append(f"**~#{rank}** ❌ **{nickname}** — {votes:,} votes (fell out)")
             inner_items.append(TextDisplay(f"### ❌ Dropped from Top 10\n\n" + "\n".join(lines)))
             inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
         
@@ -468,11 +476,14 @@ class SectCog(commands.Cog):
 
         return sorted_rankings, pid_to_nickname, pid_to_number_id
 
-    async def _get_today_10am_snapshot(self, school_id: int = WELL_OF_HEAVEN_ID) -> Tuple[Optional[list], Optional[int]]:
+    async def _get_today_10am_snapshot(self, school_id: int = WELL_OF_HEAVEN_ID, current_data: Optional[list] = None) -> Tuple[Optional[list], Optional[int]]:
         """Get or create today's 10am GMT+8 baseline snapshot for a given school.
         
         If today's snapshot doesn't exist yet (before 10am), fall back to yesterday's
         so the 'since 10am' bracket persists across midnight.
+        
+        If current_data is provided and we need to create a new baseline, use it
+        instead of making a separate API call to avoid timing discrepancies.
         """
         now = datetime.datetime.now(GMT8_TZ)
         today_10am = now.replace(hour=10, minute=0, second=0, microsecond=0)
@@ -510,17 +521,23 @@ class SectCog(commands.Cog):
             
             # If we're past 10am today and no snapshot exists, create one
             if now >= today_10am:
-                current_data = await self._fetch_election_data(limit=SNAPSHOT_LIMIT, school_id=school_id)
-                if current_data:
-                    candidates, _ = current_data
-                    ts = int(today_10am.timestamp())
-                    await db.execute(
-                        "INSERT OR REPLACE INTO sect_election_daily (date, school_id, ts, snapshot_json) VALUES (?, ?, ?, ?)",
-                        (date_str, school_id, ts, json.dumps(candidates, ensure_ascii=False))
-                    )
-                    await db.commit()
-                    logger.debug(f"Created today's 10am snapshot at {date_str} for school_id={school_id}")
-                    return candidates, ts
+                # Use provided current_data if available, otherwise fetch fresh
+                if current_data is not None:
+                    candidates = current_data
+                else:
+                    fetch_result = await self._fetch_election_data(limit=SNAPSHOT_LIMIT, school_id=school_id)
+                    if not fetch_result:
+                        return None, None
+                    candidates, _ = fetch_result
+                
+                ts = int(today_10am.timestamp())
+                await db.execute(
+                    "INSERT OR REPLACE INTO sect_election_daily (date, school_id, ts, snapshot_json) VALUES (?, ?, ?, ?)",
+                    (date_str, school_id, ts, json.dumps(candidates, ensure_ascii=False))
+                )
+                await db.commit()
+                logger.debug(f"Created today's 10am snapshot at {date_str} for school_id={school_id}")
+                return candidates, ts
             
             return None, None
     
@@ -557,22 +574,22 @@ class SectCog(commands.Cog):
     
     def _compute_diff(self, old_snapshot: list, new_snapshot: list, total_candidates: int = 0) -> dict:
         """Compute diff between two snapshots, focusing on top 10."""
-        old_top10_by_pid = {c['pid']: c for c in old_snapshot[:DIFF_DISPLAY_LIMIT] if c.get('pid')}
-        new_top10 = new_snapshot[:DIFF_DISPLAY_LIMIT]
+        old_topN_by_pid = {c['pid']: c for c in old_snapshot[:DIFF_DISPLAY_LIMIT] if c.get('pid')}
+        new_topN = new_snapshot[:DIFF_DISPLAY_LIMIT]
         
         new_entries = []
         dropped = []
         unchanged = []
         
         # Analyze new top 10
-        for entry in new_top10:
+        for entry in new_topN:
             pid = entry.get('pid')
             if not pid:
                 continue
             
-            if pid in old_top10_by_pid:
+            if pid in old_topN_by_pid:
                 # Was in previous top 10
-                old_entry = old_top10_by_pid[pid]
+                old_entry = old_topN_by_pid[pid]
                 vote_change = entry['votes'] - old_entry['votes']
                 rank_change = old_entry['rank'] - entry['rank']  # Positive = moved up
                 
@@ -593,36 +610,48 @@ class SectCog(commands.Cog):
                 })
         
         # Find dropped entries (in old top 10 but not in new top 10)
-        new_top10_pids = {c['pid'] for c in new_top10 if c.get('pid')}
-        for pid, old_entry in old_top10_by_pid.items():
-            if pid not in new_top10_pids:
+        new_topN_pids = {c['pid'] for c in new_topN if c.get('pid')}
+        for pid, old_entry in old_topN_by_pid.items():
+            if pid not in new_topN_pids:
                 dropped.append({
                     **old_entry,
-                    'current_votes': 0  # Will be updated below if still in top 50
+                    'previous_rank': old_entry.get('rank'),  # Their old rank before dropping
+                    'current_votes': 0,  # Will be updated below if still in top 50
+                    'current_rank': None  # Will be updated below if still in top 50
                 })
         
-        # Update dropped entries with current votes if they're still in top 50
+        # Update dropped entries with current votes and rank if they're still in top 50
         new_snapshot_by_pid = {c['pid']: c for c in new_snapshot if c.get('pid')}
         for dropped_entry in dropped:
             pid = dropped_entry.get('pid')
             if pid in new_snapshot_by_pid:
                 dropped_entry['current_votes'] = new_snapshot_by_pid[pid]['votes']
+                dropped_entry['current_rank'] = new_snapshot_by_pid[pid]['rank']
         
-        # Merge vote_change from unchanged/new_entries into top10 for display
-        top10_with_changes = []
+        # Merge vote_change from unchanged/new_entries into topN for display (ranks 1-10)
+        topN_with_changes = []
         unchanged_by_pid = {e['pid']: e for e in unchanged}
         new_entries_by_pid = {e['pid']: e for e in new_entries}
-        for entry in new_top10:
+        for entry in new_topN:
             pid = entry.get('pid')
             if pid in unchanged_by_pid:
-                top10_with_changes.append({**entry, 'vote_change': unchanged_by_pid[pid].get('vote_change', 0), 'rank_change': unchanged_by_pid[pid].get('rank_change', 0)})
+                topN_with_changes.append({**entry, 'vote_change': unchanged_by_pid[pid].get('vote_change', 0), 'rank_change': unchanged_by_pid[pid].get('rank_change', 0)})
             elif pid in new_entries_by_pid:
-                top10_with_changes.append({**entry, 'vote_change': new_entries_by_pid[pid].get('vote_change', entry['votes']), 'rank_change': 0})
+                topN_with_changes.append({**entry, 'vote_change': new_entries_by_pid[pid].get('vote_change', entry['votes']), 'rank_change': 0})
             else:
-                top10_with_changes.append({**entry, 'vote_change': 0, 'rank_change': 0})
+                topN_with_changes.append({**entry, 'vote_change': 0, 'rank_change': 0})
+        
+        # Also include ranks 11-15 in the output with their today vote_change from old snapshot
+        old_all_pid = {c['pid']: c for c in old_snapshot[:SNAPSHOT_LIMIT] if c.get('pid')}
+        for entry in new_snapshot[DIFF_DISPLAY_LIMIT:15]:
+            pid = entry.get('pid')
+            vote_change = 0
+            if pid and pid in old_all_pid:
+                vote_change = entry['votes'] - old_all_pid[pid]['votes']
+            topN_with_changes.append({**entry, 'vote_change': vote_change, 'rank_change': 0})
         
         return {
-            'top10': top10_with_changes,
+            'top10': topN_with_changes,
             'new_entries': new_entries,
             'dropped': dropped,
             'unchanged': unchanged,
@@ -715,7 +744,7 @@ class SectCog(commands.Cog):
             
             # Post initial feed
             diff_data = {
-                'top10': current_data[:DIFF_DISPLAY_LIMIT],
+                'top10': current_data[:15],  # Include ranks 1-15 for display
                 'new_entries': [],
                 'dropped': [],
                 'unchanged': [],
@@ -728,7 +757,8 @@ class SectCog(commands.Cog):
         diff_data = self._compute_diff(last_snapshot, current_data, total_candidates=total_candidates)
         
         # Compute today's diff from 10am baseline
-        today_snapshot, today_ts = await self._get_today_10am_snapshot(school_id=school_id)
+        # Pass current_data so if a new baseline needs to be created, it uses the same data
+        today_snapshot, today_ts = await self._get_today_10am_snapshot(school_id=school_id, current_data=current_data)
         if today_snapshot:
             today_diff = self._compute_diff(today_snapshot, current_data, total_candidates=total_candidates)
             diff_data['today_diff'] = today_diff
