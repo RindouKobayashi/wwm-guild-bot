@@ -2475,16 +2475,15 @@ class MarketCog(commands.Cog):
             day_start = gmt8_dt.replace(hour=6, minute=0, second=0, microsecond=0)
         return int(day_start.timestamp() - GMT8_OFFSET)
 
-    async def _fetch_and_process(self) -> Optional[Dict[str, Any]]:
+    async def _fetch_and_process(self, day_number: int = 1) -> Optional[Dict[str, Any]]:
         """Fetch hoard data and determine market state.
 
         Logic:
           - Filter qualifying players: online AND/OR logged out within today (since 6am GMT+8).
-          - If ANY qualifying player has only 1 data point in price_change_history,
+          - If day_number == 1 AND any qualifying player has only 1 data point in price_change_history,
             it's a new week: return {"mode": "new_week", "good_ids": [...]} with
             goods from that player's average_price keys.
-          - Otherwise (all qualifying players have >=2 data points): return
-            {"mode": "active", "groups": {good_id: [(player_data...), ...]}}
+          - Otherwise: return {"mode": "active", "groups": {good_id: [(player_data...), ...]}}
             Each player tuple: (pid, nickname, number_id, original_price, current_price, pct, is_online, hostnum, guild_name, mode, other_search)
 
         Returns None if no qualifying player data.
@@ -2570,30 +2569,16 @@ class MarketCog(commands.Cog):
             logger.warning("Market cog: no qualifying players found (online or logged out today)")
             return None
 
-        # Check for new week: first try to find an ONLINE player with 1 data point
-        # and 3 average_price goods. If none, fallback to a player logged out within today.
+        # Only check for new week on Day 1 (Saturday)
+        # After Day 1, always show active mode with player rankings
         new_week_good_ids: List[str] = []
-        # Try online players first
-        for qp in qualifying_players:
-            if not qp['is_online']:
-                continue
-            hoard = qp['player_entry'].get('hoard_profiteer', {}) if isinstance(qp['player_entry'], dict) else {}
-            price_history = hoard.get('price_change_history', [])
-            if len(price_history) == 1:
-                average_price = hoard.get('average_price', {})
-                if len(average_price) == 3:
-                    new_week_good_ids = sorted(
-                        (str(gid) for gid in average_price.keys()),
-                        key=lambda x: int(x)
-                    )[:3]
-                    logger.debug(
-                        f"Market cog: NEW WEEK detected via ONLINE player {qp['pid']} — "
-                        f"goods: {new_week_good_ids}"
-                    )
-                    break
-        # Fallback: any qualifying player with 1 data point and non-empty average_price
-        if not new_week_good_ids:
+        if day_number == 1:
+            # Check for new week: first try to find an ONLINE player with 1 data point
+            # and 3 average_price goods. If none, fallback to a player logged out within today.
+            # Try online players first
             for qp in qualifying_players:
+                if not qp['is_online']:
+                    continue
                 hoard = qp['player_entry'].get('hoard_profiteer', {}) if isinstance(qp['player_entry'], dict) else {}
                 price_history = hoard.get('price_change_history', [])
                 if len(price_history) == 1:
@@ -2604,10 +2589,27 @@ class MarketCog(commands.Cog):
                             key=lambda x: int(x)
                         )[:3]
                         logger.debug(
-                            f"Market cog: NEW WEEK detected via player {qp['pid']} — "
+                            f"Market cog: NEW WEEK detected via ONLINE player {qp['pid']} — "
                             f"goods: {new_week_good_ids}"
                         )
                         break
+            # Fallback: any qualifying player with 1 data point and non-empty average_price
+            if not new_week_good_ids:
+                for qp in qualifying_players:
+                    hoard = qp['player_entry'].get('hoard_profiteer', {}) if isinstance(qp['player_entry'], dict) else {}
+                    price_history = hoard.get('price_change_history', [])
+                    if len(price_history) == 1:
+                        average_price = hoard.get('average_price', {})
+                        if len(average_price) == 3:
+                            new_week_good_ids = sorted(
+                                (str(gid) for gid in average_price.keys()),
+                                key=lambda x: int(x)
+                            )[:3]
+                            logger.debug(
+                                f"Market cog: NEW WEEK detected via player {qp['pid']} — "
+                                f"goods: {new_week_good_ids}"
+                            )
+                            break
 
         if new_week_good_ids:
             return {
@@ -2692,7 +2694,10 @@ class MarketCog(commands.Cog):
             logger.warning("Market cog: no channel configured, cannot send report")
             return
 
-        result = await self._fetch_and_process()
+        # Get day number FIRST before fetching data
+        day_number = self._get_market_day_number()
+        
+        result = await self._fetch_and_process(day_number=day_number)
         if not result:
             return
 
@@ -2700,9 +2705,7 @@ class MarketCog(commands.Cog):
         next_update_ts = self._get_next_update_ts()
         countdown_str = self._get_countdown_timestamp(next_update_ts)
         
-        # Get day number from qualifying players
-        qualifying_players = result.get('qualifying_players', [])
-        day_number = self._get_day_number(qualifying_players)
+        # day_number already calculated above
         
         known_goods = await self._get_known_goods()
         good_names_map = {}
@@ -2762,36 +2765,43 @@ class MarketCog(commands.Cog):
         return int(target.timestamp())
 
     @staticmethod
-    def _get_day_number(qualifying_players: List[Dict]) -> int:
-        """Determine current market day number from qualifying players.
+    def _get_market_day_number() -> int:
+        """Calculate market day number based on calendar schedule.
         
-        Qualifying players = online OR logged out since today's 6am GMT+8.
+        Market week starts on Saturday 6am GMT+8.
+        - Saturday 6am GMT+8 = Day 1
+        - Sunday 6am GMT+8 = Day 2
+        - Monday 6am GMT+8 = Day 3
+        - etc.
         
-        Logic:
-        - If ANY qualifying player has 1 data point → Day 1 (new week)
-        - Otherwise use mode (most common count) among qualifying players with data
-        - Minimum 1 day
+        Returns the current market day number (1-indexed).
         """
-        from collections import Counter
+        GMT8_OFFSET = 8 * 3600
+        now_utc_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        gmt8_now_ts = now_utc_ts + GMT8_OFFSET
+        gmt8_dt = datetime.datetime.fromtimestamp(gmt8_now_ts, tz=datetime.timezone.utc)
         
-        data_counts = []
+        # Find the most recent Saturday 6am GMT+8
+        # weekday(): Monday=0, Sunday=6, Saturday=5
+        days_since_saturday = (gmt8_dt.weekday() - 5) % 7  # 0=Saturday, 1=Sunday, ..., 6=Friday
         
-        for qp in qualifying_players:
-            hoard = qp.get('player_entry', {}).get('hoard_profiteer', {})
-            price_history = hoard.get('price_change_history', [])
-            if price_history:
-                data_counts.append(len(price_history))
+        if days_since_saturday == 0:
+            # Today is Saturday
+            if gmt8_dt.hour >= 6:
+                # Already past 6am today = Day 1
+                week_start = gmt8_dt.replace(hour=6, minute=0, second=0, microsecond=0)
+            else:
+                # Before 6am Saturday = still Friday's week, use last Saturday
+                week_start = (gmt8_dt - datetime.timedelta(days=7)).replace(hour=6, minute=0, second=0, microsecond=0)
+        else:
+            # Not Saturday, use the most recent Saturday
+            week_start = (gmt8_dt - datetime.timedelta(days=days_since_saturday)).replace(hour=6, minute=0, second=0, microsecond=0)
         
-        if not data_counts:
-            return 1
+        # Calculate days since week start (each day = 1 market day)
+        days_elapsed = (gmt8_dt - week_start).total_seconds() / 86400.0
+        market_day = int(days_elapsed) + 1  # Day 1 on the first day
         
-        # If any player has 1 data point, it's Day 1 (new week just started)
-        if 1 in data_counts:
-            return 1
-        
-        # Otherwise use mode (most common count)
-        count_freq = Counter(data_counts)
-        return count_freq.most_common(1)[0][0]
+        return max(1, market_day)
 
     @staticmethod
     def _get_countdown_timestamp(next_update_ts: int) -> str:
