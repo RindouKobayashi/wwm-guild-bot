@@ -767,6 +767,8 @@ class MarketReportView(LayoutView):
         total_players: int,
         report_ts: int,
         next_update_ts: int,
+        day_number: int = 1,
+        countdown_str: str = "",
         known_goods: Set[str] = None,
         good_names_map: Dict[str, str] = None,
         likes_map: Dict[str, int] = None,
@@ -778,6 +780,8 @@ class MarketReportView(LayoutView):
         self.total_players = total_players
         self.report_ts = report_ts
         self.next_update_ts = next_update_ts
+        self.day_number = day_number
+        self.countdown_str = countdown_str
         self.known_goods = known_goods or set()
         self.good_names_map = good_names_map or {}
         self.likes_map = likes_map or {}
@@ -790,6 +794,7 @@ class MarketReportView(LayoutView):
             Section(
                 TextDisplay(
                     f"# 📈 Market Price Report\n"
+                    f"📅 **Day {day_number}**  •  ⏰ Resets {countdown_str}\n"
                     f"Tracking **{total_players}** players across **{len(grouped_data)}** goods"
                 ),
                 accessory=Button(
@@ -1098,6 +1103,8 @@ class NewWeekMarketView(LayoutView):
         good_names_map: Dict[str, str],
         known_goods: Set[str],
         report_ts: int,
+        day_number: int = 1,
+        countdown_str: str = "",
     ):
         super().__init__(timeout=None)
         self.cog = cog
@@ -1112,6 +1119,7 @@ class NewWeekMarketView(LayoutView):
             Section(
                 TextDisplay(
                     f"# 🆕 New Market Week!\n"
+                    f"📅 **Day {day_number}**  •  ⏰ Resets {countdown_str}\n"
                     f"Market prices have reset. Check out these goods to buy and prepare for stock changes!"
                 ),
                 accessory=Button(
@@ -2529,7 +2537,11 @@ class MarketCog(commands.Cog):
                         break
 
         if new_week_good_ids:
-            return {"mode": "new_week", "good_ids": new_week_good_ids}
+            return {
+                "mode": "new_week",
+                "good_ids": new_week_good_ids,
+                "qualifying_players": qualifying_players
+            }
         else:
             # Active mode – build ranking groups for qualifying players with >=2 data points
             good_groups: Dict[str, List[Tuple[str, str, str, float, float, float, bool, int, str]]] = defaultdict(list)
@@ -2594,7 +2606,11 @@ class MarketCog(commands.Cog):
             if len(unique_goods) > 3:
                 logger.warning(f"Market cog: expected at most 3 unique goods but found {len(unique_goods)}")
 
-            return {"mode": "active", "groups": dict(good_groups)}
+            return {
+                "mode": "active",
+                "groups": dict(good_groups),
+                "qualifying_players": qualifying_players
+            }
 
     # -- Build and send report --------------------------------------------
     async def _build_and_send_report(self):
@@ -2608,6 +2624,13 @@ class MarketCog(commands.Cog):
             return
 
         now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        next_update_ts = self._get_next_update_ts()
+        countdown_str = self._get_countdown_timestamp(next_update_ts)
+        
+        # Get day number from qualifying players
+        qualifying_players = result.get('qualifying_players', [])
+        day_number = self._get_day_number(qualifying_players)
+        
         known_goods = await self._get_known_goods()
         good_names_map = {}
         for gid in known_goods:
@@ -2623,6 +2646,8 @@ class MarketCog(commands.Cog):
                 good_names_map=good_names_map,
                 known_goods=known_goods,
                 report_ts=now_ts,
+                day_number=day_number,
+                countdown_str=countdown_str,
             )
         else:
             grouped = result['groups']
@@ -2635,7 +2660,9 @@ class MarketCog(commands.Cog):
                 grouped_data=grouped,
                 total_players=total_players,
                 report_ts=now_ts,
-                next_update_ts=self._get_next_update_ts(),
+                next_update_ts=next_update_ts,
+                day_number=day_number,
+                countdown_str=countdown_str,
                 known_goods=known_goods,
                 good_names_map=good_names_map,
                 likes_map=likes_map,
@@ -2660,6 +2687,46 @@ class MarketCog(commands.Cog):
         if now >= target:
             target += datetime.timedelta(days=1)
         return int(target.timestamp())
+
+    @staticmethod
+    def _get_day_number(qualifying_players: List[Dict]) -> int:
+        """Determine current market day number from qualifying players.
+        
+        Qualifying players = online OR logged out since today's 6am GMT+8.
+        
+        Logic:
+        - If ANY qualifying player has 1 data point → Day 1 (new week)
+        - Otherwise use mode (most common count) among qualifying players with data
+        - Minimum 1 day
+        """
+        from collections import Counter
+        
+        data_counts = []
+        
+        for qp in qualifying_players:
+            hoard = qp.get('player_entry', {}).get('hoard_profiteer', {})
+            price_history = hoard.get('price_change_history', [])
+            if price_history:
+                data_counts.append(len(price_history))
+        
+        if not data_counts:
+            return 1
+        
+        # If any player has 1 data point, it's Day 1 (new week just started)
+        if 1 in data_counts:
+            return 1
+        
+        # Otherwise use mode (most common count)
+        count_freq = Counter(data_counts)
+        return count_freq.most_common(1)[0][0]
+
+    @staticmethod
+    def _get_countdown_timestamp(next_update_ts: int) -> str:
+        """Return Discord relative timestamp for countdown.
+        
+        Returns: "<t:1234567890:R>" which displays as "in 14 hours" / "in 23 minutes"
+        """
+        return f"<t:{next_update_ts}:R>"
 
     async def _fetch_market_likes(self, pid: str, hostnum: int = 10595) -> int:
         """Fetch market likes (topic 129) for a single player. Returns n_likes."""
@@ -2832,6 +2899,50 @@ class MarketCog(commands.Cog):
             inline=True
         )
         await interaction.response.send_message(embed=embed, ephemeral=True)
+
+    @market_group.command(name="goods", description="Show all mapped goods with their IDs and names")
+    async def market_goods(self, interaction: discord.Interaction):
+        """Show all goods that have been mapped with their IDs and names."""
+        await interaction.response.defer(ephemeral=True)
+        try:
+            async with aiosqlite.connect(self.db_path) as db:
+                db.row_factory = aiosqlite.Row
+                cursor = await db.execute(
+                    "SELECT good_id, name, approved_by, approved_at FROM good_names ORDER BY CAST(good_id AS INTEGER)"
+                )
+                rows = await cursor.fetchall()
+
+            if not rows:
+                await interaction.followup.send("📦 No goods have been mapped yet.", ephemeral=True)
+                return
+
+            lines = [f"# 📦 Mapped Goods ({len(rows)} total)\n"]
+            
+            for row in rows:
+                good_id = row['good_id']
+                name = row['name']
+                approved_by = row['approved_by']
+                approved_at = row['approved_at']
+                
+                lines.append(f"• **{name}** (ID: `{good_id}`)")
+                if approved_by:
+                    lines.append(f"  - Approved by <@{approved_by}> <t:{approved_at}:R>")
+            
+            lines.append(f"\n📊 Total: {len(rows)} mapped goods")
+            
+            inner = [
+                TextDisplay("\n".join(lines)),
+                Separator(spacing=discord.SeparatorSpacing.small),
+                TextDisplay("_This message is only visible to you._"),
+            ]
+            container = Container(*inner, accent_color=ACCENT_BLURPLE)
+            view = LayoutView(timeout=60)
+            view.add_item(container)
+            await interaction.followup.send(view=view, ephemeral=True)
+
+        except Exception as e:
+            logger.error(f"Market cog: goods command failed: {e}", exc_info=True)
+            await interaction.followup.send(f"❌ Error: `{e}`", ephemeral=True)
 
     @market_group.command(name="watchlist", description="Show/remove manually added players on the market watchlist")
     @admin_or_staff()
@@ -3034,8 +3145,8 @@ class MarketCog(commands.Cog):
 # View registration
 # ---------------------------------------------------------------------------
 from cogs.view_registry import register
-register(MarketReportView, cog=None, grouped_data={}, total_players=0, report_ts=0, next_update_ts=0, known_goods=set())
-register(NewWeekMarketView, cog=None, good_ids=[], good_names_map={}, known_goods=set(), report_ts=0)
+register(MarketReportView, cog=None, grouped_data={}, total_players=0, report_ts=0, next_update_ts=0, day_number=1, countdown_str="", known_goods=set())
+register(NewWeekMarketView, cog=None, good_ids=[], good_names_map={}, known_goods=set(), report_ts=0, day_number=1, countdown_str="")
 
 
 # ---------------------------------------------------------------------------
