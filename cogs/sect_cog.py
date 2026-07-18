@@ -603,10 +603,17 @@ class SectCog(commands.Cog):
                         old_rank = i
                         break
                 
+                # Calculate actual vote change from old snapshot if player existed before
+                old_votes = 0
+                for old_c in old_snapshot[:SNAPSHOT_LIMIT]:
+                    if old_c.get('pid') == pid:
+                        old_votes = old_c.get('votes', 0)
+                        break
+                vote_change = entry['votes'] - old_votes if old_votes else entry['votes']
                 new_entries.append({
                     **entry,
                     'previous_rank': old_rank,
-                    'vote_change': entry['votes']  # All votes are "new" for this position
+                    'vote_change': vote_change
                 })
         
         # Find dropped entries (in old top 10 but not in new top 10)
