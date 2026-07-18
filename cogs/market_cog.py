@@ -2505,7 +2505,7 @@ class MarketCog(commands.Cog):
                         (str(gid) for gid in average_price.keys()),
                         key=lambda x: int(x)
                     )[:3]
-                    logger.info(
+                    logger.debug(
                         f"Market cog: NEW WEEK detected via ONLINE player {qp['pid']} — "
                         f"goods: {new_week_good_ids}"
                     )
