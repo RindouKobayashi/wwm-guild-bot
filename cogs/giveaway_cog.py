@@ -1312,7 +1312,7 @@ class GiveawayCog(commands.Cog):
     # ── Command: giveaway start ─────────────────────────────────────────────
 
     @app_commands.command(name="giveaway", description="[ADMIN] Start a new giveaway")
-    @app_commands.default_permissions(manage_server=True)
+    @app_commands.default_permissions(manage_guild=True)
     @app_commands.guild_only()
     @app_commands.describe(
         prize="The prize to be won",
