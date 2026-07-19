@@ -139,6 +139,7 @@ async def _select_winners(
     chance_bound_only: bool,
     channel: discord.TextChannel,
     require_bound: bool = False,
+    deduplicate: bool = False,
 ) -> Tuple[list, str, list]:
     """
     Select winners using weighted random selection WITHOUT replacement.
@@ -146,6 +147,10 @@ async def _select_winners(
 
     If require_bound is True, participants who have since unbounded
     their account are filtered out before selecting winners.
+    
+    If deduplicate is True, multiple Discord users bound to the same game account
+    are merged so each unique game account only counts once. The first Discord user
+    encountered for each game account is used as the representative.
     """
     total = len(participants)
     if total == 0:
@@ -161,6 +166,24 @@ async def _select_winners(
         total = len(participants)
         if total == 0:
             return [], "No eligible participants (no bound accounts). 😢", []
+
+    # Deduplicate by game account if requested
+    if deduplicate:
+        seen_game_ids = {}
+        unique_participants = []
+        for uid in participants:
+            game_id = await _get_game_id_by_user(uid)
+            if game_id:
+                if game_id not in seen_game_ids:
+                    seen_game_ids[game_id] = uid
+                    unique_participants.append(uid)
+            else:
+                # Unbound users are kept as-is (they have no game ID to deduplicate)
+                unique_participants.append(uid)
+        participants = unique_participants
+        total = len(participants)
+        if total == 0:
+            return [], "No eligible participants after deduplication. 😢", []
 
     has_multiplier = multiplier is not None and multiplier > 1.0
     weights = []
@@ -602,7 +625,7 @@ class EndedGiveawayView(LayoutView):
         winners_list, mentions_text, _ = await _select_winners(
             participants, gw["winners"], gw["multiplier"],
             gw["chance_role_id"], gw["chance_for_bound_only"], interaction.channel,
-            require_bound=gw.get("require_bound", False),
+            require_bound=gw.get("require_bound", False), deduplicate=True,
         )
 
         if not winners_list:
@@ -1089,6 +1112,20 @@ class GiveawayParticipantsModal(discord.ui.Modal, title="Enter Giveaway ID"):
             username = str(interaction.guild.get_member(user_id) or f"User {user_id}")
             participants.append((user_id, username, character_uid))
 
+        # If require_bound is enabled, filter to only bound participants and deduplicate
+        if require_bound:
+            bound_participants = []
+            seen_game_ids = {}
+            for user_id, username, character_uid in participants:
+                if character_uid:
+                    if character_uid not in seen_game_ids:
+                        seen_game_ids[character_uid] = (user_id, username)
+                        bound_participants.append((user_id, username, character_uid))
+                else:
+                    # Unbound users are excluded when require_bound is True
+                    pass
+            participants = bound_participants
+
         if not participants:
             await interaction.followup.send(
                 f"📋 Giveaway **{title}** ({prize}) — Status: **{status}**\nNo participants yet.",
@@ -1176,7 +1213,7 @@ class GiveawayCog(commands.Cog):
 
                 _, winner_mentions_text, winner_ids = await _select_winners(
                     participants, winners_count, multiplier, chance_role_id, chance_bound_only,
-                    channel, require_bound=bool(require_bound),
+                    channel, require_bound=bool(require_bound), deduplicate=True,
                 )
 
                 ended_view = EndedGiveawayView(
@@ -1275,7 +1312,7 @@ class GiveawayCog(commands.Cog):
     # ── Command: giveaway start ─────────────────────────────────────────────
 
     @app_commands.command(name="giveaway", description="[ADMIN] Start a new giveaway")
-    @app_commands.default_permissions(administrator=True)
+    @app_commands.has_permissions(manage_server=True)
     @app_commands.guild_only()
     @app_commands.describe(
         prize="The prize to be won",
