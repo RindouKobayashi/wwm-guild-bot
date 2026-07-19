@@ -5,7 +5,7 @@ import random
 from discord.ext import commands
 from discord import app_commands, ButtonStyle
 from settings import logger, BASE_DIR, WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL, CLUB_ID
-from datetime import datetime
+from datetime import datetime, timezone
 from discord.ext import tasks
 from utility.wwm import get_player_info, get_club_hostnums
 from utility.api_constants import SCHOOL_ROLES
@@ -370,7 +370,7 @@ class GuildVerificationCog(commands.Cog):
                     name=f"🔁 Duplicate Character UIDs ({len(uid_duplicates)} found)",
                     value="\n".join([
                         f"**`{uid}`** — bound by {len(users)} Discord user(s):\n" +
-                        "\n".join([f"  • <@{u_id}> (`{uname}`) — bound <t:{int(datetime.fromisoformat(v_at).replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+                    "\n".join([f"  • <@{u_id}> (`{uname}`) — bound <t:{int(datetime.fromisoformat(v_at).replace(tzinfo=timezone.utc).timestamp())}:D>"
                                    for u_id, uname, v_at in sorted(users, key=lambda x: x[2])[:3]])
                         for uid, users in sorted(uid_duplicates.items(), key=lambda x: len(x[1]), reverse=True)[:10]
                     ])[:4000] or "None",
