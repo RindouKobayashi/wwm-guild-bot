@@ -310,10 +310,11 @@ class GuildVerificationCog(commands.Cog):
     @app_commands.command(name="list-bound-accounts", description="List all verified and bound accounts in the database")
     @app_commands.checks.has_permissions(administrator=True)
     @app_commands.describe(
-        show_values="Show live character values and stats (default: True)"
+        show_values="Show live character values and stats (default: False)",
+        show_duplicates="Show duplicate character bindings (default: True)"
     )
-    async def list_bound_accounts(self, interaction: discord.Interaction, show_values: bool = True):
-        """Admin command to list all bound/verified accounts"""
+    async def list_bound_accounts(self, interaction: discord.Interaction, show_values: bool = False, show_duplicates: bool = True):
+        """Admin command to list all bound/verified accounts and detect duplicates"""
         
         await interaction.response.defer(ephemeral=False)
         
@@ -322,7 +323,7 @@ class GuildVerificationCog(commands.Cog):
             total_count_row = await cursor.fetchone()
             total_count = total_count_row[0]
             
-            cursor = await conn.execute("SELECT user_id, username, character_uid, verified_at FROM verified_members ORDER BY verified_at DESC")
+            cursor = await conn.execute("SELECT user_id, username, character_uid, player_pid, verified_at FROM verified_members ORDER BY verified_at DESC")
             all_members = await cursor.fetchall()
         
         if total_count == 0:
@@ -334,7 +335,67 @@ class GuildVerificationCog(commands.Cog):
             await interaction.followup.send(embed=embed, ephemeral=False)
             return
         
-        pagination_view = BoundAccountsPaginationView(all_members, show_values, interaction.user.id, current_page=1)
+        # Check for duplicates if requested
+        from collections import defaultdict
+        uid_groups = defaultdict(list)
+        pid_groups = defaultdict(list)
+        
+        for row in all_members:
+            user_id, username, character_uid, player_pid, verified_at = row
+            uid_groups[character_uid].append((user_id, username, verified_at))
+            if player_pid:
+                pid_groups[player_pid].append((user_id, username, character_uid, verified_at))
+        
+        uid_duplicates = {uid: users for uid, users in uid_groups.items() if len(users) > 1}
+        pid_duplicates = {pid: users for pid, users in pid_groups.items() if len(users) > 1}
+        
+        # Build duplicate report embed if duplicates found
+        if show_duplicates and (uid_duplicates or pid_duplicates):
+            total_duplicate_users = set()
+            for users in uid_duplicates.values():
+                for user_id, username, verified_at in users:
+                    total_duplicate_users.add(user_id)
+            for users in pid_duplicates.values():
+                for user_id, username, character_uid, verified_at in users:
+                    total_duplicate_users.add(user_id)
+            
+            dup_embed = discord.Embed(
+                title="⚠️ Duplicate Binding Detection",
+                description=f"Found **{len(total_duplicate_users)}** user(s) with duplicate character bindings",
+                color=discord.Color.orange()
+            )
+            
+            if uid_duplicates:
+                dup_embed.add_field(
+                    name=f"🔁 Duplicate Character UIDs ({len(uid_duplicates)} found)",
+                    value="\n".join([
+                        f"**`{uid}`** — bound by {len(users)} Discord user(s):\n" +
+                        "\n".join([f"  • <@{u_id}> (`{uname}`) — bound <t:{int(datetime.fromisoformat(v_at).replace(tzinfo=datetime.timezone.utc).timestamp())}:D>"
+                                   for u_id, uname, v_at in sorted(users, key=lambda x: x[2])[:3]])
+                        for uid, users in sorted(uid_duplicates.items(), key=lambda x: len(x[1]), reverse=True)[:10]
+                    ])[:4000] or "None",
+                    inline=False
+                )
+            
+            if pid_duplicates:
+                dup_embed.add_field(
+                    name=f"🔁 Duplicate Player PIDs ({len(pid_duplicates)} found)",
+                    value="\n".join([
+                        f"**PID `{pid}`** — bound by {len(users)} Discord user(s):\n" +
+                        "\n".join([f"  • <@{u_id}> (`{uname}`) — UID `{c_uid}`"
+                                   for u_id, uname, c_uid, v_at in sorted(users, key=lambda x: x[3])[:3]])
+                        for pid, users in sorted(pid_duplicates.items(), key=lambda x: len(x[1]), reverse=True)[:10]
+                    ])[:4000] or "None",
+                    inline=False
+                )
+            
+            dup_embed.set_footer(text="Duplicate bindings may indicate account sharing or unauthorized binding")
+            await interaction.followup.send(embed=dup_embed, ephemeral=False)
+        
+        # Send paginated list
+        # Strip player_pid (index 3) before passing to view for existing pagination logic
+        stripped_members = [(row[0], row[1], row[2], row[4]) for row in all_members]
+        pagination_view = BoundAccountsPaginationView(stripped_members, show_values, interaction.user.id, current_page=1)
         embed = await pagination_view.generate_embed()
         
         message = await interaction.followup.send(embed=embed, view=pagination_view, ephemeral=False)
