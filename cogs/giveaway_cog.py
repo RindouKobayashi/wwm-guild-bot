@@ -853,7 +853,190 @@ class GiveawayHistoryView(discord.ui.View):
             pass
 
 
-# ─── GIVEAWAY PARTICIPANTS MODAL ────────────────────────────────────────────
+# ─── GIVEAWAY PARTICIPANTS VIEW ─────────────────────────────────────────────
+
+class GiveawayParticipantsView(discord.ui.View):
+    """Paginated view of giveaway participants with duplicate detection and removal."""
+
+    def __init__(self, author_id: int, gw_id: int, gw_title: str, participants: list, require_bound: bool = False):
+        super().__init__(timeout=180)
+        self.author_id = author_id
+        self.gw_id = gw_id
+        self.gw_title = gw_title
+        self.all_participants = participants  # list of (user_id, username, character_uid or None)
+        self.require_bound = require_bound
+        self.current_page = 1
+        self.items_per_page = 10
+        self.total_pages = max(1, (len(participants) + self.items_per_page - 1) // self.items_per_page)
+        self.update_buttons()
+
+    def update_buttons(self):
+        self.prev_page.disabled = self.current_page <= 1
+        self.next_page.disabled = self.current_page >= self.total_pages
+
+    def _detect_duplicates(self):
+        """Detect duplicate game accounts bound to multiple Discord users."""
+        uid_to_users = {}
+        for user_id, username, character_uid in self.all_participants:
+            if character_uid:
+                if character_uid not in uid_to_users:
+                    uid_to_users[character_uid] = []
+                uid_to_users[character_uid].append((user_id, username))
+        
+        duplicates = {uid: users for uid, users in uid_to_users.items() if len(users) > 1}
+        return duplicates
+
+    def generate_embed(self):
+        start = (self.current_page - 1) * self.items_per_page
+        end = start + self.items_per_page
+        page_participants = self.all_participants[start:end]
+
+        embed = discord.Embed(
+            title=f"📋 Participants: {self.gw_title} (ID: {self.gw_id})",
+            description=f"**Total:** {len(self.all_participants)} | Page {self.current_page}/{self.total_pages}",
+            color=discord.Color.blurple(),
+        )
+
+        # Duplicate detection section
+        duplicates = self._detect_duplicates()
+        if duplicates:
+            dup_text = []
+            for uid, users in sorted(duplicates.items(), key=lambda x: len(x[1]), reverse=True)[:5]:
+                dup_text.append(f"**UID `{uid}`** — {len(users)} Discord user(s):\n")
+                for user_id, username in users:
+                    dup_text.append(f"  • <@{user_id}> (`{username}`)\n")
+            
+            embed.add_field(
+                name="⚠️ Duplicate Game Accounts Detected",
+                value="".join(dup_text)[:1024],
+                inline=False
+            )
+
+        # Participants list
+        if page_participants:
+            participant_lines = []
+            for idx, (user_id, username, character_uid) in enumerate(page_participants, start=start + 1):
+                bound_status = "✅" if character_uid else "❌"
+                uid_display = f"`{character_uid}`" if character_uid else "Not bound"
+                participant_lines.append(
+                    f"**#{idx}** <@{user_id}> (`{username}`)\n"
+                    f"   └ {bound_status} Game UID: {uid_display}"
+                )
+            
+            embed.add_field(
+                name="Participants",
+                value="\n".join(participant_lines)[:1024],
+                inline=False
+            )
+        else:
+            embed.add_field(name="Participants", value="No participants on this page.", inline=False)
+
+        embed.set_footer(text=f"Page {self.current_page}/{self.total_pages} • Click 🗑️ to remove an entry")
+        return embed
+
+    @discord.ui.button(label="← Prev", style=discord.ButtonStyle.secondary)
+    async def prev_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.author_id:
+            return await interaction.response.send_message("Not your menu.", ephemeral=True)
+        self.current_page -= 1
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.generate_embed(), view=self)
+
+    @discord.ui.button(label="🗑️ Remove Entry", style=discord.ButtonStyle.danger)
+    async def remove_entry(self, interaction: discord.Interaction, button: discord.ui.Button):
+        """Open a modal to select and remove a participant."""
+        if interaction.user.id != self.author_id:
+            return await interaction.response.send_message("Not your menu.", ephemeral=True)
+        
+        # Build options for the current page
+        start = (self.current_page - 1) * self.items_per_page
+        end = start + self.items_per_page
+        page_participants = self.all_participants[start:end]
+        
+        if not page_participants:
+            return await interaction.response.send_message("No participants to remove on this page.", ephemeral=True)
+        
+        # Send modal to input user ID to remove
+        await interaction.response.send_modal(RemoveEntryModal(self))
+
+    @discord.ui.button(label="Next →", style=discord.ButtonStyle.secondary)
+    async def next_page(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id != self.author_id:
+            return await interaction.response.send_message("Not your menu.", ephemeral=True)
+        self.current_page += 1
+        self.update_buttons()
+        await interaction.response.edit_message(embed=self.generate_embed(), view=self)
+
+    async def remove_participant(self, user_id: int):
+        """Remove a participant from the giveaway."""
+        async with aiosqlite.connect(DB_PATH) as db:
+            await db.execute(
+                "DELETE FROM entries WHERE giveaway_id = ? AND user_id = ?",
+                (self.gw_id, user_id)
+            )
+            await db.commit()
+        
+        # Update local list
+        self.all_participants = [(uid, uname, cuid) for uid, uname, cuid in self.all_participants if uid != user_id]
+        
+        # Recalculate total pages
+        self.total_pages = max(1, (len(self.all_participants) + self.items_per_page - 1) // self.items_per_page)
+        if self.current_page > self.total_pages:
+            self.current_page = self.total_pages
+        self.update_buttons()
+
+
+class RemoveEntryModal(discord.ui.Modal, title="Remove Participant"):
+    """Modal to remove a participant by user ID."""
+
+    user_id_input = discord.ui.TextInput(
+        label="User ID to remove",
+        placeholder="Enter the Discord user ID to remove",
+        style=discord.TextStyle.short,
+        required=True,
+    )
+
+    def __init__(self, participants_view: GiveawayParticipantsView):
+        super().__init__()
+        self.participants_view = participants_view
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        
+        try:
+            target_user_id = int(self.user_id_input.value.strip())
+        except ValueError:
+            await interaction.followup.send("❌ Invalid user ID format.", ephemeral=True)
+            return
+
+        # Check if user is in participants
+        user_ids = [uid for uid, _, _ in self.participants_view.all_participants]
+        if target_user_id not in user_ids:
+            await interaction.followup.send(f"❌ User ID `{target_user_id}` is not in this giveaway.", ephemeral=True)
+            return
+
+        # Remove the participant
+        await self.participants_view.remove_participant(target_user_id)
+        
+        # Get username for confirmation
+        username = next((uname for uid, uname, _ in self.participants_view.all_participants if uid == target_user_id), "Unknown")
+        
+        await interaction.followup.send(
+            f"✅ Removed **{username}** (`{target_user_id}`) from the giveaway.",
+            ephemeral=True
+        )
+        
+        # Edit the original message with updated view
+        try:
+            await interaction.edit_original_response(
+                embed=self.participants_view.generate_embed(),
+                view=self.participants_view
+            )
+        except Exception:
+            pass
+
+
+# ─── GIVEAWAY PARTICIPANTS MODAL (Legacy) ───────────────────────────────────
 
 class GiveawayParticipantsModal(discord.ui.Modal, title="Enter Giveaway ID"):
     """Modal to input a giveaway ID for viewing participants."""
@@ -878,7 +1061,7 @@ class GiveawayParticipantsModal(discord.ui.Modal, title="Enter Giveaway ID"):
 
         async with aiosqlite.connect(DB_PATH) as db:
             async with db.execute(
-                "SELECT title, prize, status, guild_id FROM giveaways WHERE id = ?",
+                "SELECT title, prize, status, guild_id, require_bound FROM giveaways WHERE id = ?",
                 (gw_id,),
             ) as cursor:
                 row = await cursor.fetchone()
@@ -887,12 +1070,25 @@ class GiveawayParticipantsModal(discord.ui.Modal, title="Enter Giveaway ID"):
             await interaction.followup.send(f"❌ Giveaway with ID `{gw_id}` not found.", ephemeral=True)
             return
 
-        title, prize, status, guild_id = row
+        title, prize, status, guild_id, require_bound = row
         if guild_id and guild_id != interaction.guild_id:
             await interaction.followup.send("❌ That giveaway belongs to a different server.", ephemeral=True)
             return
 
-        participants = await _get_participant_pids(gw_id)
+        # Get participants with bound info
+        async with aiosqlite.connect(DB_PATH) as db:
+            async with db.execute(
+                "SELECT user_id FROM entries WHERE giveaway_id = ?",
+                (gw_id,),
+            ) as cursor:
+                participant_rows = await cursor.fetchall()
+
+        participants = []
+        for (user_id,) in participant_rows:
+            character_uid = await _get_game_id_by_user(user_id)
+            username = str(interaction.guild.get_member(user_id) or f"User {user_id}")
+            participants.append((user_id, username, character_uid))
+
         if not participants:
             await interaction.followup.send(
                 f"📋 Giveaway **{title}** ({prize}) — Status: **{status}**\nNo participants yet.",
@@ -900,18 +1096,17 @@ class GiveawayParticipantsModal(discord.ui.Modal, title="Enter Giveaway ID"):
             )
             return
 
-        mentions = ", ".join(f"<@{uid}>" for uid in participants[:50])
-        total = len(participants)
-        embed = discord.Embed(
-            title=f"📋 Participants for: {title}",
-            description=f"**Prize:** {prize}\n**Status:** {status}\n**Total:** {total}",
-            color=discord.Color.blurple(),
+        # Create participants view
+        view = GiveawayParticipantsView(
+            author_id=interaction.user.id,
+            gw_id=gw_id,
+            gw_title=title,
+            participants=participants,
+            require_bound=bool(require_bound)
         )
-        embed.add_field(name="Participants", value=mentions, inline=False)
-        if total > 50:
-            embed.set_footer(text=f"Showing first 50 of {total} participants")
-
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        embed = view.generate_embed()
+        msg = await interaction.followup.send(embed=embed, view=view, ephemeral=True)
+        view.message = msg
 
 
 # ─── COG ─────────────────────────────────────────────────────────────────────
