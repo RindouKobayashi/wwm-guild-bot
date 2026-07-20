@@ -837,29 +837,16 @@ class SectCog(commands.Cog):
     async def before_sect_hourly(self):
         await self.bot.wait_until_ready()
 
-    @tasks.loop(time=datetime.time(hour=10, minute=0, tzinfo=GMT8_TZ), count=1)
+    @tasks.loop(minutes=30)
     async def sect_weekly_check(self):
-        """Check for new election sessions every Monday at 10:00 GMT+8.
-        Runs once per week using the loop's built-in scheduling.
-        """
-        now = datetime.datetime.now(GMT8_TZ)
-        # Only run on Monday
-        if now.weekday() == 0:
-            logger.info("Running weekly new election check...")
-            await self._check_new_elections()
-        else:
-            logger.debug("Skipping weekly check (not Monday)")
+        """Check for new election sessions every 30 minutes."""
+        logger.info("Running new election check (every 30 mins)...")
+        await self._check_new_elections()
 
     @sect_weekly_check.before_loop
     async def before_sect_weekly_check(self):
         await self.bot.wait_until_ready()
-        # Wait until next Monday 10:00 GMT+8 before first run
-        now = datetime.datetime.now(GMT8_TZ)
-        next_monday = now + datetime.timedelta(days=(7 - now.weekday()) % 7 or 7)
-        next_monday = next_monday.replace(hour=10, minute=0, second=0, microsecond=0)
-        wait_seconds = (next_monday - now).total_seconds()
-        logger.info(f"Sect weekly check will run in {wait_seconds / 3600:.1f} hours (next Monday 10:00 GMT+8)")
-        await asyncio.sleep(wait_seconds)
+        logger.info("Sect election check will run every 30 minutes")
 
     # ── Commands ──────────────────────────────────────────────────────
     
