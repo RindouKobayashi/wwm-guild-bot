@@ -2,6 +2,8 @@ import discord
 import datetime
 import os
 import tempfile
+import time
+import asyncio
 from discord import app_commands
 from discord.ext import commands, tasks
 from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow, Thumbnail, Section, MediaGallery, Button, Select
@@ -88,6 +90,15 @@ class OnlinePlayersResultView(LayoutView):
         
         container = Container(*inner_items, accent_color=0x2ECC71)
         self.add_item(container)
+
+    async def on_timeout(self):
+        for child in self.children:
+            if isinstance(child, Container):
+                for sub in child.children:
+                    if isinstance(sub, ActionRow):
+                        for item in sub.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
 
 
 class GuildStatusBoard(LayoutView):
@@ -845,9 +856,11 @@ class PlayerProfileView(LayoutView):
         # Combat
         arena_1v1_rank: str = None,
         arena_1v1_max_winning_streak: int = 0,
+        arena_1v1_total_num: int = 0,
         arena_3v3_rank: str = None,
-        pvp_score: int = 0,
+        arena_3v3_total_num: int = 0,
         group_strategy: int = 0,
+        group_strategy_total_num: int = 0,
         assist_points: int = 0,
         # Guild
         guild_name: str = None,
@@ -912,9 +925,11 @@ class PlayerProfileView(LayoutView):
         self.fashion_score = fashion_score
         self.arena_1v1_rank = arena_1v1_rank
         self.arena_1v1_max_winning_streak = arena_1v1_max_winning_streak
+        self.arena_1v1_total_num = arena_1v1_total_num
         self.arena_3v3_rank = arena_3v3_rank
-        self.pvp_score = pvp_score
+        self.arena_3v3_total_num = arena_3v3_total_num
         self.group_strategy = group_strategy
+        self.group_strategy_total_num = group_strategy_total_num
         self.assist_points = assist_points
         self.guild_name = guild_name
         self.is_our_guild = is_our_guild
@@ -1119,14 +1134,16 @@ class PlayerProfileView(LayoutView):
             lines.append(f"⚔️ **1v1 Arena Rank:** {self.arena_1v1_rank}")
         if self.arena_1v1_max_winning_streak:
             lines.append(f"⚔️ **1v1 Max Winning Streak:** {self.arena_1v1_max_winning_streak}")
+        if self.arena_1v1_total_num:
+            lines.append(f"⚔️ **1v1 Total Battles:** {self.arena_1v1_total_num}")
         if self.arena_3v3_rank:
             lines.append(f"⚔️ **3v3 Arena Rank:** {self.arena_3v3_rank}")
-        if self.pvp_score:
-            lines.append(f"🏆 **PvP Score:** {int(self.pvp_score):,}")
+        if self.arena_3v3_total_num:
+            lines.append(f"⚔️ **3v3 Total Battles:** {self.arena_3v3_total_num}")
         if self.group_strategy:
             lines.append(f"📋 **Group Strategy:** {self.group_strategy}")
-        if self.assist_points:
-            lines.append(f"🤝 **Assist Points:** {int(self.assist_points):,}")
+        if self.group_strategy_total_num:
+            lines.append(f"📋 **Group Strategy Battles:** {self.group_strategy_total_num}")
         if not lines:
             lines.append("*No combat data available*")
         
@@ -1173,21 +1190,24 @@ class PlayerProfileView(LayoutView):
     
     async def on_timeout(self):
         """Disable all buttons when the view times out, and push the disabled view to the original message."""
+        # Rebuild the overview with all buttons disabled for a clean disabled state
+        self._build_overview()
+        # Mark every action-row button as disabled in the rebuilt layout
         for child in self.children:
-            if isinstance(child, ActionRow):
-                for item in child.children:
-                    if isinstance(item, discord.ui.Button):
-                        item.disabled = True
-            elif isinstance(child, Container):
+            if isinstance(child, Container):
                 for sub in child.children:
                     if isinstance(sub, ActionRow):
                         for item in sub.children:
                             if isinstance(item, discord.ui.Button):
                                 item.disabled = True
-        self.stop()
-        
+                    elif isinstance(sub, discord.ui.Button):
+                        sub.disabled = True
+            elif isinstance(child, ActionRow):
+                for item in child.children:
+                    if isinstance(item, discord.ui.Button):
+                        item.disabled = True
+
         # Best-effort: edit the original message so the disabled state is visible to users.
-        # We only attempt this if we still have a cached original_message reference.
         try:
             original = getattr(self, "_original_message", None)
             if original is not None:
@@ -1196,6 +1216,8 @@ class PlayerProfileView(LayoutView):
         except Exception:
             # Message may have been deleted or we may not own it — silently ignore.
             pass
+
+        self.stop()
     
     async def _handle_set_avatar(self, interaction: discord.Interaction):
         """Open the avatar picker (CategoryPickerView) so the user can map an avatar for this player."""
@@ -1517,6 +1539,15 @@ class Inactive(LayoutView):
         container = Container(*inner_items, accent_color=ORANGE)
         self.add_item(container)
 
+    async def on_timeout(self):
+        for child in self.children:
+            if isinstance(child, Container):
+                for sub in child.children:
+                    if isinstance(sub, ActionRow):
+                        for item in sub.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
+
     # ── button callbacks ─────────────────────────────────────────────
 
     async def _handle_last_week(self, interaction: discord.Interaction):
@@ -1754,10 +1785,13 @@ class WWMCog(commands.Cog):
         Smart routing: if exactly 10 digits → number ID API, else → nickname API.
         Returns (pid, hostnum, player_data_dict) or (None, None, None).
         """
+        t0 = time.time()
         # Smart routing based on format
         if identifier.isdigit() and len(identifier) == 10:
             # Exactly 10 digits → treat as Number ID
             player_data = await get_player_info(identifier, fields=["base"], force_search=True)
+            t1 = time.time()
+            logger.debug(f"[timing] resolve_number_id_search: {t1 - t0:.3f}s")
             if player_data and player_data.get('result') and player_data['result'].get('id'):
                 result = player_data['result']
                 pid = result.get('id')
@@ -1767,6 +1801,8 @@ class WWMCog(commands.Cog):
 
         # Otherwise → treat as nickname
         nickname_data = await find_people_by_nickname(identifier, force_search=True)
+        t1 = time.time()
+        logger.debug(f"[timing] resolve_nickname_search: {t1 - t0:.3f}s")
         if nickname_data and nickname_data.get('result'):
             result = nickname_data['result']
             pid = result.get('id')
@@ -1774,6 +1810,8 @@ class WWMCog(commands.Cog):
             logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via nickname")
             return pid, hostnum, result
 
+        t1 = time.time()
+        logger.debug(f"[timing] resolve_total_failed: {t1 - t0:.3f}s")
         logger.warning(f"Could not resolve identifier '{identifier}'")
         return None, None, None
 
@@ -1786,8 +1824,11 @@ class WWMCog(commands.Cog):
         which controls Discord mention display. Access to stats is controlled by the command
         user's verification status in the calling command.
         """
+        t0 = time.time()
         # Fetch full player data
         raw_data = await fetch_player_data_by_pid(player_pid, hostnum=player_hostnum)
+        t1 = time.time()
+        logger.debug(f"[timing] fetch_player_data_by_pid: {t1 - t0:.3f}s")
         if not raw_data:
             raise ValueError("Failed to fetch player data from API")
 
@@ -1808,25 +1849,115 @@ class WWMCog(commands.Cog):
         body_type = base_data.get('body_type')
         homeworld_data = data.get('homeworld_data', {})
         achievement_data = data.get('achievement', {})
+        club_data = data.get('club', {})
+        fashion_data = data.get('fashion', {})
 
         # Check if the VIEWED player (not the command user) has a verified Discord account
         # This controls Discord mention display and fashion cover image availability
         viewed_player_verified = False
         discord_user_id = None
+        t_db1 = time.time()
         async with aiosqlite.connect(DB_PATH) as conn:
             cursor = await conn.execute("SELECT user_id FROM verified_members WHERE player_pid = ?", (player_pid,))
             row = await cursor.fetchone()
             viewed_player_verified = row is not None
             discord_user_id = row[0] if row else None
+        logger.debug(f"[timing] db_lookup_viewed_player_verified: {time.time() - t_db1:.3f}s")
         
         # Check if the COMMAND USER (not the viewed player) is verified
         # This controls what stats the command user can see
         command_user_verified = False
+        t_db2 = time.time()
         if interaction:
             async with aiosqlite.connect(DB_PATH) as conn2:
                 cursor2 = await conn2.execute("SELECT user_id FROM verified_members WHERE user_id = ?", (interaction.user.id,))
                 row2 = await cursor2.fetchone()
                 command_user_verified = row2 is not None
+        logger.debug(f"[timing] db_lookup_command_user_verified: {time.time() - t_db2:.3f}s")
+        
+        # --- Parallelize remaining independent fetches ---
+        async def _fetch_likes():
+            t0 = time.time()
+            likes_count = 0
+            likes_data_raw = {}
+            try:
+                likes_data = await get_topics_likes(target_uuid=player_pid, target_hostnum=player_hostnum)
+                if likes_data and 'result' in likes_data:
+                    likes_data_res = likes_data['result']
+                    likes_count = sum(topic.get('n_likes', 0) for topic in likes_data_res.values())
+                    likes_data_raw = likes_data_res
+            except Exception:
+                pass
+            logger.debug(f"[timing] get_topics_likes: {time.time() - t0:.3f}s")
+            return likes_count, likes_data_raw
+
+        async def _fetch_fashion_score():
+            t0 = time.time()
+            fashion_score = fashion_data.get('score', 0)
+            logger.debug(f"[timing] get_fashion_score: {time.time() - t0:.3f}s")
+            return fashion_score
+
+        async def _fetch_homeland():
+            t0 = time.time()
+            homeland_info = None
+            home_info = homeworld_data.get('home_info', {}) if isinstance(homeworld_data, dict) else {}
+            home_id = next(iter(home_info.keys()), None)
+            try:
+                homeland_data = await get_homeland_info(hostnum2pids={player_hostnum: [home_id]})
+                if homeland_data and 'result' in homeland_data:
+                    result = homeland_data['result']
+                    if home_id in result:
+                        homeland_info = result[home_id]
+                    elif isinstance(result, dict) and 'homeland_base' in result:
+                        homeland_info = result
+            except Exception as homeland_err:
+                logger.warning(f"Failed to get homeland info: {homeland_err}")
+            logger.debug(f"[timing] get_homeland_info: {time.time() - t0:.3f}s")
+            return homeland_info
+
+        async def _fetch_cover_image():
+            t0 = time.time()
+            cover_img = None
+            cover_img_path = None
+            if viewed_player_verified or command_user_verified:
+                try:
+                    fashion_data = await get_fashion_plan(player_pid, hostnum=player_hostnum)
+                    logger.debug(f"[timing] get_fashion_plan: {time.time() - t0:.3f}s")
+                    if fashion_data and fashion_data.get('code') == 0 and 'result' in fashion_data:
+                        cover_img = fashion_data['result'].get('cover_img')
+                        if cover_img:
+                            try:
+                                async with aiohttp.ClientSession() as session:
+                                    async with session.get(cover_img, timeout=aiohttp.ClientTimeout(total=15)) as resp:
+                                        if resp.status == 200:
+                                            data_bytes = await resp.read()
+                                            suffix = ".png"
+                                            ct = resp.headers.get('Content-Type', '')
+                                            if 'webp' in ct:
+                                                suffix = ".webp"
+                                            elif 'jpg' in ct or 'jpeg' in ct:
+                                                suffix = ".jpg"
+                                            temp_dir = BASE_DIR / "data" / "temp"
+                                            temp_dir.mkdir(parents=True, exist_ok=True)
+                                            fd, tmp_path = tempfile.mkstemp(suffix=suffix, prefix="wwm_cover_", dir=str(temp_dir))
+                                            with os.fdopen(fd, 'wb') as f:
+                                                f.write(data_bytes)
+                                            cover_img_path = tmp_path
+                            except Exception as dl_err:
+                                logger.warning(f"Failed to download cover image for {player_pid}: {dl_err}")
+                except Exception as fashion_err:
+                    logger.warning(f"Failed to get fashion cover image: {str(fashion_err)}")
+            logger.debug(f"[timing] cover_image_total: {time.time() - t0:.3f}s")
+            return cover_img, cover_img_path
+
+        likes_result, fashion_score, homeland_info, cover_result = await asyncio.gather(
+            _fetch_likes(),
+            _fetch_fashion_score(),
+            _fetch_homeland(),
+            _fetch_cover_image(),
+        )
+        likes_count, likes_data_raw = likes_result
+        cover_img, cover_img_path = cover_result
 
         # Sect info
         school_emoji = ""
@@ -1858,30 +1989,30 @@ class WWMCog(commands.Cog):
         # Combat
         arena_1v1_rank = None
         arena_1v1_max_winning_streak = 0
+        arena_1v1_total_num = 0
         arena_3v3_rank = None
-        pvp_score = 0
+        arena_3v3_total_num = 0
         group_strategy = 0
+        group_strategy_total_num = 0
         assist_points = 0
 
         lunjian = data.get('lunjian', {})
         if lunjian and 'grade' in lunjian:
             arena_1v1_rank = PlayerProfileView._format_rank(lunjian['grade'], lunjian.get('small_grade', 0))
             arena_1v1_max_winning_streak = lunjian.get('max_winning_streak', 0)
+            arena_1v1_total_num = lunjian.get('total_num', 0)
         lunjian3v3 = data.get('lunjian3v3_prop', {})
         if lunjian3v3 and 'grade' in lunjian3v3:
             arena_3v3_rank = PlayerProfileView._format_rank(lunjian3v3['grade'], lunjian3v3.get('small_grade', 0))
+            arena_3v3_total_num = lunjian3v3.get('total_num', 0)
         fight_shoulder = data.get('fight_shoulder', {})
         if fight_shoulder and 'score' in fight_shoulder:
             group_strategy = fight_shoulder['score']
+            group_strategy_total_num = fight_shoulder.get('total_num', 0)
         coop_score = data.get('coop_score', {})
         if coop_score and 'score' in coop_score:
             assist_points = coop_score['score']
         gameplay = data.get('gameplay_trail', {})
-        played = gameplay.get('played', [])
-        for match in played:
-            if 'score' in match:
-                pvp_score = match['score']
-                break
 
         # Kongfu data
         kongfu_main = None
@@ -1914,21 +2045,15 @@ class WWMCog(commands.Cog):
         guild_fame = 0
         guild_announcement = None
         
-        if player_pid:
+        t_guild = time.time()
+        if club_data:
             try:
-                club_data = await get_club_hostnums(player_pid)
-                player_club_id = None
-                club_hostnum = 10103
-                
-                if club_data:
-                    result_data = club_data.get('result', {})
-                    player_club_data = result_data.get(player_pid, {})
-                    club_info = player_club_data.get('club', {})
-                    player_club_id = club_info.get('club_id')
-                    club_hostnum = club_info.get('hostnum', 10103)
+                player_club_id = club_data.get('club_id')
+                club_hostnum = club_data.get('hostnum', 10103)
                 
                 if player_club_id:
                     guild_full_data = await get_full_guild_info(player_club_id, hostnum=club_hostnum)
+                    logger.debug(f"[timing] get_full_guild_info: {time.time() - t_guild:.3f}s")
                     
                     if guild_full_data:
                         guild_result = guild_full_data.get('result', {})
@@ -1958,7 +2083,9 @@ class WWMCog(commands.Cog):
                             pids_to_fetch.append(vice_leader_pid)
                         
                         if pids_to_fetch:
+                            t_lead = time.time()
                             bulk_lookup = await get_bulk_players_info(pids_to_fetch, fields=["base"])
+                            logger.debug(f"[timing] get_bulk_players_info_leadership: {time.time() - t_lead:.3f}s")
                             if bulk_lookup and bulk_lookup.get('code') == 0:
                                 players = bulk_lookup.get('result', {})
                                 if leader_pid and leader_pid in players:
@@ -1971,6 +2098,7 @@ class WWMCog(commands.Cog):
                 
             except Exception as club_err:
                 logger.warning(f"Failed to get club info: {str(club_err)}")
+        logger.debug(f"[timing] fetch_guild_info_total: {time.time() - t_guild:.3f}s")
 
         # Birthday - always fetch (public)
         birthday_str = None
@@ -1988,30 +2116,6 @@ class WWMCog(commands.Cog):
         jieyi = data.get('jieyi', {})
         jieyi_name = jieyi.get('jieyi_name')
         jieyi_text = jieyi.get('jieyi_text')
-
-        # Likes - always fetch (public)
-        likes_count = 0
-        likes_data_raw = {}
-        try:
-            likes_data = await get_topics_likes(target_uuid=player_pid, target_hostnum=player_hostnum)
-            if likes_data and 'result' in likes_data:
-                likes_data_res = likes_data['result']
-                likes_count = sum(topic.get('n_likes', 0) for topic in likes_data_res.values())
-                likes_data_raw = likes_data_res
-        except Exception:
-            pass
-
-        # Fashion score - always fetch (public)
-        fashion_score = 0
-        try:
-            fashion_score_data = await get_fashion_score(player_pid, hostnum=player_hostnum)
-            if fashion_score_data and 'result' in fashion_score_data:
-                score = fashion_score_data['result']
-                if isinstance(score, dict):
-                    score = score.get('score', 0)
-                fashion_score = score
-        except Exception:
-            pass
 
         # Head avatar
         head_avatar_path = None
@@ -2061,56 +2165,10 @@ class WWMCog(commands.Cog):
         except Exception as head_err:
             logger.warning(f"Failed to resolve head avatar: {head_err}")
 
-        # Fashion cover image - available when viewed player is verified OR command user is verified
-        cover_img = None
-        cover_img_path = None
-        if viewed_player_verified or command_user_verified:
-            try:
-                fashion_data = await get_fashion_plan(player_pid, hostnum=player_hostnum)
-                if fashion_data and fashion_data.get('code') == 0 and 'result' in fashion_data:
-                    cover_img = fashion_data['result'].get('cover_img')
-                    if cover_img:
-                        try:
-                            async with aiohttp.ClientSession() as session:
-                                async with session.get(cover_img, timeout=aiohttp.ClientTimeout(total=15)) as resp:
-                                    if resp.status == 200:
-                                        data_bytes = await resp.read()
-                                        suffix = ".png"
-                                        ct = resp.headers.get('Content-Type', '')
-                                        if 'webp' in ct:
-                                            suffix = ".webp"
-                                        elif 'jpg' in ct or 'jpeg' in ct:
-                                            suffix = ".jpg"
-                                        temp_dir = BASE_DIR / "data" / "temp"
-                                        temp_dir.mkdir(parents=True, exist_ok=True)
-                                        fd, tmp_path = tempfile.mkstemp(suffix=suffix, prefix="wwm_cover_", dir=str(temp_dir))
-                                        with os.fdopen(fd, 'wb') as f:
-                                            f.write(data_bytes)
-                                        cover_img_path = tmp_path
-                        except Exception as dl_err:
-                            logger.warning(f"Failed to download cover image for {player_pid}: {dl_err}")
-            except Exception as fashion_err:
-                logger.warning(f"Failed to get fashion cover image: {str(fashion_err)}")
-
         # Fetch player homestead info
-        homeland_info = None
-        home_info = homeworld_data.get('home_info', {}) if isinstance(homeworld_data, dict) else {}
-        home_id = next(iter(home_info.keys()), None)
+        # Note: homeland_info is now fetched in parallel above
 
-        try:
-            homeland_data = await get_homeland_info(hostnum2pids={player_hostnum: [home_id]})
-            if homeland_data and 'result' in homeland_data:
-                result = homeland_data['result']
-                # API returns data keyed by PID when multiple PIDs are requested
-                # Extract the specific player's data
-                if home_id in result:
-                    homeland_info = result[home_id]
-                # If result is already the player data (direct response), use it
-                elif isinstance(result, dict) and 'homeland_base' in result:
-                    homeland_info = result
-        except Exception as homeland_err:
-            logger.warning(f"Failed to get homeland info: {homeland_err}")
-
+        logger.debug(f"[timing] _fetch_player_profile_data.total: {time.time() - t0:.3f}s")
         return {
             'player_pid': player_pid,
             'player_nickname': player_nickname,
@@ -2143,9 +2201,11 @@ class WWMCog(commands.Cog):
             'fashion_score': fashion_score,
             'arena_1v1_rank': arena_1v1_rank,
             'arena_1v1_max_winning_streak': arena_1v1_max_winning_streak,
+            'arena_1v1_total_num': arena_1v1_total_num,
             'arena_3v3_rank': arena_3v3_rank,
-            'pvp_score': pvp_score,
+            'arena_3v3_total_num': arena_3v3_total_num,
             'group_strategy': group_strategy,
+            'group_strategy_total_num': group_strategy_total_num,
             'assist_points': assist_points,
             'guild_name': guild_name,
             'is_our_guild': is_our_guild,
@@ -2175,17 +2235,23 @@ class WWMCog(commands.Cog):
         Complete player lookup workflow: resolve identifier, fetch data, build view.
         Returns (PlayerProfileView, files_list) or (None, None) on failure.
         """
+        t0 = time.time()
         # Resolve identifier to PID
         pid, hostnum, _ = await self._resolve_player_identifier(identifier)
+        t1 = time.time()
+        logger.debug(f"[timing] _build_player_profile_view.resolve: {t1 - t0:.3f}s")
         if not pid:
             return None, None
 
         # Fetch all player data
+        t0 = time.time()
         try:
             profile_data = await self._fetch_player_profile_data(pid, hostnum, interaction)
         except Exception as e:
             logger.error(f"Failed to fetch player profile data: {e}")
             return None, None
+        t1 = time.time()
+        logger.debug(f"[timing] _build_player_profile_view.fetch_data: {t1 - t0:.3f}s")
 
         # Create PlayerProfileView
         # discord_user_id = the VIEWED player's Discord (if they're bound), not the command user's
@@ -2222,9 +2288,11 @@ class WWMCog(commands.Cog):
             fashion_score=profile_data['fashion_score'],
             arena_1v1_rank=profile_data['arena_1v1_rank'],
             arena_1v1_max_winning_streak=profile_data['arena_1v1_max_winning_streak'],
+            arena_1v1_total_num=profile_data['arena_1v1_total_num'],
             arena_3v3_rank=profile_data['arena_3v3_rank'],
-            pvp_score=profile_data['pvp_score'],
+            arena_3v3_total_num=profile_data['arena_3v3_total_num'],
             group_strategy=profile_data['group_strategy'],
+            group_strategy_total_num=profile_data['group_strategy_total_num'],
             assist_points=profile_data['assist_points'],
             guild_name=profile_data['guild_name'],
             is_our_guild=profile_data['is_our_guild'],
@@ -4299,6 +4367,15 @@ class GuildProfileView(LayoutView):
         container = Container(*inner_items, accent_color=self.ACCENT_BLURPLE)
         self.add_item(container)
 
+    async def on_timeout(self):
+        for child in self.children:
+            if isinstance(child, Container):
+                for sub in child.children:
+                    if isinstance(sub, ActionRow):
+                        for item in sub.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
+
 
 class GuildDetailView(LayoutView):
     """Components V2 LayoutView for showing a detail page with a back button.
@@ -4328,6 +4405,15 @@ class GuildDetailView(LayoutView):
     async def _handle_back(self, interaction: discord.Interaction):
         await interaction.response.defer()
         await interaction.edit_original_response(view=self.back_view)
+
+    async def on_timeout(self):
+        for child in self.children:
+            if isinstance(child, Container):
+                for sub in child.children:
+                    if isinstance(sub, ActionRow):
+                        for item in sub.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
 
 
 class GuildInfoView(LayoutView):
@@ -4683,6 +4769,15 @@ class GuildInfoView(LayoutView):
         self.clear_items()
         container = Container(*new_inner, accent_color=self.ACCENT)
         self.add_item(container)
+
+    async def on_timeout(self):
+        for child in self.children:
+            if isinstance(child, Container):
+                for sub in child.children:
+                    if isinstance(sub, ActionRow):
+                        for item in sub.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
 
     async def _handle_mode_active(self, interaction: discord.Interaction):
         await interaction.response.defer()

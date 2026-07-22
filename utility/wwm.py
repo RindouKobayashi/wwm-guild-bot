@@ -36,7 +36,7 @@ DEFAULT_FIELDS = [
     "kongfu", "ride", "mentor", "jieyuan_info", "jieyi",
     "jieyi_misc", "gameplay_trail", "pvp_battle", "attr",
     "lunjian", "birthday", "school", "lunjian3v3_prop", "fight_shoulder", "coop_score",
-    "homeworld_data", "achievement"
+    "homeworld_data", "achievement", "fashion",
 ]
 
 # Complete list of ALL known fields (kept for reference / debugging)
@@ -98,15 +98,37 @@ async def close_session():
 # Helper: recursively convert bytes keys/values to str for json compatibility
 # -----------------------------------------------------------------------------
 def _convert_bytes_to_str(obj):
-    """Recursively convert bytes keys/values to strings in msgpack raw-mode output."""
     if isinstance(obj, dict):
-        return {_convert_bytes_to_str(k): _convert_bytes_to_str(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [_convert_bytes_to_str(item) for item in obj]
-    elif isinstance(obj, bytes):
-        return obj.decode('utf-8', errors='replace')
-    else:
+        return {
+            _convert_bytes_to_str(k): _convert_bytes_to_str(v)
+            for k, v in obj.items()
+        }
+
+    if isinstance(obj, list):
+        return [_convert_bytes_to_str(x) for x in obj]
+
+    if isinstance(obj, bytes):
+        # Try decoding as UTF-8 first
+        try:
+            return obj.decode("utf-8")
+        except UnicodeDecodeError:
+            pass
+
+        # Then try unpacking as MessagePack
+        try:
+            nested = msgpack.unpackb(
+                obj,
+                raw=True,
+                strict_map_key=False,
+            )
+            return _convert_bytes_to_str(nested)
+        except Exception:
+            pass
+
+        # Otherwise leave it as bytes
         return obj
+
+    return obj
 
 
 # -----------------------------------------------------------------------------
