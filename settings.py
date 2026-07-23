@@ -43,6 +43,7 @@ if branch == "main":
         "nine_mortal_ways": 1524959653983682691,
         "velvet_shade": 1524959701727580253,
         "masked_troupe": 1524959734933880872,
+        "mohist_hill": 1529893449908879613,
     }
 else:
     DISCORD_API_TOKEN = os.getenv("DISCORD_API_TOKEN_DEV")
