@@ -152,6 +152,7 @@ SCHOOL_NAMES = {
     6: "Midnight Blades",
     11: "Nine Mortal Ways",
     12: "Velvet Shade",
+    13: "Mohist Hill",
     100: "Sectless",
 }
 
@@ -163,7 +164,8 @@ if branch == "main":
         4: "<:SilverNeedle:1508517548142886942>",
         6: "<:MidnightBlades:1508517668729257984>",
         11: "<:NineMortalWays:1508517811004248134>",
-        12: "<:VelvetShade:1508517976356425769>"
+        12: "<:VelvetShade:1508517976356425769>",
+        13: "<:MohistHill:1529891115921182921>",
     }
     SCHOOL_ROLES = {
         1: 1514390178242756849,
@@ -173,6 +175,7 @@ if branch == "main":
         6: 1514390752011096205,
         11: 1514390617470271539,
         12: 1514386776242913320,
+        13: 1529890244101410816,
     }
 else:
     SCHOOL_EMOTES = {
@@ -182,7 +185,7 @@ else:
         4: "<:SilverNeedle:1508518903976956097>",
         6: "<:MidnightBlades:1508518902429257759>",
         11: "<:NineMortalWays:1508518900567117834>",
-        12: "<:VelvetShade:1508518898188812369>"
+        12: "<:VelvetShade:1508518898188812369>",
     }
     SCHOOL_ROLES = None
 
@@ -217,6 +220,12 @@ VOTE_COUNTS = {
     "12_3": 3,   # Charming Trio
     "12_4": 4,   # Four-Fragrance
     "12_5": 4,   # Flower Messenger
+
+    "13_1": 4,   # Apprentice
+    "13_2": 4,   # Journeyman
+    "13_3": 4,   # Master Machinist
+    "13_4": 4,   # Chief Engineer
+    "13_5": 4,   # Grand Artisan
 }
 
 SCHOOL_RANKING = {
@@ -260,6 +269,12 @@ SCHOOL_RANKING = {
     "12_3": "Charming Trio",
     "12_4": "Four-Fragrance",
     "12_5": "Flower Messenger",
+
+    "13_1": "Apprentice",
+    "13_2": "Journeyman",
+    "13_3": "Master Machinist",
+    "13_4": "Chief Engineer",
+    "13_5": "Grand Artisan",
 }
 
 LIKES = {
