@@ -285,7 +285,7 @@ BOSS_NAMES = {
     19: "*BLANK*", 20: "Grand Protector of Anxi", 21: "Moongazing Maiden",
     22: "Everdeer", 23: "*BLANK*", 24: "*BLANK*",
     25: "Sentinel Howlion", 26: "Pocketrupt Circus", 27: "Snowplum Requiem",
-    28: "Veiled Lady", 29: "Moonlight Master"
+    28: "Veiled Lady", 29: "Moonlight Master", 30: "Ci & Cuo"
 
 }
 
