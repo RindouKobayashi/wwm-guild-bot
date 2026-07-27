@@ -840,7 +840,7 @@ class SectCog(commands.Cog):
     @tasks.loop(minutes=30)
     async def sect_weekly_check(self):
         """Check for new election sessions every 30 minutes."""
-        logger.info("Running new election check (every 30 mins)...")
+        logger.debug("Running new election check (every 30 mins)...")
         await self._check_new_elections()
 
     @sect_weekly_check.before_loop
