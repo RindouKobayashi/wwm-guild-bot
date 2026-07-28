@@ -899,6 +899,16 @@ class MarketReportView(LayoutView):
         add_row.add_item(refresh_btn)
         inner_items.append(add_row)
 
+        # Guild watchlist button
+        guild_watchlist_row = ActionRow()
+        guild_watchlist_btn = Button(
+            label="🏰 Add My Guild",
+            style=discord.ButtonStyle.primary,
+            custom_id="market_add_my_guild",
+        )
+        guild_watchlist_btn.callback = self._on_add_my_guild
+        guild_watchlist_row.add_item(guild_watchlist_btn)
+
         # Filter button row
         filter_row = ActionRow()
         online_filter_btn = Button(
@@ -916,6 +926,8 @@ class MarketReportView(LayoutView):
         )
         guild_filter_btn.callback = self._on_filter_guild
         filter_row.add_item(guild_filter_btn)
+        
+        inner_items.append(guild_watchlist_row)
         inner_items.append(filter_row)
 
         container = Container(*inner_items, accent_color=ACCENT_GREEN)
@@ -992,6 +1004,48 @@ class MarketReportView(LayoutView):
             modal = GoodNameModal(good_id=good_id, cog=self.cog)
             await interaction.response.send_modal(modal)
         return callback
+
+    async def _on_add_my_guild(self, interaction: discord.Interaction):
+        """Add the user's bound guild to the market guild watchlist."""
+        await interaction.response.defer(ephemeral=True)
+        
+        # Get bound player info
+        bound_info = await self.cog._get_bound_player_info(interaction.user.id)
+        if not bound_info:
+            await interaction.followup.send(
+                "❌ You don't have a bound account. Please bind your account first using the verification system.",
+                ephemeral=True
+            )
+            return
+        
+        if not bound_info.get('club_id'):
+            await interaction.followup.send(
+                "❌ Your bound player is not in a guild. Join a guild first and then try again.",
+                ephemeral=True
+            )
+            return
+        
+        # Add to guild watchlist
+        guild_name = await self.cog._resolve_guild_name(bound_info['club_id'], bound_info.get('hostnum', 10595))
+        await self.cog._add_guild_to_watchlist(
+            club_id=bound_info['club_id'],
+            hostnum=bound_info.get('hostnum', 10595),
+            guild_name=guild_name,
+            user_id=interaction.user.id
+        )
+        
+        logger.info(f"Market guild watchlist add (via button): {guild_name} (club {bound_info['club_id']}) by {interaction.user}")
+        
+        # Refresh dashboard to include new guild members
+        await self.cog._refresh_dashboard()
+        
+        await interaction.followup.send(
+            f"✅ **Guild Added to Market Watchlist**\n\n"
+            f"• **Guild:** {guild_name}\n"
+            f"All members of this guild will now be included in the market dashboard. "
+            f"The member list updates live every refresh.",
+            ephemeral=True
+        )
 
     async def _on_filter_guild(self, interaction: discord.Interaction):
         """Filter the report to show only players from the user's bound guild, sent as an ephemeral message."""
