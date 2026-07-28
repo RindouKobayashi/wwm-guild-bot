@@ -15,7 +15,8 @@ from settings import (
     WWM_FIND_PEOPLE_BY_NICKNAME_URL, WWM_HOST, logger,
     WWM_FASHION_SCORE_URL, WWM_FILM_PLAN_URL, WWM_TEAMS_INFO_URL,
     WWM_GET_CLUB_BY_NUMBER_ID_URL, RANK_GET_RANKLIST_URL,
-    WWM_HOMELAND_INFO_URL
+    WWM_HOMELAND_INFO_URL, WWM_GET_LIKE_HISTORY_URL,
+    WWM_GET_PLAYER_COMBAT_PLAN_URL
 )
 
 # -----------------------------------------------------------------------------
@@ -338,6 +339,23 @@ async def get_topics_likes(target_uuid: str, target_hostnum: int) -> Optional[Di
         token=""
     )
 
+async def get_like_history(target_uuid: str, target_hostnum: int) -> Optional[Dict[str, Any]]:
+    """Get like history for a player"""
+    logger.debug(f"Getting like history for UUID: {target_uuid} | Hostnum: {target_hostnum}")
+
+    return await _wwm_api_post(
+        WWM_GET_LIKE_HISTORY_URL,
+        {
+            "group_number": 10001, # Assuming a default group number
+            "uuid": target_uuid,
+            "hostnum": target_hostnum,
+            "uid": "1",
+        },
+        timeout=20,
+        uid="",
+        token=""
+    )
+
 async def get_homeland_info(hostnum2pids: Dict[int, List[str]]) -> Optional[Dict[str, Any]]:
     """Get homeland info for multiple players in one API call"""
     logger.debug(f"Getting homeland info for hostnum2pids: {hostnum2pids}")
@@ -354,6 +372,19 @@ async def get_homeland_info(hostnum2pids: Dict[int, List[str]]) -> Optional[Dict
             "uid": "",
         },
         timeout=20,
+    )
+
+async def get_player_combat_plan(target_uuid: str, target_hostnum: int) -> Optional[Dict[str, Any]]:
+    """Get player combat plan"""
+    logger.debug(f"Getting combat plan for UUID: {target_uuid} | Hostnum: {target_hostnum}")
+
+    return await _wwm_api_post(
+        WWM_GET_PLAYER_COMBAT_PLAN_URL,
+        {
+            "uid": "",
+            "pid": target_uuid,
+            "hostnum": target_hostnum
+        }
     )
 
 

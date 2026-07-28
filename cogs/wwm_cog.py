@@ -16,7 +16,7 @@ from deepdiff import DeepDiff
 import aiohttp
 
 import settings
-from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id, get_homeland_info
+from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id, get_homeland_info, get_like_history
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, classify_kongfu_role
 from utility.wwm import get_sect_election_ranking
@@ -836,6 +836,7 @@ class PlayerProfileView(LayoutView):
         jieyi_text: str = None,
         likes_count: int = 0,
         likes_data_raw: dict = None,
+        likes_history: list = None,
         # Masteries
         martial_mastery: float = 0,
         scholar_mastery: float = 0,
@@ -910,6 +911,8 @@ class PlayerProfileView(LayoutView):
         self.jieyi_text = jieyi_text
         self.likes_count = likes_count
         self.likes_data_raw = likes_data_raw or {}
+        self.likes_history = likes_history or []
+        self.likes_page = 0  # Pagination for likes history
         self.martial_mastery = martial_mastery
         self.scholar_mastery = scholar_mastery
         self.healer_mastery = healer_mastery
@@ -1247,10 +1250,12 @@ class PlayerProfileView(LayoutView):
             allowed_mentions=discord.AllowedMentions.none(),
         )
 
-    async def _handle_likes(self, interaction: discord.Interaction):
-        await interaction.response.defer()
+    def _build_likes_detail(self) -> list:
+        """Build the likes detail view items (text + buttons) without responding to interaction."""
         from utility.api_constants import LIKES
         lines = []
+        
+        # Section 1: Topic breakdown
         if self.likes_data_raw:
             total = 0
             for topic_id_str, topic_data in self.likes_data_raw.items():
@@ -1265,12 +1270,124 @@ class PlayerProfileView(LayoutView):
                     topic_name = LIKES.get(tid, f"Topic {tid}")
                     lines.append(f"❤️ **{topic_name}:** {n_likes:,}")
                     total += n_likes
-            lines.append(f"\n**Total Likes:** {total:,}")
+            if total > 0:
+                lines.append(f"\n**Total Likes:** {total:,}")
+        
+        # Section 2: Who liked this player (paginated, 10 per page)
+        if self.likes_history:
+            lines.append("## ❤️ Recent Likes\n")
+            
+            # Calculate pagination
+            ITEMS_PER_PAGE = 10
+            total_items = len(self.likes_history)
+            total_pages = max(1, -(-total_items // ITEMS_PER_PAGE))  # ceil division
+            
+            # Clamp page to valid range
+            self.likes_page = max(0, min(self.likes_page, total_pages - 1))
+            
+            # Get items for current page
+            start_idx = self.likes_page * ITEMS_PER_PAGE
+            end_idx = start_idx + ITEMS_PER_PAGE
+            page_items = self.likes_history[start_idx:end_idx]
+            
+            # Display items
+            for liker in page_items:
+                liker_name = liker.get('nickname', 'Unknown')
+                liker_level = liker.get('level', '?')
+                liker_id = liker.get('number_id', 'N/A')
+                topic_id = liker.get('topic_id', 0)
+                timestamp = liker.get('timestamp', 0)
+                
+                # Format topic name if available
+                topic_name = LIKES.get(topic_id, '')
+                topic_str = f" ({topic_name})" if topic_name else ""
+                
+                # Format timestamp in both absolute and relative formats
+                time_str = ""
+                if timestamp:
+                    time_str = f" <t:{int(timestamp)}:D> <t:{int(timestamp)}:R>"
+                
+                lines.append(f"• **{liker_name}** Lv.{liker_level}{topic_str}{time_str}")
+            
+            # Add pagination info
+            if total_pages > 1:
+                lines.append(f"\n*Page {self.likes_page + 1}/{total_pages}*")
+        
         if not lines:
             lines.append("*No likes data available*")
-
-        self._show_detail("❤️ Likes Breakdown", lines, accent=0xE74C3C)
+        
+        # Build detail view items
+        inner = []
+        inner.append(TextDisplay(f"# ❤️ Likes Breakdown\n\n" + "\n".join(lines)))
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+        
+        # Add pagination buttons if there are multiple pages
+        if self.likes_history and len(self.likes_history) > 10:
+            ITEMS_PER_PAGE = 10
+            total_pages = max(1, -(-len(self.likes_history) // ITEMS_PER_PAGE))
+            
+            nav_row = ActionRow()
+            
+            # Prev button
+            prev_btn = Button(
+                style=discord.ButtonStyle.secondary,
+                label="◀ Prev",
+                custom_id="likes_prev",
+                disabled=self.likes_page <= 0,
+            )
+            prev_btn.callback = self._handle_likes_page_prev
+            nav_row.add_item(prev_btn)
+            
+            # Page indicator
+            page_label = Button(
+                style=discord.ButtonStyle.secondary,
+                label=f"{self.likes_page + 1}/{total_pages}",
+                custom_id="likes_page_label",
+                disabled=True,
+            )
+            nav_row.add_item(page_label)
+            
+            # Next button
+            next_btn = Button(
+                style=discord.ButtonStyle.secondary,
+                label="Next ▶",
+                custom_id="likes_next",
+                disabled=self.likes_page >= total_pages - 1,
+            )
+            next_btn.callback = self._handle_likes_page_next
+            nav_row.add_item(next_btn)
+            
+            inner.append(nav_row)
+        
+        # Back button
+        back_row = ActionRow()
+        back_btn = discord.ui.Button(label="🔙 Overview", style=discord.ButtonStyle.secondary, custom_id="player_back")
+        back_btn.callback = self._handle_back
+        back_row.add_item(back_btn)
+        inner.append(back_row)
+        
+        return inner
+    
+    async def _handle_likes(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        inner = self._build_likes_detail()
+        self.clear_items()
+        self.add_item(self._build_container(detail_items=inner))
         await interaction.edit_original_response(view=self)
+    
+    async def _handle_likes_page_prev(self, interaction: discord.Interaction):
+        """Navigate to previous page of likes."""
+        if self.likes_page > 0:
+            self.likes_page -= 1
+        await self._handle_likes(interaction)
+    
+    async def _handle_likes_page_next(self, interaction: discord.Interaction):
+        """Navigate to next page of likes."""
+        ITEMS_PER_PAGE = 10
+        total_pages = max(1, -(-len(self.likes_history) // ITEMS_PER_PAGE))
+        if self.likes_page < total_pages - 1:
+            self.likes_page += 1
+        await self._handle_likes(interaction)
 
     async def _handle_homestead(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -1891,6 +2008,68 @@ class WWMCog(commands.Cog):
             logger.debug(f"[timing] get_topics_likes: {time.time() - t0:.3f}s")
             return likes_count, likes_data_raw
 
+        async def _fetch_like_history():
+            t0 = time.time()
+            likes_history = []
+            try:
+                # Get like history (returns list of PIDs who liked us)
+                history_data = await get_like_history(str(player_pid), player_hostnum)
+                if history_data and 'result' in history_data:
+                    history = history_data['result'].get('history', [])
+                    
+                    # Extract unique PIDs and their hostnums
+                    pid_hostnums = {}
+                    for entry in history:
+                        from_id = entry.get('fromid')
+                        from_hostnum = entry.get('fromhostnum')
+                        if from_id and from_hostnum:
+                            pid_hostnums[from_id] = from_hostnum
+                    
+                    if pid_hostnums:
+                        # Batch fetch player info for all unique PIDs
+                        # Group by hostnum for efficient API call
+                        hostnum_groups = defaultdict(list)
+                        for pid, hostnum in pid_hostnums.items():
+                            hostnum_groups[hostnum].append(pid)
+                        
+                        # Fetch player data in parallel batches
+                        all_players = {}
+                        fetch_tasks = []
+                        for hnum, pids in hostnum_groups.items():
+                            fetch_tasks.append(get_bulk_players_info(pids, fields=["base"], hostnum=hnum))
+                        
+                        batch_results = await asyncio.gather(*fetch_tasks, return_exceptions=True)
+                        
+                        for result in batch_results:
+                            if isinstance(result, dict) and result.get('code') == 0:
+                                all_players.update(result.get('result', {}))
+                        
+                        # Normalize data
+                        for entry in history:
+                            from_id = entry.get('fromid', '')
+                            timestamp = entry.get('ts', 0)
+                            topic_id = entry.get('topic_id', 0)
+                            
+                            player_info = all_players.get(from_id, {})
+                            base_info = player_info.get('base', {})
+                            
+                            likes_history.append({
+                                'nickname': base_info.get('nickname', 'Unknown'),
+                                'number_id': base_info.get('number_id', 'N/A'),
+                                'level': base_info.get('level', 0),
+                                'oversea_tag': base_info.get('oversea_tag', ''),
+                                'topic_id': topic_id,
+                                'timestamp': timestamp
+                            })
+                        
+                        # Sort by timestamp (most recent first)
+                        likes_history.sort(key=lambda x: x.get('timestamp', 0), reverse=True)
+                        likes_history = likes_history[:30]  # Limit to 30 recent likes
+            except Exception as e:
+                logger.warning(f"Failed to get like history: {e}")
+            logger.debug(f"[timing] get_like_history: {time.time() - t0:.3f}s")
+            return likes_history
+
         async def _fetch_fashion_score():
             t0 = time.time()
             fashion_score = fashion_data.get('score', 0)
@@ -1950,11 +2129,12 @@ class WWMCog(commands.Cog):
             logger.debug(f"[timing] cover_image_total: {time.time() - t0:.3f}s")
             return cover_img, cover_img_path
 
-        likes_result, fashion_score, homeland_info, cover_result = await asyncio.gather(
+        likes_result, fashion_score, homeland_info, cover_result, likes_history = await asyncio.gather(
             _fetch_likes(),
             _fetch_fashion_score(),
             _fetch_homeland(),
             _fetch_cover_image(),
+            _fetch_like_history(),
         )
         likes_count, likes_data_raw = likes_result
         cover_img, cover_img_path = cover_result
@@ -2186,6 +2366,7 @@ class WWMCog(commands.Cog):
             'jieyi_text': jieyi_text,
             'likes_count': likes_count,
             'likes_data_raw': likes_data_raw,
+            'likes_history': likes_history or [],
             'martial_mastery': martial_mastery,
             'scholar_mastery': scholar_mastery,
             'healer_mastery': healer_mastery,
@@ -2273,6 +2454,7 @@ class WWMCog(commands.Cog):
             jieyi_text=profile_data['jieyi_text'],
             likes_count=profile_data['likes_count'],
             likes_data_raw=profile_data['likes_data_raw'],
+            likes_history=profile_data.get('likes_history', []),
             martial_mastery=profile_data['martial_mastery'],
             scholar_mastery=profile_data['scholar_mastery'],
             healer_mastery=profile_data['healer_mastery'],
