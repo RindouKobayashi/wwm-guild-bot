@@ -1,6 +1,7 @@
 import discord
 import datetime
 import aiosqlite
+import asyncio
 import json
 import logging
 from collections import defaultdict
@@ -10,7 +11,7 @@ from discord.ext import commands, tasks
 from discord.ui import LayoutView, Container, TextDisplay, Separator, Section, ActionRow, Button, Modal, TextInput, Select
 
 import settings
-from settings import BASE_DIR, CLUB_ID, WWM_UID, logger, GMT8_TZ
+from settings import BASE_DIR, CLUB_ID, WWM_UID, WWM_TOKEN, WWM_API_URL, logger, GMT8_TZ
 from utility.wwm import get_full_guild_info, get_bulk_hoard_data, get_bulk_players_info, _wwm_api_post, get_topics_likes, get_player_info, find_people_by_nickname
 
 
@@ -1208,12 +1209,14 @@ class WatchlistPaginatedView(LayoutView):
         all_entries: List[Dict[str, Any]],
         guild_pids: Set[str],
         bound_pids: Set[str],
+        guild_map: Dict[str, str] = None,
     ):
         super().__init__(timeout=180)
         self.cog = cog
         self.all_entries = all_entries
         self.guild_pids = guild_pids
         self.bound_pids = bound_pids
+        self.guild_map = guild_map or {}
         self.page_size = 10
         self.current_page = 0
         self.total_pages = max(1, (len(all_entries) + self.page_size - 1) // self.page_size)
@@ -1249,19 +1252,33 @@ class WatchlistPaginatedView(LayoutView):
         if page_manual:
             lines.append(f"## Manually Added ({len([e for e in self.all_entries if e['pid'] not in self.guild_pids and e['pid'] not in self.bound_pids])})\n")
             for entry in page_manual:
-                lines.append(
-                    f"• **{entry['nickname']}** ({entry['number_id']}) "
-                    f"— added <t:{entry['added_at']}:R> by <@{entry['added_by']}>"
-                )
+                guild_info = self.guild_map.get(entry['pid'])
+                if guild_info:
+                    lines.append(
+                        f"• **{entry['nickname']}** ({entry['number_id']}) — 🏰 *{guild_info}*\n"
+                        f"  └─ added <t:{entry['added_at']}:R> by <@{entry['added_by']}>"
+                    )
+                else:
+                    lines.append(
+                        f"• **{entry['nickname']}** ({entry['number_id']})\n"
+                        f"  └─ added <t:{entry['added_at']}:R> by <@{entry['added_by']}>"
+                    )
             lines.append("")
 
         if page_auto:
             lines.append(f"## Also in Guild/Bound ({len([e for e in self.all_entries if e['pid'] in self.guild_pids or e['pid'] in self.bound_pids])})\n")
             for entry in page_auto:
-                lines.append(
-                    f"• **{entry['nickname']}** ({entry['number_id']}) "
-                    f"— added <t:{entry['added_at']}:R> by <@{entry['added_by']}>"
-                )
+                guild_info = self.guild_map.get(entry['pid'])
+                if guild_info:
+                    lines.append(
+                        f"• **{entry['nickname']}** ({entry['number_id']}) — 🏰 *{guild_info}*\n"
+                        f"  └─ added <t:{entry['added_at']}:R> by <@{entry['added_by']}>"
+                    )
+                else:
+                    lines.append(
+                        f"• **{entry['nickname']}** ({entry['number_id']})\n"
+                        f"  └─ added <t:{entry['added_at']}:R> by <@{entry['added_by']}>"
+                    )
             lines.append("")
 
         if not page_manual and not page_auto:
@@ -1294,16 +1311,24 @@ class WatchlistPaginatedView(LayoutView):
             select_row.add_item(remove_select)
             inner.append(select_row)
 
-        # Banned list button
-        banned_row = ActionRow()
+        # Guild watchlist button
+        guild_watchlist_row = ActionRow()
+        guild_watchlist_btn = Button(
+            label="🏰 View Guild Watchlist",
+            style=discord.ButtonStyle.secondary,
+            custom_id="watchlist_show_guilds",
+        )
+        guild_watchlist_btn.callback = self._on_show_guild_watchlist
+        guild_watchlist_row.add_item(guild_watchlist_btn)
+        
         banned_btn = Button(
             label="🚫 Show Banned List",
             style=discord.ButtonStyle.danger,
             custom_id="watchlist_show_banned",
         )
         banned_btn.callback = self._on_show_banned
-        banned_row.add_item(banned_btn)
-        inner.append(banned_row)
+        guild_watchlist_row.add_item(banned_btn)
+        inner.append(guild_watchlist_row)
 
         # Navigation buttons
         nav_row = ActionRow()
@@ -1348,6 +1373,140 @@ class WatchlistPaginatedView(LayoutView):
             self.current_page += 1
             self._build()
             await interaction.response.edit_message(view=self)
+
+    async def _on_show_guild_watchlist(self, interaction: discord.Interaction):
+        """Show all guilds in the guild watchlist with remove option."""
+        if not await is_admin_or_staff(interaction):
+            await interaction.response.send_message("❌ Admins only.", ephemeral=True)
+            return
+        await interaction.response.defer()
+        try:
+            guild_entries = await self.cog._get_guild_watchlist()
+            if not guild_entries:
+                await interaction.followup.send("🏰 Guild watchlist is empty. Use `/market guild` to add your guild.")
+                return
+            
+            # Build guild watchlist display
+            lines = ["# 🏰 Guild Watchlist\n"]
+            lines.append(f"**Total:** {len(guild_entries)} guild(s) being tracked\n")
+            
+            for idx, entry in enumerate(guild_entries, 1):
+                guild_name = entry.get('guild_name', 'Unknown')
+                club_id = entry.get('club_id')
+                hostnum = entry.get('hostnum', 10595)
+                added_by = entry.get('added_by')
+                added_at = entry.get('added_at')
+                
+                lines.append(f"**{idx}.** {guild_name}")
+                lines.append(f"   **Club ID:** `{club_id}` (hostnum: `{hostnum}`)")
+                lines.append(f"   **Added by:** <@{added_by}> — <t:{added_at}:R>")
+                lines.append("")
+            
+            lines.append("\nAll guild members are automatically included in the market dashboard on each refresh.")
+            
+            inner: list = []
+            inner.append(TextDisplay("\n".join(lines)))
+            inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+            
+            # Add remove select dropdown if there are guilds
+            if guild_entries:
+                remove_options: List[discord.SelectOption] = []
+                for entry in guild_entries:
+                    guild_name = entry.get('guild_name', 'Unknown')
+                    club_id = entry.get('club_id')
+                    hostnum = entry.get('hostnum', 10595)
+                    label = f"{guild_name}"[:90]
+                    description = f"Club ID: {club_id}, Hostnum: {hostnum}"[:100]
+                    # Use pipe separator instead of colon since club_id can contain colons
+                    remove_options.append(
+                        discord.SelectOption(
+                            label=label,
+                            description=description,
+                            value=f"{club_id}|{hostnum}",
+                        )
+                    )
+                
+                if remove_options:
+                    select_row = ActionRow()
+                    remove_select = Select(
+                        placeholder="Select a guild to remove…",
+                        options=remove_options[:25],
+                        custom_id="guild_watchlist_remove_select",
+                    )
+                    remove_select.callback = self._on_remove_guild
+                    select_row.add_item(remove_select)
+                    inner.append(select_row)
+            
+            inner.append(TextDisplay("_This message is only visible to you._"))
+            
+            container = Container(*inner, accent_color=ACCENT_BLURPLE)
+            view = LayoutView(timeout=120)
+            view.add_item(container)
+            await interaction.followup.send(view=view)
+            
+        except Exception as e:
+            logger.error(f"Failed to show guild watchlist: {e}", exc_info=True)
+            await interaction.followup.send(f"❌ Error: `{e}`", ephemeral=True)
+
+    async def _on_remove_guild(self, interaction: discord.Interaction):
+        """Remove a guild from the guild watchlist."""
+        if not await is_admin_or_staff(interaction):
+            await interaction.response.send_message("❌ Admins only.", ephemeral=True)
+            return
+        
+        value = interaction.data.get("values", [None])[0]
+        if not value:
+            await interaction.response.send_message("❌ No guild selected.", ephemeral=True)
+            return
+        
+        # Parse guild selection value (format: club_id|hostnum)
+        # club_id can contain colons, so we use pipe as separator
+        try:
+            parts = value.split("|")
+            if len(parts) != 2:
+                raise ValueError(f"Invalid value format: {value}")
+            club_id_str, hostnum_str = parts
+            
+            # Validate hostnum is numeric
+            if not hostnum_str.isdigit():
+                raise ValueError(f"Invalid hostnum: {hostnum_str}")
+            
+            hostnum = int(hostnum_str)
+            # club_id can be any string (numeric or alphanumeric)
+            club_id = club_id_str if club_id_str else None
+            
+            if not club_id:
+                raise ValueError(f"Invalid club_id: {club_id_str}")
+        except (ValueError, AttributeError) as e:
+            logger.error(f"Failed to parse guild selection value '{value}': {e}")
+            await interaction.response.send_message("❌ Invalid guild selection.", ephemeral=True)
+            return
+        
+        await interaction.response.defer(ephemeral=True)
+        
+        # Get guild name before removing for the response
+        guild_entries = await self.cog._get_guild_watchlist()
+        guild_name = "Unknown"
+        for entry in guild_entries:
+            if entry['club_id'] == club_id and entry['hostnum'] == hostnum:
+                guild_name = entry.get('guild_name', 'Unknown')
+                break
+        
+        # Remove from watchlist
+        await self.cog._remove_guild_from_watchlist(club_id, hostnum)
+        
+        logger.info(f"Market guild watchlist remove: {guild_name} (club {club_id}) by {interaction.user}")
+        
+        # Refresh dashboard
+        await self.cog._refresh_dashboard()
+        
+        await interaction.followup.send(
+            f"✅ **Guild Removed from Watchlist**\n\n"
+            f"• **Guild:** {guild_name}\n"
+            f"• **Club ID:** `{club_id}`\n\n"
+            f"Members from this guild will no longer be included in the market dashboard.",
+            ephemeral=True
+        )
 
     async def _on_show_banned(self, interaction: discord.Interaction):
         if not await is_admin_or_staff(interaction):
@@ -2243,6 +2402,16 @@ class MarketCog(commands.Cog):
                     reason TEXT NOT NULL DEFAULT ''
                 )
             """)
+            await db.execute("""
+                CREATE TABLE IF NOT EXISTS market_guild_watchlist (
+                    club_id INTEGER NOT NULL,
+                    hostnum INTEGER NOT NULL DEFAULT 10595,
+                    guild_name TEXT NOT NULL DEFAULT 'Unknown',
+                    added_by INTEGER NOT NULL,
+                    added_at INTEGER NOT NULL,
+                    PRIMARY KEY (club_id, hostnum)
+                )
+            """)
             await db.commit()
 
     async def _load_config(self):
@@ -2345,6 +2514,83 @@ class MarketCog(commands.Cog):
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
+    # -- Guild Watchlist helpers ------------------------------------------
+    async def _get_guild_watchlist(self) -> List[Dict[str, Any]]:
+        """Return all guilds from the market_guild_watchlist table."""
+        async with aiosqlite.connect(self.db_path) as db:
+            db.row_factory = aiosqlite.Row
+            cursor = await db.execute(
+                "SELECT club_id, hostnum, guild_name, added_by, added_at FROM market_guild_watchlist ORDER BY added_at DESC"
+            )
+            rows = await cursor.fetchall()
+            return [dict(row) for row in rows]
+
+    async def _add_guild_to_watchlist(self, club_id: int, hostnum: int, guild_name: str, user_id: int):
+        """Add or update a guild in the market_guild_watchlist."""
+        now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "REPLACE INTO market_guild_watchlist (club_id, hostnum, guild_name, added_by, added_at) VALUES (?, ?, ?, ?, ?)",
+                (club_id, hostnum, guild_name, user_id, now_ts)
+            )
+            await db.commit()
+
+    async def _remove_guild_from_watchlist(self, club_id: int, hostnum: int):
+        """Remove a guild from the market_guild_watchlist."""
+        async with aiosqlite.connect(self.db_path) as db:
+            await db.execute(
+                "DELETE FROM market_guild_watchlist WHERE club_id = ? AND hostnum = ?",
+                (club_id, hostnum)
+            )
+            await db.commit()
+
+    async def _get_bound_player_info(self, user_id: int) -> Optional[Dict[str, Any]]:
+        """Get the bound player's PID and guild info from verification DB."""
+        try:
+            async with aiosqlite.connect(VERIFICATION_DB_PATH) as conn:
+                cursor = await conn.execute(
+                    "SELECT player_pid, character_uid FROM verified_members WHERE user_id = ? AND player_pid IS NOT NULL",
+                    (user_id,)
+                )
+                row = await cursor.fetchone()
+                if not row:
+                    logger.debug(f"No bound player found for user {user_id}")
+                    return None
+                
+                player_pid = row[0]
+                character_uid = row[1]
+                logger.debug(f"Found bound player PID {player_pid} (UID: {character_uid}) for user {user_id}")
+                
+                # Use get_player_info with explicit credentials (same pattern as guild_verification_cog)
+                try:
+                    player_data = await get_player_info(
+                        character_uid,
+                        uid=WWM_UID,
+                        token=WWM_TOKEN,
+                        api_url=WWM_API_URL,
+                        fields=["base", "club"]
+                    )
+                    if player_data and 'result' in player_data:
+                        result = player_data['result']
+                        base = result.get('base', {})
+                        club_info = result.get('club', {})
+                        
+                        return {
+                            'pid': player_pid,
+                            'nickname': base.get('nickname'),
+                            'club_id': club_info.get('club_id', 0),
+                            'hostnum': club_info.get('hostnum', 10595)
+                        }
+                    else:
+                        logger.warning(f"Failed to fetch player data for UID {character_uid}: no result")
+                        return None
+                except Exception as e:
+                    logger.error(f"Failed to fetch player info for bound player {character_uid}: {e}", exc_info=True)
+                    return None
+        except Exception as e:
+            logger.error(f"Failed to lookup bound player for user {user_id}: {e}", exc_info=True)
+            return None
+
     # -- Cog lifecycle ----------------------------------------------------
     async def cog_load(self):
         await self._init_database()
@@ -2434,15 +2680,34 @@ class MarketCog(commands.Cog):
 
     # -- Core data fetching ------------------------------------------------
     async def _get_all_player_pids(self) -> List[str]:
-        """Collect PIDs from guild members + bound players + watchlist, deduplicated."""
+        """Collect PIDs from guild watchlist members + bound players + watchlist, deduplicated."""
         guild_pids = set()
-        try:
-            guild_data = await get_full_guild_info(CLUB_ID)
-            if guild_data and 'result' in guild_data:
-                members = guild_data['result'].get('members', {}).get('members', {})
-                guild_pids.update(members.keys())
-        except Exception as e:
-            logger.error(f"Market cog: failed to fetch guild members: {e}")
+        
+        # Fetch all guilds from guild watchlist
+        guild_watchlist = await self._get_guild_watchlist()
+        if guild_watchlist:
+            logger.debug(f"Market cog: fetching members from {len(guild_watchlist)} guild(s) in watchlist")
+            # Fetch members from each guild in the watchlist concurrently
+            guild_fetch_tasks = []
+            for g in guild_watchlist:
+                guild_fetch_tasks.append(self._fetch_guild_members(g['club_id'], g['hostnum']))
+            
+            guild_member_sets = await asyncio.gather(*guild_fetch_tasks, return_exceptions=True)
+            for member_set in guild_member_sets:
+                if isinstance(member_set, set):
+                    guild_pids.update(member_set)
+                elif isinstance(member_set, Exception):
+                    logger.error(f"Market cog: failed to fetch guild members: {member_set}")
+        else:
+            # Fallback: if no guilds in watchlist, use the hardcoded CLUB_ID
+            logger.debug("Market cog: no guilds in watchlist, falling back to CLUB_ID")
+            try:
+                guild_data = await get_full_guild_info(CLUB_ID)
+                if guild_data and 'result' in guild_data:
+                    members = guild_data['result'].get('members', {}).get('members', {})
+                    guild_pids.update(members.keys())
+            except Exception as e:
+                logger.error(f"Market cog: failed to fetch fallback guild members: {e}")
 
         bound_pids = set()
         try:
@@ -2460,6 +2725,19 @@ class MarketCog(commands.Cog):
         all_pids = list(guild_pids | bound_pids | watchlist_pids)
         logger.debug(f"Market cog: collected {len(guild_pids)} guild + {len(bound_pids)} bound + {len(watchlist_pids)} watchlist = {len(all_pids)} unique PIDs")
         return all_pids
+
+    async def _fetch_guild_members(self, club_id: int, hostnum: int = 10595) -> Set[str]:
+        """Fetch member PIDs from a specific guild."""
+        member_pids = set()
+        try:
+            guild_data = await get_full_guild_info(club_id, hostnum=hostnum)
+            if guild_data and 'result' in guild_data:
+                members = guild_data['result'].get('members', {}).get('members', {})
+                member_pids.update(members.keys())
+                logger.debug(f"Market cog: fetched {len(member_pids)} members from guild {club_id} (hostnum {hostnum})")
+        except Exception as e:
+            logger.error(f"Market cog: failed to fetch guild members for club {club_id} (hostnum {hostnum}): {e}")
+        return member_pids
 
     @staticmethod
     def _get_day_start_ts() -> int:
@@ -3054,17 +3332,82 @@ class MarketCog(commands.Cog):
                     'added_at': row['added_at'],
                 })
 
+            # Fetch guild information for all watchlist entries
+            logger.debug(f"Fetching guild info for {len(all_entries)} watchlist entries")
+            pids_to_lookup = [entry['pid'] for entry in all_entries]
+            guild_map: Dict[str, str] = {}
+            
+            try:
+                # Use get_bulk_players_info to fetch all player data at once
+                bulk_data = await get_bulk_players_info(pids_to_lookup, fields=["club"])
+                if bulk_data and 'result' in bulk_data:
+                    for pid, player_data in bulk_data['result'].items():
+                        club_info = player_data.get('club', {})
+                        club_id = club_info.get('club_id', 0)
+                        hostnum = club_info.get('hostnum', 10595)
+                        if club_id != 0:
+                            guild_name = await self._resolve_guild_name(club_id, hostnum)
+                            guild_map[pid] = guild_name
+                        else:
+                            guild_map[pid] = None
+            except Exception as e:
+                logger.warning(f"Failed to fetch bulk guild info for watchlist: {e}")
+
             view = WatchlistPaginatedView(
                 cog=self,
                 all_entries=all_entries,
                 guild_pids=guild_pids,
                 bound_pids=bound_pids,
+                guild_map=guild_map,
             )
             await interaction.followup.send(view=view)
 
         except Exception as e:
             logger.error(f"Market cog: watchlist command failed: {e}", exc_info=True)
             await interaction.followup.send(f"❌ Error: `{e}`", ephemeral=True)
+
+    @market_group.command(name="guild", description="Add your bound guild to the market guild watchlist")
+    async def market_guild(self, interaction: discord.Interaction):
+        """Add the guild of your bound player to the guild watchlist for live market tracking."""
+        await interaction.response.defer(ephemeral=False)
+        
+        # Get bound player info
+        bound_info = await self._get_bound_player_info(interaction.user.id)
+        if not bound_info:
+            await interaction.followup.send(
+                "❌ You don't have a bound account. Please bind your account first using the verification system.",
+                ephemeral=False
+            )
+            return
+        
+        if not bound_info.get('club_id'):
+            await interaction.followup.send(
+                "❌ Your bound player is not in a guild. Join a guild first and then try again.",
+                ephemeral=False
+            )
+            return
+        
+        # Add to guild watchlist
+        guild_name = await self._resolve_guild_name(bound_info['club_id'], bound_info.get('hostnum', 10595))
+        await self._add_guild_to_watchlist(
+            club_id=bound_info['club_id'],
+            hostnum=bound_info.get('hostnum', 10595),
+            guild_name=guild_name,
+            user_id=interaction.user.id
+        )
+        
+        logger.info(f"Market guild watchlist add: {guild_name} (club {bound_info['club_id']}) by {interaction.user}")
+        
+        # Refresh dashboard to include new guild members
+        await self._refresh_dashboard()
+        
+        await interaction.followup.send(
+            f"✅ **Guild Added to Market Watchlist**\n\n"
+            f"• **Guild:** {guild_name}\n"
+            f"All members of this guild will now be included in the market dashboard. "
+            f"The member list updates live every refresh.",
+            ephemeral=False
+        )
 
     @market_group.command(name="player", description="Look up specific players' market stats")
     @app_commands.describe(
