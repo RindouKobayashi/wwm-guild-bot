@@ -897,17 +897,16 @@ class MarketReportView(LayoutView):
         )
         refresh_btn.callback = self._on_refresh
         add_row.add_item(refresh_btn)
-        inner_items.append(add_row)
 
         # Guild watchlist button
-        guild_watchlist_row = ActionRow()
         guild_watchlist_btn = Button(
             label="🏰 Add My Guild",
-            style=discord.ButtonStyle.primary,
+            style=discord.ButtonStyle.success,
             custom_id="market_add_my_guild",
         )
         guild_watchlist_btn.callback = self._on_add_my_guild
-        guild_watchlist_row.add_item(guild_watchlist_btn)
+        add_row.add_item(guild_watchlist_btn)
+        inner_items.append(add_row)
 
         # Filter button row
         filter_row = ActionRow()
@@ -927,7 +926,6 @@ class MarketReportView(LayoutView):
         guild_filter_btn.callback = self._on_filter_guild
         filter_row.add_item(guild_filter_btn)
         
-        inner_items.append(guild_watchlist_row)
         inner_items.append(filter_row)
 
         container = Container(*inner_items, accent_color=ACCENT_GREEN)
