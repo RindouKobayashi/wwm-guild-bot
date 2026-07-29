@@ -367,7 +367,7 @@ class SectCog(commands.Cog):
         all_results = []  # list of (skip_index, timestamp, chief_dict)
         skip = 0
         batch_limit = 10  # fetch up to 50 at a time
-        max_skips = 50  # safety limit
+        max_skips = 10  # safety limit
 
         while skip < max_skips:
             try:
@@ -387,12 +387,12 @@ class SectCog(commands.Cog):
                     chief = election_entry.get('chief', {})
                     if not ts_raw or not chief:
                         logger.info(f"Empty election entry at skip={skip}, no more history for school_id={school_id}")
-                        skip += 1  # Still increment skip to avoid infinite loop on same skip
+                        skip += batch_limit  # Still increment to avoid infinite loop on same skip
                         break  # Empty entry means we've hit the end
 
                     ts_int = int(ts_raw)  # Remove decimal, discord-friendly
                     all_results.append((skip, ts_int, chief))
-                    skip += 1  # Each entry in result consumes one skip
+                    skip += batch_limit  # Each entry in result consumes the batch
 
                 logger.info(f"Fetched {len(result_list)} election(s) for school_id={school_id}, total so far: {len(all_results)}")
 
