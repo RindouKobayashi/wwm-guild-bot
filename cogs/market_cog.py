@@ -1494,7 +1494,7 @@ class WatchlistPaginatedView(LayoutView):
             container = Container(*inner, accent_color=ACCENT_BLURPLE)
             view = LayoutView(timeout=120)
             view.add_item(container)
-            await interaction.followup.send(view=view)
+            await interaction.followup.send(view=view, allowed_mentions=discord.AllowedMentions.none())
             
         except Exception as e:
             logger.error(f"Failed to show guild watchlist: {e}", exc_info=True)
@@ -1571,7 +1571,7 @@ class WatchlistPaginatedView(LayoutView):
                 await interaction.followup.send("🚫 Banned list is empty.")
                 return
             view = BannedListPaginatedView(cog=self.cog, all_entries=banned_entries)
-            await interaction.followup.send(view=view)
+            await interaction.followup.send(view=view, allowed_mentions=discord.AllowedMentions.none())
         except Exception as e:
             logger.error(f"Failed to show banned list: {e}", exc_info=True)
             await interaction.followup.send(f"❌ Error: `{e}`", ephemeral=True)
