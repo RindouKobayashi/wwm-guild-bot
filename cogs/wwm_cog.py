@@ -16,10 +16,11 @@ from deepdiff import DeepDiff
 import aiohttp
 
 import settings
-from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id, get_homeland_info, get_like_history
+from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id, get_homeland_info, get_like_history, get_player_combat_plan
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, classify_kongfu_role
 from utility.wwm import get_sect_election_ranking
+from utility.affix_mapper import map_data, init_db
 
 
 def admin_or_staff():
@@ -883,6 +884,9 @@ class PlayerProfileView(LayoutView):
         head_id=None,
         body_type=None,
         sender_pid: str = None,
+        # Combat Plan / Equipments
+        player_pid: str = None,
+        player_hostnum: int = None,
         # Homestead
         homeland_info: dict = None,
         # Achievements
@@ -951,8 +955,13 @@ class PlayerProfileView(LayoutView):
         self.head_id = head_id
         self.body_type = body_type
         self.sender_pid = sender_pid
+        self.player_pid = player_pid
+        self.player_hostnum = player_hostnum
         self.homeland_info = homeland_info
         self.achievement_data = achievement_data
+        # Equipment pagination state
+        self.equipments_page = 0
+        self._equipments_lines: list = []
 
         self._build_overview()
     
@@ -1057,41 +1066,34 @@ class PlayerProfileView(LayoutView):
             # Detail view: supplied items (TextDisplay + Separator + back button)
             inner.extend(detail_items)
         else:
-            # Overview: buttons
-            row1 = ActionRow()
-            btn_combat = discord.ui.Button(label="Combat", emoji="⚔️", style=discord.ButtonStyle.primary, custom_id="player_combat")
-            btn_combat.callback = self._handle_combat
-            row1.add_item(btn_combat)
-            btn_masteries = discord.ui.Button(label="Masteries", emoji="🎓", style=discord.ButtonStyle.primary, custom_id="player_masteries")
-            btn_masteries.callback = self._handle_masteries
-            row1.add_item(btn_masteries)
-            btn_attributes = discord.ui.Button(label="Attributes", emoji="📊", style=discord.ButtonStyle.primary, custom_id="player_attributes")
-            btn_attributes.callback = self._handle_attributes
-            row1.add_item(btn_attributes)
-            btn_kongfu = discord.ui.Button(label="Kongfu & Role", emoji="🔧", style=discord.ButtonStyle.primary, custom_id="player_kongfu")
-            btn_kongfu.callback = self._handle_kongfu
-            row1.add_item(btn_kongfu)
-            btn_achievement = discord.ui.Button(label="Achievements", emoji="🏆", style=discord.ButtonStyle.primary, custom_id="player_achievements")
-            btn_achievement.callback = self._handle_achievements
-            row1.add_item(btn_achievement)
-            inner.append(row1)
-            
-            row2 = ActionRow()
-            btn_guild = discord.ui.Button(label="Guild Profile", emoji="🏰", style=discord.ButtonStyle.secondary, custom_id="player_guild")
-            btn_guild.callback = self._handle_guild
-            row2.add_item(btn_guild)
-            btn_homestead = discord.ui.Button(label="Homestead", emoji="🏡", style=discord.ButtonStyle.secondary, custom_id="player_homestead")
-            btn_homestead.callback = self._handle_homestead
-            row2.add_item(btn_homestead)
-            btn_likes = discord.ui.Button(label="Likes", emoji="❤️", style=discord.ButtonStyle.secondary, custom_id="player_likes")
-            btn_likes.callback = self._handle_likes
-            row2.add_item(btn_likes)
-            # Only show Set Avatar button when head_id is present but no mapped avatar exists
+            # Overview: Select menu
+            select_options = [
+                discord.SelectOption(label="⚔️ Combat", value="combat", emoji="⚔️"),
+                discord.SelectOption(label="🎓 Masteries", value="masteries", emoji="🎓"),
+                discord.SelectOption(label="📊 Attributes", value="attributes", emoji="📊"),
+                discord.SelectOption(label="🔧 Kongfu & Role", value="kongfu", emoji="🔧"),
+                discord.SelectOption(label="🏆 Achievements", value="achievements", emoji="🏆"),
+                #discord.SelectOption(label="🛡️ Equipments", value="equipments", emoji="🛡️"),
+                discord.SelectOption(label="🏰 Guild Profile", value="guild", emoji="🏰"),
+                discord.SelectOption(label="🏡 Homestead", value="homestead", emoji="🏡"),
+                discord.SelectOption(label="❤️ Likes", value="likes", emoji="❤️"),
+            ]
+            # Only show Set Avatar option when head_id is present but no mapped avatar exists
             if self.head_id is not None and self.head_avatar_path is None and self.body_type in (0, 1):
-                btn_set_avatar = discord.ui.Button(label="Set Avatar", emoji="🖼️", style=discord.ButtonStyle.success, custom_id="player_set_avatar")
-                btn_set_avatar.callback = self._handle_set_avatar
-                row2.add_item(btn_set_avatar)
-            inner.append(row2)
+                select_options.append(discord.SelectOption(label="🖼️ Set Avatar", value="set_avatar", emoji="🖼️"))
+
+            if self.discord_user_id in [125331697867816961, 96417753300209664, 617161435398799390]:
+                select_options.append(discord.SelectOption(label="🛡️ Equipments", value="equipments", emoji="🛡️"))
+            
+            select_row = ActionRow()
+            select_menu = Select(
+                placeholder="View detailed stats...",
+                options=select_options,
+                custom_id="player_profile_select",
+            )
+            select_menu.callback = self._handle_select_change
+            select_row.add_item(select_menu)
+            inner.append(select_row)
         
         return Container(*inner, accent_color=BLURPLE)
     
@@ -1129,6 +1131,27 @@ class PlayerProfileView(LayoutView):
         await interaction.response.defer()
         self._build_overview()
         await interaction.edit_original_response(view=self)
+    
+    async def _handle_select_change(self, interaction: discord.Interaction):
+        """Handle Select menu option selection."""
+        selected = interaction.data.get("values", [""])[0]
+        
+        handler_map = {
+            "combat": self._handle_combat,
+            "masteries": self._handle_masteries,
+            "attributes": self._handle_attributes,
+            "kongfu": self._handle_kongfu,
+            "achievements": self._handle_achievements,
+            "equipments": self._handle_equipments,
+            "guild": self._handle_guild,
+            "homestead": self._handle_homestead,
+            "likes": self._handle_likes,
+            "set_avatar": self._handle_set_avatar,
+        }
+        
+        handler = handler_map.get(selected)
+        if handler:
+            await handler(interaction)
     
     async def _handle_combat(self, interaction: discord.Interaction):
         await interaction.response.defer()
@@ -1192,10 +1215,8 @@ class PlayerProfileView(LayoutView):
         await interaction.edit_original_response(view=self)
     
     async def on_timeout(self):
-        """Disable all buttons when the view times out, and push the disabled view to the original message."""
-        # Rebuild the overview with all buttons disabled for a clean disabled state
-        self._build_overview()
-        # Mark every action-row button as disabled in the rebuilt layout
+        """Disable all buttons and selects when the view times out, keeping the current page visible."""
+        # Disable all buttons and selects in the current layout without changing the page
         for child in self.children:
             if isinstance(child, Container):
                 for sub in child.children:
@@ -1203,11 +1224,17 @@ class PlayerProfileView(LayoutView):
                         for item in sub.children:
                             if isinstance(item, discord.ui.Button):
                                 item.disabled = True
+                            elif isinstance(item, discord.ui.Select):
+                                item.disabled = True
                     elif isinstance(sub, discord.ui.Button):
+                        sub.disabled = True
+                    elif isinstance(sub, discord.ui.Select):
                         sub.disabled = True
             elif isinstance(child, ActionRow):
                 for item in child.children:
                     if isinstance(item, discord.ui.Button):
+                        item.disabled = True
+                    elif isinstance(item, discord.ui.Select):
                         item.disabled = True
 
         # Best-effort: edit the original message so the disabled state is visible to users.
@@ -1308,10 +1335,6 @@ class PlayerProfileView(LayoutView):
                     time_str = f" <t:{int(timestamp)}:D> <t:{int(timestamp)}:R>"
                 
                 lines.append(f"• **{liker_name}** Lv.{liker_level}{topic_str}{time_str}")
-            
-            # Add pagination info
-            if total_pages > 1:
-                lines.append(f"\n*Page {self.likes_page + 1}/{total_pages}*")
         
         if not lines:
             lines.append("*No likes data available*")
@@ -1469,6 +1492,239 @@ class PlayerProfileView(LayoutView):
         self._show_detail("🏆 Achievements", lines, accent=0x3498DB)
         await interaction.edit_original_response(view=self)
 
+    @staticmethod
+    def _smart_round(value) -> str:
+        """Smart rounding for display: removes floating-point artifacts and trailing zeros."""
+        if not isinstance(value, (int, float)):
+            return str(value)
+        if isinstance(value, int):
+            return str(value)
+        # Round to 4 decimal places first to clean up floating point artifacts
+        rounded = round(value, 4)
+        # If it's effectively an integer, show as integer
+        if rounded == int(rounded):
+            return str(int(rounded))
+        # Otherwise strip trailing zeros
+        s = f"{rounded:.4f}".rstrip('0').rstrip('.')
+        return s
+
+    async def _handle_equipments(self, interaction: discord.Interaction):
+        """Fetch and display the player's equipped items and their stats (paginated)."""
+        await interaction.response.defer()
+
+        if not self.player_pid or not self.player_hostnum:
+            self._show_detail("🛡️ Equipments", ["*No player data available to fetch equipments*"], accent=0xF39C12)
+            await interaction.edit_original_response(view=self)
+            return
+
+        try:
+            combat_data = await get_player_combat_plan(self.player_pid, self.player_hostnum)
+        except Exception as e:
+            logger.error(f"Failed to fetch combat plan for {self.player_pid}: {e}")
+            self._show_detail("🛡️ Equipments", [f"❌ Failed to load equipments: `{str(e)}`"], accent=0xF39C12)
+            await interaction.edit_original_response(view=self)
+            return
+
+        if not combat_data or combat_data.get('code') != 0:
+            self._show_detail("🛡️ Equipments", ["*No equipment data available*"], accent=0xF39C12)
+            await interaction.edit_original_response(view=self)
+            return
+
+        result = combat_data.get('result', {})
+        wear_equips = result.get('wear_equips', {})
+        equips_map = result.get('combat_plan', {}).get('equips', {})
+
+        if not wear_equips:
+            self._show_detail("🛡️ Equipments", ["*No equipped items found*"], accent=0xF39C12)
+            await interaction.edit_original_response(view=self)
+            return
+
+        # Apply affix mapping to replace numeric affix IDs with human-readable names
+        try:
+            wear_equips = await map_data(wear_equips)
+        except Exception as map_err:
+            logger.warning(f"Affix mapping failed (non-critical): {map_err}")
+
+        # Helper to extract a display name from a value that may be mapped
+        def _affix_display(val):
+            """If val is a mapped affix object, return its name. Otherwise return the raw value."""
+            if isinstance(val, dict) and val.get('_affix'):
+                return val.get('name', str(val.get('id', val)))
+            return val
+
+        # Slot number to human-readable name mapping
+        SLOT_NAMES = {
+            1: "Primary Weapon",
+            2: "Secondary Weapon",
+            3: "Helmet",
+            4: "Chestpiece",
+            5: "Greaves",
+            8: "Bracer",
+            9: "Archery Jade",
+            10: "Disc",
+            11: "Pendant",
+            21: "Bow and Arrow",
+        }
+
+        # Build all equipment lines into a list
+        all_lines = []
+        # Sort slots by their display order
+        sorted_slots = sorted(wear_equips.keys(), key=lambda s: int(s) if str(s).isdigit() else 999)
+
+        for slot_key in sorted_slots:
+            item = wear_equips[slot_key]
+            slot_num = int(slot_key) if str(slot_key).isdigit() else slot_key
+            slot_name = SLOT_NAMES.get(slot_num, f"Slot {slot_num}")
+
+            item_no = item.get('No', 0)
+            ex_data = item.get('ex', {})
+            base_attrs = ex_data.get('base_attrs', {})
+            base_affixes = ex_data.get('base_affixes', [])
+            durability = ex_data.get('durability', '?')
+            tone_determin = ex_data.get('tone_determin', None)
+            another_determin = ex_data.get('another_determin', None)
+            retoned = ex_data.get('retoned', 0)
+            suffix = ex_data.get('suffix', 0)
+            gain_ts = ex_data.get('gain_ts', 0)
+
+            # Build item display — Idea D: bullet list with emoji headers
+            slot_lines = []
+            slot_lines.append(f"🪪 **{slot_name}** (#{item_no}) — <t:{int(gain_ts)}:R>")
+
+            # Base attributes
+            if base_attrs:
+                attr_parts = []
+                for attr_key, attr_val in base_attrs.items():
+                    attr_parts.append(f"{attr_key}: **{self._smart_round(attr_val)}**")
+                slot_lines.append(f"📊 {'  |  '.join(attr_parts)}")
+
+            # Base affixes — bullet list
+            if base_affixes:
+                slot_lines.append("📎 Affixes:")
+                for affix in base_affixes:
+                    if isinstance(affix, list) and len(affix) >= 2:
+                        affix_id = affix[0]
+                        affix_val = affix[1]
+                        display_id = _affix_display(affix_id)
+                        slot_lines.append(f"  • {display_id}  →  **{self._smart_round(affix_val)}**")
+
+            # Tone / Determin
+            tone_parts = []
+            if tone_determin:
+                tone_parts.append(f"Tone: {_affix_display(tone_determin)}")
+            if another_determin and isinstance(another_determin, list) and len(another_determin) >= 2:
+                tone_parts.append(f"Det: {_affix_display(another_determin[0])} ({another_determin[1]})")
+            if tone_parts:
+                slot_lines.append(f"💠 {'  ·  '.join(tone_parts)}")
+
+            # Durability / Retone / Suffix
+            info_parts = [f"Dura: {durability}/100"]
+            if retoned:
+                info_parts.append(f"Retoned: {retoned}")
+            if suffix:
+                info_parts.append(f"Suffix: {suffix}")
+            slot_lines.append(f"🔧 {'  ·  '.join(info_parts)}")
+
+            slot_lines.append("")  # blank line between items
+            all_lines.append((slot_num, slot_name, slot_lines))
+
+        if not all_lines:
+            self._show_detail("🛡️ Equipments", ["*No equipment data to display*"], accent=0xF39C12)
+            await interaction.edit_original_response(view=self)
+            return
+
+        # Define page groups: (slots, label)
+        PAGE_GROUPS = [
+            ({1, 2, 10, 11}, "Weapons & Accessories"),
+            ({3, 4, 5, 8}, "Armor"),
+            ({9, 21}, "Ranged & Jade"),
+        ]
+
+        # Assign each item to a page
+        page_items = {0: [], 1: [], 2: []}
+        for slot_num, slot_name, slot_lines in all_lines:
+            for page_idx, (slots, _) in enumerate(PAGE_GROUPS):
+                if slot_num in slots:
+                    page_items[page_idx].extend(slot_lines)
+                    break
+            else:
+                # Unknown slot — put on page 0
+                page_items[0].extend(slot_lines)
+
+        # Store the page data for navigation
+        self._equipments_lines = [page_items[i] for i in range(3)]
+        self.equipments_page = 0
+
+        await self._show_equipments_page(interaction)
+
+    async def _show_equipments_page(self, interaction: discord.Interaction):
+        """Display the current equipment page with navigation buttons."""
+        page = self.equipments_page
+        total_pages = 3
+        page_labels = ["Weapons & Accessories", "Armor", "Ranged & Jade"]
+
+        lines = self._equipments_lines[page]
+        if not lines:
+            lines = ["*No items on this page*"]
+
+        title = f"🛡️ Equipments — {page_labels[page]} ({page + 1}/{total_pages})"
+
+        # Build detail items with navigation
+        inner = []
+        inner.append(TextDisplay(f"# {title}\n\n" + "\n".join(lines)))
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Navigation row
+        nav_row = ActionRow()
+        prev_btn = Button(
+            style=discord.ButtonStyle.secondary,
+            label="◀ Prev",
+            custom_id="equip_prev",
+            disabled=page <= 0,
+        )
+        prev_btn.callback = self._handle_equip_prev
+        nav_row.add_item(prev_btn)
+
+        page_label = Button(
+            style=discord.ButtonStyle.secondary,
+            label=f"{page + 1}/{total_pages}",
+            custom_id="equip_page_label",
+            disabled=True,
+        )
+        nav_row.add_item(page_label)
+
+        next_btn = Button(
+            style=discord.ButtonStyle.secondary,
+            label="Next ▶",
+            custom_id="equip_next",
+            disabled=page >= total_pages - 1,
+        )
+        next_btn.callback = self._handle_equip_next
+        nav_row.add_item(next_btn)
+        inner.append(nav_row)
+
+        # Back button
+        back_row = ActionRow()
+        back_btn = discord.ui.Button(label="🔙 Overview", style=discord.ButtonStyle.secondary, custom_id="player_back")
+        back_btn.callback = self._handle_back
+        back_row.add_item(back_btn)
+        inner.append(back_row)
+
+        self.clear_items()
+        self.add_item(self._build_container(detail_items=inner))
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_equip_prev(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        if self.equipments_page > 0:
+            self.equipments_page -= 1
+        await self._show_equipments_page(interaction)
+
+    async def _handle_equip_next(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        if self.equipments_page < 2:
+            self.equipments_page += 1
+        await self._show_equipments_page(interaction)
 
 
 class Inactive(LayoutView):
@@ -1884,6 +2140,8 @@ class WWMCog(commands.Cog):
     async def cog_load(self):
         await self._init_database()
         await self._load_config()
+        # Initialize the affix mapping database
+        await init_db()
         if self.monitor_enabled and self.monitor_channel:
             self.guild_monitor_task.start()
         # Always-on opponent-guild reminder (8 AM GMT+8 Sunday + Monday).
@@ -2351,6 +2609,7 @@ class WWMCog(commands.Cog):
         logger.debug(f"[timing] _fetch_player_profile_data.total: {time.time() - t0:.3f}s")
         return {
             'player_pid': player_pid,
+            'player_hostnum': player_hostnum,
             'player_nickname': player_nickname,
             'number_id': player_number_id,
             'discord_user_id': discord_user_id,  # Viewed player's Discord ID
@@ -2493,6 +2752,8 @@ class WWMCog(commands.Cog):
             head_id=profile_data['head_id'],
             body_type=profile_data['body_type'],
             sender_pid=profile_data['sender_pid'],
+            player_pid=profile_data['player_pid'],
+            player_hostnum=profile_data['player_hostnum'],
             homeland_info=profile_data['homeland_info'],
             achievement_data=profile_data['achievement_data'],
         )
