@@ -48,7 +48,7 @@ ALL_KNOWN_FIELDS = [
     "longmen", "gameplay_trail", "settings", "pvp_battle", "homeland",
     "common_score_data", "school", "lunjian", "story_prop", "birthday",
     "attr", "dungeon", "merit_stele", "title_prop", "msd_see_insight",
-    "school", "track", "xs", "space_room", "player_recommend",
+    "track", "xs", "space_room", "player_recommend",
     "big_world", "homeworld_data", "_account_", "weapons", "identity", "fashion",
     "coop_score", "ququs", "baiye_season_simple_statics", "region_collect_prop",
     "fight_shoulder", "lunjian2v2_prop", "lunjian3v3_prop", "chiji", "huiwu",
