@@ -162,7 +162,7 @@ async def _wwm_api_post(
     if uid:
         headers["h72-ms-uid"] = uid
     if token:
-        headers["h72-ms-token"] = token
+        pass
 
     session = await get_session()
     req_timeout = aiohttp.ClientTimeout(total=timeout)
