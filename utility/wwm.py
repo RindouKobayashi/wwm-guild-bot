@@ -1,3 +1,4 @@
+from datetime import datetime, datetime, timedelta, timezone
 import sys
 import os
 import asyncio
@@ -7,9 +8,10 @@ import aiohttp
 import msgpack
 import json
 import random
+import time
 from typing import Dict, Any, Optional, List, Tuple
 from settings import (
-    WWM_TOPICS_LIKES_URL, WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL,
+    WWM_SALT, WWM_TOKEN_SPECIAL_KEY, WWM_TOPICS_LIKES_URL, WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL,
     WWM_FULL_GUILD_URL, WWM_FASHION_PLAN_URL, WWM_CLUB_BY_NAME_URL,
     WWM_CLUB_BRIEF_INFO_BATCH_URL, WWM_CLUB_CHAT_URL,
     WWM_FIND_PEOPLE_BY_NICKNAME_URL, WWM_HOST, logger,
@@ -22,12 +24,13 @@ from settings import (
 # -----------------------------------------------------------------------------
 # Shared Constants
 # -----------------------------------------------------------------------------
-DEFAULT_HEADERS = {
-    "Host": WWM_HOST,
-    "Connection": "close",
-    "h72-ms-uid": WWM_UID,
-    "h72-ms-token": WWM_TOKEN,
-    "Accept-Encoding": "gzip, deflate",
+async def get_default_headers():
+    return {
+        "Host": WWM_HOST,
+        "Connection": "close",
+        "h72-ms-uid": WWM_UID,
+        "h72-ms-token": await generate_token(),
+        "Accept-Encoding": "gzip, deflate",
     "Content-Type": "application/octet-stream",
 }
 
@@ -153,7 +156,7 @@ async def _wwm_api_post(
     This is a non-blocking async function that uses aiohttp instead of requests,
     so it does not block the asyncio event loop.
     """
-    headers = DEFAULT_HEADERS.copy()
+    headers = await get_default_headers()
 
     # Override credentials if provided
     if uid:
@@ -218,6 +221,12 @@ async def _wwm_api_post(
             return None
 
     return None
+
+async def generate_token(a = int(datetime.now(timezone(timedelta(hours=8))).timestamp()) + 300, b = WWM_TOKEN_SPECIAL_KEY, c: str = WWM_SALT):
+    import hashlib
+    t = f"{a}|{b}|{c}"
+    token = str(int(a)) + ":" + hashlib.md5(t.encode("utf-8")).hexdigest()
+    return token
 
 
 # -----------------------------------------------------------------------------
