@@ -1015,6 +1015,41 @@ async def get_sect_election_ranking(school_id: int, limit: int = 5) -> Optional[
     return await _wwm_api_post(url, payload)
 
 
+async def get_rank_list(rank_name: str, page: int = 1, pid: str = None) -> Optional[Dict[str, Any]]:
+    """Fetch a page of a leaderboard from the rank_get_ranklist endpoint.
+
+    Args:
+        rank_name: Full rank name, e.g. "rank_team10_dungeon_22",
+            "rank_team_dungeon_22_st", or "rank_petbattle_3v3".
+        page: 1-indexed page number (20 results per page).
+        pid: Optional player PID to include in the response so the API
+            can return that player's own entry in ``my_data``/``my_rank``.
+
+    Returns:
+        API response dict with 'code' and 'result', or None on failure.
+        The result contains: rank_list, my_data, my_rank, rank_total_len,
+        start, end, page.
+    """
+    if page < 1:
+        page = 1
+    start = (page - 1) * 20
+    end = start + 20
+    payload = {
+        "fields": ["base", "head"],
+        "pid": pid or "",
+        "hostnum": 10001,
+        "fuzzy_info": {},
+        "rank_name": rank_name,
+        "page": page,
+        "params": {},
+        "start": start,
+        "end": end,
+    }
+    logger.debug(f"Fetching rank list: rank_name='{rank_name}', page={page} (start={start}, end={end})")
+    url = RANK_GET_RANKLIST_URL + rank_name
+    return await _wwm_api_post(url, payload)
+
+
 if __name__ == "__main__":
     # CONFIG: Just change this number_id to lookup any player
     TARGET_NUMBER_ID = "1028077590" # 4036668451 | 4033283420 | 1069034222 | 0013538244

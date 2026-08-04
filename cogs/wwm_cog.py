@@ -16,7 +16,7 @@ from deepdiff import DeepDiff
 import aiohttp
 
 import settings
-from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id, get_homeland_info, get_like_history, get_player_combat_plan
+from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id, get_homeland_info, get_like_history, get_player_combat_plan, get_rank_list
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, classify_kongfu_role
 from utility.wwm import get_sect_election_ranking
@@ -1969,6 +1969,315 @@ class Inactive(LayoutView):
         await interaction.edit_original_response(view=self)
 
 
+# -----------------------------------------------------------------------------
+# Ranking (Leaderboard) Views & Command
+# -----------------------------------------------------------------------------
+
+RANKING_ACCENT = 0xE67E22  # Orange
+
+def _format_rank_time(score: float) -> str:
+    """Format a negative time-based score (in minutes) as M:SS.sss.
+
+    Example: -450.11907958984375 -> '7:30.119'
+    """
+    if score is None:
+        return "N/A"
+    total_seconds = abs(float(score))
+    minutes = int(total_seconds // 60)
+    seconds = total_seconds - (minutes * 60)
+    return f"{minutes}:{seconds:06.3f}"
+
+
+def _format_rank_points(score) -> str:
+    """Format a points-based score with thousands separators."""
+    if score is None:
+        return "N/A"
+    try:
+        return f"{int(score):,}"
+    except (ValueError, TypeError):
+        return str(score)
+
+
+def _rank_name_to_display(rank_name: str) -> str:
+    """Convert a rank_name like 'rank_team10_dungeon_22' to a friendly label."""
+    if rank_name.startswith("rank_team10_dungeon_"):
+        return f"HR Dungeon {rank_name.split('_')[-1]}"
+    if rank_name.startswith("rank_team_dungeon_") and rank_name.endswith("_st"):
+        return f"ST Dungeon {rank_name.split('_')[-2]}"
+    if rank_name == "rank_petbattle_3v3":
+        return "3v3 Pet Battle"
+    return rank_name
+
+
+class RankingTypeSelectView(LayoutView):
+    """Step 1: Let the user pick HR / ST / 3v3 Pet."""
+
+    def __init__(self, cog):
+        super().__init__(timeout=120)
+        self.cog = cog
+
+        inner_items = [
+            TextDisplay("# 🏆 Ranking Lookup\nSelect a ranking type to view."),
+            Separator(spacing=discord.SeparatorSpacing.small),
+        ]
+
+        row = ActionRow()
+        hr_btn = Button(
+            label="HR (Hero's Realm)",
+            style=discord.ButtonStyle.primary,
+            emoji="⚔️",
+            custom_id="ranking_type_hr",
+        )
+        hr_btn.callback = self._make_type_callback("hr")
+        row.add_item(hr_btn)
+
+        st_btn = Button(
+            label="ST (Sword Trial)",
+            style=discord.ButtonStyle.primary,
+            emoji="⏱️",
+            custom_id="ranking_type_st",
+        )
+        st_btn.callback = self._make_type_callback("st")
+        row.add_item(st_btn)
+
+        pet_btn = Button(
+            label="Cutie Clash",
+            style=discord.ButtonStyle.primary,
+            emoji="🐾",
+            custom_id="ranking_type_3v3_pet",
+        )
+        pet_btn.callback = self._make_type_callback("3v3_pet")
+        row.add_item(pet_btn)
+        inner_items.append(row)
+
+        container = Container(*inner_items, accent_color=RANKING_ACCENT)
+        self.add_item(container)
+
+    def _make_type_callback(self, rank_type: str):
+        async def callback(interaction: discord.Interaction):
+            if rank_type == "3v3_pet":
+                # No dungeon needed — go straight to results
+                await interaction.response.defer()
+                await self.cog._show_ranking_results(interaction, "3v3_pet", None)
+            else:
+                # Ask for dungeon ID via modal (must be sent via response, not followup)
+                modal = DungeonIDModal(self.cog, rank_type)
+                await interaction.response.send_modal(modal)
+        return callback
+
+    async def on_timeout(self):
+        for child in self.children:
+            if isinstance(child, Container):
+                for sub in child.children:
+                    if isinstance(sub, ActionRow):
+                        for item in sub.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
+
+
+class DungeonIDModal(discord.ui.Modal, title="Enter Dungeon ID"):
+    """Step 2: Ask for the dungeon ID (HR / ST only)."""
+
+    def __init__(self, cog, rank_type: str):
+        super().__init__(timeout=120)
+        self.cog = cog
+        self.rank_type = rank_type
+
+    dungeon_id = discord.ui.TextInput(
+        label="Dungeon ID",
+        placeholder="e.g. 22",
+        max_length=10,
+        required=True,
+    )
+
+    async def on_submit(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        dungeon_id = self.dungeon_id.value.strip()
+        if not dungeon_id.isdigit():
+            await interaction.followup.send("❌ Dungeon ID must be a number.", ephemeral=True)
+            return
+        await self.cog._show_ranking_results(interaction, self.rank_type, int(dungeon_id))
+
+
+class RankingResultsView(LayoutView):
+    """Step 3: Display the leaderboard page with pagination."""
+
+    ITEMS_PER_PAGE = 20
+
+    def __init__(self, cog, rank_type: str, dungeon_id, rank_name: str, page: int = 1):
+        super().__init__(timeout=180)
+        self.cog = cog
+        self.rank_type = rank_type
+        self.dungeon_id = dungeon_id
+        self.rank_name = rank_name
+        self.page = page
+        self.total_pages = 1
+        self.total_entries = 0
+        self.my_rank = None
+        self.my_score = None
+        self.my_nickname = None
+        self.rank_list = []
+        self.last_place_score = None
+        self.last_place_nickname = None
+
+        self._rebuild()
+
+    def _rebuild(self):
+        self.clear_items()
+
+        display_name = _rank_name_to_display(self.rank_name)
+        is_time_based = self.rank_type in ("hr", "st")
+
+        # Header
+        header_lines = [f"# 🏆 {display_name}"]
+        if self.total_entries:
+            header_lines.append(f"📊 **Total Entries:** {self.total_entries}")
+        header_lines.append(f"📍 **Page {self.page}/{self.total_pages}**")
+        header_text = "\n".join(header_lines)
+
+        inner_items = [
+            TextDisplay(header_text),
+            Separator(spacing=discord.SeparatorSpacing.small),
+        ]
+
+        # Rank list
+        if self.rank_list:
+            lines = []
+            for idx, entry in enumerate(self.rank_list):
+                rank_num = (self.page - 1) * self.ITEMS_PER_PAGE + idx + 1
+                player_info = entry.get('player_info', {})
+                base = {}
+                if isinstance(player_info, dict):
+                    # Format A: player_info is keyed by PID -> {pid: {base: {...}, head: {...}, id: ...}}
+                    # Format B: player_info is directly {base: {...}, head: {...}, id: ...}
+                    if 'base' in player_info and isinstance(player_info.get('base'), dict):
+                        base = player_info['base']
+                    else:
+                        for pid, pdata in player_info.items():
+                            if isinstance(pdata, dict) and isinstance(pdata.get('base'), dict):
+                                base = pdata['base']
+                                break
+                nickname = base.get('nickname', 'Unknown')
+                score = entry.get('score', 0)
+
+                if rank_num == 1:
+                    prefix = "🥇"
+                elif rank_num == 2:
+                    prefix = "🥈"
+                elif rank_num == 3:
+                    prefix = "🥉"
+                else:
+                    prefix = f"{rank_num}."
+
+                if is_time_based:
+                    score_str = _format_rank_time(score)
+                else:
+                    score_str = _format_rank_points(score)
+
+                lines.append(f"{prefix} **{nickname}** — {score_str}")
+
+            inner_items.append(TextDisplay("\n".join(lines)))
+        else:
+            inner_items.append(TextDisplay("*No entries on this page.*"))
+
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # My rank section
+        if self.my_rank is not None and self.my_rank >= 0:
+            my_rank_display = self.my_rank + 1
+            if is_time_based:
+                my_score_str = _format_rank_time(self.my_score)
+            else:
+                my_score_str = _format_rank_points(self.my_score)
+            inner_items.append(TextDisplay(
+                f"🎯 **Your Rank:** #{my_rank_display}  |  **Your Score:** {my_score_str}"
+            ))
+        else:
+            inner_items.append(TextDisplay("🎯 **You are not on this leaderboard.**"))
+
+        # Last place / target info
+        if self.last_place_score is not None:
+            if is_time_based:
+                last_str = _format_rank_time(self.last_place_score)
+                target_str = f"⏱️ **Target Time to Break In:** < {last_str}"
+            else:
+                last_str = _format_rank_points(self.last_place_score)
+                target_str = f"🎯 **Target Score to Break In:** > {last_str}"
+            last_name = self.last_place_nickname or "Unknown"
+            inner_items.append(TextDisplay(
+                f"⚠️ **Last Place (#{self.total_entries}):** {last_name} — {last_str}\n{target_str}"
+            ))
+
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Pagination row
+        nav_row = ActionRow()
+        prev_btn = Button(
+            style=discord.ButtonStyle.secondary,
+            label="◀ Prev",
+            custom_id="ranking_prev",
+            disabled=self.page <= 1,
+        )
+        prev_btn.callback = self._handle_prev
+        nav_row.add_item(prev_btn)
+
+        page_label = Button(
+            style=discord.ButtonStyle.secondary,
+            label=f"{self.page}/{self.total_pages}",
+            custom_id="ranking_page_label",
+            disabled=True,
+        )
+        nav_row.add_item(page_label)
+
+        next_btn = Button(
+            style=discord.ButtonStyle.secondary,
+            label="Next ▶",
+            custom_id="ranking_next",
+            disabled=self.page >= self.total_pages,
+        )
+        next_btn.callback = self._handle_next
+        nav_row.add_item(next_btn)
+        inner_items.append(nav_row)
+
+        # Back button
+        back_row = ActionRow()
+        back_btn = Button(
+            style=discord.ButtonStyle.secondary,
+            label="🔙 Change Type",
+            custom_id="ranking_back",
+        )
+        back_btn.callback = self._handle_back
+        back_row.add_item(back_btn)
+        inner_items.append(back_row)
+
+        container = Container(*inner_items, accent_color=RANKING_ACCENT)
+        self.add_item(container)
+
+    async def _handle_prev(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        if self.page > 1:
+            await self.cog._show_ranking_results(interaction, self.rank_type, self.dungeon_id, page=self.page - 1)
+
+    async def _handle_next(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        if self.page < self.total_pages:
+            await self.cog._show_ranking_results(interaction, self.rank_type, self.dungeon_id, page=self.page + 1)
+
+    async def _handle_back(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        view = RankingTypeSelectView(self.cog)
+        await interaction.edit_original_response(content=None, embed=None, view=view)
+
+    async def on_timeout(self):
+        for child in self.children:
+            if isinstance(child, Container):
+                for sub in child.children:
+                    if isinstance(sub, ActionRow):
+                        for item in sub.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
+
+
 class WWMCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
@@ -1996,6 +2305,139 @@ class WWMCog(commands.Cog):
         name="sect",
         description="Sect-related commands"
     )
+
+    ranking_group = app_commands.Group(
+        name="ranking",
+        description="View WWM leaderboards (HR, ST, 3v3 Pet)"
+    )
+
+    @ranking_group.command(name="view", description="View a leaderboard by type (HR/ST/3v3 Pet)")
+    async def ranking_view(self, interaction: discord.Interaction):
+        """Open the ranking type selector."""
+        view = RankingTypeSelectView(self)
+        await interaction.response.send_message(content=None, embed=None, view=view)
+
+    async def _resolve_user_pid(self, interaction: discord.Interaction) -> Optional[str]:
+        """Resolve the calling user's WWM player PID from the verified_members table."""
+        try:
+            async with aiosqlite.connect(DB_PATH) as conn:
+                cursor = await conn.execute(
+                    "SELECT player_pid FROM verified_members WHERE user_id = ?",
+                    (interaction.user.id,)
+                )
+                row = await cursor.fetchone()
+                return row[0] if row else None
+        except Exception as e:
+            logger.warning(f"Failed to resolve user PID for {interaction.user.id}: {e}")
+            return None
+
+    async def _show_ranking_results(self, interaction: discord.Interaction, rank_type: str, dungeon_id, page: int = 1):
+        """Fetch and display leaderboard results for the given type/dungeon."""
+        # Build the rank_name based on type
+        if rank_type == "hr":
+            if dungeon_id is None:
+                await interaction.followup.send("❌ Dungeon ID is required for HR rankings.", ephemeral=True)
+                return
+            rank_name = f"rank_team10_dungeon_{dungeon_id}"
+        elif rank_type == "st":
+            if dungeon_id is None:
+                await interaction.followup.send("❌ Dungeon ID is required for ST rankings.", ephemeral=True)
+                return
+            rank_name = f"rank_team_dungeon_{dungeon_id}"
+        elif rank_type == "3v3_pet":
+            rank_name = "rank_petbattle_3v3"
+        else:
+            await interaction.followup.send("❌ Invalid ranking type.", ephemeral=True)
+            return
+
+
+        try:
+            # Check if the user is bound and get their PID
+            user_pid = await self._resolve_user_pid(interaction)
+            response = await get_rank_list(rank_name, page=page, pid=user_pid)
+
+            if not response or response.get('code') != 0:
+                await interaction.followup.send("❌ Failed to fetch leaderboard data. This dungeon may not exist or the API returned an error.", ephemeral=True)
+                return
+
+            result = response.get('result', {})
+            rank_list = result.get('rank_list', [])
+            total_entries = result.get('rank_total_len', 0)
+            my_data = result.get('my_data', {}) or {}
+            my_rank = result.get('my_rank', -1)  # -1 = not on leaderboard
+
+            if not rank_list and total_entries == 0:
+                await interaction.followup.send("❌ No data found for this ranking. The dungeon ID may be incorrect.", ephemeral=True)
+                return
+
+            total_pages = max(1, (total_entries + 19) // 20)  # ceil division
+            if page > total_pages:
+                page = total_pages
+
+            # Extract user's own score from my_data
+            my_score = my_data.get('score') if my_data else None
+
+            # Find last place (from the last page)
+            last_place_score = None
+            last_place_nickname = None
+
+            def _extract_nickname(player_info) -> str:
+                """Extract nickname from player_info, handling both formats."""
+                if not isinstance(player_info, dict):
+                    return 'Unknown'
+                # Format B: player_info is directly {base: {...}, head: {...}, id: ...}
+                if 'base' in player_info and isinstance(player_info.get('base'), dict):
+                    return player_info['base'].get('nickname', 'Unknown')
+                # Format A: player_info is keyed by PID -> {pid: {base: {...}, ...}}
+                for pdata in player_info.values():
+                    if isinstance(pdata, dict) and isinstance(pdata.get('base'), dict):
+                        return pdata['base'].get('nickname', 'Unknown')
+                return 'Unknown'
+
+            if total_entries > 0:
+                last_page = total_pages
+                if last_page == page:
+                    # We're already on the last page — use the last entry on this page
+                    if rank_list:
+                        last_entry = rank_list[-1]
+                        last_place_score = last_entry.get('score')
+                        last_place_nickname = _extract_nickname(last_entry.get('player_info', {}))
+                else:
+                    # Fetch the last page to get the last place
+                    try:
+                        last_response = await get_rank_list(rank_name, page=last_page, pid=user_pid)
+                        if last_response and last_response.get('code') == 0:
+                            last_result = last_response.get('result', {})
+                            last_page_list = last_result.get('rank_list', [])
+                            if last_page_list:
+                                last_entry = last_page_list[-1]
+                                last_place_score = last_entry.get('score')
+                                last_place_nickname = _extract_nickname(last_entry.get('player_info', {}))
+                    except Exception as e:
+                        logger.warning(f"Failed to fetch last place data: {e}")
+
+            # Build the view
+            view = RankingResultsView(
+                cog=self,
+                rank_type=rank_type,
+                dungeon_id=dungeon_id,
+                rank_name=rank_name,
+                page=page,
+            )
+            view.total_pages = total_pages
+            view.total_entries = total_entries
+            view.my_rank = my_rank if my_rank >= 0 else None
+            view.my_score = my_score
+            view.rank_list = rank_list
+            view.last_place_score = last_place_score
+            view.last_place_nickname = last_place_nickname
+            view._rebuild()
+
+            await interaction.edit_original_response(content=None, embed=None, view=view)
+
+        except Exception as e:
+            logger.error(f"Ranking results failed: {str(e)}", exc_info=True)
+            await interaction.followup.send(f"❌ Failed to load ranking data: `{str(e)}`", ephemeral=True)
 
     @sect_group.command(name="election", description="View the top election candidates for a sect")
     @app_commands.describe(sect_name="The name of the sect to check election rankings for", count="How many candidates to show (default 15, max 20)")
