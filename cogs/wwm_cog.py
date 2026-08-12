@@ -16,7 +16,7 @@ from deepdiff import DeepDiff
 import aiohttp
 
 import settings
-from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id, get_homeland_info, get_like_history, get_player_combat_plan, get_rank_list
+from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_bulk_players_info_multi_hostnum, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id, get_homeland_info, get_like_history, get_player_combat_plan, get_rank_list
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, classify_kongfu_role
 from utility.wwm import get_sect_election_ranking
@@ -2002,22 +2002,26 @@ def _rank_name_to_display(rank_name: str) -> str:
     """Convert a rank_name like 'rank_team10_dungeon_22' to a friendly label."""
     if rank_name.startswith("rank_team10_dungeon_"):
         return f"HR Dungeon {rank_name.split('_')[-1]}"
-    if rank_name.startswith("rank_team_dungeon_") and rank_name.endswith("_st"):
-        return f"ST Dungeon {rank_name.split('_')[-2]}"
+    if rank_name.startswith("rank_team_dungeon_"):
+        return f"ST Dungeon {rank_name.split('_')[-1]}"
     if rank_name == "rank_petbattle_3v3":
-        return "3v3 Pet Battle"
+        return "Cutie Clash 3v3"
     return rank_name
 
 
 class RankingTypeSelectView(LayoutView):
     """Step 1: Let the user pick HR / ST / 3v3 Pet."""
 
-    def __init__(self, cog):
+    def __init__(self, cog, target_pid: Optional[str] = None):
         super().__init__(timeout=120)
         self.cog = cog
+        self.target_pid = target_pid
 
+        header_text = "# 🏆 Ranking Lookup\nSelect a ranking type to view."
+        if target_pid:
+            header_text += "\n\n🎯 **Target queued:** will jump to their rank when found."
         inner_items = [
-            TextDisplay("# 🏆 Ranking Lookup\nSelect a ranking type to view."),
+            TextDisplay(header_text),
             Separator(spacing=discord.SeparatorSpacing.small),
         ]
 
@@ -2058,10 +2062,10 @@ class RankingTypeSelectView(LayoutView):
             if rank_type == "3v3_pet":
                 # No dungeon needed — go straight to results
                 await interaction.response.defer()
-                await self.cog._show_ranking_results(interaction, "3v3_pet", None)
+                await self.cog._show_ranking_results(interaction, "3v3_pet", None, target_pid=self.target_pid)
             else:
                 # Ask for dungeon ID via modal (must be sent via response, not followup)
-                modal = DungeonIDModal(self.cog, rank_type)
+                modal = DungeonIDModal(self.cog, rank_type, self.target_pid)
                 await interaction.response.send_modal(modal)
         return callback
 
@@ -2078,10 +2082,11 @@ class RankingTypeSelectView(LayoutView):
 class DungeonIDModal(discord.ui.Modal, title="Enter Dungeon ID"):
     """Step 2: Ask for the dungeon ID (HR / ST only)."""
 
-    def __init__(self, cog, rank_type: str):
+    def __init__(self, cog, rank_type: str, target_pid: Optional[str] = None):
         super().__init__(timeout=120)
         self.cog = cog
         self.rank_type = rank_type
+        self.target_pid = target_pid
 
     dungeon_id = discord.ui.TextInput(
         label="Dungeon ID",
@@ -2096,7 +2101,7 @@ class DungeonIDModal(discord.ui.Modal, title="Enter Dungeon ID"):
         if not dungeon_id.isdigit():
             await interaction.followup.send("❌ Dungeon ID must be a number.", ephemeral=True)
             return
-        await self.cog._show_ranking_results(interaction, self.rank_type, int(dungeon_id))
+        await self.cog._show_ranking_results(interaction, self.rank_type, int(dungeon_id), target_pid=self.target_pid)
 
 
 class RankingResultsView(LayoutView):
@@ -2104,13 +2109,15 @@ class RankingResultsView(LayoutView):
 
     ITEMS_PER_PAGE = 20
 
-    def __init__(self, cog, rank_type: str, dungeon_id, rank_name: str, page: int = 1):
+    def __init__(self, cog, rank_type: str, dungeon_id, rank_name: str, page: int = 1, target_pid: Optional[str] = None):
         super().__init__(timeout=180)
         self.cog = cog
         self.rank_type = rank_type
         self.dungeon_id = dungeon_id
         self.rank_name = rank_name
         self.page = page
+        self.target_pid = target_pid
+        self.target_nickname = None
         self.total_pages = 1
         self.total_entries = 0
         self.my_rank = None
@@ -2182,18 +2189,26 @@ class RankingResultsView(LayoutView):
 
         inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
 
-        # My rank section
+        # My rank section — shows the viewing player's rank (or target's if checking someone)
         if self.my_rank is not None and self.my_rank >= 0:
             my_rank_display = self.my_rank + 1
             if is_time_based:
                 my_score_str = _format_rank_time(self.my_score)
             else:
                 my_score_str = _format_rank_points(self.my_score)
-            inner_items.append(TextDisplay(
-                f"🎯 **Your Rank:** #{my_rank_display}  |  **Your Score:** {my_score_str}"
-            ))
+            if self.target_nickname:
+                inner_items.append(TextDisplay(
+                    f"🎯 **{self.target_nickname}'s Rank:** #{my_rank_display}  |  **Score:** {my_score_str}"
+                ))
+            else:
+                inner_items.append(TextDisplay(
+                    f"🎯 **Your Rank:** #{my_rank_display}  |  **Your Score:** {my_score_str}"
+                ))
         else:
-            inner_items.append(TextDisplay("🎯 **You are not on this leaderboard.**"))
+            if self.target_nickname:
+                inner_items.append(TextDisplay(f"🎯 **{self.target_nickname} is not on this leaderboard.**"))
+            else:
+                inner_items.append(TextDisplay("🎯 **You are not on this leaderboard.**"))
 
         # Last place / target info
         if self.last_place_score is not None:
@@ -2207,6 +2222,45 @@ class RankingResultsView(LayoutView):
             inner_items.append(TextDisplay(
                 f"⚠️ **Last Place (#{self.total_entries}):** {last_name} — {last_str}\n{target_str}"
             ))
+
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Team/Player select dropdown
+        self.page_entries = []
+        if self.rank_list:
+            options = []
+            for idx, entry in enumerate(self.rank_list):
+                rank_num = (self.page - 1) * self.ITEMS_PER_PAGE + idx + 1
+                player_info = entry.get('player_info', {})
+                base = {}
+                if isinstance(player_info, dict):
+                    if 'base' in player_info and isinstance(player_info.get('base'), dict):
+                        base = player_info['base']
+                    else:
+                        for pid, pdata in player_info.items():
+                            if isinstance(pdata, dict) and isinstance(pdata.get('base'), dict):
+                                base = pdata['base']
+                                break
+                nickname = base.get('nickname', 'Unknown')
+                self.page_entries.append({
+                    'rank': rank_num,
+                    'nickname': nickname,
+                    'entry': entry,
+                })
+                label = f"{rank_num}. {nickname}"
+                options.append(discord.SelectOption(label=label[:100], value=str(idx)))
+
+            if options:
+                select_placeholder = "👥 View Team" if self.rank_type in ("hr", "st") else "👤 View Player"
+                select_row = ActionRow()
+                view_select = Select(
+                    placeholder=select_placeholder,
+                    options=options[:25],
+                    custom_id="ranking_view_entry",
+                )
+                view_select.callback = self._handle_view_entry
+                select_row.add_item(view_select)
+                inner_items.append(select_row)
 
         inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
 
@@ -2256,17 +2310,195 @@ class RankingResultsView(LayoutView):
     async def _handle_prev(self, interaction: discord.Interaction):
         await interaction.response.defer()
         if self.page > 1:
-            await self.cog._show_ranking_results(interaction, self.rank_type, self.dungeon_id, page=self.page - 1)
+            await self.cog._show_ranking_results(interaction, self.rank_type, self.dungeon_id, page=self.page - 1, target_pid=self.target_pid)
 
     async def _handle_next(self, interaction: discord.Interaction):
         await interaction.response.defer()
         if self.page < self.total_pages:
-            await self.cog._show_ranking_results(interaction, self.rank_type, self.dungeon_id, page=self.page + 1)
+            await self.cog._show_ranking_results(interaction, self.rank_type, self.dungeon_id, page=self.page + 1, target_pid=self.target_pid)
 
     async def _handle_back(self, interaction: discord.Interaction):
         await interaction.response.defer()
         view = RankingTypeSelectView(self.cog)
         await interaction.edit_original_response(content=None, embed=None, view=view)
+
+    async def _handle_view_entry(self, interaction: discord.Interaction):
+        """Handle selecting a team (HR/ST) or player (3v3 Pet) from the dropdown."""
+        await interaction.response.defer(ephemeral=True)
+        selected = interaction.data.get("values", [""])[0]
+        try:
+            idx = int(selected)
+        except (ValueError, TypeError):
+            await interaction.followup.send("❌ Invalid selection.", ephemeral=True)
+            return
+
+        if idx < 0 or idx >= len(self.page_entries):
+            await interaction.followup.send("❌ Invalid selection.", ephemeral=True)
+            return
+
+        entry_data = self.page_entries[idx]
+        entry = entry_data['entry']
+        rank_num = entry_data['rank']
+
+        if self.rank_type in ("hr", "st"):
+            # Team view
+            ud = entry.get('ud', {})
+            members = ud.get('members', [])
+            leader_id = ud.get('leader_id')
+            hostnum2pids = {}
+            for pid in members:
+                hostnum = ud.get(pid, {}).get('hostnum', 10595)
+                hostnum2pids.setdefault(hostnum, []).append(pid)
+
+            try:
+                bulk = await get_bulk_players_info_multi_hostnum(hostnum2pids, fields=["base"])
+            except Exception as e:
+                logger.error(f"Failed to fetch team members: {e}", exc_info=True)
+                await interaction.followup.send(f"❌ Failed to load team: `{str(e)}`", ephemeral=True)
+                return
+
+            member_list = []
+            if bulk and bulk.get('code') == 0:
+                players = bulk.get('result', {})
+                for pid in members:
+                    pdata = players.get(pid, {})
+                    base = pdata.get('base', {})
+                    school_id = base.get('school', 0)
+                    school_name = SCHOOL_NAMES.get(school_id) if school_id in SCHOOL_NAMES else None
+                    member_list.append({
+                        'pid': pid,
+                        'hostnum': ud.get(pid, {}).get('hostnum', 10595),
+                        'nickname': base.get('nickname', 'Unknown'),
+                        'level': base.get('level', 0),
+                        'number_id': str(base.get('number_id', '')),
+                        'is_online': base.get('is_online', 0) == 1,
+                        'school_name': school_name,
+                    })
+
+            if not member_list:
+                await interaction.followup.send("❌ Could not load team members.", ephemeral=True)
+                return
+
+            team_view = TeamDetailView(
+                cog=self.cog,
+                rank_type=self.rank_type,
+                rank_name=self.rank_name,
+                rank_num=rank_num,
+                score=entry.get('score', 0),
+                members=member_list,
+                back_view=self,
+            )
+            await interaction.edit_original_response(content=None, embed=None, view=team_view)
+        else:
+            # 3v3 Pet — view player profile
+            player_info = entry.get('player_info', {})
+            base = {}
+            if isinstance(player_info, dict):
+                if 'base' in player_info and isinstance(player_info.get('base'), dict):
+                    base = player_info['base']
+                else:
+                    for pid, pdata in player_info.items():
+                        if isinstance(pdata, dict) and isinstance(pdata.get('base'), dict):
+                            base = pdata['base']
+                            break
+            number_id = str(base.get('number_id', ''))
+            nickname = base.get('nickname', 'Unknown')
+            if not number_id:
+                await interaction.followup.send(f"❌ No Number ID available for {nickname}.", ephemeral=True)
+                return
+            try:
+                view, files = await self.cog._build_player_profile_view(number_id, interaction, ephemeral=True)
+                if not view:
+                    await interaction.followup.send(f"❌ Could not load profile for {nickname}", ephemeral=True)
+                    return
+                view._original_message = None
+                await interaction.followup.send(view=view, files=files, ephemeral=True)
+            except Exception as e:
+                logger.error(f"Failed to show player profile from ranking: {e}", exc_info=True)
+                await interaction.followup.send(f"❌ Failed to load profile: `{str(e)}`", ephemeral=True)
+
+    async def on_timeout(self):
+        for child in self.children:
+            if isinstance(child, Container):
+                for sub in child.children:
+                    if isinstance(sub, ActionRow):
+                        for item in sub.children:
+                            if isinstance(item, discord.ui.Button):
+                                item.disabled = True
+
+
+class TeamDetailView(LayoutView):
+    """Components V2 LayoutView showing a team's members (HR=10, ST=5) with per-member profile buttons."""
+
+    def __init__(self, cog, rank_type: str, rank_name: str, rank_num: int, score, members: list, back_view):
+        super().__init__(timeout=180)
+        self.cog = cog
+        self.rank_type = rank_type
+        self.rank_name = rank_name
+        self.rank_num = rank_num
+        self.score = score
+        self.members = members  # list of dicts: {pid, hostnum, nickname, level, number_id, is_online, school_name}
+        self.back_view = back_view
+
+        is_time_based = self.rank_type in ("hr", "st")
+        score_str = _format_rank_time(score) if is_time_based else _format_rank_points(score)
+
+        inner_items = [
+            TextDisplay(f"# 👥 Team #{self.rank_num} — {score_str}\n\n**Members:** {len(members)}"),
+            Separator(spacing=discord.SeparatorSpacing.small),
+        ]
+
+        # Member rows with profile buttons
+        for idx, m in enumerate(members):
+            online_icon = "🟢" if m.get('is_online') else "⚫"
+            school_str = f" | {m['school_name']}" if m.get('school_name') else ""
+            member_text = f"{online_icon} **{m['nickname']}** Lv.{m['level']}{school_str} | ID: {m['number_id']}"
+            if m.get('number_id'):
+                btn = Button(
+                    label="🔍 Profile",
+                    style=discord.ButtonStyle.secondary,
+                    custom_id=f"team_member_profile_{idx}",
+                )
+                btn.callback = self._make_profile_callback(m)
+                section = Section(TextDisplay(member_text), accessory=btn)
+                inner_items.append(section)
+            else:
+                inner_items.append(TextDisplay(member_text))
+
+        inner_items.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Back button
+        back_row = ActionRow()
+        back_btn = Button(
+            style=discord.ButtonStyle.secondary,
+            label="🔙 Back to Leaderboard",
+            custom_id="team_back",
+        )
+        back_btn.callback = self._handle_back
+        back_row.add_item(back_btn)
+        inner_items.append(back_row)
+
+        container = Container(*inner_items, accent_color=RANKING_ACCENT)
+        self.add_item(container)
+
+    def _make_profile_callback(self, member: dict):
+        async def callback(interaction: discord.Interaction):
+            await interaction.response.defer(ephemeral=True)
+            try:
+                view, files = await self.cog._build_player_profile_view(member['number_id'], interaction, ephemeral=True)
+                if not view:
+                    await interaction.followup.send(f"❌ Could not load profile for {member['nickname']}", ephemeral=True)
+                    return
+                view._original_message = None
+                await interaction.followup.send(view=view, files=files, ephemeral=True)
+            except Exception as e:
+                logger.error(f"Failed to show team member profile: {e}", exc_info=True)
+                await interaction.followup.send(f"❌ Failed to load profile: `{str(e)}`", ephemeral=True)
+        return callback
+
+    async def _handle_back(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        await interaction.edit_original_response(content=None, embed=None, view=self.back_view)
 
     async def on_timeout(self):
         for child in self.children:
@@ -2308,13 +2540,27 @@ class WWMCog(commands.Cog):
 
     ranking_group = app_commands.Group(
         name="ranking",
-        description="View WWM leaderboards (HR, ST, 3v3 Pet)"
+        description="View WWM leaderboards (HR, ST, Cutie Clash 3v3)"
     )
 
-    @ranking_group.command(name="view", description="View a leaderboard by type (HR/ST/3v3 Pet)")
-    async def ranking_view(self, interaction: discord.Interaction):
-        """Open the ranking type selector."""
-        view = RankingTypeSelectView(self)
+    @ranking_group.command(name="view", description="View a leaderboard by type (HR/ST/Cutie Clash 3v3).")
+    @app_commands.describe(identifier="Optional: Player's 10-digit Number ID or in-game nickname to check their rank")
+    async def ranking_view(self, interaction: discord.Interaction, identifier: Optional[str] = None):
+        """Open the ranking type selector. If identifier is provided, jump to that player's rank."""
+        target_pid = None
+        if identifier and identifier.strip():
+            pid, _, _ = await self._resolve_player_identifier(identifier.strip())
+            if not pid:
+                embed = discord.Embed(
+                    title="❌ Player Not Found",
+                    description=f"No player found matching '{identifier}'. Try a 10-digit Number ID or exact nickname.",
+                    color=discord.Color.red()
+                )
+                await interaction.response.send_message(embed=embed, ephemeral=True)
+                return
+            target_pid = pid
+
+        view = RankingTypeSelectView(self, target_pid=target_pid)
         await interaction.response.send_message(content=None, embed=None, view=view)
 
     async def _resolve_user_pid(self, interaction: discord.Interaction) -> Optional[str]:
@@ -2331,7 +2577,7 @@ class WWMCog(commands.Cog):
             logger.warning(f"Failed to resolve user PID for {interaction.user.id}: {e}")
             return None
 
-    async def _show_ranking_results(self, interaction: discord.Interaction, rank_type: str, dungeon_id, page: int = 1):
+    async def _show_ranking_results(self, interaction: discord.Interaction, rank_type: str, dungeon_id, page: int = 1, target_pid: Optional[str] = None):
         """Fetch and display leaderboard results for the given type/dungeon."""
         # Build the rank_name based on type
         if rank_type == "hr":
@@ -2354,7 +2600,23 @@ class WWMCog(commands.Cog):
         try:
             # Check if the user is bound and get their PID
             user_pid = await self._resolve_user_pid(interaction)
-            response = await get_rank_list(rank_name, page=page, pid=user_pid)
+
+            # If a target_pid was provided, first fetch page 1 to get my_rank / my_data
+            # so we can jump to the target's page.
+            if target_pid:
+                probe_response = await get_rank_list(rank_name, page=1, pid=target_pid)
+                if probe_response and probe_response.get('code') == 0:
+                    probe_result = probe_response.get('result', {})
+                    probe_rank = probe_result.get('my_rank', -1)
+                    if probe_rank >= 0:
+                        target_page = probe_rank // 20 + 1
+                        if page == 1 and target_page > 1:
+                            page = target_page
+
+            # When checking a specific target, use their PID so my_rank / my_data
+            # reflect the target's position (not the calling user's).
+            fetch_pid = target_pid if target_pid else user_pid
+            response = await get_rank_list(rank_name, page=page, pid=fetch_pid)
 
             if not response or response.get('code') != 0:
                 await interaction.followup.send("❌ Failed to fetch leaderboard data. This dungeon may not exist or the API returned an error.", ephemeral=True)
@@ -2416,6 +2678,11 @@ class WWMCog(commands.Cog):
                     except Exception as e:
                         logger.warning(f"Failed to fetch last place data: {e}")
 
+            # When checking a target player, extract their nickname for display labels
+            target_nickname = None
+            if target_pid and my_data:
+                target_nickname = _extract_nickname(my_data.get('player_info', {}))
+
             # Build the view
             view = RankingResultsView(
                 cog=self,
@@ -2423,6 +2690,7 @@ class WWMCog(commands.Cog):
                 dungeon_id=dungeon_id,
                 rank_name=rank_name,
                 page=page,
+                target_pid=target_pid,
             )
             view.total_pages = total_pages
             view.total_entries = total_entries
@@ -2431,6 +2699,7 @@ class WWMCog(commands.Cog):
             view.rank_list = rank_list
             view.last_place_score = last_place_score
             view.last_place_nickname = last_place_nickname
+            view.target_nickname = target_nickname
             view._rebuild()
 
             await interaction.edit_original_response(content=None, embed=None, view=view)
@@ -5718,8 +5987,8 @@ class GuildInfoView(LayoutView):
         await interaction.response.defer(ephemeral=True)
 
         try:
-            # Use the shared helper
-            view, files = await self._build_player_profile_view(number_id, interaction, ephemeral=True)
+            # Use the shared helper on the cog (fix: was self._build_player_profile_view)
+            view, files = await self.cog._build_player_profile_view(number_id, interaction, ephemeral=True)
             
             if not view:
                 await interaction.followup.send(f"❌ Could not load profile for {nickname_label}", ephemeral=True)
