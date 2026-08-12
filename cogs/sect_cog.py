@@ -707,6 +707,7 @@ class SectCog(commands.Cog):
                 'nine_mortal_ways': 11,
                 'velvet_shade': 12,
                 'masked_troupe': 2,
+                'mohist_hill': 13,
             }
         return self._key_to_school_id.get(key)
     
