@@ -1049,6 +1049,42 @@ async def get_rank_list(rank_name: str, page: int = 1, pid: str = None) -> Optio
     url = RANK_GET_RANKLIST_URL + rank_name
     return await _wwm_api_post(url, payload)
 
+async def resolve_player_identifier(identifier: str) -> tuple:
+    """
+    Resolve a player identifier (number ID or nickname) to PID and hostnum.
+    Smart routing: if exactly 10 digits → number ID API, else → nickname API.
+    Returns (pid, hostnum, player_data_dict) or (None, None, None).
+    """
+    t0 = time.time()
+    # Smart routing based on format
+    if identifier.isdigit() and len(identifier) == 10:
+        # Exactly 10 digits → treat as Number ID
+        player_data = await get_player_info(identifier, fields=["base"], force_search=True)
+        t1 = time.time()
+        logger.debug(f"[timing] resolve_number_id_search: {t1 - t0:.3f}s")
+        if player_data and player_data.get('result') and player_data['result'].get('id'):
+            result = player_data['result']
+            pid = result.get('id')
+            hostnum = result.get('hostnum', 10595)
+            logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via number_id")
+            return pid, hostnum, result
+
+    # Otherwise → treat as nickname
+    nickname_data = await find_people_by_nickname(identifier, force_search=True)
+    t1 = time.time()
+    logger.debug(f"[timing] resolve_nickname_search: {t1 - t0:.3f}s")
+    if nickname_data and nickname_data.get('result'):
+        result = nickname_data['result']
+        pid = result.get('id')
+        hostnum = result.get('hostnum', 10595)
+        logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via nickname")
+        return pid, hostnum, result
+
+    t1 = time.time()
+    logger.debug(f"[timing] resolve_total_failed: {t1 - t0:.3f}s")
+    logger.warning(f"Could not resolve identifier '{identifier}'")
+    return None, None, None
+
 
 if __name__ == "__main__":
     # CONFIG: Just change this number_id to lookup any player
