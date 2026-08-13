@@ -983,7 +983,7 @@ class PlayerProfileView(LayoutView):
         
         # Core stats
         if not self.is_invisible:
-            online_str = "🟢 **ONLINE NOW**" if self.is_online else "🔴 **Offline**"
+            online_str = "🟢 **Online**" if self.is_online else "🔴 **Offline**"
         else:
             online_str = "⚫ **Invisible**"
         
@@ -3174,9 +3174,11 @@ class WWMCog(commands.Cog):
                 main_id = kongfu_data.get('kongfu_main')
                 sub_id = kongfu_data.get('kongfu_sub')
                 if main_id:
-                    kongfu_main = KONGFU_WEAPON_MAP.get(main_id, f"Unknown ({main_id})")
+                    kongfu_main = KONGFU_WEAPON_MAP.get(main_id, f"Unknown ({main_id})").get("name")
+                    kongfu_main += " " + KONGFU_WEAPON_MAP.get(main_id, f"Unknown ({main_id})").get("emoji", "")
                 if sub_id:
-                    kongfu_sub = KONGFU_WEAPON_MAP.get(sub_id, f"Unknown ({sub_id})")
+                    kongfu_sub = KONGFU_WEAPON_MAP.get(sub_id, f"Unknown ({sub_id})").get("name")
+                    kongfu_sub += " " + KONGFU_WEAPON_MAP.get(sub_id, f"Unknown ({sub_id})").get("emoji", "")
                 weapon_ids = get_kongfu_ids_from_player(data)
                 if weapon_ids:
                     kongfu_role = classify_kongfu_role(weapon_ids) if weapon_ids else ""

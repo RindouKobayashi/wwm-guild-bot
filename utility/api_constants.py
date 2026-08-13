@@ -325,25 +325,24 @@ CLUB_CHAT_MESSAGE_FIELDS = {
 # KUNGFU / WEAPON MAPPING
 # ==============================================
 KONGFU_WEAPON_MAP = {
-    10101: "Strategic Sword",
-    10102: "Nameless Sword",
-    10201: "Heavenquaker Spear",
-    10202: "Nameless Spear",
-    10301: "Panacea Fan",
-    10302: "Inkwell Fan",
-    20103: "Stormbreaker Spear",
-    20401: "Thundercry Blade",
-    20402: "Phalanxbane Blade",
-    20501: "Infernal Twinblades",
-    20601: "Vernal Umbrella",
-    20602: "Soulshade Umbrella",
-    20603: "Everspring Umbrella",
-    20701: "Mortal Rope Dart",
-    20702: "Unfettered Rope Dart",
-    20703: "Skygrasp Rope Dart",
-    20801: "Snowparting Blade",
-    20900: "Gaunlet (?)",
-    20901: "Heavenwill Gauntlets"
+    10101: {"name": "Strategic Sword", "icon": "tianquan_small_2_oversea_0_0_ui.png", "emoji": "<:tianquan_small_2_oversea_0_0_ui:1537248209573777509>", "role": "DPS"},
+    10201: {"name": "Heavenquaker Spear", "icon": "tianquan_small_2_oversea_0_0_ui.png", "emoji": "<:tianquan_small_2_oversea_0_0_ui:1537248209573777509>", "role": "DPS"},
+    10102: {"name": "Nameless Sword", "icon": "tianquan_small_1_oversea_0_0_ui.png", "emoji": "<:tianquan_small_1_oversea_0_0_ui:1537248207699050576>", "role": "DPS"},
+    10202: {"name": "Nameless Spear", "icon": "tianquan_small_1_oversea_0_0_ui.png", "emoji": "<:tianquan_small_1_oversea_0_0_ui:1537248207699050576>", "role": "DPS"},
+    10301: {"name": "Panacea Fan", "icon": "qingxi_small_2_oversea_0_0_ui.png", "emoji": "<:qingxi_small_2_oversea_0_0_ui:1537248205954224158>", "role": "Healer"},
+    20602: {"name": "Soulshade Umbrella", "icon": "qingxi_small_2_oversea_0_0_ui.png", "emoji": "<:qingxi_small_2_oversea_0_0_ui:1537248205954224158>", "role": "Healer"},
+    10302: {"name": "Inkwell Fan", "icon": "qingxi_small_1_oversea_0_0_ui.png", "emoji": "<:qingxi_small_1_oversea_0_0_ui:1537248204326961252>", "role": "DPS"},
+    20601: {"name": "Vernal Umbrella", "icon": "qingxi_small_1_oversea_0_0_ui.png", "emoji": "<:qingxi_small_1_oversea_0_0_ui:1537248204326961252>", "role": "DPS"},
+    20103: {"name": "Stormbreaker Spear", "icon": "kuanglan_small_2_oversea_0_0_ui.png", "emoji": "<:kuanglan_small_2_oversea_0_0_ui:1537248201017659413>", "role": "Tank"},
+    20401: {"name": "Thundercry Blade", "icon": "kuanglan_small_2_oversea_0_0_ui.png", "emoji": "<:kuanglan_small_2_oversea_0_0_ui:1537248201017659413>", "role": "Tank"},
+    20402: {"name": "Phalanxbane Blade", "icon": "kuanglan_small_1_oversea_0_0_ui.png","emoji": "<:kuanglan_small_1_oversea_0_0_ui:1537248199310446693>", "role": "DPS"},
+    20801: {"name": "Snowparting Blade", "icon": "kuanglan_small_1_oversea_0_0_ui.png","emoji": "<:kuanglan_small_1_oversea_0_0_ui:1537248199310446693>", "role": "DPS"},
+    20501: {"name": "Infernal Twinblades", "icon": "guyun_small_1_oversea_0_0_ui.png", "emoji": "<:guyun_small_1_oversea_0_0_ui:1537248195741220914>", "role": "DPS"},
+    20701: {"name": "Mortal Rope Dart", "icon": "guyun_small_1_oversea_0_0_ui.png", "emoji": "<:guyun_small_1_oversea_0_0_ui:1537248195741220914>", "role": "DPS"},
+    20603: {"name": "Everspring Umbrella", "icon": "guyun_small_2_oversea_0_0_ui.png", "emoji": "<:guyun_small_2_oversea_0_0_ui:1537248197641240596>", "role": "DPS"},
+    20702: {"name": "Unfettered Rope Dart", "icon": "guyun_small_2_oversea_0_0_ui.png", "emoji": "<:guyun_small_2_oversea_0_0_ui:1537248197641240596>", "role": "DPS"},
+    20703: {"name": "Skygrasp Rope Dart", "icon": "moshandao_small_1_oversea_0_0_ui.png", "emoji": "<:moshandao_small_1_oversea_0_0_ui:1537248202573750283>", "role": "DPS"},
+    20901: {"name": "Heavenwill Gauntlets", "icon": "moshandao_small_1_oversea_0_0_ui.png", "emoji": "<:moshandao_small_1_oversea_0_0_ui:1537248202573750283>", "role": "DPS"}
 }
 
 HEALER_WEAPONS = {10301, 20602}
@@ -374,14 +373,7 @@ def format_kongfu_display(weapon_ids: list) -> str:
     """Format weapon names and role classification into a display string."""
     weapon_names = [KONGFU_WEAPON_MAP.get(w, f"Unknown ({w})") for w in weapon_ids]
     role = classify_kongfu_role(weapon_ids)
-    role_emoji = {
-        "Healer": "💚",
-        "Healer Hybrid": "💚",
-        "Tank": "🛡️",
-        "Tank Hybrid": "🛡️",
-        "Healer/Tank Hybrid": "💚🛡️",
-        "DPS": "⚔️",
-    }.get(role, "⚔️")
+    role_emoji = (KONGFU_WEAPON_MAP.get(w).get("emoji") for w in weapon_ids if w in KONGFU_WEAPON_MAP)
     
     weapons_str = ", ".join(weapon_names)
     return f"{weapons_str} | {role_emoji} {role}"
