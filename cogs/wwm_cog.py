@@ -158,7 +158,7 @@ class GuildStatusBoard(LayoutView):
 
         # Online status section
         status_text = (
-            f"🟢 **Online Now:** __**{online_count}/{member_count}**__\n"
+            f"🟢 **Online:** __**{online_count}/{member_count}**__\n"
             f"🖱️ **Check Button Presses:** __**{press_count}**__"
         )
 
