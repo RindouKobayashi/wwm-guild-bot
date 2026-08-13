@@ -371,12 +371,12 @@ def classify_kongfu_role(weapon_ids: list) -> str:
 
 def format_kongfu_display(weapon_ids: list) -> str:
     """Format weapon names and role classification into a display string."""
-    weapon_names = [KONGFU_WEAPON_MAP.get(w, f"Unknown ({w})") for w in weapon_ids]
+    weapon_names = [KONGFU_WEAPON_MAP.get(w, f"Unknown ({w})").get("name", f"Unknown ({w})") for w in weapon_ids]
     role = classify_kongfu_role(weapon_ids)
-    role_emoji = (KONGFU_WEAPON_MAP.get(w).get("emoji") for w in weapon_ids if w in KONGFU_WEAPON_MAP)
-    
+    role_emoji = (KONGFU_WEAPON_MAP.get(w, f"Unknown ({w})").get("emoji", "") for w in weapon_ids)
+
     weapons_str = ", ".join(weapon_names)
-    return f"{weapons_str} | {role_emoji} {role}"
+    return f"{weapons_str} | {' '.join(role_emoji)} {role}"
 
 
 def get_kongfu_ids_from_player(player_data: dict) -> list:
