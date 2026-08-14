@@ -822,6 +822,7 @@ class PlayerProfileView(LayoutView):
         player_nickname: str,
         number_id: str,
         discord_user_id: int = None,
+        ly_stage_name: str = None,
         level: int = 0,
         is_online: bool = False,
         is_invisible: bool = False,
@@ -902,6 +903,7 @@ class PlayerProfileView(LayoutView):
         self.player_nickname = player_nickname
         self.number_id = number_id
         self.discord_user_id = discord_user_id
+        self.ly_stage_name = ly_stage_name
         self.level = level
         self.is_online = is_online
         self.is_invisible = is_invisible
@@ -973,6 +975,8 @@ class PlayerProfileView(LayoutView):
         
         # Title line
         title = f"# {self.player_nickname} | {self.number_id}"
+        if self.ly_stage_name:
+            title += f" ({self.ly_stage_name})"
         if self.discord_user_id:
             title += f"\n### <@{self.discord_user_id}>'s profile"
         lines.append(title)
@@ -3000,6 +3004,7 @@ class WWMCog(commands.Cog):
 
         player_nickname = base_data.get('nickname', 'Unknown')
         player_number_id = base_data.get('number_id', 'N/A')
+        ly_stage_name = base_data.get('ly_stage_name', '')
         lv = base_data.get('level', 0)
         is_invisible = base_data.get('invisible', False)
         is_online = base_data.get('is_online', 0) == 1
@@ -3401,6 +3406,7 @@ class WWMCog(commands.Cog):
             'player_nickname': player_nickname,
             'number_id': player_number_id,
             'discord_user_id': discord_user_id,  # Viewed player's Discord ID
+            'ly_stage_name': ly_stage_name,
             'level': lv,
             'is_online': is_online,
             'is_invisible': is_invisible,
@@ -3488,6 +3494,7 @@ class WWMCog(commands.Cog):
             player_nickname=profile_data['player_nickname'],
             number_id=profile_data['number_id'],
             discord_user_id=profile_data['discord_user_id'],  # Viewed player's Discord ID
+            ly_stage_name=profile_data['ly_stage_name'],
             level=profile_data['level'],
             is_online=profile_data['is_online'],
             is_invisible=profile_data['is_invisible'],
