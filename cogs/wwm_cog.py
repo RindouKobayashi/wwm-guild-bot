@@ -18,7 +18,7 @@ import aiohttp
 import settings
 from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_bulk_players_info_multi_hostnum, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id, get_homeland_info, get_like_history, get_player_combat_plan, get_rank_list
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
-from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, classify_kongfu_role
+from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, classify_kongfu_role, VOTE_COUNTS
 from utility.wwm import get_sect_election_ranking
 from utility.affix_mapper import map_data, init_db
 
@@ -853,6 +853,7 @@ class PlayerProfileView(LayoutView):
         school_emoji: str = "",
         school_name: str = None,
         school_rank: str = None,
+        school_data: dict = None,
         # Fashion / Elegance
         fashion_score: int = 0,
         # Combat
@@ -929,6 +930,7 @@ class PlayerProfileView(LayoutView):
         self.school_emoji = school_emoji
         self.school_name = school_name
         self.school_rank = school_rank
+        self.school_data = school_data
         self.fashion_score = fashion_score
         self.arena_1v1_rank = arena_1v1_rank
         self.arena_1v1_max_winning_streak = arena_1v1_max_winning_streak
@@ -991,7 +993,7 @@ class PlayerProfileView(LayoutView):
         
         # Always show these (moved from social/sect buttons)
         if self.create_time:
-            lines.append(f"📅 **Account:** <t:{int(self.create_time)}:R>")
+            lines.append(f"📅 **Account:** <t:{int(self.create_time)}:F> <t:{int(self.create_time)}:R>")
         if self.birthday_str:
             lines.append(f"🎂 **Birthday:** {self.birthday_str}")
         
@@ -1068,22 +1070,23 @@ class PlayerProfileView(LayoutView):
         else:
             # Overview: Select menu
             select_options = [
-                discord.SelectOption(label="⚔️ Combat", value="combat", emoji="⚔️"),
-                discord.SelectOption(label="🎓 Masteries", value="masteries", emoji="🎓"),
-                discord.SelectOption(label="📊 Attributes", value="attributes", emoji="📊"),
-                discord.SelectOption(label="🔧 Kongfu & Role", value="kongfu", emoji="🔧"),
-                discord.SelectOption(label="🏆 Achievements", value="achievements", emoji="🏆"),
-                #discord.SelectOption(label="🛡️ Equipments", value="equipments", emoji="🛡️"),
-                discord.SelectOption(label="🏰 Guild Profile", value="guild", emoji="🏰"),
-                discord.SelectOption(label="🏡 Homestead", value="homestead", emoji="🏡"),
-                discord.SelectOption(label="❤️ Likes", value="likes", emoji="❤️"),
+                discord.SelectOption(label="Combat", value="combat", emoji="⚔️"),
+                discord.SelectOption(label="Masteries", value="masteries", emoji="🎓"),
+                discord.SelectOption(label="Attributes", value="attributes", emoji="📊"),
+                discord.SelectOption(label="Kongfu & Role", value="kongfu", emoji="🔧"),
+                discord.SelectOption(label="Achievements", value="achievements", emoji="🏆"),
+                #discord.SelectOption(label="Equipments", value="equipments", emoji="🛡️"),
+                discord.SelectOption(label="Guild Profile", value="guild", emoji="🏰"),
+                discord.SelectOption(label="Homestead", value="homestead", emoji="🏡"),
+                discord.SelectOption(label="Likes", value="likes", emoji="❤️"),
+                discord.SelectOption(label="Sect", value="school", emoji="🏫")
             ]
             # Only show Set Avatar option when head_id is present but no mapped avatar exists
             if self.head_id is not None and self.head_avatar_path is None and self.body_type in (0, 1):
-                select_options.append(discord.SelectOption(label="🖼️ Set Avatar", value="set_avatar", emoji="🖼️"))
+                select_options.append(discord.SelectOption(label="Set Avatar", value="set_avatar", emoji="🖼️"))
 
             if self.discord_user_id in [125331697867816961, 96417753300209664, 617161435398799390]:
-                select_options.append(discord.SelectOption(label="🛡️ Equipments", value="equipments", emoji="🛡️"))
+                select_options.append(discord.SelectOption(label="Equipments", value="equipments", emoji="🛡️"))
             
             select_row = ActionRow()
             select_menu = Select(
@@ -1147,6 +1150,7 @@ class PlayerProfileView(LayoutView):
             "homestead": self._handle_homestead,
             "likes": self._handle_likes,
             "set_avatar": self._handle_set_avatar,
+            "school": self._handle_school
         }
         
         handler = handler_map.get(selected)
@@ -1276,6 +1280,77 @@ class PlayerProfileView(LayoutView):
             ephemeral=True,
             allowed_mentions=discord.AllowedMentions.none(),
         )
+
+    async def _handle_school(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+        lines = await self._build_school_detail()
+        self.clear_items()
+        self._show_detail(f"{self.school_emoji} {self.school_name} {self.school_emoji}", lines, accent=0x9B59B6)
+        await interaction.edit_original_response(view=self)
+
+
+    async def _build_school_detail(self) -> list:
+        lines = []
+        if self.school_data:
+            chief_campaign = self.school_data.get('chief_campaign', {})
+            if chief_campaign:
+                # Calculate votes left
+                school_status = self.school_data.get('status', 0)
+                if school_status in VOTE_COUNTS:
+                    vote_count = VOTE_COUNTS[school_status]
+                    vote_num = chief_campaign.get('vote_num', 0)
+                    lines.append(f"**Total**: {vote_count:,} vote{'' if vote_count == 1 else 's'}, voted {vote_num:,} time{'' if vote_num == 1 else 's'}, {vote_count - vote_num:,} vote{'' if vote_count - vote_num == 1 else 's'} left")
+                vote_list = chief_campaign.get('vote_list', [])
+                if len(vote_list) != vote_num:
+                    lines.append(f"**Out of Sect**: voted {len(vote_list) - vote_num:,} time{'' if len(vote_list) - vote_num == 1 else 's'}")
+
+            rule = self.school_data.get('rule', {})
+            if rule:
+                msd_paper = rule.get('msd_paper', {})
+                if msd_paper:
+                    pid2hostnum = msd_paper.get('pid2hostnum', {})
+                    if pid2hostnum:
+                        # Get name for each pid
+                        response = await get_bulk_players_info(list(pid2hostnum.keys()), fields=['base'])
+                        result = response.get('result', {})
+                        pid2name = {}
+                        for id in result:
+                            base = result[id].get('base', {})
+                            name = base.get('nickname')
+                            pid2name[id] = name
+
+                        logger.debug(f"pid2name: {pid2name}")
+                        
+                            
+                    fellow_score = msd_paper.get('fellow_score', {})
+                    if fellow_score:
+                        pupil = fellow_score.get('pupil', {})
+                        if pupil:
+                            lines.append("")
+                            lines.append(f"**Pupil Submisson** {sum(pupil.values())} (Copies: {len(pupil)})")
+                            # Sort pupil.items by score
+                            pupil = dict(sorted(pupil.items(), key=lambda item: item[1], reverse=True))
+                            for pid, score in pupil.items():
+                                name = pid2name.get(pid)
+                                if name:
+                                    lines.append(f"{name}: {score}")
+                        collab = fellow_score.get('collab', {})
+                        if collab:
+                            lines.append("")
+                            lines.append(f"**Co-authored Submisson** {sum(collab.values())} (Copies: {len(collab)})")
+                            # Sort collab.items by score
+                            collab = dict(sorted(collab.items(), key=lambda item: item[1], reverse=True))
+                            for pid, score in collab.items():
+                                name = pid2name.get(pid)
+                                if name:
+                                    lines.append(f"{name}: {score}")
+                        
+                
+
+        else:
+            lines.append("*No school data available*")
+        return lines
+
 
     def _build_likes_detail(self) -> list:
         """Build the likes detail view items (text + buttons) without responding to interaction."""
@@ -3351,6 +3426,7 @@ class WWMCog(commands.Cog):
             'school_emoji': school_emoji,
             'school_name': school_name,
             'school_rank': school_rank,
+            'school_data': school_data,
             'fashion_score': fashion_score,
             'arena_1v1_rank': arena_1v1_rank,
             'arena_1v1_max_winning_streak': arena_1v1_max_winning_streak,
@@ -3439,6 +3515,7 @@ class WWMCog(commands.Cog):
             school_emoji=profile_data['school_emoji'],
             school_name=profile_data['school_name'],
             school_rank=profile_data['school_rank'],
+            school_data=profile_data['school_data'],
             fashion_score=profile_data['fashion_score'],
             arena_1v1_rank=profile_data['arena_1v1_rank'],
             arena_1v1_max_winning_streak=profile_data['arena_1v1_max_winning_streak'],
