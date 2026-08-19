@@ -893,6 +893,8 @@ class PlayerProfileView(LayoutView):
         homeland_info: dict = None,
         # Achievements
         achievement_data: dict = None,
+        # The person using the command (controls privileged options like Equipments)
+        viewer_discord_user_id: int = None,
     ):
         super().__init__(timeout=180)
         
@@ -901,6 +903,7 @@ class PlayerProfileView(LayoutView):
         
         # Store all data
         self.player_nickname = player_nickname
+        self.viewer_discord_user_id = viewer_discord_user_id
         self.number_id = number_id
         self.discord_user_id = discord_user_id
         self.ly_stage_name = ly_stage_name
@@ -1089,7 +1092,7 @@ class PlayerProfileView(LayoutView):
             if self.head_id is not None and self.head_avatar_path is None and self.body_type in (0, 1):
                 select_options.append(discord.SelectOption(label="Set Avatar", value="set_avatar", emoji="🖼️"))
 
-            if self.discord_user_id in [125331697867816961, 96417753300209664, 617161435398799390]:
+            if self.viewer_discord_user_id in [125331697867816961, 96417753300209664, 617161435398799390]:
                 select_options.append(discord.SelectOption(label="Equipments", value="equipments", emoji="🛡️"))
             
             select_row = ActionRow()
@@ -3560,6 +3563,7 @@ class WWMCog(commands.Cog):
             player_hostnum=profile_data['player_hostnum'],
             homeland_info=profile_data['homeland_info'],
             achievement_data=profile_data['achievement_data'],
+            viewer_discord_user_id=interaction.user.id if interaction else None,
         )
 
         files = view._resolve_files()
