@@ -2245,6 +2245,8 @@ class RankingResultsView(LayoutView):
                                 break
                 nickname = base.get('nickname', 'Unknown')
                 score = entry.get('score', 0)
+                # Attempt timestamp from the team/player's ud.ts field
+                attempt_ts = entry.get('ud', {}).get('ts', 0)
 
                 if rank_num == 1:
                     prefix = "🥇"
@@ -2260,7 +2262,12 @@ class RankingResultsView(LayoutView):
                 else:
                     score_str = _format_rank_points(score)
 
-                lines.append(f"{prefix} **{nickname}** — {score_str}")
+                if attempt_ts:
+                    time_str = f" — <t:{int(attempt_ts)}> (<t:{int(attempt_ts)}:R>)"
+                else:
+                    time_str = ""
+
+                lines.append(f"{prefix} **{nickname}** — {score_str}{time_str}")
 
             inner_items.append(TextDisplay("\n".join(lines)))
         else:
