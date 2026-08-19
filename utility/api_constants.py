@@ -241,7 +241,7 @@ SCHOOL_RANKING = {
     "2_4": "Stage Master",
     "2_5": "Stage Director",
 
-    "3_1": "Solider",
+    "3_1": "Soldier",
     "3_2": "Squad Leader",
     "3_3": "Platoon Leader",
     "3_4": "Brigade Commander",
