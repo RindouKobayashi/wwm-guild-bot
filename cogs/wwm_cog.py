@@ -20,7 +20,7 @@ from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info,
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, classify_kongfu_role, VOTE_COUNTS
 from utility.wwm import get_sect_election_ranking
-from utility.affix_mapper import map_data, init_db
+from utility.affix_mapper import map_data, init_db, load_affix_csv, load_equipment_names, get_equipment_name
 
 
 def admin_or_staff():
@@ -969,6 +969,8 @@ class PlayerProfileView(LayoutView):
         # Equipment pagination state
         self.equipments_page = 0
         self._equipments_lines: list = []
+        # Cache of the viewed player's total stats by affix name (for compare vs me)
+        self._total_stats_cache: dict = {}
 
         self._build_overview()
     
@@ -1082,7 +1084,7 @@ class PlayerProfileView(LayoutView):
                 discord.SelectOption(label="Attributes", value="attributes", emoji="📊"),
                 discord.SelectOption(label="Kongfu & Role", value="kongfu", emoji="🔧"),
                 discord.SelectOption(label="Achievements", value="achievements", emoji="🏆"),
-                #discord.SelectOption(label="Equipments", value="equipments", emoji="🛡️"),
+                discord.SelectOption(label="Equipments", value="equipments", emoji="🛡️"),
                 discord.SelectOption(label="Guild Profile", value="guild", emoji="🏰"),
                 discord.SelectOption(label="Homestead", value="homestead", emoji="🏡"),
                 discord.SelectOption(label="Likes", value="likes", emoji="❤️"),
@@ -1092,8 +1094,8 @@ class PlayerProfileView(LayoutView):
             if self.head_id is not None and self.head_avatar_path is None and self.body_type in (0, 1):
                 select_options.append(discord.SelectOption(label="Set Avatar", value="set_avatar", emoji="🖼️"))
 
-            if self.viewer_discord_user_id in [125331697867816961, 96417753300209664, 617161435398799390]:
-                select_options.append(discord.SelectOption(label="Equipments", value="equipments", emoji="🛡️"))
+            """if self.viewer_discord_user_id in [125331697867816961, 96417753300209664, 617161435398799390]:
+                select_options.append(discord.SelectOption(label="Equipments", value="equipments", emoji="🛡️"))"""
             
             select_row = ActionRow()
             select_menu = Select(
@@ -1634,6 +1636,60 @@ class PlayerProfileView(LayoutView):
                 return val.get('name', str(val.get('id', val)))
             return val
 
+        def _format_affix_value(affix_obj, affix_val):
+            """Format an affix value using the CSV format string when available."""
+            fmt = affix_obj.get('format', '') if isinstance(affix_obj, dict) else ''
+            if fmt:
+                try:
+                    return fmt.format(affix_val)
+                except (ValueError, TypeError, IndexError):
+                    pass
+            return self._smart_round(affix_val)
+
+        def _affix_range(affix_obj, affix_val):
+            """Format an affix value plus its name-level min-max range and the delta needed to reach max.
+
+            Uses the aggregated name_min/name_max (lowest min and highest max across all
+            affix IDs with the same english_name) so the range is consistent across gear tiers.
+
+            Example: value 51.3 with name-level min 7.5 / max 33.8 renders as
+            '**51.3** (7.5–33.8, +12.5 to max)' or '**51.3** (7.5–33.8, **MAX**)' if already at/over max.
+            """
+            if not isinstance(affix_obj, dict):
+                return ""
+            fmt = affix_obj.get('format', '')
+            # Prefer name-level min/max (aggregated across all affix IDs with the same name)
+            lo = affix_obj.get('name_min')
+            hi = affix_obj.get('name_max')
+            if lo is None or hi is None:
+                # Fall back to affix-specific min/max
+                lo = affix_obj.get('min')
+                hi = affix_obj.get('max')
+            if lo is None or hi is None:
+                return ""
+            try:
+                val_str = _format_affix_value(affix_obj, affix_val)
+                if fmt:
+                    lo_str = fmt.format(lo)
+                    hi_str = fmt.format(hi)
+                else:
+                    lo_str = self._smart_round(lo)
+                    hi_str = self._smart_round(hi)
+                # Calculate delta needed to max
+                try:
+                    float_val = float(affix_val)
+                    if hi > float_val:
+                        delta = hi - float_val
+                        delta_str = f"{fmt.format(delta)}" if fmt else self._smart_round(delta)
+                        delta_part = f" +{delta_str} to max"
+                    else:
+                        delta_part = " **MAX**"
+                except (ValueError, TypeError):
+                    delta_part = ""
+                return f"**{val_str}** ({lo_str}–{hi_str}{', ' + delta_part if delta_part else ''})"
+            except (ValueError, TypeError, IndexError):
+                return ""
+
         # Slot number to human-readable name mapping
         SLOT_NAMES = {
             1: "Primary Weapon",
@@ -1647,6 +1703,59 @@ class PlayerProfileView(LayoutView):
             11: "Pendant",
             21: "Bow and Arrow",
         }
+
+        # ── Aggregate total stats by affix name across all gear ──
+        # {name: {"total": float, "count": int, "name_min": float, "name_max": float, "format": str}}
+        total_stats: dict = {}
+        for slot_key, item in wear_equips.items():
+            ex_data = item.get('ex', {})
+            base_affixes = ex_data.get('base_affixes', [])
+            for affix in base_affixes:
+                if not (isinstance(affix, list) and len(affix) >= 2):
+                    continue
+                affix_id = affix[0]
+                affix_val = affix[1]
+                if not (isinstance(affix_id, dict) and affix_id.get('_affix')):
+                    continue
+                name = affix_id.get('name', '')
+                if not name:
+                    continue
+                try:
+                    val = float(affix_val)
+                except (ValueError, TypeError):
+                    continue
+                entry = total_stats.setdefault(name, {
+                    "total": 0.0,
+                    "count": 0,
+                    "name_min": affix_id.get('name_min'),
+                    "name_max": affix_id.get('name_max'),
+                    "format": affix_id.get('format', ''),
+                })
+                entry["total"] += val
+                entry["count"] += 1
+
+        # Cache the viewed player's total stats for compare vs me
+        self._total_stats_cache = total_stats
+
+        # Build total stats display lines (page 1)
+        total_lines = []
+        if total_stats:
+            total_lines.append("📊 **Total Stats** (summed across all gear)")
+            # Sort by total value descending
+            for name, entry in sorted(total_stats.items(), key=lambda kv: kv[1]["total"], reverse=True):
+                fmt = entry.get("format", "")
+                total_val = entry["total"]
+                count = entry["count"]
+                name_max = entry.get("name_max")
+                if fmt:
+                    total_str = fmt.format(total_val)
+                    max_str = f"{fmt.format(name_max)}" if name_max is not None else "?"
+                else:
+                    total_str = self._smart_round(total_val)
+                    max_str = self._smart_round(name_max) if name_max is not None else "?"
+                total_lines.append(f"  • **{name}** → **{total_str}** (×{count}, max {max_str})")
+        else:
+            total_lines.append("*No affixes found*")
 
         # Build all equipment lines into a list
         all_lines = []
@@ -1671,7 +1780,9 @@ class PlayerProfileView(LayoutView):
 
             # Build item display — Idea D: bullet list with emoji headers
             slot_lines = []
-            slot_lines.append(f"🪪 **{slot_name}** (#{item_no}) — <t:{int(gain_ts)}:R>")
+            # Look up the human-readable equipment name from the xlsx
+            equip_display_name = get_equipment_name(item_no) or f"#{item_no}"
+            slot_lines.append(f"🪪 **{slot_name}** — __**{equip_display_name}**__ (<t:{int(gain_ts)}:R>)")
 
             # Base attributes
             if base_attrs:
@@ -1688,7 +1799,13 @@ class PlayerProfileView(LayoutView):
                         affix_id = affix[0]
                         affix_val = affix[1]
                         display_id = _affix_display(affix_id)
-                        slot_lines.append(f"  • {display_id}  →  **{self._smart_round(affix_val)}**")
+                        # Use mapped metadata (format + min/max range) when available
+                        is_mapped = isinstance(affix_id, dict) and affix_id.get('_affix')
+                        if is_mapped:
+                            affix_display = _affix_range(affix_id, affix_val)
+                        else:
+                            affix_display = f"**{self._smart_round(affix_val)}**"
+                        slot_lines.append(f"  • {display_id}  →  {affix_display}")
 
             # Tone / Determin
             tone_parts = []
@@ -1722,19 +1839,19 @@ class PlayerProfileView(LayoutView):
             ({9, 21}, "Ranged & Jade"),
         ]
 
-        # Assign each item to a page
-        page_items = {0: [], 1: [], 2: []}
+        # Assign each item to a page (indices 1, 2, 3; index 0 = total stats)
+        page_items = {0: total_lines, 1: [], 2: [], 3: []}
         for slot_num, slot_name, slot_lines in all_lines:
             for page_idx, (slots, _) in enumerate(PAGE_GROUPS):
                 if slot_num in slots:
-                    page_items[page_idx].extend(slot_lines)
+                    page_items[page_idx + 1].extend(slot_lines)
                     break
             else:
-                # Unknown slot — put on page 0
-                page_items[0].extend(slot_lines)
+                # Unknown slot — put on page 1 (Weapons & Accessories)
+                page_items[1].extend(slot_lines)
 
         # Store the page data for navigation
-        self._equipments_lines = [page_items[i] for i in range(3)]
+        self._equipments_lines = [page_items[i] for i in range(4)]
         self.equipments_page = 0
 
         await self._show_equipments_page(interaction)
@@ -1742,8 +1859,8 @@ class PlayerProfileView(LayoutView):
     async def _show_equipments_page(self, interaction: discord.Interaction):
         """Display the current equipment page with navigation buttons."""
         page = self.equipments_page
-        total_pages = 3
-        page_labels = ["Weapons & Accessories", "Armor", "Ranged & Jade"]
+        total_pages = 4
+        page_labels = ["Total Stats", "Weapons & Accessories", "Armor", "Ranged & Jade"]
 
         lines = self._equipments_lines[page]
         if not lines:
@@ -1785,6 +1902,17 @@ class PlayerProfileView(LayoutView):
         nav_row.add_item(next_btn)
         inner.append(nav_row)
 
+        # Compare vs Me button
+        compare_row = ActionRow()
+        compare_btn = Button(
+            style=discord.ButtonStyle.primary,
+            label="⚔️ Compare vs Me",
+            custom_id="equip_compare_self",
+        )
+        compare_btn.callback = self._handle_compare_self
+        compare_row.add_item(compare_btn)
+        inner.append(compare_row)
+
         # Back button
         back_row = ActionRow()
         back_btn = discord.ui.Button(label="🔙 Overview", style=discord.ButtonStyle.secondary, custom_id="player_back")
@@ -1804,8 +1932,139 @@ class PlayerProfileView(LayoutView):
 
     async def _handle_equip_next(self, interaction: discord.Interaction):
         await interaction.response.defer()
-        if self.equipments_page < 2:
+        if self.equipments_page < 3:
             self.equipments_page += 1
+        await self._show_equipments_page(interaction)
+
+    async def _handle_compare_self(self, interaction: discord.Interaction):
+        """Fetch the viewer's own combat plan and compare total stats against the viewed player."""
+        await interaction.response.defer()
+
+        # Resolve viewer's actual PID + Number ID from the verified_members database
+        viewer_pid = None
+        viewer_number_id = None
+        try:
+            async with aiosqlite.connect(DB_PATH) as conn:
+                cursor = await conn.execute(
+                    "SELECT player_pid, character_uid FROM verified_members WHERE user_id = ?",
+                    (interaction.user.id,)
+                )
+                row = await cursor.fetchone()
+                if row:
+                    viewer_pid = row[0]
+                    viewer_number_id = row[1]
+        except Exception as resolve_err:
+            logger.warning(f"Failed to resolve user PID for {interaction.user.id}: {resolve_err}")
+
+        if not viewer_pid:
+            self._show_detail("⚔️ Compare vs Me", ["❌ You haven't bound your account yet. Bind it in <#1469961307154288703> first."], accent=0xF39C12)
+            await interaction.edit_original_response(view=self)
+            return
+
+        try:
+            # Resolve viewer's hostnum via the game API (only for hostnum, not PID)
+            viewer_hostnum = 10595
+            if viewer_number_id:
+                viewer_player = await get_player_info(viewer_number_id, fields=["base"], force_search=True)
+                if viewer_player and viewer_player.get('result'):
+                    viewer_hostnum = viewer_player['result'].get('hostnum', 10595)
+
+            # Fetch viewer's combat plan with the real PID + correct hostnum
+            viewer_combat = await get_player_combat_plan(viewer_pid, viewer_hostnum)
+            if not viewer_combat or viewer_combat.get('code') != 0:
+                self._show_detail("⚔️ Compare vs Me", ["❌ Failed to load your equipment data."], accent=0xF39C12)
+                await interaction.edit_original_response(view=self)
+                return
+
+            viewer_wear = viewer_combat.get('result', {}).get('wear_equips', {})
+            viewer_wear = await map_data(viewer_wear)
+
+            # Aggregate viewer's total stats by name
+            viewer_stats: dict = {}
+            for item in viewer_wear.values():
+                for affix in item.get('ex', {}).get('base_affixes', []):
+                    if not (isinstance(affix, list) and len(affix) >= 2):
+                        continue
+                    affix_id = affix[0]
+                    affix_val = affix[1]
+                    if not (isinstance(affix_id, dict) and affix_id.get('_affix')):
+                        continue
+                    name = affix_id.get('name', '')
+                    if not name:
+                        continue
+                    try:
+                        val = float(affix_val)
+                    except (ValueError, TypeError):
+                        continue
+                    entry = viewer_stats.setdefault(name, {
+                        "total": 0.0,
+                        "count": 0,
+                        "format": affix_id.get('format', ''),
+                    })
+                    entry["total"] += val
+                    entry["count"] += 1
+
+            # Build comparison lines
+            compare_lines = []
+            compare_lines.append(f"⚔️ **Comparison — {self.player_nickname} vs You**")
+            compare_lines.append("")
+
+            # Union of all stat names
+            all_names = set(self._total_stats_cache.keys()) | set(viewer_stats.keys())
+            if not all_names:
+                compare_lines.append("*No affix data to compare*")
+            else:
+                # Sort by viewed player's total desc, then name
+                def sort_key(name):
+                    return (-self._total_stats_cache.get(name, {}).get("total", 0), name)
+                for name in sorted(all_names, key=sort_key):
+                    viewed_entry = self._total_stats_cache.get(name)
+                    viewer_entry = viewer_stats.get(name)
+                    fmt = (viewed_entry or viewer_entry or {}).get("format", "")
+
+                    viewed_total = viewed_entry["total"] if viewed_entry else None
+                    viewer_total = viewer_entry["total"] if viewer_entry else None
+
+                    if fmt:
+                        viewed_str = fmt.format(viewed_total) if viewed_total is not None else "—"
+                        viewer_str = fmt.format(viewer_total) if viewer_total is not None else "—"
+                    else:
+                        viewed_str = self._smart_round(viewed_total) if viewed_total is not None else "—"
+                        viewer_str = self._smart_round(viewer_total) if viewer_total is not None else "—"
+
+                    if viewed_total is not None and viewer_total is not None:
+                        delta = viewed_total - viewer_total
+                        if fmt:
+                            delta_str = f"{fmt.format(delta)}" if delta >= 0 else f"-{fmt.format(abs(delta))}"
+                        else:
+                            delta_str = f"+{self._smart_round(delta)}" if delta >= 0 else f"-{self._smart_round(abs(delta))}"
+                        compare_lines.append(f"  • **{name}** → **{viewed_str}** vs **{viewer_str}** ({delta_str})")
+                    elif viewed_total is not None:
+                        compare_lines.append(f"  • **{name}** → **{viewed_str}** vs **—** (you have none)")
+                    else:
+                        compare_lines.append(f"  • **{name}** → **—** vs **{viewer_str}** (you only)")
+
+            # Back button to return to equipment pages
+            inner = []
+            inner.append(TextDisplay("# ⚔️ Compare vs Me\n\n" + "\n".join(compare_lines)))
+            inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+            back_row = ActionRow()
+            back_btn = discord.ui.Button(label="🔙 Back to Equipments", style=discord.ButtonStyle.secondary, custom_id="equip_back_from_compare")
+            back_btn.callback = self._handle_back_to_equipments
+            back_row.add_item(back_btn)
+            inner.append(back_row)
+
+            self.clear_items()
+            self.add_item(self._build_container(detail_items=inner))
+            await interaction.edit_original_response(view=self)
+
+        except Exception as e:
+            logger.error(f"Compare vs self failed: {e}", exc_info=True)
+            self._show_detail("⚔️ Compare vs Me", [f"❌ Failed to compare: `{str(e)}`"], accent=0xF39C12)
+            await interaction.edit_original_response(view=self)
+
+    async def _handle_back_to_equipments(self, interaction: discord.Interaction):
+        await interaction.response.defer()
         await self._show_equipments_page(interaction)
 
 
@@ -2940,8 +3199,10 @@ class WWMCog(commands.Cog):
     async def cog_load(self):
         await self._init_database()
         await self._load_config()
-        # Initialize the affix mapping database
+        # Initialize the affix mapping database, load the CSV, and load equipment names
         await init_db()
+        await load_affix_csv()
+        load_equipment_names()
         if self.monitor_enabled and self.monitor_channel:
             self.guild_monitor_task.start()
         # Always-on opponent-guild reminder (8 AM GMT+8 Sunday + Monday).

@@ -10,12 +10,97 @@ Database: SQLite stored at BASE_DIR/data/affix_mappings.db
 """
 
 import aiosqlite
+import csv
 import json
 import os
+import zipfile
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
+import xml.etree.ElementTree as ET
 from settings import BASE_DIR, logger
 
 DB_PATH = BASE_DIR / "data" / "affix_mappings.db"
+AFFIX_CSV_PATH = BASE_DIR / "data" / "all_affix_id_english_names.csv"
+EQUIPMENT_NAMES_XLSX_PATH = BASE_DIR / "data" / "All_Equipment_Item_Names.xlsx"
+
+# Chinese unit characters found in value_show_format → English equivalents
+# e.g. "{0:.1f}米/秒" becomes "{0:.1f}m/s", "{0:.2f}秒" becomes "{0:.2f}s"
+CHINESE_UNIT_TRANSLATIONS = {
+    "米": "m",      # meter
+    "秒": "s",      # second
+    "点": "pt",     # point
+}
+
+def _sanitize_format_string(fmt: str) -> str:
+    """Replace Chinese unit characters in a format string with English equivalents."""
+    if not fmt:
+        return fmt
+    result = fmt
+    for chinese_char, english_char in CHINESE_UNIT_TRANSLATIONS.items():
+        result = result.replace(chinese_char, english_char)
+    return result
+
+
+# ---------------------------------------------------------------------------
+# Equipment name lookup (from All_Equipment_Item_Names.xlsx)
+# ---------------------------------------------------------------------------
+_EQUIPMENT_NAME_CACHE: Dict[str, str] = {}
+
+
+def load_equipment_names(xlsx_path: Optional[str] = None) -> Dict[str, str]:
+    """Load equipment item names from the xlsx file.
+
+    Reads the ``item_id`` / ``english_name`` columns from sheet1 and returns
+    a dict mapping item_id (as str) -> english_name.
+
+    Uses only stdlib (zipfile + xml.etree) — no openpyxl/pandas needed.
+    """
+    global _EQUIPMENT_NAME_CACHE
+    path = Path(xlsx_path) if xlsx_path else EQUIPMENT_NAMES_XLSX_PATH
+    if _EQUIPMENT_NAME_CACHE:
+        return _EQUIPMENT_NAME_CACHE
+
+    if not path.exists():
+        logger.warning(f"Equipment names xlsx not found at {path}")
+        return {}
+
+    # Namespace used by the xlsx XML
+    ns = {"x": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
+
+    try:
+        with zipfile.ZipFile(str(path)) as z:
+            # The real data lives in xl/worksheets/sheet1.xml
+            tree = ET.parse(z.open("xl/worksheets/sheet1.xml"))
+    except (KeyError, zipfile.BadZipFile, ET.ParseError) as e:
+        logger.warning(f"Failed to parse equipment names xlsx: {e}")
+        return {}
+
+    root = tree.getroot()
+    rows = root.findall(".//x:row", ns)
+    for row in rows:
+        cells = row.findall("x:c", ns)
+        if len(cells) < 2:
+            continue
+        v0 = cells[0].find("x:v", ns)
+        v1 = cells[1].find("x:v", ns)
+        if v0 is None or v1 is None or not v0.text or not v1.text:
+            continue
+        item_id = v0.text.strip()
+        name = v1.text.strip()
+        if item_id and name:
+            _EQUIPMENT_NAME_CACHE[item_id] = name
+
+    logger.debug(f"Loaded {len(_EQUIPMENT_NAME_CACHE)} equipment names from {path.name}")
+    return _EQUIPMENT_NAME_CACHE
+
+
+def get_equipment_name(item_no) -> Optional[str]:
+    """Look up an equipment name by its item No (int or str)."""
+    if not _EQUIPMENT_NAME_CACHE:
+        load_equipment_names()
+    if item_no is None:
+        return None
+    return _EQUIPMENT_NAME_CACHE.get(str(item_no))
 
 # ---------------------------------------------------------------------------
 # Schema
@@ -26,6 +111,11 @@ CREATE TABLE IF NOT EXISTS affix_mappings (
     name TEXT NOT NULL,
     category TEXT NOT NULL DEFAULT '',
     description TEXT NOT NULL DEFAULT '',
+    value_format TEXT NOT NULL DEFAULT '',
+    minimum REAL,
+    maximum REAL,
+    name_min REAL,
+    name_max REAL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -88,6 +178,90 @@ async def init_db() -> None:
         await db.execute(CREATE_TABLE_SQL)
         await db.commit()
     logger.debug(f"Affix mapper DB ready at {DB_PATH}")
+
+
+async def load_affix_csv(csv_path: Optional[str] = None) -> int:
+    """Load affix mappings from the CSV file into the database.
+
+    Reads ``data/all_affix_id_english_names.csv`` (affix_id, english_name,
+    value_show_format, minimum, maximum, ...) and upserts each row into the
+    affix_mappings table so ``map_data()`` can annotate affix IDs with
+    human-readable names plus display metadata (format string, min/max).
+
+    Returns the number of rows loaded (0 if the CSV is missing).
+    """
+    path = Path(csv_path) if csv_path else AFFIX_CSV_PATH
+    if not path.exists():
+        logger.warning(f"Affix CSV not found at {path}")
+        return 0
+
+    rows = []
+    with open(path, "r", encoding="utf-8-sig") as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            try:
+                affix_id = int(row["affix_id"])
+            except (ValueError, TypeError, KeyError):
+                continue
+            name = row.get("english_name", "").strip()
+            if not name:
+                continue
+            value_format = _sanitize_format_string(
+                row.get("value_show_format", "").strip()
+            )
+            min_raw = row.get("minimum", "")
+            max_raw = row.get("maximum", "")
+            try:
+                minimum = float(min_raw) if min_raw not in (None, "") else None
+            except (ValueError, TypeError):
+                minimum = None
+            try:
+                maximum = float(max_raw) if max_raw not in (None, "") else None
+            except (ValueError, TypeError):
+                maximum = None
+            rows.append((affix_id, name, value_format, minimum, maximum))
+
+    if not rows:
+        logger.warning(f"No valid affix rows found in {path.name}")
+        return 0
+
+    # Compute name-level min/max: for each unique english_name, the lowest
+    # minimum and the highest maximum across all affix IDs with that name.
+    name_min_map: Dict[str, float] = {}
+    name_max_map: Dict[str, float] = {}
+    for _, name, _, minimum, maximum in rows:
+        if minimum is not None:
+            if name not in name_min_map or minimum < name_min_map[name]:
+                name_min_map[name] = minimum
+        if maximum is not None:
+            if name not in name_max_map or maximum > name_max_map[name]:
+                name_max_map[name] = maximum
+
+    # Build final rows with name_min / name_max
+    final_rows = []
+    for affix_id, name, value_format, minimum, maximum in rows:
+        final_rows.append((
+            affix_id,
+            name,
+            value_format,
+            minimum,
+            maximum,
+            name_min_map.get(name),
+            name_max_map.get(name),
+        ))
+
+    async with aiosqlite.connect(str(DB_PATH)) as db:
+        await db.execute(CREATE_TABLE_SQL)
+        await db.executemany(
+            """INSERT OR REPLACE INTO affix_mappings
+               (affix_id, name, category, description, value_format, minimum, maximum, name_min, name_max)
+               VALUES (?, ?, '', '', ?, ?, ?, ?, ?)""",
+            final_rows,
+        )
+        await db.commit()
+
+    logger.info(f"Loaded {len(final_rows)} affix mappings from {path.name}")
+    return len(final_rows)
 
 
 async def add_mapping(
@@ -325,20 +499,37 @@ async def find_unmapped_affixes(data: Any) -> List[Tuple[int, str, Any]]:
 # Universal Mapper
 # ---------------------------------------------------------------------------
 
-async def _load_affix_cache() -> Dict[int, str]:
-    """Load all affix IDs and names into a dict for fast mapping."""
+async def _load_affix_cache() -> Dict[int, Dict[str, Any]]:
+    """Load all affix IDs and metadata into a dict for fast mapping."""
     async with aiosqlite.connect(str(DB_PATH)) as db:
-        cursor = await db.execute("SELECT affix_id, name FROM affix_mappings")
+        cursor = await db.execute(
+            "SELECT affix_id, name, value_format, minimum, maximum, name_min, name_max FROM affix_mappings"
+        )
         rows = await cursor.fetchall()
-        return {row[0]: row[1] for row in rows}
+        return {
+            row[0]: {
+                "name": row[1],
+                "value_format": row[2] or "",
+                "minimum": row[3],
+                "maximum": row[4],
+                "name_min": row[5],
+                "name_max": row[6],
+            }
+            for row in rows
+        }
 
 
-def _make_affix_object(affix_id: int, name: str) -> Dict[str, Any]:
-    """Create a standard affix marker object."""
+def _make_affix_object(affix_id: int, info: Dict[str, Any]) -> Dict[str, Any]:
+    """Create a standard affix marker object with display metadata."""
     return {
         "_affix": True,
         "id": affix_id,
-        "name": name,
+        "name": info.get("name", str(affix_id)),
+        "format": info.get("value_format", ""),
+        "min": info.get("minimum"),
+        "max": info.get("maximum"),
+        "name_min": info.get("name_min"),
+        "name_max": info.get("name_max"),
     }
 
 
@@ -436,12 +627,9 @@ def _map_dict(data: dict, cache: Dict[int, str], parent_key: str) -> dict:
                             try:
                                 affix_id = int(affix_key)
                                 if affix_id in cache:
-                                    mapped_inner_dict[str(affix_key)] = {
-                                        "_affix": True,
-                                        "id": affix_id,
-                                        "name": cache[affix_id],
-                                        "value": affix_val,
-                                    }
+                                    affix_obj = _make_affix_object(affix_id, cache[affix_id])
+                                    affix_obj["value"] = affix_val
+                                    mapped_inner_dict[str(affix_key)] = affix_obj
                                 else:
                                     mapped_inner_dict[str(affix_key)] = affix_val
                             except (ValueError, TypeError):
