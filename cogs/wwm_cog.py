@@ -1081,8 +1081,6 @@ class PlayerProfileView(LayoutView):
             select_options = [
                 discord.SelectOption(label="Combat", value="combat", emoji="⚔️"),
                 discord.SelectOption(label="Masteries", value="masteries", emoji="🎓"),
-                discord.SelectOption(label="Attributes", value="attributes", emoji="📊"),
-                discord.SelectOption(label="Kongfu & Role", value="kongfu", emoji="🔧"),
                 discord.SelectOption(label="Achievements", value="achievements", emoji="🏆"),
                 discord.SelectOption(label="Equipments", value="equipments", emoji="🛡️"),
                 discord.SelectOption(label="Guild Profile", value="guild", emoji="🏰"),
@@ -1151,8 +1149,6 @@ class PlayerProfileView(LayoutView):
         handler_map = {
             "combat": self._handle_combat,
             "masteries": self._handle_masteries,
-            "attributes": self._handle_attributes,
-            "kongfu": self._handle_kongfu,
             "achievements": self._handle_achievements,
             "equipments": self._handle_equipments,
             "guild": self._handle_guild,
@@ -1706,8 +1702,16 @@ class PlayerProfileView(LayoutView):
 
         # ── Aggregate total stats by affix name across all gear ──
         # {name: {"total": float, "count": int, "name_min": float, "name_max": float, "format": str}}
+        # Bow slots (9 Archery Jade, 21 Bow and Arrow) are excluded from totals.
+        BOW_SLOTS = {9, 21}
         total_stats: dict = {}
         for slot_key, item in wear_equips.items():
+            try:
+                slot_int = int(slot_key) if str(slot_key).isdigit() else slot_key
+            except (ValueError, TypeError):
+                slot_int = slot_key
+            if slot_int in BOW_SLOTS:
+                continue
             ex_data = item.get('ex', {})
             base_affixes = ex_data.get('base_affixes', [])
             for affix in base_affixes:
@@ -1739,6 +1743,32 @@ class PlayerProfileView(LayoutView):
 
         # Build total stats display lines (page 1)
         total_lines = []
+
+        # Prepend base attributes (base + equipment tuning combined view)
+        total_lines.append("📊 **Attributes**")
+        total_lines.append(f"  • 🥊 **Power (STR):** {self.attr_str}")
+        total_lines.append(f"  • 🛡️ **Body (CON):** {self.attr_con}")
+        total_lines.append(f"  • ⚡ **Momentum (BAS):** {self.attr_bas}")
+        total_lines.append(f"  • 💨 **Agility (CRI):** {self.attr_cri}")
+        total_lines.append(f"  • 🔰 **Defense (AGI):** {self.attr_agi}")
+        total_lines.append("")
+
+        # Kongfu & Role
+        total_lines.append("🔧 **Kongfu & Role**")
+        kongfu_added = False
+        if self.kongfu_main:
+            total_lines.append(f"  🗡️ **Main Weapon:** {self.kongfu_main}")
+            kongfu_added = True
+        if self.kongfu_sub:
+            total_lines.append(f"  🗡️ **Sub Weapon:** {self.kongfu_sub}")
+            kongfu_added = True
+        if self.kongfu_role:
+            total_lines.append(f"  🎯 **Role:** {self.kongfu_role}")
+            kongfu_added = True
+        if not kongfu_added:
+            total_lines.append("  *No kongfu data available*")
+        total_lines.append("")
+
         if total_stats:
             total_lines.append("📊 **Total Stats** (summed across all gear)")
             # Sort by total value descending
@@ -1775,6 +1805,7 @@ class PlayerProfileView(LayoutView):
             tone_determin = ex_data.get('tone_determin', None)
             another_determin = ex_data.get('another_determin', None)
             retoned = ex_data.get('retoned', 0)
+            next_retune_ts = ex_data.get('next_retone_ts', 0)
             suffix = ex_data.get('suffix', 0)
             gain_ts = ex_data.get('gain_ts', 0)
 
@@ -1816,10 +1847,12 @@ class PlayerProfileView(LayoutView):
             if tone_parts:
                 slot_lines.append(f"💠 {'  ·  '.join(tone_parts)}")
 
-            # Durability / Retone / Suffix
+            # Durability / Retune / Suffix
             info_parts = [f"Dura: {durability}/100"]
             if retoned:
-                info_parts.append(f"Retoned: {retoned}")
+                info_parts.append(f"Retuned: {retoned}")
+            if next_retune_ts:
+                info_parts.append(f"Retune: <t:{int(next_retune_ts)}:F> (<t:{int(next_retune_ts)}:R>)")
             if suffix:
                 info_parts.append(f"Suffix: {suffix}")
             slot_lines.append(f"🔧 {'  ·  '.join(info_parts)}")
@@ -1979,9 +2012,16 @@ class PlayerProfileView(LayoutView):
             viewer_wear = viewer_combat.get('result', {}).get('wear_equips', {})
             viewer_wear = await map_data(viewer_wear)
 
-            # Aggregate viewer's total stats by name
+            # Aggregate viewer's total stats by name (excluding bow slots 9, 21)
+            BOW_SLOTS = {9, 21}
             viewer_stats: dict = {}
-            for item in viewer_wear.values():
+            for slot_key, item in viewer_wear.items():
+                try:
+                    slot_int = int(slot_key) if str(slot_key).isdigit() else slot_key
+                except (ValueError, TypeError):
+                    slot_int = slot_key
+                if slot_int in BOW_SLOTS:
+                    continue
                 for affix in item.get('ex', {}).get('base_affixes', []):
                     if not (isinstance(affix, list) and len(affix) >= 2):
                         continue
