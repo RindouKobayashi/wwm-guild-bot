@@ -72,7 +72,7 @@ class AutoTranslateCog(commands.Cog):
         last_error = None
         for attempt in range(max_retries + 1):
             try:
-                translation = await self.translator.translate(text, src=src, dest=dest)
+                translation = self.translator.translate(text, src=src, dest=dest)
                 return translation.text
             except Exception as e:
                 last_error = e
