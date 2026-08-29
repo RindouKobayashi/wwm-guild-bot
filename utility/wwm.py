@@ -229,6 +229,7 @@ async def generate_token(a: Optional[int] = None, b: str = WWM_TOKEN_SPECIAL_KEY
         a = int(datetime.now(timezone(timedelta(hours=8))).timestamp()) + 300
     t = f"{a}|{b}|{c}"
     token = str(int(a)) + ":" + hashlib.md5(t.encode("utf-8")).hexdigest()
+    logger.debug(f"Generated token: {token}")
     return token
 
 
