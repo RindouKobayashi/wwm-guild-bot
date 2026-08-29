@@ -113,7 +113,7 @@ class TranslateSelect(discord.ui.Select):
                 translated_text = self.message_content
             else:
                 # Perform translation
-                translation = await translator.translate(content_to_translate, dest=target_lang)
+                translation = translator.translate(content_to_translate, dest=target_lang)
                 translated_text = translation.text
                 
                 # Restore all original entities
@@ -153,7 +153,7 @@ def setup_contextmenu(bot: commands.Bot):
         
         try:
             # Auto detect language
-            detection = await translator.detect(message.content)
+            detection = translator.detect(message.content)
             detected_lang = detection.lang
             
             # Show selection menu
