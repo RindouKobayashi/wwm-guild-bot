@@ -61,6 +61,31 @@ def _pct_str(original: float, current: float) -> Tuple[str, float]:
     return f"{sign}{pct:.2f}%", pct
 
 
+def _sort_key(p: tuple, likes_map: Dict[str, int], watchlist_guild_names: Set[str]):
+    """Multi-factor sort key for market report players.
+
+    pct is ALWAYS the primary factor (never overridden). Tie-breakers apply
+    only when two players share the same % (rounded to 2dp):
+      2. coop players (mode 17) first
+      3. players with search enabled first (not strikethrough)
+      4. online players first
+      5. more market likes first
+      6. players from a guild-watchlist guild first
+      7. higher current price first
+    """
+    # p: (pid, nickname, number_id, original_price, current_price, pct,
+    #     is_online, hostnum, guild_name, mode, other_search)
+    return (
+        -round(p[5], 2),
+        0 if p[9] == 17 else 1,
+        0 if p[10] == 1 else 1,
+        0 if p[6] else 1,
+        -likes_map.get(p[0], 0),
+        0 if p[8] in watchlist_guild_names else 1,
+        -p[4],
+    )
+
+
 # ---------------------------------------------------------------------------
 # Good Name Suggestion Modal
 # ---------------------------------------------------------------------------
@@ -756,6 +781,164 @@ class MarketPlayerView(LayoutView):
 
 
 # ---------------------------------------------------------------------------
+# Market Good Paginated View (ephemeral "View Rankings" browse)
+# ---------------------------------------------------------------------------
+class MarketGoodPaginatedView(LayoutView):
+    """Ephemeral paginated view for browsing a good's full rankings.
+
+    A Select menu lets the user pick a good; that good's ranked players are
+    shown 10 per page with Previous/Next navigation. Data is a snapshot of
+    the already-sorted grouped report data (no API calls on interaction)."""
+
+    def __init__(
+        self,
+        cog: "MarketCog",
+        grouped_data: Dict[str, List],
+        good_names_map: Dict[str, str],
+        likes_map: Dict[str, int],
+        pending_report_pids: Set[str],
+        report_ts: int,
+    ):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.grouped_data = grouped_data
+        self.good_names_map = good_names_map
+        self.likes_map = likes_map or {}
+        self.pending_report_pids = pending_report_pids or set()
+        self.report_ts = report_ts
+        self.page_size = 10
+        self.current_page = 0
+        self.sorted_goods = sorted(grouped_data.keys(), key=lambda gid: int(gid))
+        self.current_good = self.sorted_goods[0] if self.sorted_goods else None
+        self._build()
+
+    def _good_label(self, good_id: str) -> str:
+        good_name = self.good_names_map.get(good_id, "")
+        return f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
+
+    def _total_pages(self) -> int:
+        players = self.grouped_data.get(self.current_good, [])
+        return max(1, (len(players) + self.page_size - 1) // self.page_size)
+
+    def _build(self) -> None:
+        self.clear_items()
+        inner: list = []
+
+        players = self.grouped_data.get(self.current_good, [])
+        total_pages = self._total_pages()
+        if self.current_page >= total_pages:
+            self.current_page = total_pages - 1
+        start = self.current_page * self.page_size
+        end = min(start + self.page_size, len(players))
+
+        lines = [f"# 📄 Full Rankings — {self._good_label(self.current_good)}"]
+        lines.append(f"**Total:** {len(players)} player(s)  •  **Page {self.current_page + 1}/{total_pages}** (showing {start + 1}-{end})\n")
+
+        if not players:
+            lines.append("*No data available*")
+
+        for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode, other_search) in enumerate(players[start:end], start + 1):
+            prefix = ["🥇", "🥈", "🥉"][rank - 1] if rank <= 3 else f"`{rank}.`"
+            sign = "+" if pct >= 0 else ""
+            online_icon = "🟢" if is_online else "⚫"
+            coop_prefix = "[COOP ✅] " if mode == 17 else ""
+            reported_prefix = "[⚠️] " if pid in self.pending_report_pids else ""
+            guild_display = f" — *{guild_name}*" if guild_name and guild_name != 'Unknown' else ""
+            no_search_marker = "~~" if other_search == 0 else ""
+            likes_text = f"  │  👍 {self.likes_map.get(pid, 0)}" if self.likes_map.get(pid, 0) else ""
+            lines.append(
+                f"{prefix} {online_icon} **{reported_prefix}{coop_prefix}{no_search_marker}{nickname}{no_search_marker}** ({number_id}){guild_display}  ─  "
+                f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
+                f"{likes_text}"
+            )
+
+        inner.append(TextDisplay("\n".join(lines)))
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        self._add_select_and_nav(inner, total_pages)
+
+        inner.append(TextDisplay(
+            f"📊 Snapshot of report generated <t:{self.report_ts}:R> — the live dashboard refreshes every minute.\n"
+            f"_This message is only visible to you._"
+        ))
+
+        container = Container(*inner, accent_color=ACCENT_BLURPLE)
+        self.add_item(container)
+
+    def _add_select_and_nav(self, inner: list, total_pages: int) -> None:
+        # Good selection dropdown
+        if self.sorted_goods:
+            options: List[discord.SelectOption] = []
+            for gid in self.sorted_goods[:25]:
+                good_players = self.grouped_data.get(gid, [])
+                options.append(
+                    discord.SelectOption(
+                        label=self._good_label(gid)[:100],
+                        description=f"{len(good_players)} player(s) tracked",
+                        value=gid,
+                        default=(gid == self.current_good),
+                    )
+                )
+            select_row = ActionRow()
+            good_select = Select(
+                placeholder="Choose a good to view…",
+                options=options,
+                custom_id="market_good_select",
+            )
+            good_select.callback = self._on_select_good
+            select_row.add_item(good_select)
+            inner.append(select_row)
+
+        # Navigation row
+        nav_row = ActionRow()
+        prev_btn = Button(
+            label="◀ Previous",
+            style=discord.ButtonStyle.secondary,
+            custom_id="market_good_prev",
+            disabled=self.current_page == 0,
+        )
+        prev_btn.callback = self._on_prev
+        nav_row.add_item(prev_btn)
+
+        page_btn = Button(
+            label=f"{self.current_page + 1}/{total_pages}",
+            style=discord.ButtonStyle.secondary,
+            custom_id="market_good_page",
+            disabled=True,
+        )
+        nav_row.add_item(page_btn)
+
+        next_btn = Button(
+            label="Next ▶",
+            style=discord.ButtonStyle.secondary,
+            custom_id="market_good_next",
+            disabled=self.current_page >= total_pages - 1,
+        )
+        next_btn.callback = self._on_next
+        nav_row.add_item(next_btn)
+        inner.append(nav_row)
+
+    async def _on_select_good(self, interaction: discord.Interaction):
+        values = interaction.data.get("values", [])
+        if values and values[0] in self.grouped_data:
+            self.current_good = values[0]
+            self.current_page = 0
+            self._build()
+        await interaction.response.edit_message(view=self)
+
+    async def _on_prev(self, interaction: discord.Interaction):
+        if self.current_page > 0:
+            self.current_page -= 1
+            self._build()
+        await interaction.response.edit_message(view=self)
+
+    async def _on_next(self, interaction: discord.Interaction):
+        if self.current_page < self._total_pages() - 1:
+            self.current_page += 1
+            self._build()
+        await interaction.response.edit_message(view=self)
+
+# ---------------------------------------------------------------------------
 # Market Report View (Components V2) — updated with Add to Watchlist button
 # ---------------------------------------------------------------------------
 class MarketReportView(LayoutView):
@@ -870,6 +1053,7 @@ class MarketReportView(LayoutView):
             f"🤝 [COOP ✅] indicates player is in coop world — likely open to trade requests\n"
             f"⚠️ Players with [⚠️] had been reported to staff and is awaiting review\n"
             f"⛔️ ~~Strikethrough~~ indicates player has player search disabled — cannot request coop\n"
+            f"🧮 Same-% players are ordered: coop first → search enabled → online → most likes → guild watchlist → higher price\n"
         ))
 
         # Add to watchlist button
@@ -925,7 +1109,15 @@ class MarketReportView(LayoutView):
         )
         guild_filter_btn.callback = self._on_filter_guild
         filter_row.add_item(guild_filter_btn)
-        
+
+        rankings_btn = Button(
+            label="📄 View Rankings",
+            style=discord.ButtonStyle.primary,
+            custom_id="market_view_rankings",
+        )
+        rankings_btn.callback = self._on_view_rankings
+        filter_row.add_item(rankings_btn)
+
         inner_items.append(filter_row)
 
         container = Container(*inner_items, accent_color=ACCENT_GREEN)
@@ -942,6 +1134,22 @@ class MarketReportView(LayoutView):
     async def _on_refresh(self, interaction: discord.Interaction):
         await interaction.response.send_message("🔄 Refreshing dashboard...", ephemeral=True)
         await self.cog._refresh_dashboard()
+
+    async def _on_view_rankings(self, interaction: discord.Interaction):
+        """Open an ephemeral paginated view of the full rankings per good."""
+        await interaction.response.defer(ephemeral=True)
+        if not self.grouped_data:
+            await interaction.followup.send("📄 No ranking data available right now.", ephemeral=True)
+            return
+        view = MarketGoodPaginatedView(
+            cog=self.cog,
+            grouped_data=self.grouped_data,
+            good_names_map=self.good_names_map,
+            likes_map=self.likes_map,
+            pending_report_pids=self.pending_report_pids,
+            report_ts=self.report_ts,
+        )
+        await interaction.followup.send(view=view, ephemeral=True)
 
     async def _on_filter_online(self, interaction: discord.Interaction):
         """Filter the report to show only online players, sent as an ephemeral message."""
@@ -2577,6 +2785,17 @@ class MarketCog(commands.Cog):
             rows = await cursor.fetchall()
             return [dict(row) for row in rows]
 
+    async def _get_guild_watchlist_names(self) -> Set[str]:
+        """Return the set of guild names for all guilds on the market guild watchlist.
+        Uses guild_cache (DB only, no API calls) — names are cached during data fetch."""
+        entries = await self._get_guild_watchlist()
+        names: Set[str] = set()
+        for e in entries:
+            name = await self._resolve_guild_name(e['club_id'], e.get('hostnum', 10595))
+            if name and name != 'Unknown':
+                names.add(name)
+        return names
+
     async def _add_guild_to_watchlist(self, club_id: int, hostnum: int, guild_name: str, user_id: int):
         """Add or update a guild in the market_guild_watchlist."""
         now_ts = int(datetime.datetime.now(datetime.timezone.utc).timestamp())
@@ -3060,6 +3279,12 @@ class MarketCog(commands.Cog):
             total_players = sum(len(v) for v in grouped.values())
             # Concurrently fetch market likes for all players
             likes_map = await self._fetch_all_market_likes(grouped)
+            # Sort every good group with the multi-factor key:
+            # pct is primary; coop / search-enabled / online / likes /
+            # guild-watchlist / price break ties only.
+            watchlist_guild_names = await self._get_guild_watchlist_names()
+            for plist in grouped.values():
+                plist.sort(key=lambda p: _sort_key(p, likes_map, watchlist_guild_names))
             pending_report_pids = await self._get_pending_report_pids()
             view = MarketReportView(
                 cog=self,
