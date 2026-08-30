@@ -47,6 +47,24 @@ def admin_or_staff():
         raise app_commands.MissingPermissions(["administrator"])
     return app_commands.check(predicate)
 
+OWNER_DENY_MSG = "❌ Only the user who used the command can interact with these buttons."
+
+
+async def ensure_owner(interaction: discord.Interaction, view) -> bool:
+    """Return True if the interacting user is the command invoker that spawned the view.
+
+    Otherwise send an ephemeral denial message and return False.
+    """
+    owner_id = getattr(view, "owner_id", None)
+    if owner_id is None or interaction.user.id == owner_id:
+        return True
+    if interaction.response.is_done():
+        await interaction.followup.send(OWNER_DENY_MSG, ephemeral=True)
+    else:
+        await interaction.response.send_message(OWNER_DENY_MSG, ephemeral=True)
+    return False
+
+
 DB_PATH = BASE_DIR / "data" / "guild_verification.db"
 SCHEDULE_DB_PATH = BASE_DIR / "data" / "schedule.db"
 BIRTHDAY_ROLE_ID = 1469960226294730753
@@ -389,12 +407,13 @@ class GuildStatusBoard(LayoutView):
 
 class GuildRegionSummaryView(LayoutView):
     """Components V2 LayoutView: shows 5 members per region with buttons to expand each region fully."""
-    def __init__(self, guild_name: str, regions: dict, tag_map: dict, cog):
+    def __init__(self, guild_name: str, regions: dict, tag_map: dict, cog, owner_id: Optional[int] = None):
         super().__init__(timeout=120)
         self.guild_name = guild_name
         self.regions = regions
         self.tag_map = tag_map
         self.cog = cog
+        self.owner_id = owner_id
 
         self._rebuild()
 
@@ -462,6 +481,8 @@ class GuildRegionSummaryView(LayoutView):
 
     def _make_detail_callback(self, tag: str):
         async def callback(interaction: discord.Interaction):
+            if not await ensure_owner(interaction, self):
+                return
             await interaction.response.defer()
             members = self.regions[tag]
             sorted_members = sorted(members, key=lambda m: (not m['is_online'], m['nickname'].lower()))
@@ -482,6 +503,7 @@ class GuildRegionSummaryView(LayoutView):
                 body=f"**{len(members)} members** | 🟢 {online_count} online\n\n```{body}```",
                 accent=BLURPLE,
                 back_view=self,
+                owner_id=self.owner_id,
             )
             await interaction.edit_original_response(content=None, embed=None, view=detail_view)
         return callback
@@ -498,11 +520,12 @@ class GuildRegionSummaryView(LayoutView):
 
 class GuildRegionSelectView(LayoutView):
     """Components V2 LayoutView with buttons for selecting a guild to view region breakdown"""
-    def __init__(self, clubs: list, guild_infos: list, cog):
+    def __init__(self, clubs: list, guild_infos: list, cog, owner_id: Optional[int] = None):
         super().__init__(timeout=60)
         self.cog = cog
         self.clubs = clubs
         self.guild_infos = guild_infos
+        self.owner_id = owner_id
         
         self.clear_items()
         
@@ -553,10 +576,14 @@ class GuildRegionSelectView(LayoutView):
         return callback
     
     async def _cancel(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.edit_message(content="❌ Cancelled.", embed=None, view=None)
         self.stop()
     
     async def _handle_guild_select(self, interaction: discord.Interaction, idx: int):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         
         club = self.clubs[idx]
@@ -621,7 +648,7 @@ class GuildRegionSelectView(LayoutView):
             guild_name = result.get('base', {}).get('name', 'Unknown Guild')
 
             # Use GuildRegionSummaryView directly (V2) — no embed needed
-            view = GuildRegionSummaryView(guild_name, regions, tag_map, self.cog)
+            view = GuildRegionSummaryView(guild_name, regions, tag_map, self.cog, owner_id=self.owner_id)
             await interaction.edit_original_response(content=None, embed=None, view=view)
 
         except Exception as e:
@@ -640,11 +667,12 @@ class GuildRegionSelectView(LayoutView):
 
 class GuildSearchSelectView(LayoutView):
     """Components V2 LayoutView with buttons for selecting a guild from search results"""
-    def __init__(self, clubs: list, guild_infos: list, cog, header: str = None):
+    def __init__(self, clubs: list, guild_infos: list, cog, header: str = None, owner_id: Optional[int] = None):
         super().__init__(timeout=60)
         self.cog = cog
         self.clubs = clubs
         self.guild_infos = guild_infos
+        self.owner_id = owner_id
         
         self.clear_items()
         
@@ -701,10 +729,14 @@ class GuildSearchSelectView(LayoutView):
         return callback
     
     async def _cancel(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.edit_message(content="❌ Search cancelled.", embed=None, view=None)
         self.stop()
     
     async def _handle_guild_select(self, interaction: discord.Interaction, idx: int):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer(ephemeral=True)
         
         club = self.clubs[idx]
@@ -895,6 +927,7 @@ class PlayerProfileView(LayoutView):
         achievement_data: dict = None,
         # The person using the command (controls privileged options like Equipments)
         viewer_discord_user_id: int = None,
+        owner_id: int = None,
     ):
         super().__init__(timeout=180)
         
@@ -904,6 +937,8 @@ class PlayerProfileView(LayoutView):
         # Store all data
         self.player_nickname = player_nickname
         self.viewer_discord_user_id = viewer_discord_user_id
+        # Only the command invoker may use this view's buttons
+        self.owner_id = owner_id if owner_id is not None else viewer_discord_user_id
         self.number_id = number_id
         self.discord_user_id = discord_user_id
         self.ly_stage_name = ly_stage_name
@@ -1138,12 +1173,16 @@ class PlayerProfileView(LayoutView):
         return f"{grade_name} {small_suffix}" if small_suffix else grade_name
     
     async def _handle_back(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         self._build_overview()
         await interaction.edit_original_response(view=self)
     
     async def _handle_select_change(self, interaction: discord.Interaction):
         """Handle Select menu option selection."""
+        if not await ensure_owner(interaction, self):
+            return
         selected = interaction.data.get("values", [""])[0]
         
         handler_map = {
@@ -1480,12 +1519,16 @@ class PlayerProfileView(LayoutView):
     
     async def _handle_likes_page_prev(self, interaction: discord.Interaction):
         """Navigate to previous page of likes."""
+        if not await ensure_owner(interaction, self):
+            return
         if self.likes_page > 0:
             self.likes_page -= 1
         await self._handle_likes(interaction)
     
     async def _handle_likes_page_next(self, interaction: discord.Interaction):
         """Navigate to next page of likes."""
+        if not await ensure_owner(interaction, self):
+            return
         ITEMS_PER_PAGE = 10
         total_pages = max(1, -(-len(self.likes_history) // ITEMS_PER_PAGE))
         if self.likes_page < total_pages - 1:
@@ -1958,12 +2001,16 @@ class PlayerProfileView(LayoutView):
         await interaction.edit_original_response(view=self)
 
     async def _handle_equip_prev(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         if self.equipments_page > 0:
             self.equipments_page -= 1
         await self._show_equipments_page(interaction)
 
     async def _handle_equip_next(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         if self.equipments_page < 3:
             self.equipments_page += 1
@@ -1971,6 +2018,8 @@ class PlayerProfileView(LayoutView):
 
     async def _handle_compare_self(self, interaction: discord.Interaction):
         """Fetch the viewer's own combat plan and compare total stats against the viewed player."""
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
 
         # Resolve viewer's actual PID + Number ID from the verified_members database
@@ -2104,6 +2153,8 @@ class PlayerProfileView(LayoutView):
             await interaction.edit_original_response(view=self)
 
     async def _handle_back_to_equipments(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         await self._show_equipments_page(interaction)
 
@@ -2114,11 +2165,12 @@ class Inactive(LayoutView):
 
     ITEMS_PER_PAGE = 10
 
-    def __init__(self, inactive_last_week: list, inactive_this_week: list, point_threshold: int):
+    def __init__(self, inactive_last_week: list, inactive_this_week: list, point_threshold: int, owner_id: Optional[int] = None):
         super().__init__(timeout=180)
         self.inactive_last_week = inactive_last_week
         self.inactive_this_week = inactive_this_week
         self.point_threshold = point_threshold
+        self.owner_id = owner_id
         self.page = 0
         self.active_tab = "last_week"  # or "this_week" or "both"
         self.sort_by = "points_asc"  # points_asc, points_desc, name_az, logout_newest, logout_oldest, absent_first
@@ -2305,6 +2357,8 @@ class Inactive(LayoutView):
     # ── button callbacks ─────────────────────────────────────────────
 
     async def _handle_last_week(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         self.active_tab = "last_week"
         self.page = 0
@@ -2312,6 +2366,8 @@ class Inactive(LayoutView):
         await interaction.edit_original_response(view=self)
 
     async def _handle_this_week(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         self.active_tab = "this_week"
         self.page = 0
@@ -2319,6 +2375,8 @@ class Inactive(LayoutView):
         await interaction.edit_original_response(view=self)
 
     async def _handle_both(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         self.active_tab = "both"
         self.page = 0
@@ -2326,6 +2384,8 @@ class Inactive(LayoutView):
         await interaction.edit_original_response(view=self)
 
     async def _handle_next(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         current = self._current_list()
         total_pages = max(1, -(-len(current) // self.ITEMS_PER_PAGE))
@@ -2335,6 +2395,8 @@ class Inactive(LayoutView):
         await interaction.edit_original_response(view=self)
 
     async def _handle_sort(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         selected = interaction.data.get("values", ["points_asc"])
         self.sort_by = selected[0]
@@ -2343,6 +2405,8 @@ class Inactive(LayoutView):
         await interaction.edit_original_response(view=self)
 
     async def _handle_prev(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         if self.page > 0:
             self.page -= 1
@@ -2393,10 +2457,11 @@ def _rank_name_to_display(rank_name: str) -> str:
 class RankingTypeSelectView(LayoutView):
     """Step 1: Let the user pick HR / ST / 3v3 Pet."""
 
-    def __init__(self, cog, target_pid: Optional[str] = None):
+    def __init__(self, cog, target_pid: Optional[str] = None, owner_id: Optional[int] = None):
         super().__init__(timeout=120)
         self.cog = cog
         self.target_pid = target_pid
+        self.owner_id = owner_id
 
         header_text = "# 🏆 Ranking Lookup\nSelect a ranking type to view."
         if target_pid:
@@ -2440,13 +2505,15 @@ class RankingTypeSelectView(LayoutView):
 
     def _make_type_callback(self, rank_type: str):
         async def callback(interaction: discord.Interaction):
+            if not await ensure_owner(interaction, self):
+                return
             if rank_type == "3v3_pet":
                 # No dungeon needed — go straight to results
                 await interaction.response.defer()
                 await self.cog._show_ranking_results(interaction, "3v3_pet", None, target_pid=self.target_pid)
             else:
                 # Ask for dungeon ID via modal (must be sent via response, not followup)
-                modal = DungeonIDModal(self.cog, rank_type, self.target_pid)
+                modal = DungeonIDModal(self.cog, rank_type, self.target_pid, owner_id=self.owner_id)
                 await interaction.response.send_modal(modal)
         return callback
 
@@ -2463,11 +2530,12 @@ class RankingTypeSelectView(LayoutView):
 class DungeonIDModal(discord.ui.Modal, title="Enter Dungeon ID"):
     """Step 2: Ask for the dungeon ID (HR / ST only)."""
 
-    def __init__(self, cog, rank_type: str, target_pid: Optional[str] = None):
+    def __init__(self, cog, rank_type: str, target_pid: Optional[str] = None, owner_id: Optional[int] = None):
         super().__init__(timeout=120)
         self.cog = cog
         self.rank_type = rank_type
         self.target_pid = target_pid
+        self.owner_id = owner_id
 
     dungeon_id = discord.ui.TextInput(
         label="Dungeon ID",
@@ -2490,7 +2558,7 @@ class RankingResultsView(LayoutView):
 
     ITEMS_PER_PAGE = 20
 
-    def __init__(self, cog, rank_type: str, dungeon_id, rank_name: str, page: int = 1, target_pid: Optional[str] = None):
+    def __init__(self, cog, rank_type: str, dungeon_id, rank_name: str, page: int = 1, target_pid: Optional[str] = None, owner_id: Optional[int] = None):
         super().__init__(timeout=180)
         self.cog = cog
         self.rank_type = rank_type
@@ -2498,6 +2566,7 @@ class RankingResultsView(LayoutView):
         self.rank_name = rank_name
         self.page = page
         self.target_pid = target_pid
+        self.owner_id = owner_id
         self.target_nickname = None
         self.total_pages = 1
         self.total_entries = 0
@@ -2696,22 +2765,30 @@ class RankingResultsView(LayoutView):
         self.add_item(container)
 
     async def _handle_prev(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         if self.page > 1:
             await self.cog._show_ranking_results(interaction, self.rank_type, self.dungeon_id, page=self.page - 1, target_pid=self.target_pid)
 
     async def _handle_next(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         if self.page < self.total_pages:
             await self.cog._show_ranking_results(interaction, self.rank_type, self.dungeon_id, page=self.page + 1, target_pid=self.target_pid)
 
     async def _handle_back(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
-        view = RankingTypeSelectView(self.cog)
+        view = RankingTypeSelectView(self.cog, owner_id=self.owner_id)
         await interaction.edit_original_response(content=None, embed=None, view=view)
 
     async def _handle_view_entry(self, interaction: discord.Interaction):
         """Handle selecting a team (HR/ST) or player (3v3 Pet) from the dropdown."""
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer(ephemeral=True)
         selected = interaction.data.get("values", [""])[0]
         try:
@@ -2775,6 +2852,7 @@ class RankingResultsView(LayoutView):
                 score=entry.get('score', 0),
                 members=member_list,
                 back_view=self,
+                owner_id=self.owner_id,
             )
             await interaction.edit_original_response(content=None, embed=None, view=team_view)
         else:
@@ -2818,7 +2896,7 @@ class RankingResultsView(LayoutView):
 class TeamDetailView(LayoutView):
     """Components V2 LayoutView showing a team's members (HR=10, ST=5) with per-member profile buttons."""
 
-    def __init__(self, cog, rank_type: str, rank_name: str, rank_num: int, score, members: list, back_view):
+    def __init__(self, cog, rank_type: str, rank_name: str, rank_num: int, score, members: list, back_view, owner_id: Optional[int] = None):
         super().__init__(timeout=180)
         self.cog = cog
         self.rank_type = rank_type
@@ -2827,6 +2905,7 @@ class TeamDetailView(LayoutView):
         self.score = score
         self.members = members  # list of dicts: {pid, hostnum, nickname, level, number_id, is_online, school_name}
         self.back_view = back_view
+        self.owner_id = owner_id
 
         is_time_based = self.rank_type in ("hr", "st")
         score_str = _format_rank_time(score) if is_time_based else _format_rank_points(score)
@@ -2871,6 +2950,8 @@ class TeamDetailView(LayoutView):
 
     def _make_profile_callback(self, member: dict):
         async def callback(interaction: discord.Interaction):
+            if not await ensure_owner(interaction, self):
+                return
             await interaction.response.defer(ephemeral=True)
             try:
                 view, files = await self.cog._build_player_profile_view(member['number_id'], interaction, ephemeral=True)
@@ -2885,6 +2966,8 @@ class TeamDetailView(LayoutView):
         return callback
 
     async def _handle_back(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         await interaction.edit_original_response(content=None, embed=None, view=self.back_view)
 
@@ -2948,7 +3031,7 @@ class WWMCog(commands.Cog):
                 return
             target_pid = pid
 
-        view = RankingTypeSelectView(self, target_pid=target_pid)
+        view = RankingTypeSelectView(self, target_pid=target_pid, owner_id=interaction.user.id)
         await interaction.response.send_message(content=None, embed=None, view=view)
 
     async def _resolve_user_pid(self, interaction: discord.Interaction) -> Optional[str]:
@@ -3079,6 +3162,7 @@ class WWMCog(commands.Cog):
                 rank_name=rank_name,
                 page=page,
                 target_pid=target_pid,
+                owner_id=interaction.user.id,
             )
             view.total_pages = total_pages
             view.total_entries = total_entries
@@ -4766,7 +4850,7 @@ class WWMCog(commands.Cog):
                 description += f"\n*({removed_count} deleted guild(s) filtered out)*"
             
             # Send the V2 view with search results embedded
-            view = GuildSearchSelectView(valid_clubs, valid_infos, self, header=f"# 🔍 Guild Search Results\n{description}\n\n### Results\n{results_text}")
+            view = GuildSearchSelectView(valid_clubs, valid_infos, self, header=f"# 🔍 Guild Search Results\n{description}\n\n### Results\n{results_text}", owner_id=interaction.user.id)
             await interaction.followup.send(content=None, embed=None, view=view)
             
         except Exception as e:
@@ -5421,6 +5505,7 @@ class WWMCog(commands.Cog):
                 inactive_this_week=inactive_this_week,
                 inactive_last_week=inactive_last_week,
                 guild_area=guild_area,
+                owner_id=interaction.user.id,
             )
 
             await interaction.followup.send(view=view)
@@ -5471,7 +5556,7 @@ class WWMCog(commands.Cog):
                     member_num = info.get('members', {}).get('member_num', '?')
                     apprentice_num = info.get('members', {}).get('apprentice_num', '?')
                     result_lines.append(f"**{idx}.** **{guild_name}** — 👥 `{member_num}` 🎓 `{apprentice_num}`")
-                view = GuildRegionSelectView(valid_clubs, valid_infos, self)
+                view = GuildRegionSelectView(valid_clubs, valid_infos, self, owner_id=interaction.user.id)
                 await interaction.followup.send(content=None, embed=None, view=view)
             except Exception as e:
                 logger.error(f"Guild region search failed: {str(e)}", exc_info=True)
@@ -5505,7 +5590,7 @@ class WWMCog(commands.Cog):
                     'level': base.get('level', 0), 'is_online': base.get('is_online', 0) == 1, 'oversea_tag': str(base.get('oversea_tag', '')),
                 })
             guild_name = result.get('base', {}).get('name', 'Our Guild')
-            view = GuildRegionSummaryView(guild_name, regions, tag_map, self)
+            view = GuildRegionSummaryView(guild_name, regions, tag_map, self, owner_id=interaction.user.id)
             await interaction.followup.send(content=None, embed=None, view=view)
         except Exception as e:
             logger.error(f"Guild region command failed: {str(e)}", exc_info=True)
@@ -5588,7 +5673,7 @@ class WWMCog(commands.Cog):
                 # use container to send the list, pageinate if necessary
 
 
-                view = Inactive(inactive_last_week, inactive_this_week, point_threshold)
+                view = Inactive(inactive_last_week, inactive_this_week, point_threshold, owner_id=interaction.user.id)
                 await interaction.followup.send(content="", view=view)
 
 
@@ -5936,9 +6021,10 @@ class GuildDetailView(LayoutView):
     that restores the previous view.
     """
 
-    def __init__(self, title: str, body: str, accent: int, back_view, timeout: int = 180):
+    def __init__(self, title: str, body: str, accent: int, back_view, timeout: int = 180, owner_id: Optional[int] = None):
         super().__init__(timeout=timeout)
         self.back_view = back_view
+        self.owner_id = owner_id
 
         inner_items = [
             TextDisplay(f"# {title}\n\n{body}"),
@@ -5955,6 +6041,8 @@ class GuildDetailView(LayoutView):
         self.add_item(container)
 
     async def _handle_back(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         await interaction.edit_original_response(view=self.back_view)
 
@@ -5999,9 +6087,11 @@ class GuildInfoView(LayoutView):
         inactive_this_week: list = None,
         inactive_last_week: list = None,
         guild_area: str = None,
+        owner_id: Optional[int] = None,
     ):
         super().__init__(timeout=180)
         self.cog = cog
+        self.owner_id = owner_id
         self.guild_name = guild_name
         self.leader_name = leader_name
         self.leader_number_id = leader_number_id
@@ -6332,6 +6422,8 @@ class GuildInfoView(LayoutView):
                                 item.disabled = True
 
     async def _handle_mode_active(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         self.display_mode = "active"
         self.page = 0
@@ -6340,6 +6432,8 @@ class GuildInfoView(LayoutView):
         await interaction.edit_original_response(view=self)
 
     async def _handle_mode_this_week(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         self.display_mode = "inactive_this_week"
         self.page = 0
@@ -6348,6 +6442,8 @@ class GuildInfoView(LayoutView):
         await interaction.edit_original_response(view=self)
 
     async def _handle_mode_last_week(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         self.display_mode = "inactive_last_week"
         self.page = 0
@@ -6356,6 +6452,8 @@ class GuildInfoView(LayoutView):
         await interaction.edit_original_response(view=self)
 
     async def _handle_sort(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         selected = interaction.data.get("values", ["points_desc"])
         self.sort_by = selected[0]
@@ -6364,6 +6462,8 @@ class GuildInfoView(LayoutView):
         await interaction.edit_original_response(view=self)
 
     async def _handle_prev(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         if self.page > 0:
             self.page -= 1
@@ -6371,6 +6471,8 @@ class GuildInfoView(LayoutView):
         await interaction.edit_original_response(view=self)
 
     async def _handle_next(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer()
         sorted_members = self._get_sorted_members()
         total_pages = max(1, (len(sorted_members) + self.ITEMS_PER_PAGE - 1) // self.ITEMS_PER_PAGE)
@@ -6382,6 +6484,8 @@ class GuildInfoView(LayoutView):
     async def _show_player_profile(self, interaction: discord.Interaction, number_id: str, nickname_label: str):
         """Fetch player full data and show an ephemeral PlayerProfileView with all stats
         (masteries, attributes, combat, kongfu, guild, etc.) — matching /player search output."""
+        if not await ensure_owner(interaction, self):
+            return
         await interaction.response.defer(ephemeral=True)
 
         try:
