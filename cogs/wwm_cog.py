@@ -1056,17 +1056,25 @@ class PlayerProfileView(LayoutView):
             # Max energy currently is 600
             if self.energy > 600:
                 self.energy = 600
+            if self.energy != 600:
+                # Find time until full energy (assuming 1 energy per 8 minutes)
+                time_until_full = (600 - self.energy) * 8
+                # In discord timestamp format: <t:unix_timestamp:R> for relative time
+                time_until_full_ts = int(discord.utils.utcnow().timestamp()) + time_until_full * 60
+                time_until_full_str = f"<t:{time_until_full_ts}:R>"
+
             if self.is_online:
-                lines.append(f"⚡ **Energy:** {int(self.energy):,}" if int(self.energy or 0) else "")
+                lines.append(f"⚡ **Energy:** {int(self.energy):,} full ({time_until_full_str})" if int(self.energy or 0) else "")
             else:
-                lines.append(f"⚡ **Energy:** {int(self.energy):,} (Estimated because offline)" if int(self.energy or 0) else "")
+                lines.append(f"⚡ **Energy:** {int(self.energy):,} (Estimated because offline, full {time_until_full_str})" if int(self.energy or 0) else "")
 
             # Partner info (moved from social button)
             if self.partner_info:
                 partner_base = self.partner_info.get('base', {})
                 partner_name = partner_base.get('nickname', 'Unknown')
                 partner_number_id = partner_base.get('number_id', 'N/A')
-                partner_line = f"💑 **Partner:** {partner_name} ({partner_number_id})"
+                partner_favor = self.partner_info.get('favor', 0)
+                partner_line = f"💑 **Partner:** {partner_name} - {partner_favor} ({partner_number_id})"
                 lines.append(partner_line)
             # Sworn Cohort (moved from social button)
             if self.jieyi_name:
@@ -3555,12 +3563,14 @@ class WWMCog(commands.Cog):
         async def _fetch_partner_info():
             partner_pid = None
             partner_hostnum = None
+            partner_favor = None
             if jieyuan_info and isinstance(jieyuan_info, dict):
                 xialv_info = jieyuan_info.get('xialv_info', {})
                 if xialv_info and isinstance(xialv_info, dict):
                     for k, v in xialv_info.items():
                         partner_pid = v.get("pid")
                         partner_hostnum = v.get("hostnum")
+                        partner_favor = v.get("favor")
             t0 = time.time()
             partner_info = None
             try:
@@ -3568,6 +3578,7 @@ class WWMCog(commands.Cog):
                     partner_data = await fetch_player_data_by_pid(partner_pid, hostnum=partner_hostnum, fields=["base"])
                     if partner_data and 'result' in partner_data:
                         partner_info = partner_data['result']
+                        partner_info['favor'] = partner_favor
             except Exception as partner_err:
                 logger.warning(f"Failed to get partner info: {partner_err}")
             logger.debug(f"[timing] get_partner_info: {time.time() - t0:.3f}s")
