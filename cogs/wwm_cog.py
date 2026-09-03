@@ -1063,10 +1063,12 @@ class PlayerProfileView(LayoutView):
                 time_until_full_ts = int(discord.utils.utcnow().timestamp()) + time_until_full * 60
                 time_until_full_str = f"<t:{time_until_full_ts}:R>"
 
-            if self.is_online:
-                lines.append(f"⚡ **Energy:** {int(self.energy):,} full ({time_until_full_str})" if int(self.energy or 0) else "")
+                if self.is_online:
+                    lines.append(f"⚡ **Energy:** {int(self.energy):,} full ({time_until_full_str})" if int(self.energy or 0) else "")
+                else:
+                    lines.append(f"⚡ **Energy:** {int(self.energy):,} (Estimated because offline, full {time_until_full_str})" if int(self.energy or 0) else "")
             else:
-                lines.append(f"⚡ **Energy:** {int(self.energy):,} (Estimated because offline, full {time_until_full_str})" if int(self.energy or 0) else "")
+                lines.append(f"⚡ **Energy:** {int(self.energy):,} (Full)" if int(self.energy or 0) else "")
 
             # Partner info (moved from social button)
             if self.partner_info:
