@@ -857,6 +857,7 @@ class PlayerProfileView(LayoutView):
         ly_stage_name: str = None,
         level: int = 0,
         is_online: bool = False,
+        energy: int = 0,
         is_invisible: bool = False,
         oversea_tag: str = "N/A",
         online_hours: float = 0,
@@ -871,6 +872,8 @@ class PlayerProfileView(LayoutView):
         likes_count: int = 0,
         likes_data_raw: dict = None,
         likes_history: list = None,
+        # Partner
+        partner_info: dict = None,
         # Masteries
         martial_mastery: float = 0,
         scholar_mastery: float = 0,
@@ -944,6 +947,7 @@ class PlayerProfileView(LayoutView):
         self.ly_stage_name = ly_stage_name
         self.level = level
         self.is_online = is_online
+        self.energy = energy
         self.is_invisible = is_invisible
         self.oversea_tag = oversea_tag
         self.online_hours = online_hours
@@ -952,6 +956,7 @@ class PlayerProfileView(LayoutView):
         self.cover_img = cover_img
         self.cover_img_path = cover_img_path
         self.birthday_str = birthday_str
+        self.partner_info = partner_info or {}
         self.jieyi_name = jieyi_name
         self.jieyi_text = jieyi_text
         self.likes_count = likes_count
@@ -1048,7 +1053,21 @@ class PlayerProfileView(LayoutView):
             lines.append(f"💃 **Elegance:** {int(self.fashion_score):,}" if int(self.fashion_score or 0) else "")
             lines.append(f"❤️ **Likes:** {int(self.likes_count):,}" if int(self.likes_count or 0) else "")
             lines.append(f"🤝 **Assist Points:** {int(self.assist_points):,}" if int(self.assist_points or 0) else "")
-            
+            # Max energy currently is 600
+            if self.energy > 600:
+                self.energy = 600
+            if self.is_online:
+                lines.append(f"⚡ **Energy:** {int(self.energy):,}" if int(self.energy or 0) else "")
+            else:
+                lines.append(f"⚡ **Energy:** {int(self.energy):,} (Estimated because offline)" if int(self.energy or 0) else "")
+
+            # Partner info (moved from social button)
+            if self.partner_info:
+                partner_base = self.partner_info.get('base', {})
+                partner_name = partner_base.get('nickname', 'Unknown')
+                partner_number_id = partner_base.get('number_id', 'N/A')
+                partner_line = f"💑 **Partner:** {partner_name} ({partner_number_id})"
+                lines.append(partner_line)
             # Sworn Cohort (moved from social button)
             if self.jieyi_name:
                 cohort_line = f"🤝 **Sworn Cohort:** {self.jieyi_name}"
@@ -3412,6 +3431,8 @@ class WWMCog(commands.Cog):
         achievement_data = data.get('achievement', {})
         club_data = data.get('club', {})
         fashion_data = data.get('fashion', {})
+        gameplay_resources = data.get('gameplay_resources', {})
+        jieyuan_info = data.get('jieyuan_info', {})
 
         # Check if the VIEWED player (not the command user) has a verified Discord account
         # This controls Discord mention display and fashion cover image availability
@@ -3435,6 +3456,17 @@ class WWMCog(commands.Cog):
                 row2 = await cursor2.fetchone()
                 command_user_verified = row2 is not None
         logger.debug(f"[timing] db_lookup_command_user_verified: {time.time() - t_db2:.3f}s")
+
+        # Get energy of Player (Public API, no verification required)
+        gameplay_resources = gameplay_resources.get(50, {})
+        energy = gameplay_resources.get('value', 0)
+        if not is_online:
+            # if the player is offline, energy data is not accurate, we need to calculate it +1 energy for every 8 minutes after logged out time
+            logout_time = base_data.get('logout_time', 0)
+            current_time = int(time.time())
+            time_since_logout = current_time - logout_time
+            energy_gained = time_since_logout // 480  # 480 seconds = 8 minutes
+            energy = int(energy) + int(energy_gained)
         
         # --- Parallelize remaining independent fetches ---
         async def _fetch_likes():
@@ -3520,6 +3552,27 @@ class WWMCog(commands.Cog):
             logger.debug(f"[timing] get_fashion_score: {time.time() - t0:.3f}s")
             return fashion_score
 
+        async def _fetch_partner_info():
+            partner_pid = None
+            partner_hostnum = None
+            if jieyuan_info and isinstance(jieyuan_info, dict):
+                xialv_info = jieyuan_info.get('xialv_info', {})
+                if xialv_info and isinstance(xialv_info, dict):
+                    for k, v in xialv_info.items():
+                        partner_pid = v.get("pid")
+                        partner_hostnum = v.get("hostnum")
+            t0 = time.time()
+            partner_info = None
+            try:
+                if partner_pid and partner_hostnum:
+                    partner_data = await fetch_player_data_by_pid(partner_pid, hostnum=partner_hostnum, fields=["base"])
+                    if partner_data and 'result' in partner_data:
+                        partner_info = partner_data['result']
+            except Exception as partner_err:
+                logger.warning(f"Failed to get partner info: {partner_err}")
+            logger.debug(f"[timing] get_partner_info: {time.time() - t0:.3f}s")
+            return partner_info
+
         async def _fetch_homeland():
             t0 = time.time()
             homeland_info = None
@@ -3573,9 +3626,10 @@ class WWMCog(commands.Cog):
             logger.debug(f"[timing] cover_image_total: {time.time() - t0:.3f}s")
             return cover_img, cover_img_path
 
-        likes_result, fashion_score, homeland_info, cover_result, likes_history = await asyncio.gather(
+        likes_result, fashion_score, partner_info, homeland_info, cover_result, likes_history = await asyncio.gather(
             _fetch_likes(),
             _fetch_fashion_score(),
+            _fetch_partner_info(),
             _fetch_homeland(),
             _fetch_cover_image(),
             _fetch_like_history(),
@@ -3804,12 +3858,14 @@ class WWMCog(commands.Cog):
             'ly_stage_name': ly_stage_name,
             'level': lv,
             'is_online': is_online,
+            'energy': energy,
             'is_invisible': is_invisible,
             'oversea_tag': oversea_tag,
             'online_hours': online_hours,
             'create_time': create_time,
             'player_signature': data.get('name_card', {}).get('sign'),
             'birthday_str': birthday_str,
+            'partner_info': partner_info or {},
             'jieyi_name': jieyi_name,
             'jieyi_text': jieyi_text,
             'likes_count': likes_count,
@@ -3893,6 +3949,7 @@ class WWMCog(commands.Cog):
             level=profile_data['level'],
             is_online=profile_data['is_online'],
             is_invisible=profile_data['is_invisible'],
+            energy=profile_data['energy'],
             oversea_tag=profile_data['oversea_tag'],
             online_hours=profile_data['online_hours'],
             create_time=profile_data['create_time'],
@@ -3905,6 +3962,7 @@ class WWMCog(commands.Cog):
             likes_count=profile_data['likes_count'],
             likes_data_raw=profile_data['likes_data_raw'],
             likes_history=profile_data.get('likes_history', []),
+            partner_info=profile_data.get('partner_info', {}),
             martial_mastery=profile_data['martial_mastery'],
             scholar_mastery=profile_data['scholar_mastery'],
             healer_mastery=profile_data['healer_mastery'],
