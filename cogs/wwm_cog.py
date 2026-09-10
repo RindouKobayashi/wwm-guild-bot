@@ -1072,11 +1072,18 @@ class PlayerProfileView(LayoutView):
 
             # Partner info (moved from social button)
             if self.partner_info:
-                partner_base = self.partner_info.get('base', {})
-                partner_name = partner_base.get('nickname', 'Unknown')
-                partner_number_id = partner_base.get('number_id', 'N/A')
-                partner_favor = self.partner_info.get('favor', 0)
-                partner_line = f"💑 **Partner:** {partner_name} - {partner_favor} ({partner_number_id})"
+                logger.debug(self.partner_info)
+                []
+                partner_line = "💑 **Partner:" if len(self.partner_info) == 1 else "💑 **Partners:"
+                for k, v in self.partner_info.items():
+                    partner_base = v.get('base', {})
+                    partner_name = partner_base.get('nickname', 'Unknown')
+                    partner_number_id = partner_base.get('number_id', 'N/A')
+                    partner_favor = v.get('favor', 0)
+                    if len(self.partner_info) == 1:
+                        partner_line += f" {partner_name} - {partner_favor} ({partner_number_id})"
+                    else:
+                        partner_line += f" [{partner_name} - {partner_favor} ({partner_number_id})] "
                 lines.append(partner_line)
             # Sworn Cohort (moved from social button)
             if self.jieyi_name:
@@ -3566,6 +3573,7 @@ class WWMCog(commands.Cog):
             partner_pid = None
             partner_hostnum = None
             partner_favor = None
+            partners_dict = {}
             if jieyuan_info and isinstance(jieyuan_info, dict):
                 xialv_info = jieyuan_info.get('xialv_info', {})
                 if xialv_info and isinstance(xialv_info, dict):
@@ -3573,14 +3581,28 @@ class WWMCog(commands.Cog):
                         partner_pid = v.get("pid")
                         partner_hostnum = v.get("hostnum")
                         partner_favor = v.get("favor")
+                        partners_dict[k] = {
+                            "pid": partner_pid,
+                            "hostnum": partner_hostnum,
+                            "favor": partner_favor
+                        }
             t0 = time.time()
             partner_info = None
+            logger.debug(partners_dict)
+            # Sort by favor
+            partners_dict = {k: v for k, v in sorted(partners_dict.items(), key=lambda item: item[1].get('favor', 0), reverse=True)}
             try:
-                if partner_pid and partner_hostnum:
-                    partner_data = await fetch_player_data_by_pid(partner_pid, hostnum=partner_hostnum, fields=["base"])
-                    if partner_data and 'result' in partner_data:
-                        partner_info = partner_data['result']
-                        partner_info['favor'] = partner_favor
+                if partners_dict:
+                    partner_info = {}
+                    pid_list = [p.get('pid') for p in partners_dict.values() if p.get('pid')]
+                    partners_data = await get_bulk_players_info(pid_list, fields=["base"])
+                    if partners_data and 'result' in partners_data:
+                        for k, p in partners_dict.items():
+                            pid = p.get('pid')
+                            if pid and pid in partners_data['result']:
+                                partner_info[k] = partners_data['result'][pid]
+                                partner_info[k]['favor'] = p.get('favor')
+
             except Exception as partner_err:
                 logger.warning(f"Failed to get partner info: {partner_err}")
             logger.debug(f"[timing] get_partner_info: {time.time() - t0:.3f}s")
