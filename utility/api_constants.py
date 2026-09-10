@@ -342,7 +342,9 @@ KONGFU_WEAPON_MAP = {
     20603: {"name": "Everspring Umbrella", "icon": "guyun_small_2_oversea_0_0_ui.png", "emoji": "<:guyun_small_2_oversea_0_0_ui:1537248197641240596>", "role": "DPS"},
     20702: {"name": "Unfettered Rope Dart", "icon": "guyun_small_2_oversea_0_0_ui.png", "emoji": "<:guyun_small_2_oversea_0_0_ui:1537248197641240596>", "role": "DPS"},
     20703: {"name": "Skygrasp Rope Dart", "icon": "moshandao_small_1_oversea_0_0_ui.png", "emoji": "<:moshandao_small_1_oversea_0_0_ui:1537248202573750283>", "role": "DPS"},
-    20901: {"name": "Heavenwill Gauntlets", "icon": "moshandao_small_1_oversea_0_0_ui.png", "emoji": "<:moshandao_small_1_oversea_0_0_ui:1537248202573750283>", "role": "DPS"}
+    20901: {"name": "Heavenwill Gauntlets", "icon": "moshandao_small_1_oversea_0_0_ui.png", "emoji": "<:moshandao_small_1_oversea_0_0_ui:1537248202573750283>", "role": "DPS"},
+    20902: {"name": "Skystrike Gauntlets", "icon": "zuiquan_small_1_oversea_0_0_ui.png", "emoji": "<:zuiquan_small_1_oversea_0_0_ui:1547626058650488962>", "role": "DPS"},
+    20503: {"name": "Riven Twinblades", "icon": "zuiquan_small_1_oversea_0_0_ui.png", "emoji": "<:zuiquan_small_1_oversea_0_0_ui:1547626058650488962>", "role": "DPS"},
 }
 
 HEALER_WEAPONS = {10301, 20602}
