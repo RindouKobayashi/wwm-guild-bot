@@ -847,7 +847,7 @@ class MarketGoodPaginatedView(LayoutView):
             no_search_marker = "~~" if other_search == 0 else ""
             likes_text = f"  │  👍 {self.likes_map.get(pid, 0)}" if self.likes_map.get(pid, 0) else ""
             lines.append(
-                f"{prefix} {online_icon} **{reported_prefix}{coop_prefix}{no_search_marker}{nickname}{no_search_marker}** ({number_id}){guild_display}  ─  "
+                f"{prefix} {online_icon} **{reported_prefix}{coop_prefix}{no_search_marker}{nickname}{no_search_marker}** `{number_id}`{guild_display}  ─  "
                 f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                 f"{likes_text}"
             )
@@ -1023,7 +1023,7 @@ class MarketReportView(LayoutView):
                 no_search_strike = "~~" if other_search == 0 else ""
                 no_search_end = "~~" if other_search == 0 else ""
                 lines.append(
-                    f"{prefix} {online_icon} **{reported_prefix}{coop_prefix}{no_search_strike}{nickname}{no_search_end}** ({number_id}){guild_display}  ─  "
+                    f"{prefix} {online_icon} **{reported_prefix}{coop_prefix}{no_search_strike}{nickname}{no_search_end}** `{number_id}`{guild_display}  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                     f"{likes_text}"
                 )
@@ -1186,7 +1186,7 @@ class MarketReportView(LayoutView):
                 guild_display = f" — *{guild_name}*" if guild_name and guild_name != 'Unknown' else ""
                 likes_text = f"  │  👍 {self.likes_map.get(pid, 0)}" if self.likes_map.get(pid, 0) else ""
                 lines.append(
-                    f"{prefix} 🟢 **{coop_prefix}{nickname}** ({number_id}){guild_display}  ─  "
+                    f"{prefix} 🟢 **{coop_prefix}{nickname}** `{number_id}`{guild_display}  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                     f"{likes_text}"
                 )
@@ -1330,7 +1330,7 @@ class MarketReportView(LayoutView):
                 coop_prefix = "[COOP ✅] " if mode == 17 else ""
                 likes_text = f"  │  👍 {self.likes_map.get(pid, 0)}" if self.likes_map.get(pid, 0) else ""
                 lines.append(
-                    f"{prefix} {online_icon} **{coop_prefix}{nickname}** ({number_id})  ─  "
+                    f"{prefix} {online_icon} **{coop_prefix}{nickname}** `{number_id}`  ─  "
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                     f"{likes_text}"
                 )
