@@ -972,8 +972,11 @@ class RankingMapListView(LayoutView):
         self.rank_type = rank_type
         self.page = page
         self.owner_id = owner_id
+        # Sorted by leaderboard ID (the number in rank_*_dungeon_{id}), so the list
+        # reads in the same order as the in-game dungeon numbering. Entries of the
+        # same ID across types stay adjacent (HR first, then ST).
         self.entries = sorted(entries or [], key=lambda e: (
-            e.get("rank_type") or "", e.get("name") or "", e.get("dungeon_id") or 0
+            e.get("dungeon_id") or 0, e.get("rank_type") or ""
         ))
         self._rebuild()
 
