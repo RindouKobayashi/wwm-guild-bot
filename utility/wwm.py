@@ -40,7 +40,7 @@ DEFAULT_FIELDS = [
     "kongfu", "ride", "mentor", "jieyuan_info", "jieyi",
     "jieyi_misc", "gameplay_trail", "pvp_battle", "attr",
     "lunjian", "birthday", "school", "lunjian3v3_prop", "fight_shoulder", "coop_score",
-    "homeworld_data", "achievement", "fashion", "gameplay_resources", "jieyuan_info"
+    "homeworld_data", "achievement", "fashion", "gameplay_resources"
 ]
 
 # Complete list of ALL known fields (kept for reference / debugging)
