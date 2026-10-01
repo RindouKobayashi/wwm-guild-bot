@@ -21,6 +21,7 @@ import difflib
 from settings import BASE_DIR, logger
 from utility.wwm import get_club_chat, get_custom_guild_info, get_bulk_players_info, get_film_plan, get_teams_info
 from utility.api_constants import get_kongfu_ids_from_player, format_kongfu_display
+from utility.affix_mapper import map_data, get_equipment_name
 from googletrans import Translator
 
 
@@ -136,6 +137,226 @@ AVATAR_VALID_SUBFOLDERS = {
 # Body-type constants (mirrors the WWM API: 0 = female, 1 = male).
 BODY_TYPE_FEMALE = 0
 BODY_TYPE_MALE = 1
+
+
+# ── Shared item (msg_stuff) formatting helpers ──────────────────────
+# A `msg_stuff` chat message carries a full `ext.stuff_item` payload that
+# looks exactly like an equipped gear slot: an item `No` plus an `ex` blob
+# with `base_attrs`, `base_affixes`, `tone_determin`, `another_determin`,
+# `durability`, `retoned`, `next_retone_ts` and `suffix`. The rendering
+# below mirrors `cogs/wwm_cog.py::_handle_equipments` so an item shared in
+# chat reads the same way it does in the /player Equipments panel.
+
+# The placeholder text the game sends as `msg` for an item share. When the
+# sender typed their own caption the game still fills `stuff_item`, so the
+# caption replaces this string in the rendered card.
+ITEM_SHARE_PLACEHOLDER_TEXT = "Item Share Message"
+
+# Some Determin effects are full sentences; clip them so the card stays
+# readable and inside Discord's 4000-char TextDisplay limit.
+AFFIX_LABEL_MAX_LEN = 160
+ITEM_CARD_MAX_LEN = 3500
+
+
+def _smart_round(value) -> str:
+    """Round for display: strips float artifacts and trailing zeros.
+
+    Mirrors `PlayerProfileView._smart_round` in cogs/wwm_cog.py. Duplicated
+    rather than imported because that helper lives on the other cog's view
+    class and cross-cog imports would couple the two modules.
+    """
+    if not isinstance(value, (int, float)):
+        return str(value)
+    if value != value or value in (float("inf"), float("-inf")):  # NaN / inf
+        return str(value)
+    rounded = round(value, 4)
+    if rounded == int(rounded):
+        return str(int(rounded))
+    return f"{rounded:.4f}".rstrip("0").rstrip(".")
+
+
+def _clip(text, max_len: int = AFFIX_LABEL_MAX_LEN) -> str:
+    """Collapse whitespace and truncate a long affix/effect name."""
+    text = " ".join(str(text).split())
+    if len(text) <= max_len:
+        return text
+    return text[: max_len - 1].rstrip() + "…"
+
+
+def _affix_display(val) -> str:
+    """Return the human name of a mapped affix, or the raw value."""
+    if isinstance(val, dict) and val.get("_affix"):
+        return _clip(val.get("name", str(val.get("id", val))))
+    return _clip(val)
+
+
+def _affix_value_str(affix_obj, affix_val) -> str:
+    """Format an affix value using its CSV format string when available."""
+    fmt = affix_obj.get("format", "") if isinstance(affix_obj, dict) else ""
+    if fmt:
+        try:
+            return fmt.format(affix_val)
+        except (ValueError, TypeError, IndexError, KeyError):
+            pass
+    return _smart_round(affix_val)
+
+
+def _affix_value_with_range(affix_obj, affix_val) -> str:
+    """Format an affix value plus its range and the delta needed to reach max.
+
+    Uses the aggregated `name_min` / `name_max` (lowest min and highest max
+    across every affix ID sharing the same english_name) so the range stays
+    consistent across gear tiers, falling back to the per-affix min/max.
+
+    Example: 51.3 with name-level 7.5–33.8 renders as
+    `**51.3** (7.5–33.8, +12.5 to max)` or `**51.3** (7.5–33.8, **MAX**)`.
+    """
+    if not isinstance(affix_obj, dict):
+        return _smart_round(affix_val)
+    value_str = _affix_value_str(affix_obj, affix_val)
+    lo = affix_obj.get("name_min")
+    hi = affix_obj.get("name_max")
+    if lo is None or hi is None:
+        lo = affix_obj.get("min")
+        hi = affix_obj.get("max")
+    if lo is None or hi is None:
+        return f"**{value_str}**"
+    try:
+        fmt = affix_obj.get("format", "") or ""
+        lo_str = fmt.format(lo) if fmt else _smart_round(lo)
+        hi_str = fmt.format(hi) if fmt else _smart_round(hi)
+        float_val = float(affix_val)
+        if hi > float_val:
+            delta = hi - float_val
+            delta_str = fmt.format(delta) if fmt else _smart_round(delta)
+            delta_part = f", +{delta_str} to max"
+        else:
+            delta_part = ", **MAX**"
+        return f"**{value_str}** ({lo_str}–{hi_str}{delta_part})"
+    except (ValueError, TypeError, IndexError, KeyError):
+        return f"**{value_str}**"
+
+
+async def format_shared_item(stuff_item: dict) -> Tuple[str, List[str]]:
+    """Render a `msg_stuff` item payload into a title and body lines.
+
+    ``stuff_item`` is the raw ``ext.stuff_item`` object from the club-chat
+    API. Returns ``(title, lines)`` where ``title`` is the equipment name
+    (or ``#<No>`` when the xlsx has no entry) and ``lines`` is the list of
+    markdown lines describing the item.
+
+    Never raises: if the affix mapper or the equipment-name lookup fails the
+    raw IDs are rendered instead, so an item share always produces output.
+    """
+    if not isinstance(stuff_item, dict) or not stuff_item:
+        return "", []
+
+    item_no = stuff_item.get("No", "")
+    ex_data = stuff_item.get("ex", {}) or {}
+    if not isinstance(ex_data, dict):
+        ex_data = {}
+
+    # Map the affix IDs (base_affixes / tone_determin / another_determin)
+    # into human-readable marker objects. Non-critical — fall back to raw.
+    mapped_ex = ex_data
+    try:
+        mapped_ex = await map_data(ex_data)
+    except Exception as e:
+        logger.warning(f"Live chat item affix mapping failed (non-critical): {e}")
+
+    # ── Title: equipment name from the xlsx, falling back to the number ──
+    try:
+        equip_name = get_equipment_name(item_no)
+    except Exception as e:
+        logger.warning(f"Live chat equipment name lookup failed (non-critical): {e}")
+        equip_name = None
+    title = f"🪪 **{equip_name}**" if equip_name else f"🪪 **Item #{item_no}**"
+    title += f" — `#{item_no}`"
+
+    lines: List[str] = [title]
+
+    # ── Base attributes (raw API keys, as in the /player Equipments panel) ──
+    base_attrs = mapped_ex.get("base_attrs", {}) or {}
+    if isinstance(base_attrs, dict) and base_attrs:
+        attr_parts = [
+            f"{attr_key}: **{_smart_round(attr_val)}**"
+            for attr_key, attr_val in base_attrs.items()
+        ]
+        lines.append(f"📊 {'  |  '.join(attr_parts)}")
+
+    # ── Base affixes ──
+    base_affixes = mapped_ex.get("base_affixes", []) or []
+    if isinstance(base_affixes, list) and base_affixes:
+        lines.append("📎 **Affixes:**")
+        for affix in base_affixes:
+            if not (isinstance(affix, list) and len(affix) >= 2):
+                continue
+            affix_id, affix_val = affix[0], affix[1]
+            if isinstance(affix_id, dict) and affix_id.get("_affix"):
+                affix_display = _affix_value_with_range(affix_id, affix_val)
+            else:
+                affix_display = f"**{_smart_round(affix_val)}**"
+            lines.append(f"  • {_affix_display(affix_id)} → {affix_display}")
+
+    # ── Tone / Determin ──
+    tone_parts: List[str] = []
+    tone_determin = mapped_ex.get("tone_determin", None)
+    if tone_determin:
+        tone_parts.append(f"Tone: {_affix_display(tone_determin)}")
+    another_determin = mapped_ex.get("another_determin", None)
+    if isinstance(another_determin, list) and len(another_determin) >= 2:
+        tone_parts.append(
+            f"Det: {_affix_display(another_determin[0])} ({_smart_round(another_determin[1])})"
+        )
+    if tone_parts:
+        lines.append(f"💠 {'  ·  '.join(tone_parts)}")
+
+    # ── Durability / Retune / Suffix ──
+    info_parts: List[str] = []
+    durability = mapped_ex.get("durability", None)
+    if durability is not None:
+        info_parts.append(f"Dura: {_smart_round(durability)}/100")
+    retoned = mapped_ex.get("retoned", 0)
+    if retoned:
+        info_parts.append(f"Retuned: {_smart_round(retoned)}")
+    next_retone_ts = mapped_ex.get("next_retone_ts", 0)
+    if next_retone_ts:
+        try:
+            info_parts.append(
+                f"Retune: <t:{int(next_retone_ts)}:F> (<t:{int(next_retone_ts)}:R>)"
+            )
+        except (TypeError, ValueError):
+            pass
+    suffix = mapped_ex.get("suffix", 0)
+    if suffix:
+        info_parts.append(f"Suffix: {_smart_round(suffix)}")
+    if info_parts:
+        lines.append(f"🔧 {'  ·  '.join(info_parts)}")
+
+    # ── Bind / lock state (tells the reader if the item is tradeable) ──
+    state_parts: List[str] = []
+    if stuff_item.get("bind"):
+        state_parts.append("🔗 Bound")
+    if stuff_item.get("safe_lock") or ex_data.get("safe_lock"):
+        state_parts.append("🔒 Safe-locked")
+    if stuff_item.get("locked"):
+        state_parts.append("🔒 Locked")
+    if state_parts:
+        lines.append("  ·  ".join(state_parts))
+
+    # ── When the item was acquired ──
+    gain_ts = mapped_ex.get("gain_ts", 0)
+    if gain_ts:
+        try:
+            lines.append(f"📥 Acquired <t:{int(gain_ts)}:R>")
+        except (TypeError, ValueError):
+            pass
+
+    # ── Keep inside Discord's 4000-char TextDisplay limit ──
+    body = "\n".join(lines)
+    if len(body) > ITEM_CARD_MAX_LEN:
+        body = body[: ITEM_CARD_MAX_LEN - 1].rstrip() + "…"
+    return title, body.split("\n")
 
 
 # ── Components V2 view classes ──────────────────────────────────────
@@ -309,6 +530,74 @@ class ExhibitionMessageView(LayoutView):
             accent_color=0xE67E22,
         )
         self.add_item(container)
+
+
+class ItemShareMessageView(LayoutView):
+    """Components V2 view for a shared item (msg_stuff) chat message.
+
+    Renders the full `ext.stuff_item` payload — equipment name, base
+    attributes, affixes with their roll ranges, tone/Determin, durability /
+    retune / suffix, and the bind+lock state — instead of the bare
+    ``[Item] #<No>`` the old embed path produced.
+
+    Mirrors ChatMessageView's Section + Thumbnail layout so the sender's
+    avatar shows beside the card, and carries the same ``_files`` /
+    ``_resolve_files`` contract so it can be wrapped by
+    ``HeadPickerRequestView`` for the avatar-mapping prompt.
+    """
+
+    def __init__(
+        self,
+        *,
+        author_name: str,
+        item_lines: List[str],
+        ts: int,
+        discord_mention: str = "",
+        caption: str = "",
+        head_id=None,
+        head_avatar_path: Optional[str] = None,
+    ):
+        super().__init__(timeout=None)
+        self._files: List[discord.File] = []
+
+        footer = f"<t:{ts}:F> (<t:{ts}:R>)"
+        if discord_mention:
+            footer += f"\n{discord_mention}"
+
+        # The sender's own caption goes above the card when they typed one
+        # (the game otherwise sends a generic "Item Share Message" placeholder).
+        body_children: list = []
+        if caption:
+            body_children.append(TextDisplay(f"**{author_name}**"))
+            body_children.append(TextDisplay(caption))
+        item_text = "\n".join(item_lines)
+
+        container_children: list = []
+
+        if head_avatar_path:
+            # Preserve original extension so animated .webp avatars stay animated
+            thumb_ext = os.path.splitext(head_avatar_path)[1] or ".png"
+            thumb_filename = f"head_{head_id}{thumb_ext}"
+            self._files.append(discord.File(head_avatar_path, filename=thumb_filename))
+            section = Section(accessory=Thumbnail(media=f"attachment://{thumb_filename}"))
+            section.add_item(TextDisplay(f"**{author_name}**"))
+            for child in body_children[1:]:
+                section.add_item(child)
+            section.add_item(TextDisplay(item_text))
+            container_children.append(section)
+        else:
+            for child in body_children:
+                container_children.append(child)
+            container_children.append(TextDisplay(item_text))
+
+        container_children.append(Separator(spacing=discord.SeparatorSpacing.small))
+        container_children.append(TextDisplay(footer))
+
+        container = Container(*container_children, accent_color=0xF1C40F)
+        self.add_item(container)
+
+    def _resolve_files(self) -> List[discord.File]:
+        return list(self._files)
 
 
 class UploadAvatarModal(discord.ui.Modal, title="Upload Custom Avatar"):
@@ -574,6 +863,9 @@ class HeadPickerRequestView(LayoutView):
     Times out after 180 seconds, after which the button auto-disables.
     Knows about the sender's `body_type` so the picker it opens can filter
     avatars to the correct gender / format subfolders.
+
+    `base_view` may be any message view that exposes `.children` and
+    `._files` — in practice a ChatMessageView or an ItemShareMessageView.
     """
 
 
@@ -582,7 +874,7 @@ class HeadPickerRequestView(LayoutView):
     def __init__(
         self,
         *,
-        base_view: ChatMessageView,
+        base_view: LayoutView,
         head_id,
         sender_nickname: str,
         sender_pid: Optional[str],
@@ -2577,12 +2869,23 @@ class LiveChatCog(commands.Cog):
                 import re
                 region_name = re.sub(r'#[A-Z](\[.*?\])?#E?', '', region_name)
                 message = f"[Location] {region_name}"
-        elif msg_type == 'msg_stuff' and message == "Item Share Message":
-            # Show item number instead of generic text
-            stuff_item = ext.get('stuff_item', {})
-            item_no = stuff_item.get('No', '')
-            if item_no:
-                message = f"[Item] #{item_no}"
+        elif msg_type == 'msg_stuff':
+            # Shared item — render the full `stuff_item` payload (name,
+            # base attrs, affixes, tone/Determin, durability, retune,
+            # suffix, bind state) instead of the bare item number. The same
+            # lines feed ItemShareMessageView, so both paths agree.
+            stuff_item = ext.get('stuff_item', {}) or {}
+            _title, item_lines = await format_shared_item(stuff_item)
+            if item_lines:
+                if message and message != ITEM_SHARE_PLACEHOLDER_TEXT:
+                    # Sender typed their own caption above the share.
+                    message = f"{message}\n\n" + "\n".join(item_lines)
+                else:
+                    message = "\n".join(item_lines)
+            else:
+                # No usable payload — fall back to the item number alone.
+                item_no = stuff_item.get('No', '')
+                message = f"[Item] #{item_no}" if item_no else message
         elif msg_type == 'msg_hongbao':
             hongbao = msg.get('hongbao_info', {})
             if message:
@@ -3167,6 +3470,36 @@ class LiveChatCog(commands.Cog):
                         )
                         handled_separately = True
 
+        # ── Shared item (msg_stuff) messages ──
+        # A dedicated card so the full item payload (name, base attrs,
+        # affixes, tone/Determin, durability, retune, bind state) renders
+        # with the sender's avatar beside it, instead of the single-line
+        # "[Item] #<No>" the plain text path produced. Falls through to the
+        # default ChatMessageView when the payload is missing or unusable.
+        if not handled_separately and view is None and msg_type == "msg_stuff":
+            stuff_item = ext.get("stuff_item", {}) or {}
+            if isinstance(stuff_item, dict) and stuff_item.get("No") is not None:
+                _title, item_lines = await format_shared_item(stuff_item)
+                if item_lines:
+                    # The game sends "Item Share Message" as a placeholder;
+                    # only treat `msg` as a real caption when it differs.
+                    caption = (
+                        msg_label
+                        if msg_label and msg_label != ITEM_SHARE_PLACEHOLDER_TEXT
+                        else ""
+                    )
+                    view = ItemShareMessageView(
+                        author_name=author_name,
+                        item_lines=item_lines,
+                        ts=ts,
+                        discord_mention=discord_mention,
+                        caption=caption,
+                        head_id=str(head_id) if head_id is not None else None,
+                        head_avatar_path=head_avatar_path,
+                    )
+                    files = view._resolve_files()
+                    handled_separately = True
+
         # ── Default: normal / share / location / item / red envelope / etc. ──
         if not handled_separately and view is None:
             # Reuse the existing embed builder to get the body text via Embed.description
@@ -3206,13 +3539,14 @@ class LiveChatCog(commands.Cog):
         if view is None:
             return
 
-        # ── Offer head_id picker only for non-emote / non-exhibition messages ──
+        # ── Offer head_id picker on plain message views (not emote/exhibition) ──
+        # ItemShareMessageView is included so shared items keep the same
+        # avatar-mapping prompt they had on the old ChatMessageView path.
         if (
-            not handled_separately
-            and head_id is not None
+            head_id is not None
             and head_avatar_path is None
             and self._should_offer_avatar_picker(head_id, body_type)
-            and isinstance(view, ChatMessageView)
+            and isinstance(view, (ChatMessageView, ItemShareMessageView))
         ):
             view = HeadPickerRequestView(
                 base_view=view,
