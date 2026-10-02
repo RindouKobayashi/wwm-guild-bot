@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Set, Tuple
 import xml.etree.ElementTree as ET
 from settings import BASE_DIR, logger
+from utility.xlsx_reader import iter_xlsx_rows
 
 DB_PATH = BASE_DIR / "data" / "affix_mappings.db"
 AFFIX_CSV_PATH = BASE_DIR / "data" / "all_affix_id_english_names.csv"
@@ -53,7 +54,9 @@ def load_equipment_names(xlsx_path: Optional[str] = None) -> Dict[str, str]:
     Reads the ``item_id`` / ``english_name`` columns from sheet1 and returns
     a dict mapping item_id (as str) -> english_name.
 
-    Uses only stdlib (zipfile + xml.etree) — no openpyxl/pandas needed.
+    Uses ``utility.xlsx_reader.iter_xlsx_rows``, which handles the workbook's
+    ``inlineStr`` cell encoding. (The previous inline ``<v>``-only parsing
+    matched nothing here and silently produced an empty cache.)
     """
     global _EQUIPMENT_NAME_CACHE
     path = Path(xlsx_path) if xlsx_path else EQUIPMENT_NAMES_XLSX_PATH
@@ -64,31 +67,17 @@ def load_equipment_names(xlsx_path: Optional[str] = None) -> Dict[str, str]:
         logger.warning(f"Equipment names xlsx not found at {path}")
         return {}
 
-    # Namespace used by the xlsx XML
-    ns = {"x": "http://schemas.openxmlformats.org/spreadsheetml/2006/main"}
-
     try:
-        with zipfile.ZipFile(str(path)) as z:
-            # The real data lives in xl/worksheets/sheet1.xml
-            tree = ET.parse(z.open("xl/worksheets/sheet1.xml"))
-    except (KeyError, zipfile.BadZipFile, ET.ParseError) as e:
+        for row in iter_xlsx_rows(path):
+            if len(row) < 2:
+                continue
+            item_id = row[0].strip()
+            name = row[1].strip()
+            if item_id and name:
+                _EQUIPMENT_NAME_CACHE[item_id] = name
+    except (zipfile.BadZipFile, KeyError, ET.ParseError, OSError) as e:
         logger.warning(f"Failed to parse equipment names xlsx: {e}")
         return {}
-
-    root = tree.getroot()
-    rows = root.findall(".//x:row", ns)
-    for row in rows:
-        cells = row.findall("x:c", ns)
-        if len(cells) < 2:
-            continue
-        v0 = cells[0].find("x:v", ns)
-        v1 = cells[1].find("x:v", ns)
-        if v0 is None or v1 is None or not v0.text or not v1.text:
-            continue
-        item_id = v0.text.strip()
-        name = v1.text.strip()
-        if item_id and name:
-            _EQUIPMENT_NAME_CACHE[item_id] = name
 
     logger.debug(f"Loaded {len(_EQUIPMENT_NAME_CACHE)} equipment names from {path.name}")
     return _EQUIPMENT_NAME_CACHE

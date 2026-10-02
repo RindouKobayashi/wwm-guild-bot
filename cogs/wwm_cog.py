@@ -11,7 +11,7 @@ import logging
 import aiosqlite
 import json
 from collections import defaultdict
-from typing import Optional
+from typing import Dict, Optional
 from deepdiff import DeepDiff
 import aiohttp
 
@@ -21,6 +21,7 @@ from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, classify_kongfu_role, VOTE_COUNTS
 from utility.wwm import get_sect_election_ranking
 from utility.affix_mapper import map_data, init_db, load_affix_csv, load_equipment_names, get_equipment_name
+from utility.item_names import load_item_names, get_item_name
 
 
 def admin_or_staff():
@@ -72,6 +73,9 @@ BIRTHDAY_ROLE_ID = 1469960226294730753
 BLURPLE = 0x5865F2
 ORANGE = 0xE67E22
 
+# Sentinel value for the Collection filter menu's "show everything" option.
+COLLECTION_FILTER_ALL = "__all__"
+
 GMT8_TZ = datetime.timezone(datetime.timedelta(hours=8))
 
 MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
@@ -87,6 +91,112 @@ def _ordinal(n: int) -> str:
 def _format_birthday(month: int, day: int) -> str:
     """Format month/day as a human-readable string, e.g. '3rd Feb'."""
     return f"{_ordinal(day)} {MONTH_NAMES[month - 1]}" if 1 <= month <= 12 else f"{month}/{day}"
+
+
+# ---------------------------------------------------------------------------
+# Collection data (resolved item names for the player profile "Collection" tab)
+# ---------------------------------------------------------------------------
+# Category scopes were verified against data/All_Item_Names.xlsx. They are
+# REQUIRED, not cosmetic: ~1,986 item_ids are reused across categories, so an
+# unscoped lookup yields confidently-wrong names (money token 3001 would render
+# as the title "Rainbow Slayer"). Anything not listed here is deliberately
+# left unmapped rather than guessed.
+COLLECTION_CATEGORY_SCOPES = {
+    # fashion.assets -> poses / pet emotes / collectibles
+    "fashion": ("fashion_pose", "pet_emote", "collectible"),
+    # guise.owned_views -> outfits and their skins
+    "guise": ("outfit", "skill_skin", "weapon_skin", "hairstyle"),
+    # title_prop.titles -> titles
+    "titles": ("title",),
+    # ride.ride_bag -> mounts (sparse; many ride IDs have no mount entry)
+    "ride": ("mount",),
+}
+
+# JSON path -> (collection bucket, id key)
+COLLECTION_SOURCES = {
+    "fashion": ("fashion", "assets"),
+    "guise": ("guise", "owned_views"),
+    "titles": ("title_prop", "titles"),
+    "ride": ("ride", "ride_bag"),
+}
+
+
+def _merge_entries(entries: list) -> list:
+    """
+    Collapse entries that share a resolved name into one row.
+
+    The same outfit ships under several IDs (e.g. "Lute of Love" exists as
+    3008005 / 603066 / 604065 / 605029 — colour variants), so listing every
+    ID separately just repeats the same name. Named items merge and sum their
+    counts; unnamed ones stay one-per-ID so nothing is silently hidden.
+    """
+    merged: Dict[str, dict] = {}
+    passthrough = []
+    for entry in entries:
+        name = entry["name"]
+        if not name:
+            passthrough.append(entry)
+            continue
+        row = merged.get(name)
+        if row is None:
+            merged[name] = {"id": entry["id"], "name": name, "count": entry["count"], "variants": 1}
+        else:
+            row["variants"] += 1
+            try:
+                row["count"] = (row["count"] or 0) + (entry["count"] or 0)
+            except TypeError:
+                pass
+    return list(merged.values()) + passthrough
+
+
+def build_collection_data(data: dict) -> dict:
+    """
+    Turn raw player JSON into resolved, display-ready collection buckets.
+
+    Returns ``{bucket: [ {"id", "name", "count", "variants"}, ... ]}`` where
+    ``name`` is ``None`` when the ID has no unambiguous match (caller shows
+    the raw ID). Same-named colour variants are merged by ``_merge_entries``.
+    """
+    collection: dict = {}
+
+    def _add(bucket: str, item_id, count) -> None:
+        categories = COLLECTION_CATEGORY_SCOPES.get(bucket)
+        name = get_item_name(item_id, categories=categories) if categories else None
+        collection.setdefault(bucket, []).append({
+            "id": str(item_id),
+            "name": name,
+            "count": count,
+        })
+
+    # fashion.assets: {item_id: count}
+    fashion = (data.get("fashion") or {}).get("assets") or {}
+    for item_id, count in fashion.items():
+        _add("fashion", item_id, count)
+
+    # guise.owned_views: {item_id: count}
+    guise = (data.get("guise") or {}).get("owned_views") or {}
+    for item_id, count in guise.items():
+        _add("guise", item_id, count)
+
+    # title_prop.titles: {title_id: {"level": n}}
+    titles = (data.get("title_prop") or {}).get("titles") or {}
+    for item_id, info in titles.items():
+        level = info.get("level", 0) if isinstance(info, dict) else 0
+        _add("titles", item_id, level)
+
+    # ride.ride_bag.no2num / no2max_level: {mount_id: count}
+    ride_bag = (data.get("ride") or {}).get("ride_bag") or {}
+    seen_ride = set()
+    for src_key in ("no2num", "no2max_level"):
+        for item_id, count in (ride_bag.get(src_key) or {}).items():
+            if item_id in seen_ride:
+                continue
+            seen_ride.add(item_id)
+            _add("ride", item_id, count)
+
+    # Collapse colour variants that share a name.
+    return {bucket: _merge_entries(entries) for bucket, entries in collection.items()}
+
 
 class OnlinePlayersResultView(LayoutView):
     """Components V2 LayoutView for displaying online players result."""
@@ -928,6 +1038,8 @@ class PlayerProfileView(LayoutView):
         homeland_info: dict = None,
         # Achievements
         achievement_data: dict = None,
+        # Collection (fashion / outfits / titles) — resolved item names
+        collection_data: dict = None,
         # The person using the command (controls privileged options like Equipments)
         viewer_discord_user_id: int = None,
         owner_id: int = None,
@@ -1006,6 +1118,11 @@ class PlayerProfileView(LayoutView):
         self.player_hostnum = player_hostnum
         self.homeland_info = homeland_info
         self.achievement_data = achievement_data
+        # Collection tab state
+        self.collection_data = collection_data or {}
+        self.collection_page = 0
+        # Active category filter; None shows the whole collection
+        self.collection_filter: Optional[str] = None
         # Equipment pagination state
         self.equipments_page = 0
         self._equipments_lines: list = []
@@ -1156,6 +1273,7 @@ class PlayerProfileView(LayoutView):
                 discord.SelectOption(label="Equipments", value="equipments", emoji="🛡️"),
                 discord.SelectOption(label="Guild Profile", value="guild", emoji="🏰"),
                 discord.SelectOption(label="Homestead", value="homestead", emoji="🏡"),
+                discord.SelectOption(label="Collection", value="collection", emoji="🎎"),
                 discord.SelectOption(label="Likes", value="likes", emoji="❤️"),
                 discord.SelectOption(label="Sect", value="school", emoji="🏫")
             ]
@@ -1228,6 +1346,7 @@ class PlayerProfileView(LayoutView):
             "equipments": self._handle_equipments,
             "guild": self._handle_guild,
             "homestead": self._handle_homestead,
+            "collection": self._handle_collection,
             "likes": self._handle_likes,
             "set_avatar": self._handle_set_avatar,
             "school": self._handle_school
@@ -1546,6 +1665,235 @@ class PlayerProfileView(LayoutView):
         
         return inner
     
+    # ── Collection tab ──────────────────────────────────────────────
+
+    COLLECTION_ITEMS_PER_PAGE = 22
+    COLLECTION_BUCKET_LABELS = {
+        "guise": ("👘", "Outfits"),
+        "fashion": ("💃", "Poses & Fashion"),
+        "titles": ("🏷️", "Titles"),
+        "ride": ("🐴", "Mounts"),
+    }
+    COLLECTION_BUCKET_ORDER = ["guise", "fashion", "titles", "ride"]
+
+    def _build_collection_detail(self) -> tuple:
+        """
+        Build the collection page as
+        ``(page_lines, total_pages, summary_lines, bucket_counts)``.
+
+        When ``self.collection_filter`` is set to a bucket name, only that
+        bucket is listed; otherwise every bucket is shown (the overall
+        collection). ``bucket_counts`` always reports every bucket's size so
+        the filter menu can label its options even while filtered.
+        """
+        # Sort each bucket: resolved names alphabetically first, then
+        # unresolved IDs last so raw fallbacks never crowd out real names.
+        buckets = []
+        bucket_counts = {}
+        for bucket in self.COLLECTION_BUCKET_ORDER:
+            entries = self.collection_data.get(bucket) or []
+            if not entries:
+                continue
+            entries = sorted(
+                entries,
+                key=lambda e: (e["name"] is None, (e["name"] or e["id"]).lower()),
+            )
+            bucket_counts[bucket] = len(entries)
+            # Honour the active filter, if any.
+            if self.collection_filter and bucket != self.collection_filter:
+                continue
+            buckets.append((bucket, entries))
+
+        if not buckets:
+            if self.collection_filter:
+                # The filter matched nothing (e.g. after a data refresh).
+                self.collection_filter = None
+                return self._build_collection_detail()
+            return ["*No collection data available*"], 1, [], {}
+
+        summary = []
+        for bucket, entries in buckets:
+            emoji, label = self.COLLECTION_BUCKET_LABELS.get(bucket, ("🎎", bucket.title()))
+            unresolved = sum(1 for e in entries if not e["name"])
+            note = f" _({unresolved} unnamed)_" if unresolved else ""
+            summary.append(f"{emoji} **{label}:** {len(entries)}{note}")
+
+        all_lines = []
+        for bucket, entries in buckets:
+            emoji, label = self.COLLECTION_BUCKET_LABELS.get(bucket, ("🎎", bucket.title()))
+            all_lines.append(f"### {emoji} {label} ({len(entries)})")
+            for entry in entries:
+                name = entry["name"] or f"`#{entry['id']}`"
+                bits = []
+                variants = entry.get("variants") or 1
+                if variants > 1:
+                    bits.append(f"{variants} colourways")
+                count = entry.get("count") or 0
+                if isinstance(count, (int, float)) and count > 1:
+                    bits.append(f"×{count}")
+                suffix = f"  _{' · '.join(bits)}_" if bits else ""
+                all_lines.append(f"• **{name}**{suffix}")
+            all_lines.append("")
+
+        total_pages = max(1, -(-len(all_lines) // self.COLLECTION_ITEMS_PER_PAGE))
+        self.collection_page = max(0, min(self.collection_page, total_pages - 1))
+        start = self.collection_page * self.COLLECTION_ITEMS_PER_PAGE
+        page_lines = all_lines[start:start + self.COLLECTION_ITEMS_PER_PAGE]
+        return page_lines, total_pages, summary, bucket_counts
+
+    async def _show_collection_page(self, interaction: discord.Interaction):
+        lines, total_pages, summary, bucket_counts = self._build_collection_detail()
+        if self.collection_filter:
+            _emoji, filter_label = self.COLLECTION_BUCKET_LABELS.get(
+                self.collection_filter, ("🎎", self.collection_filter.title())
+            )
+            title = f"🎎 Collection — {filter_label} ({self.collection_page + 1}/{total_pages})"
+        else:
+            title = f"🎎 Collection ({self.collection_page + 1}/{total_pages})"
+
+        body = []
+        if summary:
+            body.append("\n".join(summary))
+            body.append("")
+        body.append("\n".join(lines))
+
+        inner = [TextDisplay(f"# {title}\n\n" + "\n".join(body))]
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        # Filter menu: narrows the list to one category (or back to everything).
+        # Values are bucket names so they stay unique even when two categories
+        # would otherwise land on the same page.
+        filter_options = [
+            discord.SelectOption(
+                label=f"All ({sum(bucket_counts.values())})",
+                value=COLLECTION_FILTER_ALL,
+                emoji="🎎",
+                description="Show the entire collection",
+            )
+        ]
+        for bucket, count in bucket_counts.items():
+            emoji, label = self.COLLECTION_BUCKET_LABELS.get(bucket, ("🎎", bucket.title()))
+            filter_options.append(discord.SelectOption(
+                label=f"{label} ({count})",
+                value=bucket,
+                emoji=emoji,
+                description=f"Show only {label.lower()}",
+            ))
+
+        filter_row = ActionRow()
+        filter_select = Select(
+            placeholder="Filter collection...",
+            options=filter_options,
+            custom_id="collection_filter",
+        )
+        # Reflect the active filter in the menu itself.
+        current_value = self.collection_filter or COLLECTION_FILTER_ALL
+        filter_select.default_values = [
+            opt for opt in filter_options if opt.value == current_value
+        ] or filter_options[:1]
+        filter_select.callback = self._handle_collection_filter
+        filter_row.add_item(filter_select)
+        inner.append(filter_row)
+        inner.append(Separator(spacing=discord.SeparatorSpacing.small))
+
+        nav_row = ActionRow()
+        prev_btn = Button(
+            style=discord.ButtonStyle.secondary,
+            label="◀ Prev",
+            custom_id="collection_prev",
+            disabled=self.collection_page <= 0,
+        )
+        prev_btn.callback = self._handle_collection_prev
+        nav_row.add_item(prev_btn)
+
+        page_label = Button(
+            style=discord.ButtonStyle.secondary,
+            label=f"{self.collection_page + 1}/{total_pages}",
+            custom_id="collection_page_label",
+            disabled=True,
+        )
+        nav_row.add_item(page_label)
+
+        next_btn = Button(
+            style=discord.ButtonStyle.secondary,
+            label="Next ▶",
+            custom_id="collection_next",
+            disabled=self.collection_page >= total_pages - 1,
+        )
+        next_btn.callback = self._handle_collection_next
+        nav_row.add_item(next_btn)
+        inner.append(nav_row)
+
+        back_row = ActionRow()
+        back_btn = discord.ui.Button(label="🔙 Overview", style=discord.ButtonStyle.secondary, custom_id="player_back")
+        back_btn.callback = self._handle_back
+        back_row.add_item(back_btn)
+        inner.append(back_row)
+
+        self.clear_items()
+        self.add_item(self._build_container(detail_items=inner))
+        await interaction.edit_original_response(view=self)
+
+    async def _handle_collection(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
+        await interaction.response.defer()
+
+        # Re-entering the tab always starts from the full collection, so a
+        # filter left over from last time doesn't silently hide categories.
+        self.collection_filter = None
+        self.collection_page = 0
+
+        # Collection fields (guise / title_prop) are not part of the default
+        # fetch set, so resolve them lazily here on first open.
+        if not self.collection_data and self.player_pid and self.player_hostnum:
+            try:
+                extra = await fetch_player_data_by_pid(
+                    self.player_pid,
+                    hostnum=self.player_hostnum,
+                    fields=["guise", "title_prop", "fashion", "ride"],
+                )
+                if extra and isinstance(extra, dict):
+                    raw = extra.get("result", extra)
+                    self.collection_data = build_collection_data(raw)
+            except Exception as fetch_err:
+                logger.warning(f"Failed to load collection data for {self.player_pid}: {fetch_err}")
+                self.collection_data = {}
+
+        await self._show_collection_page(interaction)
+
+    async def _handle_collection_filter(self, interaction: discord.Interaction):
+        """
+        Narrow the collection to a single category (or back to everything).
+
+        The page resets to 1 because the filtered list is a different, shorter
+        set of lines.
+        """
+        if not await ensure_owner(interaction, self):
+            return
+        await interaction.response.defer()
+        selected = interaction.data.get("values", [""])[0]
+        self.collection_filter = None if selected == COLLECTION_FILTER_ALL else selected
+        self.collection_page = 0
+        await self._show_collection_page(interaction)
+
+    async def _handle_collection_prev(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
+        await interaction.response.defer()
+        if self.collection_page > 0:
+            self.collection_page -= 1
+        await self._show_collection_page(interaction)
+
+    async def _handle_collection_next(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
+        await interaction.response.defer()
+        _, total_pages, _summary, _starts = self._build_collection_detail()
+        if self.collection_page < total_pages - 1:
+            self.collection_page += 1
+        await self._show_collection_page(interaction)
+
     async def _handle_likes(self, interaction: discord.Interaction):
         await interaction.response.defer()
         inner = self._build_likes_detail()
@@ -2628,6 +2976,13 @@ class WWMCog(commands.Cog):
         await init_db()
         await load_affix_csv()
         load_equipment_names()
+        # Item-name index (All_Item_Names.xlsx) for player-search collection data.
+        # Wrapped so a missing/corrupt workbook degrades to "no names" instead
+        # of preventing the cog from loading.
+        try:
+            load_item_names()
+        except Exception as item_names_err:
+            logger.warning(f"Item names index unavailable: {item_names_err}")
         if self.monitor_enabled and self.monitor_channel:
             self.guild_monitor_task.start()
         # Always-on opponent-guild reminder (8 AM GMT+8 Sunday + Monday).
