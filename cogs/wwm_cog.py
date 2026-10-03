@@ -94,6 +94,52 @@ def _format_birthday(month: int, day: int) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Energy (the player profile "Energy" line)
+# ---------------------------------------------------------------------------
+# Max energy is currently 600, and offline regen is +1 per 8 minutes.
+MAX_ENERGY = 600
+ENERGY_REGEN_SECONDS = 480  # 8 minutes per energy point
+
+
+def _compute_energy(gameplay_resources: dict, base_data: dict, is_online: bool) -> tuple:
+    """
+    Resolve a player's energy into ``(energy, has_data, regen)``.
+
+    ``gameplay_resources["50"]`` is authoritative while the game retains it,
+    but long-absent players come back with an empty map, so both shapes occur::
+
+        "gameplay_resources": {}                        # no data at all
+        "gameplay_resources": {"50": {"value": 333}}   # real reading
+
+    ``has_data`` keeps those two apart, so a missing reading is never
+    presented as a total. ``None`` is used as the absent sentinel rather
+    than 0 so a genuine zero energy still counts as data.
+
+    ``regen`` is the number of points added because the player is offline
+    (+1 every 8 minutes since logout). It is 0 while online, where the
+    game's reading is used as-is. When ``has_data`` is False the base at
+    logout is unknown, so ``regen`` is only a floor and callers must label
+    it as an estimate.
+    """
+    raw_resources = gameplay_resources or {}
+    resource = raw_resources.get(50, raw_resources.get("50"))
+    resource = resource if isinstance(resource, dict) else {}
+    base_value = resource.get('value')
+    has_data = base_value is not None
+
+    regen = 0
+    if not is_online:
+        # logout_time arrives as a float and may be 0, absent, or in the
+        # future, so normalise and clamp before dividing.
+        logout_time = int((base_data or {}).get('logout_time', 0) or 0)
+        if logout_time:
+            regen = max(0, int(time.time()) - logout_time) // ENERGY_REGEN_SECONDS
+
+    energy = (int(base_value) + regen) if has_data else regen
+    return min(MAX_ENERGY, energy), has_data, regen
+
+
+# ---------------------------------------------------------------------------
 # Collection data (resolved item names for the player profile "Collection" tab)
 # ---------------------------------------------------------------------------
 # Category scopes were verified against data/All_Item_Names.xlsx. They are
@@ -968,6 +1014,8 @@ class PlayerProfileView(LayoutView):
         level: int = 0,
         is_online: bool = False,
         energy: int = 0,
+        energy_has_data: bool = False,
+        energy_regen: int = 0,
         is_invisible: bool = False,
         oversea_tag: str = "N/A",
         online_hours: float = 0,
@@ -1060,6 +1108,11 @@ class PlayerProfileView(LayoutView):
         self.level = level
         self.is_online = is_online
         self.energy = energy
+        # Provenance for the Energy line: whether the game actually returned
+        # gameplay_resources["50"], and how many regen points were added
+        # (non-zero only when the player is offline).
+        self.energy_has_data = energy_has_data
+        self.energy_regen = energy_regen
         self.is_invisible = is_invisible
         self.oversea_tag = oversea_tag
         self.online_hours = online_hours
@@ -1170,22 +1223,41 @@ class PlayerProfileView(LayoutView):
             lines.append(f"💃 **Elegance:** {int(self.fashion_score):,}" if int(self.fashion_score or 0) else "")
             lines.append(f"❤️ **Likes:** {int(self.likes_count):,}" if int(self.likes_count or 0) else "")
             lines.append(f"🤝 **Assist Points:** {int(self.assist_points):,}" if int(self.assist_points or 0) else "")
-            # Max energy currently is 600
-            if self.energy > 600:
-                self.energy = 600
-            if self.energy != 600:
+            # Energy. Online + real reading -> authoritative, no estimate wording.
+            # Offline + real reading -> real base plus derived regen. Offline with
+            # no reading (long-absent players lose gameplay_resources entirely) ->
+            # say so plainly and show the regen floor on its own.
+            energy = min(MAX_ENERGY, int(self.energy or 0))
+            regen = max(0, int(self.energy_regen or 0))
+            if energy >= MAX_ENERGY:
+                full_str = "Full"
+            else:
                 # Find time until full energy (assuming 1 energy per 8 minutes)
-                time_until_full = (600 - self.energy) * 8
+                time_until_full = (MAX_ENERGY - energy) * 8
                 # In discord timestamp format: <t:unix_timestamp:R> for relative time
                 time_until_full_ts = int(discord.utils.utcnow().timestamp()) + time_until_full * 60
-                time_until_full_str = f"<t:{time_until_full_ts}:R>"
+                full_str = f"full <t:{time_until_full_ts}:R>"
 
-                if self.is_online:
-                    lines.append(f"⚡ **Energy:** {int(self.energy):,} full ({time_until_full_str})" if int(self.energy or 0) else "")
+            if not self.energy_has_data:
+                if regen:
+                    # Regen is all we have, and the base at logout is unknown.
+                    lines.append(
+                        f"⚡ **Energy:** ~{energy:,} (no game data — regen estimate only, base unknown)"
+                    )
+                elif self.is_online:
+                    lines.append("⚡ **Energy:** no data (not reported by game)")
                 else:
-                    lines.append(f"⚡ **Energy:** {int(self.energy):,} (Estimated because offline, full {time_until_full_str})" if int(self.energy or 0) else "")
+                    lines.append("⚡ **Energy:** no data — regen estimate 0 (base unknown)")
+            elif self.is_online:
+                lines.append(f"⚡ **Energy:** {energy:,} ({full_str})" if energy >= MAX_ENERGY
+                             else f"⚡ **Energy:** {energy:,} {full_str}")
+            elif regen:
+                base = energy - regen
+                lines.append(
+                    f"⚡ **Energy:** {energy:,} (estimated — {base:,} + {regen:,} regen, {full_str})"
+                )
             else:
-                lines.append(f"⚡ **Energy:** {int(self.energy):,} (Full)" if int(self.energy or 0) else "")
+                lines.append(f"⚡ **Energy:** {energy:,} (estimated, {full_str})")
 
             # Partner info (moved from social button)
             if self.partner_info:
@@ -3094,16 +3166,12 @@ class WWMCog(commands.Cog):
                 command_user_verified = row2 is not None
         logger.debug(f"[timing] db_lookup_command_user_verified: {time.time() - t_db2:.3f}s")
 
-        # Get energy of Player (Public API, no verification required)
-        gameplay_resources = gameplay_resources.get(50, {})
-        energy = gameplay_resources.get('value', 0)
-        if not is_online:
-            # if the player is offline, energy data is not accurate, we need to calculate it +1 energy for every 8 minutes after logged out time
-            logout_time = base_data.get('logout_time', 0)
-            current_time = int(time.time())
-            time_since_logout = current_time - logout_time
-            energy_gained = time_since_logout // 480  # 480 seconds = 8 minutes
-            energy = int(energy) + int(energy_gained)
+        # Get energy of Player (Public API, no verification required).
+        # _compute_energy keeps "no reading" distinct from a reading of 0 and
+        # only adds regen for offline players.
+        energy, energy_has_data, energy_regen = _compute_energy(
+            gameplay_resources, base_data, is_online
+        )
         
         # --- Parallelize remaining independent fetches ---
         async def _fetch_likes():
@@ -3514,6 +3582,8 @@ class WWMCog(commands.Cog):
             'level': lv,
             'is_online': is_online,
             'energy': energy,
+            'energy_has_data': energy_has_data,
+            'energy_regen': energy_regen,
             'is_invisible': is_invisible,
             'oversea_tag': oversea_tag,
             'online_hours': online_hours,
@@ -3605,6 +3675,8 @@ class WWMCog(commands.Cog):
             is_online=profile_data['is_online'],
             is_invisible=profile_data['is_invisible'],
             energy=profile_data['energy'],
+            energy_has_data=profile_data['energy_has_data'],
+            energy_regen=profile_data['energy_regen'],
             oversea_tag=profile_data['oversea_tag'],
             online_hours=profile_data['online_hours'],
             create_time=profile_data['create_time'],

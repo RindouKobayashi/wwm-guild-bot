@@ -2,6 +2,7 @@ import discord
 import settings
 import aiosqlite
 import random
+import time
 from discord.ext import commands
 from discord import app_commands, ButtonStyle
 from settings import logger, BASE_DIR, WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL, CLUB_ID
@@ -9,6 +10,84 @@ from datetime import datetime, timezone
 from discord.ext import tasks
 from utility.wwm import get_player_info, get_club_hostnums
 from utility.api_constants import SCHOOL_ROLES
+from cogs.wwm_cog import _compute_energy, MAX_ENERGY, ENERGY_REGEN_SECONDS
+
+# ---------------------------------------------------------------------------
+# Energy regen alerts (opt-in)
+# ---------------------------------------------------------------------------
+# A subscriber is alerted when their energy rises past `threshold` while
+# offline. Three guards stop the 1-minute poll from pinging every minute:
+#
+#   * edge-triggered — we alert on the CROSSING, not on "energy > threshold",
+#     and remember the crossing in `was_above` so it survives restarts;
+#   * hysteresis — the user must fall back below `threshold - REARM_MARGIN`
+#     before another crossing counts, so hovering on the line cannot flap;
+#   * cooldown — a hard floor between any two alerts.
+REARM_MARGIN = 30        # must drop this far below the threshold to re-arm
+ALERT_COOLDOWN = 3600    # seconds between any two alerts (1 hour)
+# How long a cached reading may still be extrapolated. Energy only ever rises
+# while a player is offline, and the extrapolation saturates at MAX_ENERGY, so
+# a generous window is safe: anyone offline longer than ~80h is full regardless
+# of the cached base. It must comfortably exceed the 36h needed to regen from
+# an empty bar past a typical threshold, or a player who logged off at 180 with
+# a 450 threshold could never be alerted.
+CACHE_MAX_AGE = 604800   # 7 days
+
+OWNER_DENY_MSG = "❌ Only the user who ran this command can use these buttons."
+
+
+async def ensure_owner(interaction: discord.Interaction, view) -> bool:
+    """Return True if the interacting user is the command invoker.
+
+    Otherwise send an ephemeral denial and return False.
+    """
+    if getattr(view, "owner_id", None) is None or interaction.user.id == view.owner_id:
+        return True
+    if interaction.response.is_done():
+        await interaction.followup.send(OWNER_DENY_MSG, ephemeral=True)
+    else:
+        await interaction.response.send_message(OWNER_DENY_MSG, ephemeral=True)
+    return False
+
+
+def extrapolate_energy(cached_energy: int, cached_ts: int, now_ts: int) -> tuple:
+    """
+    Project a cached energy reading forward using offline regen.
+
+    The live API drops ``gameplay_resources`` once a player has been gone long
+    enough, but the 1-minute poll witnesses their energy on the way out. So we
+    bank the last real reading and continue it here at +1 per 8 minutes.
+
+    Returns ``(energy, extrapolated)``. ``energy`` is None when the cache is
+    too old to be worth anything — better to say nothing than to guess.
+    """
+    if not cached_ts or not cached_energy:
+        return None, False
+    age = now_ts - cached_ts
+    if age < 0 or age > CACHE_MAX_AGE:
+        return None, False
+    gained = age // ENERGY_REGEN_SECONDS
+    # Energy caps at MAX_ENERGY — never extrapolate past the real ceiling.
+    return min(MAX_ENERGY, int(cached_energy) + gained), True
+
+
+def should_alert(energy: int, threshold: int, was_above: bool, last_alert_ts, now_ts: int) -> tuple:
+    """
+    Decide whether this poll should alert, and the ``was_above`` value to store.
+
+    Returns ``(alert, new_was_above)``. Alerting is edge-triggered: we only
+    fire on the upward crossing, so a user who stays above their threshold is
+    pinged exactly once no matter how many polls run.
+    """
+    # Below the re-arm line (threshold - margin): the user spent energy, so
+    # arm the next crossing. This also covers "below threshold at all".
+    if energy <= threshold - REARM_MARGIN:
+        return False, False
+    if was_above:
+        return False, True  # already alerted for this climb — stay quiet
+    if last_alert_ts and (now_ts - last_alert_ts) < ALERT_COOLDOWN:
+        return False, False  # too soon; re-arm so the next real dip can fire
+    return True, True
 
 
 def get_player_school(player_data: dict) -> int:
@@ -89,6 +168,38 @@ class GuildVerificationCog(commands.Cog):
             except:
                 pass
             
+            # Opt-in energy regen alerts. Opt-in means this table stays empty
+            # until a user runs /energy-alert, so nobody is notified by default.
+            # last_energy/last_seen_ts bank the last reading the API gave us:
+            # once a player has been offline long enough the live service drops
+            # gameplay_resources, and this cache is what keeps their alert working.
+            await conn.execute('''
+                CREATE TABLE IF NOT EXISTS energy_alerts (
+                    user_id INTEGER PRIMARY KEY,
+                    threshold INTEGER NOT NULL,
+                    is_enabled INTEGER NOT NULL DEFAULT 1,
+                    last_energy INTEGER NOT NULL DEFAULT 0,
+                    last_seen_ts INTEGER NOT NULL DEFAULT 0,
+                    was_above INTEGER NOT NULL DEFAULT 0,
+                    last_alert_ts INTEGER,
+                    updated_at TIMESTAMP NOT NULL
+                )
+            ''')
+
+            # Migration: add cache columns if the table predates them
+            for col, ddl in [
+                ("last_energy", "ALTER TABLE energy_alerts ADD COLUMN last_energy INTEGER NOT NULL DEFAULT 0"),
+                ("last_seen_ts", "ALTER TABLE energy_alerts ADD COLUMN last_seen_ts INTEGER NOT NULL DEFAULT 0"),
+                ("was_above", "ALTER TABLE energy_alerts ADD COLUMN was_above INTEGER NOT NULL DEFAULT 0"),
+                ("last_alert_ts", "ALTER TABLE energy_alerts ADD COLUMN last_alert_ts INTEGER"),
+            ]:
+                try:
+                    await conn.execute(ddl)
+                    await conn.commit()
+                    logger.info(f"✅ Added {col} column to energy_alerts table")
+                except Exception:
+                    pass
+
             # Approved members registry
             await conn.execute('''
                 CREATE TABLE IF NOT EXISTS verified_members (
@@ -195,7 +306,9 @@ class GuildVerificationCog(commands.Cog):
                 return
                 
             from utility.wwm import get_bulk_players_info
-            bulk_data = await get_bulk_players_info(all_pids, fields=["club", "base"])
+            # gameplay_resources is added for the energy regen alerts — same
+            # single API call, two consumers.
+            bulk_data = await get_bulk_players_info(all_pids, fields=["club", "base", "gameplay_resources"])
             
             if not bulk_data or bulk_data.get('code') != 0:
                 logger.warning("Failed to get bulk player data for membership sync")
@@ -250,13 +363,279 @@ class GuildVerificationCog(commands.Cog):
                 
                 # Sync school/sect role based on player's in-game sect
                 await assign_school_role(member, player_data)
-                
+
+            # Opt-in energy regen alerts, evaluated on the payload already
+            # fetched above — no extra API call. Failures must never interrupt
+            # role sync, hence the guard.
+            try:
+                await self._check_energy_alerts(players, pid_to_userid_map)
+            except Exception as alert_err:
+                logger.error(f"Energy alert check failed: {alert_err}", exc_info=True)
+
         except Exception as e:
             logger.error(f"Guild member sync task failed: {str(e)}", exc_info=True)
+
+    async def _check_energy_alerts(self, players: dict, pid_to_userid_map: dict):
+        """
+        Alert subscribers whose offline energy has risen past their threshold.
+
+        Runs on the 1-minute sync loop using the same bulk payload, so this
+        costs no extra API call. Returns quietly when nobody has opted in.
+        """
+        now_ts = int(time.time())
+
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute(
+                "SELECT user_id, threshold, last_energy, last_seen_ts, was_above, last_alert_ts "
+                "FROM energy_alerts WHERE is_enabled = 1"
+            )
+            subscribers = await cursor.fetchall()
+
+        if not subscribers:
+            return
+
+        userid_to_pid = {user_id: pid for pid, user_id in pid_to_userid_map.items()}
+        guild = self.bot.get_guild(settings.DISCORD_SERVER_ID)
+
+        # Collect state changes first, write once at the end.
+        updates = []
+        for user_id, threshold, cached_energy, cached_ts, was_above, last_alert_ts in subscribers:
+            pid = userid_to_pid.get(user_id)
+            player_data = players.get(pid) if pid else None
+            if not player_data:
+                continue
+
+            base = player_data.get('base', {}) or {}
+            resources = player_data.get('gameplay_resources', {}) or {}
+            is_online = base.get('is_online', 0) == 1
+
+            energy, has_data, _regen = _compute_energy(resources, base, is_online)
+            extrapolated = False
+
+            if not has_data:
+                # Live service dropped the reading (offline too long) — continue
+                # from our own last sighting instead of going blind.
+                energy, extrapolated = extrapolate_energy(cached_energy, cached_ts, now_ts)
+                if energy is None:
+                    logger.debug(f"Energy alert: no live or cached energy for {user_id}, skipping")
+                    continue
+            else:
+                # Fresh reading — bank it so we survive the data disappearing.
+                cached_energy, cached_ts = energy, now_ts
+
+            alert, new_was_above = should_alert(
+                energy, threshold, bool(was_above), last_alert_ts, now_ts
+            )
+            new_last_alert = now_ts if alert else last_alert_ts
+            updates.append((user_id, cached_energy, cached_ts, int(new_was_above), new_last_alert))
+
+            if not alert:
+                continue
+
+            member = guild.get_member(user_id) if guild else None
+            if member is None:
+                logger.debug(f"Energy alert: member {user_id} not in guild, skipping send")
+                continue
+
+            await self._send_energy_alert(member, energy, threshold, extrapolated)
+            logger.info(
+                f"⚡ Energy alert sent to {member} ({energy}/{MAX_ENERGY} >= threshold "
+                f"{threshold}{', extrapolated' if extrapolated else ''})"
+            )
+
+        if updates:
+            async with aiosqlite.connect(DB_PATH) as conn:
+                await conn.executemany(
+                    "UPDATE energy_alerts SET last_energy = ?, last_seen_ts = ?, "
+                    "was_above = ?, last_alert_ts = ? WHERE user_id = ?",
+                    [(e, ts, wa, lat, uid) for uid, e, ts, wa, lat in updates],
+                )
+                await conn.commit()
+
+    async def _send_energy_alert(
+        self, member: discord.Member, energy: int, threshold: int,
+        extrapolated: bool, is_test: bool = False,
+    ):
+        """DM the alert, falling back to the branch's alert channel if DMs fail."""
+        minutes_to_full = max(0, (MAX_ENERGY - energy) * 8)
+
+        embed = discord.Embed(
+            title="🧪 Energy Alert Sample" if is_test else "⚡ Energy Recharged",
+            description=(
+                (
+                    f"**This is a sample** — your alert is working.\n"
+                    f"Your energy is **{energy:,} / {MAX_ENERGY}** right now."
+                    if is_test
+                    else f"Your energy has risen to **{energy:,} / {MAX_ENERGY}**, "
+                         f"past your alert threshold of **{threshold:,}**."
+                )
+            ),
+            color=discord.Color.blurple() if is_test else discord.Color.green(),
+        )
+        embed.add_field(name="Energy", value=f"**{energy:,} / {MAX_ENERGY}**", inline=True)
+        embed.add_field(name="Alert threshold", value=f"**{threshold:,}**", inline=True)
+        if energy >= MAX_ENERGY:
+            embed.add_field(name="Status", value="**Full**", inline=True)
+        else:
+            embed.add_field(
+                name="Estimated time to full",
+                value=f"~{minutes_to_full // 60}h {minutes_to_full % 60}m",
+                inline=True,
+            )
+        embed.set_footer(
+            text="Sample only — no action was taken. Manage this alert with /energy-alert"
+            if is_test
+            else ("Estimated from your last known reading (live data unavailable)."
+                  if extrapolated
+                  else "Change or disable this alert with /energy-alert")
+        )
+
+        try:
+            await member.send(embed=embed)
+        except discord.Forbidden:
+            # DMs are closed — fall back to this branch's alert channel.
+            channel = self.bot.get_channel(getattr(settings, 'ENERGY_ALERT_CHANNEL_ID', 0))
+            if channel:
+                await channel.send(
+                    content=f"{member.mention} *(couldn't DM — sending here)*",
+                    embed=embed,
+                )
+            else:
+                logger.warning(
+                    f"Energy alert: DMs closed for {member} and no ENERGY_ALERT_CHANNEL_ID"
+                )
+        except discord.HTTPException as dm_err:
+            logger.error(f"Energy alert DM failed for {member}: {dm_err}")
+
     
     @guild_member_sync_task.before_loop
     async def before_sync_task(self):
         await self.bot.wait_until_ready()
+
+    @app_commands.command(name="energy-alert", description="Get a DM when your energy regens past a threshold you choose")
+    async def energy_alert(self, interaction: discord.Interaction):
+        """Opt in to (or out of) an energy regen alert. Configure it with the buttons below."""
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute(
+                "SELECT user_id FROM verified_members WHERE user_id = ?", (interaction.user.id,)
+            )
+            if await cursor.fetchone() is None:
+                await interaction.response.send_message(
+                    "❌ You need to bind your game account first.\n"
+                    "Use the account binding system, then run this command again.",
+                    ephemeral=True,
+                )
+                return
+
+            cursor = await conn.execute(
+                "SELECT threshold, is_enabled, last_energy, last_seen_ts, was_above, last_alert_ts "
+                "FROM energy_alerts WHERE user_id = ?", (interaction.user.id,)
+            )
+            row = await cursor.fetchone()
+
+        # Defer before the live energy fetch — it can take a moment.
+        await interaction.response.defer(ephemeral=True)
+        energy, _extrapolated = await self.fetch_my_energy(interaction.user.id)
+
+        view = EnergyAlertView(
+            cog=self,
+            owner_id=interaction.user.id,
+            member=interaction.user,
+            threshold=row[0] if row else None,
+            is_enabled=bool(row[1]) if row else False,
+            last_alert_ts=row[5] if row else None,
+        )
+        view.current_energy = energy
+        view._rebuild()
+        await interaction.followup.send(embed=view.embed, view=view, ephemeral=True)
+
+    async def fetch_my_energy(self, user_id: int) -> tuple:
+        """
+        Resolve the caller's CURRENT energy for display purposes.
+
+        Returns ``(energy, extrapolated)``; energy is None when neither a live
+        nor a usable cached reading exists. Uses the same live-then-cache logic
+        as the background poll, so the panel and a real alert always agree.
+        """
+        now_ts = int(time.time())
+
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute(
+                "SELECT player_pid FROM verified_members WHERE user_id = ?", (user_id,)
+            )
+            row = await cursor.fetchone()
+            pid = row[0] if row else None
+
+            cursor = await conn.execute(
+                "SELECT last_energy, last_seen_ts FROM energy_alerts WHERE user_id = ?",
+                (user_id,),
+            )
+            row = await cursor.fetchone()
+        cached_energy, cached_ts = (row[0], row[1]) if row else (0, 0)
+
+        if pid:
+            try:
+                from utility.wwm import get_bulk_players_info
+                bulk = await get_bulk_players_info([pid], fields=["base", "gameplay_resources"])
+                if bulk and bulk.get('code') == 0:
+                    player_data = bulk.get('result', {}).get(pid)
+                    if player_data:
+                        base = player_data.get('base', {}) or {}
+                        energy, has_data, _ = _compute_energy(
+                            player_data.get('gameplay_resources', {}) or {},
+                            base,
+                            base.get('is_online', 0) == 1,
+                        )
+                        if has_data:
+                            return energy, False
+            except Exception as fetch_err:
+                logger.warning(f"Energy panel: live fetch failed for {user_id}: {fetch_err}")
+
+        # No live reading (or the fetch failed) — fall back to our cache.
+        energy, extrapolated = extrapolate_energy(cached_energy, cached_ts, now_ts)
+        return energy, extrapolated
+
+    async def get_energy_alert_row(self, user_id: int):
+        """Return the caller's energy_alerts row, or None."""
+        async with aiosqlite.connect(DB_PATH) as conn:
+            cursor = await conn.execute(
+                "SELECT threshold, is_enabled, last_energy, last_seen_ts, was_above, last_alert_ts "
+                "FROM energy_alerts WHERE user_id = ?", (user_id,)
+            )
+            return await cursor.fetchone()
+
+    async def save_energy_alert(self, user_id: int, threshold: int, is_enabled: bool = True):
+        """Upsert a subscriber. Resets was_above so the next crossing alerts."""
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await conn.execute(
+                "REPLACE INTO energy_alerts "
+                "(user_id, threshold, is_enabled, last_energy, last_seen_ts, was_above, last_alert_ts, updated_at) "
+                "VALUES (?, ?, ?, 0, 0, 0, NULL, ?)",
+                (user_id, threshold, int(is_enabled), datetime.utcnow()),
+            )
+            await conn.commit()
+
+    async def set_energy_alert_enabled(self, user_id: int, enabled: bool):
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await conn.execute(
+                "UPDATE energy_alerts SET is_enabled = ?, updated_at = ? WHERE user_id = ?",
+                (int(enabled), datetime.utcnow(), user_id),
+            )
+            await conn.commit()
+
+    async def reset_energy_alert_tracking(self, user_id: int):
+        """Clear was_above so the very next crossing alerts immediately."""
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await conn.execute(
+                "UPDATE energy_alerts SET was_above = 0, updated_at = ? WHERE user_id = ?",
+                (datetime.utcnow(), user_id),
+            )
+            await conn.commit()
+
+    async def remove_energy_alert(self, user_id: int):
+        async with aiosqlite.connect(DB_PATH) as conn:
+            await conn.execute("DELETE FROM energy_alerts WHERE user_id = ?", (user_id,))
+            await conn.commit()
 
     @app_commands.command(name="lookup-member", description="Lookup a verified guild member by user or character UID")
     @app_commands.checks.has_permissions(administrator=True)
@@ -633,6 +1012,197 @@ class GuildVerificationCog(commands.Cog):
                 view=SetupWizardView(),
                 ephemeral=False
             )
+
+class EnergyAlertView(discord.ui.View):
+    """Ephemeral control panel for /energy-alert — set, toggle, and test the alert."""
+
+    def __init__(self, cog, owner_id: int, member, threshold=None, is_enabled=False, last_alert_ts=None):
+        super().__init__(timeout=300)
+        self.cog = cog
+        self.owner_id = owner_id
+        self.member = member
+        self.threshold = threshold
+        self.is_enabled = is_enabled
+        self.last_alert_ts = last_alert_ts
+        self.current_energy = None
+        self.notice = None
+
+    def _rebuild(self):
+        """Rebuild the embed and button states from current state."""
+        self.clear_items()
+
+        if self.threshold is None:
+            status = "⚙️ **Not set up yet** — pick a threshold below to start receiving alerts."
+        else:
+            state = "✅ **Enabled**" if self.is_enabled else "⏸️ **Paused**"
+            status = (
+                f"{state}\n"
+                f"🔔 **Alert when energy rises past:** **{self.threshold} / {MAX_ENERGY}**"
+            )
+            if self.last_alert_ts:
+                try:
+                    status += f"\n🕐 **Last alert:** <t:{int(self.last_alert_ts)}:R>"
+                except (ValueError, TypeError):
+                    pass
+
+        energy_line = ""
+        if self.current_energy is not None:
+            energy_line = f"\n⚡ **Current energy:** {self.current_energy} / {MAX_ENERGY}"
+
+        description = status + energy_line
+        if self.notice:
+            description += f"\n{self.notice}"
+
+        self.embed = discord.Embed(
+            title="⚡ Energy Regen Alert",
+            description=(
+                "I'll DM you once when your energy regens **past** your threshold "
+                "while you're offline — only once, not every minute.\n\n" + description
+            ),
+            color=discord.Color.green() if self.is_enabled else discord.Color.greyple(),
+        )
+        self.embed.set_footer(
+            text="DMs are used first; if they're closed, the alert is posted in the bot channel."
+        )
+
+        for btn, handler in (
+            (discord.ui.Button(
+                label="Set Threshold", style=discord.ButtonStyle.primary,
+                emoji="🎯", custom_id="energy_alert_set"), self._handle_set),
+            (discord.ui.Button(
+                label="Pause" if self.is_enabled else "Enable",
+                style=discord.ButtonStyle.secondary,
+                emoji="⏸️" if self.is_enabled else "▶️",
+                custom_id="energy_alert_toggle",
+                disabled=self.threshold is None), self._handle_toggle),
+            (discord.ui.Button(
+                label="Reset Tracking", style=discord.ButtonStyle.secondary,
+                emoji="🔄", custom_id="energy_alert_reset",
+                disabled=self.threshold is None), self._handle_reset),
+            (discord.ui.Button(
+                label="Test Alert", style=discord.ButtonStyle.secondary,
+                emoji="🧪", custom_id="energy_alert_test",
+                disabled=self.threshold is None), self._handle_test),
+        ):
+            btn.callback = handler
+            self.add_item(btn)
+
+    async def _refresh(self, interaction, notice=None):
+        if notice:
+            self.notice = notice
+        row = await self.cog.get_energy_alert_row(self.owner_id)
+        if row:
+            self.threshold, self.is_enabled, self.last_alert_ts = row[0], bool(row[1]), row[5]
+        self._rebuild()
+        await interaction.edit_original_response(embed=self.embed, view=self)
+
+    async def _handle_set(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
+        await interaction.response.send_modal(
+            EnergyThresholdModal(owner_id=self.owner_id, cog=self.cog)
+        )
+
+    async def _handle_toggle(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
+        await interaction.response.defer()
+        new_state = not self.is_enabled
+        await self.cog.set_energy_alert_enabled(self.owner_id, new_state)
+        await self._refresh(interaction, f"✅ Alerts **{'enabled' if new_state else 'paused'}**.")
+
+    async def _handle_reset(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
+        await interaction.response.defer()
+        await self.cog.reset_energy_alert_tracking(self.owner_id)
+        await self._refresh(interaction, "↺ Tracking reset — the next crossing will alert.")
+
+    async def _handle_test(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return
+        await interaction.response.defer(ephemeral=True)
+        # Exercise the real delivery path, including the DM fallback. Uses the
+        # caller's ACTUAL energy so the sample reflects what a real alert
+        # looks like, rather than always claiming a full bar.
+        energy, extrapolated = await self.cog.fetch_my_energy(self.owner_id)
+        if energy is None:
+            await interaction.followup.send(
+                "⚠️ Couldn't read your energy right now (no live or cached data). "
+                "Your alert is still set up and will fire once data is available.",
+                ephemeral=True,
+            )
+            return
+
+        self.current_energy = energy
+        await self.cog._send_energy_alert(
+            self.member, energy, self.threshold, extrapolated, is_test=True
+        )
+        await interaction.followup.send(
+            f"🧪 Sample alert sent at your current energy (**{energy}/{MAX_ENERGY}**). "
+            "If you got it, your DMs are open — otherwise check the bot's alert channel.",
+            ephemeral=True,
+        )
+
+    async def on_timeout(self):
+        for child in self.children:
+            child.disabled = True
+
+
+class EnergyThresholdModal(discord.ui.Modal, title="Set Energy Alert Threshold"):
+    """Collects the 1..MAX_ENERGY value that triggers a DM."""
+
+    threshold = discord.ui.TextInput(
+        label=f"Energy to be alerted at ({MAX_ENERGY} max)",
+        placeholder="e.g. 450",
+        min_length=1,
+        max_length=4,
+        required=True,
+        style=discord.TextStyle.short,
+    )
+
+    def __init__(self, owner_id: int, cog):
+        super().__init__()
+        self.owner_id = owner_id
+        self.cog = cog
+
+    async def on_submit(self, interaction: discord.Interaction):
+        if interaction.user.id != self.owner_id:
+            await interaction.response.send_message(
+                "❌ This isn't your alert setup.", ephemeral=True
+            )
+            return
+
+        raw = self.threshold.value.strip()
+        try:
+            value = int(raw)
+        except ValueError:
+            await interaction.response.send_message(
+                f"❌ `{raw}` isn't a number. Enter a value between 1 and {MAX_ENERGY}.",
+                ephemeral=True,
+            )
+            return
+
+        if not 1 <= value <= MAX_ENERGY:
+            await interaction.response.send_message(
+                f"❌ Energy threshold must be between **1** and **{MAX_ENERGY}**.",
+                ephemeral=True,
+            )
+            return
+
+        await self.cog.save_energy_alert(self.owner_id, value, is_enabled=True)
+
+        view = EnergyAlertView(
+            cog=self.cog,
+            owner_id=self.owner_id,
+            member=interaction.user,
+            threshold=value,
+            is_enabled=True,
+        )
+        view.notice = f"✅ Alert set — I'll DM you when your energy rises past **{value}**."
+        view._rebuild()
+        await interaction.response.edit_message(embed=view.embed, view=view)
+
 
 class BoundAccountsPaginationView(discord.ui.View):
     def __init__(self, all_members, show_values, user_id, current_page=1):
@@ -1645,6 +2215,9 @@ class UnbindConfirmView(discord.ui.View):
             
             # Delete from verified_members
             await conn.execute("DELETE FROM verified_members WHERE user_id = ?", (self.target_user_id,))
+            # Drop any energy alert subscription too — the table is keyed by
+            # user_id, so without this it would outlive the binding.
+            await conn.execute("DELETE FROM energy_alerts WHERE user_id = ?", (self.target_user_id,))
             await conn.commit()
         
         # Remove verification-related roles from the member if they're still in the guild
