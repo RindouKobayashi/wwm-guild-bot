@@ -11,7 +11,7 @@ from discord.ext import commands, tasks
 from discord.ui import LayoutView, Container, TextDisplay, Separator, Section, ActionRow, Button, Modal, TextInput, Select
 
 import settings
-from settings import BASE_DIR, CLUB_ID, WWM_UID, WWM_TOKEN, WWM_API_URL, logger, GMT8_TZ
+from settings import BASE_DIR, CLUB_ID, WWM_UID, WWM_API_URL, logger, GMT8_TZ
 from utility.wwm import get_full_guild_info, get_bulk_hoard_data, get_bulk_players_info, _wwm_api_post, get_topics_likes, get_player_info, find_people_by_nickname
 
 
@@ -2832,12 +2832,11 @@ class MarketCog(commands.Cog):
                 character_uid = row[1]
                 logger.debug(f"Found bound player PID {player_pid} (UID: {character_uid}) for user {user_id}")
                 
-                # Use get_player_info with explicit credentials (same pattern as guild_verification_cog)
+                # Use a freshly generated request token from the shared WWM utility
                 try:
                     player_data = await get_player_info(
                         character_uid,
                         uid=WWM_UID,
-                        token=WWM_TOKEN,
                         api_url=WWM_API_URL,
                         fields=["base", "club"]
                     )
