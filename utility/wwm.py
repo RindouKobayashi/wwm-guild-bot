@@ -250,7 +250,7 @@ async def _wwm_api_post(
     if uid:
         headers["h72-ms-uid"] = uid
     if token:
-        pass
+        headers["h72-ms-token"] = token
 
     session = await get_session()
     req_timeout = aiohttp.ClientTimeout(total=timeout)
@@ -317,7 +317,7 @@ async def generate_token(a: Optional[int] = None, b: str = WWM_TOKEN_SPECIAL_KEY
         a = int(datetime.now(timezone(timedelta(hours=8))).timestamp()) + 300
     t = f"{a}|{b}|{c}"
     token = str(int(a)) + ":" + hashlib.md5(t.encode("utf-8")).hexdigest()
-    logger.debug(f"Generated token: {token}")
+    logger.debug("Generated fresh WWM request token")
     return token
 
 
@@ -344,11 +344,19 @@ async def get_player_info(number_id: str, uid: Optional[str] = None, token: Opti
         token=token
     )
 
-    if not pid_result or 'result' not in pid_result or 'id' not in pid_result['result']:
+    if not pid_result or pid_result.get('code') != 0 or not isinstance(pid_result.get('result'), dict) or not pid_result['result'].get('id'):
         logger.warning("Could not resolve Number ID to PID")
         return pid_result
 
     player_pid = pid_result['result']['id']
+    resolved_hostnum = pid_result['result'].get('hostnum', 10595)
+    try:
+        resolved_hostnum = int(resolved_hostnum)
+        if resolved_hostnum <= 0:
+            raise ValueError('Invalid host number')
+    except (ValueError, TypeError):
+        logger.warning('Player lookup returned an invalid host number')
+        return None
     logger.debug(f"✅ Resolved PID: {player_pid}")
 
     # Step 2: Get full player data
@@ -359,7 +367,7 @@ async def get_player_info(number_id: str, uid: Optional[str] = None, token: Opti
         {
             "fields": fields if fields else DEFAULT_FIELDS,
             "hostnum2pids": {
-                10595: [player_pid]
+                resolved_hostnum: [player_pid]
             },
             "uid": uid if uid else WWM_UID
         },
@@ -367,14 +375,15 @@ async def get_player_info(number_id: str, uid: Optional[str] = None, token: Opti
         token=token
     )
 
-    if redis_data and 'result' in redis_data and redis_data['result']:
-        first_pid = next(iter(redis_data['result'].keys()))
-        full_player_data = redis_data['result'][first_pid]
+    if redis_data and redis_data.get('code') == 0 and isinstance(redis_data.get('result'), dict) and isinstance(redis_data['result'].get(player_pid), dict):
+        full_player_data = redis_data['result'][player_pid]
         logger.debug("✅ Got full player data with signatures")
 
-        # Preserve hostnum from initial lookup response
-        if 'hostnum' in pid_result['result']:
-            full_player_data['hostnum'] = pid_result['result']['hostnum']
+        # The exact requested PID is the Redis result key. Preserve resolution
+        # metadata for consumers that immediately open a full player profile.
+        full_player_data = dict(full_player_data)
+        full_player_data['id'] = player_pid
+        full_player_data['hostnum'] = resolved_hostnum
 
         return {
             'code': 0,
@@ -825,9 +834,8 @@ async def fetch_player_data_by_pid(player_pid: str, uid: Optional[str] = None, t
         token=token
     )
 
-    if redis_data and 'result' in redis_data and redis_data['result']:
-        first_pid = next(iter(redis_data['result'].keys()))
-        full_player_data = redis_data['result'][first_pid]
+    if redis_data and redis_data.get('code') == 0 and isinstance(redis_data.get('result'), dict) and isinstance(redis_data['result'].get(player_pid), dict):
+        full_player_data = redis_data['result'][player_pid]
         logger.debug("✅ Got full player data by PID")
         return {
             'code': 0,
@@ -1144,35 +1152,24 @@ async def resolve_player_identifier(identifier: str) -> tuple:
     Smart routing: if exactly 10 digits → number ID API, else → nickname API.
     Returns (pid, hostnum, player_data_dict) or (None, None, None).
     """
-    t0 = time.time()
-    # Smart routing based on format
-    if identifier.isdigit() and len(identifier) == 10:
-        # Exactly 10 digits → treat as Number ID
-        player_data = await get_player_info(identifier, fields=["base"], force_search=True)
-        t1 = time.time()
-        logger.debug(f"[timing] resolve_number_id_search: {t1 - t0:.3f}s")
-        if player_data and player_data.get('result') and player_data['result'].get('id'):
-            result = player_data['result']
-            pid = result.get('id')
-            hostnum = result.get('hostnum', 10595)
-            logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via number_id")
-            return pid, hostnum, result
-
-    # Otherwise → treat as nickname
-    nickname_data = await find_people_by_nickname(identifier, force_search=True)
-    t1 = time.time()
-    logger.debug(f"[timing] resolve_nickname_search: {t1 - t0:.3f}s")
-    if nickname_data and nickname_data.get('result'):
-        result = nickname_data['result']
-        pid = result.get('id')
-        hostnum = result.get('hostnum', 10595)
-        logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via nickname")
-        return pid, hostnum, result
-
-    t1 = time.time()
-    logger.debug(f"[timing] resolve_total_failed: {t1 - t0:.3f}s")
-    logger.warning(f"Could not resolve identifier '{identifier}'")
-    return None, None, None
+    identifier = (identifier or "").strip()
+    if not identifier:
+        return None, None, None
+    numeric = identifier.isdigit() and len(identifier) == 10
+    response = (await get_player_info(identifier, fields=["base"], force_search=True)
+                if numeric else await find_people_by_nickname(identifier, force_search=True))
+    if not isinstance(response, dict) or response.get("code") != 0:
+        return None, None, None
+    result = response.get("result")
+    if not isinstance(result, dict) or not result.get("id"):
+        return None, None, None
+    try:
+        hostnum = int(result.get("hostnum", 10595))
+        if hostnum <= 0:
+            return None, None, None
+    except (ValueError, TypeError):
+        return None, None, None
+    return result["id"], hostnum, result
 
 
 if __name__ == "__main__":
