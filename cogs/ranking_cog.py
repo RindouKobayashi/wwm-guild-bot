@@ -1,5 +1,5 @@
 """
-Ranking Cog — HR / ST leaderboards with a community-maintained name -> ID registry.
+Ranking Cog — HR / ST leaderboards using extracted game names and IDs.
 
 Why this cog exists
 -------------------
@@ -10,8 +10,9 @@ The leaderboard API identifies a board purely by ``rank_name``:
     Cutie Clash -> rank_petbattle_3v3            (disabled for now)
 
 so people previously had to memorise which numeric ID belongs to which dungeon.
-This cog keeps a shared mapping in ``data/ranking_map.db`` so users can simply
-type the dungeon *name* (with autocomplete) instead of the ID.
+Viewing uses the bot-local extracted leaderboard manifest for names and IDs.
+The legacy ``data/ranking_map.db`` remains available for registry management
+but does not supply view names, aliases, autocomplete or artwork.
 
 Permissions (community-maintained):
   * ``/ranking map add``  — anyone may add a mapping (rate limited + audited,
@@ -35,12 +36,13 @@ How the leaderboard payload works (``utility.wwm.get_rank_list``)
     }
     result  = {rank_list, my_data, my_rank, rank_total_len, start, end, page}
 
-  * HR/ST scores are *negative minutes* (e.g. -450.119 -> "7:30.119");
+  * HR/ST scores are *negative seconds* (e.g. -450.119 -> "7:30.119");
     Cutie Clash scores are points.
   * ``my_rank`` of -1 means "the requested pid is not on this board".
   * Team boards expose ``ud.leader_id`` / ``ud.members`` / per-pid ``hostnum``.
 """
 import asyncio
+import math
 import re
 import time
 from typing import Dict, List, Optional, Tuple
@@ -50,10 +52,11 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from discord.ui import (ActionRow, Button, Container, LayoutView, Section,
-                        Select, Separator, TextDisplay)
+                        Select, Separator, TextDisplay, MediaGallery)
 
 import settings
 from settings import BASE_DIR, logger
+from utility.dungeon_assets import DungeonAssets
 from utility.api_constants import SCHOOL_NAMES
 from utility.wwm import get_bulk_players_info_multi_hostnum, get_rank_list
 
@@ -127,16 +130,22 @@ def _build_rank_name(rank_type: str, dungeon_id: Optional[int]) -> str:
 
 
 def _format_rank_time(score) -> str:
-    """Format a negative time-based score (in minutes) as M:SS.sss.
+    """Format a negative time-based score (in seconds) as M:SS.sss.
 
     Example: -450.11907958984375 -> '7:30.119'
     """
     if score is None:
         return "N/A"
-    total_seconds = abs(float(score))
-    minutes = int(total_seconds // 60)
-    seconds = total_seconds - (minutes * 60)
-    return f"{minutes}:{seconds:06.3f}"
+    try:
+        seconds = abs(float(score))
+        if not math.isfinite(seconds):
+            return "N/A"
+        milliseconds = round(seconds * 1000)
+        minutes, remainder = divmod(milliseconds, 60000)
+        return f"{minutes}:{remainder / 1000:06.3f}"
+    except (ValueError, TypeError, OverflowError):
+        return "N/A"
+
 
 
 def _format_rank_points(score) -> str:
@@ -145,8 +154,8 @@ def _format_rank_points(score) -> str:
         return "N/A"
     try:
         return f"{int(score):,}"
-    except (ValueError, TypeError):
-        return str(score)
+    except (ValueError, TypeError, OverflowError):
+        return "N/A"
 
 
 def _rank_name_to_display(rank_name: str) -> str:
@@ -188,6 +197,23 @@ def _parse_aliases(raw: Optional[str]) -> List[str]:
         if part and part not in seen:
             seen.append(part)
     return seen
+
+
+def _art_images(banner):
+    if not banner or not banner.get("path"):
+        return []
+    return banner.get("images") or [banner]
+
+
+def _art_filename(index):
+    return "dungeon-banner.png" if index == 0 else f"dungeon-boss-{index + 1}.png"
+
+
+def _art_gallery(banner):
+    return MediaGallery(*(discord.MediaGalleryItem(
+        "attachment://" + _art_filename(i),
+        description="Original game dungeon artwork: " + image.get("boss_name", "Dungeon selection card"))
+        for i, image in enumerate(_art_images(banner))))
 
 
 def _split_type_prefix(query: str) -> Tuple[Optional[str], str]:
@@ -454,7 +480,7 @@ class DungeonPickerView(LayoutView):
                     value=_tag(entry["rank_type"], entry["dungeon_id"]),
                 ))
             picker = Select(
-                placeholder=(f"{meta.get('label', '')} dungeons — {len(type_entries)} mapped "
+                placeholder=(f"{meta.get('label', '')} dungeons — {len(type_entries)} extracted "
                              f"(page {self.page + 1}/{total_pages})"),
                 options=options,
                 custom_id="ranking_picker_select",
@@ -464,8 +490,8 @@ class DungeonPickerView(LayoutView):
         else:
             select_row = None
             inner.append(TextDisplay(
-                f"ℹ️ No **{meta.get('label', self.rank_type)}** dungeons mapped yet.\n"
-                "Anyone can add one with `/ranking map add`, or use **⌨️ Type an ID** below."
+                f"ℹ️ No **{meta.get('label', self.rank_type)}** dungeons extracted yet.\n"
+                "Refresh the extracted game data, or use **⌨️ Type an ID** below."
             ))
             inner.append(Separator(spacing=discord.SeparatorSpacing.small))
 
@@ -593,12 +619,13 @@ class RankingResultsView(LayoutView):
         self.last_place_score = None
         self.last_place_nickname = None
         self.page_entries = []
+        self.banner = cog.dungeon_assets.get(rank_type, dungeon_id) if hasattr(cog, 'dungeon_assets') else None
 
         self._rebuild()
 
     def _title(self) -> str:
         meta = RANKING_TYPES.get(self.rank_type, {})
-        name = self.dungeon_label or _rank_name_to_display(self.rank_name)
+        name = discord.utils.escape_mentions(discord.utils.escape_markdown(str(self.dungeon_label or _rank_name_to_display(self.rank_name))))
         title = f"# 🏆 {meta.get('emoji', '')} {meta.get('label', self.rank_type.upper())} — {name}"
         if self.dungeon_id is not None:
             title += f"\n`id {self.dungeon_id}` · `{self.rank_name}`"
@@ -619,14 +646,18 @@ class RankingResultsView(LayoutView):
             Separator(spacing=discord.SeparatorSpacing.small),
         ]
 
+        if _art_images(self.banner):
+            inner_items.insert(1, _art_gallery(self.banner))
+            inner_items.insert(2, TextDisplay("-# Original dungeon selection artwork"))
+
         if self.rank_list:
             lines = []
             for idx, entry in enumerate(self.rank_list):
                 rank_num = (self.page - 1) * self.ITEMS_PER_PAGE + idx + 1
                 base = _entry_player_base(entry)
-                nickname = base.get('nickname', 'Unknown')
-                score = entry.get('score', 0)
-                attempt_ts = entry.get('ud', {}).get('ts', 0)
+                nickname = discord.utils.escape_mentions(discord.utils.escape_markdown(str(base.get('nickname') or 'Unknown')[:48]))
+                score = entry.get('score')
+                attempt_ts = (entry.get('ud') or {}).get('ts', 0)
 
                 if rank_num == 1:
                     prefix = "🥇"
@@ -638,7 +669,7 @@ class RankingResultsView(LayoutView):
                     prefix = f"{rank_num}."
 
                 score_str = _format_rank_time(score) if is_time_based else _format_rank_points(score)
-                time_str = f" — <t:{int(attempt_ts)}> (<t:{int(attempt_ts)}:R>)" if attempt_ts else ""
+                time_str = f" — <t:{int(attempt_ts)}:R>" if type(attempt_ts) in (int, float) and math.isfinite(attempt_ts) and attempt_ts > 0 else ""
                 lines.append(f"{prefix} **{nickname}** — {score_str}{time_str}")
 
             inner_items.append(TextDisplay("\n".join(lines)))
@@ -662,8 +693,12 @@ class RankingResultsView(LayoutView):
         else:
             if self.target_nickname:
                 inner_items.append(TextDisplay(f"🎯 **{self.target_nickname} is not on this leaderboard.**"))
-            else:
+            elif self.target_pid:
+                inner_items.append(TextDisplay("🎯 **The requested player is not on this leaderboard.**"))
+            elif getattr(self, 'queried_pid', None):
                 inner_items.append(TextDisplay("🎯 **You are not on this leaderboard.**"))
+            else:
+                inner_items.append(TextDisplay("🎯 Link your game account or specify a player to see a personal rank."))
 
         # Last place / score needed to break in
         if self.last_place_score is not None:
@@ -756,7 +791,7 @@ class RankingResultsView(LayoutView):
         if self.page > 1:
             await self.cog.show_ranking_results(
                 interaction, self.rank_type, self.dungeon_id, page=self.page - 1,
-                target_pid=self.target_pid, dungeon_label=self.dungeon_label,
+                target_pid=self.target_pid, dungeon_label=self.dungeon_label, jump_to_target=False,
             )
 
     async def _handle_next(self, interaction: discord.Interaction):
@@ -766,7 +801,7 @@ class RankingResultsView(LayoutView):
         if self.page < self.total_pages:
             await self.cog.show_ranking_results(
                 interaction, self.rank_type, self.dungeon_id, page=self.page + 1,
-                target_pid=self.target_pid, dungeon_label=self.dungeon_label,
+                target_pid=self.target_pid, dungeon_label=self.dungeon_label, jump_to_target=False,
             )
 
     async def _handle_back(self, interaction: discord.Interaction):
@@ -890,6 +925,10 @@ class TeamDetailView(LayoutView):
             TextDisplay(f"# 👥 Team #{self.rank_num} — {score_str}\n\n**Members:** {len(self.members)}"),
             Separator(spacing=discord.SeparatorSpacing.small),
         ]
+
+        banner = getattr(self.back_view, 'banner', None)
+        if _art_images(banner):
+            inner_items.insert(1, _art_gallery(banner))
 
         for idx, m in enumerate(self.members):
             online_icon = "🟢" if m.get('is_online') else "⚫"
@@ -1106,6 +1145,7 @@ class RankingCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.db_path = DB_PATH
+        self.dungeon_assets = DungeonAssets(BASE_DIR / "data/ranking_assets")
         self._entries: List[dict] = []
         self._usage: Dict[Tuple[str, int], int] = {}
         self._cache_loaded = False
@@ -1402,17 +1442,19 @@ class RankingCog(commands.Cog):
         return results
 
     async def _autocomplete_choices(self, query: str,
-                                    rank_type: Optional[str] = None) -> List[app_commands.Choice]:
-        """Build autocomplete choices from the cached registry."""
-        await self.load_cache()
+                                    rank_type: Optional[str] = None, *, legacy: bool = False) -> List[app_commands.Choice]:
+        """Use extracted names for viewing; retain the old registry for management."""
+        if legacy:
+            await self.load_cache()
+        entries = self._entries if legacy else self.dungeon_assets.entries()
         scored = []
-        for entry in self._entries:
+        for entry in entries:
             if rank_type and entry["rank_type"] != rank_type:
                 continue
             score = _score_entry(entry, query)
             if score is None:
                 continue
-            usage = self._usage.get((entry["rank_type"], entry["dungeon_id"]), 0)
+            usage = self._usage.get((entry["rank_type"], entry["dungeon_id"]), 0) if legacy else 0
             scored.append((_autocomplete_sort_key(entry, score, usage), entry))
         scored.sort(key=lambda item: item[0])
         return [
@@ -1437,9 +1479,9 @@ class RankingCog(commands.Cog):
     async def entry_acomplete(self, interaction: discord.Interaction, current: str):
         """Autocomplete for the registry-management commands."""
         prefix_type, term = _split_type_prefix(current)
-        return await self._autocomplete_choices(term, prefix_type)
+        return await self._autocomplete_choices(term, prefix_type, legacy=True)
 
-    async def resolve_dungeon_input(self, raw: str, rank_type_hint: Optional[str] = None) -> dict:
+    async def resolve_dungeon_input(self, raw: str, rank_type_hint: Optional[str] = None, *, legacy: bool = False) -> dict:
         """Resolve free-typed input into a leaderboard target.
 
         Accepts "hr:22" | "hr 22" | "22" | "Frost Blade" | "st frost".
@@ -1448,7 +1490,9 @@ class RankingCog(commands.Cog):
         or {"status": "multiple", "candidates": [...], "reason": ...}
         or {"status": "not_found", "message": ...}
         """
-        await self.load_cache()
+        if legacy:
+            await self.load_cache()
+        entries = self._entries if legacy else self.dungeon_assets.entries()
         text = (raw or "").strip()
         if not text:
             return {"status": "not_found", "message": "Please provide a dungeon name or ID."}
@@ -1461,7 +1505,7 @@ class RankingCog(commands.Cog):
                 "status": "ok",
                 "rank_type": rank_type,
                 "dungeon_id": dungeon_id,
-                "entry": await self._fetch_entry(rank_type, dungeon_id),
+                "entry": next((e for e in entries if e["rank_type"] == rank_type and e["dungeon_id"] == dungeon_id), None),
             }
 
         prefix_type, term = _split_type_prefix(text)
@@ -1469,7 +1513,7 @@ class RankingCog(commands.Cog):
 
         if term.isdigit():
             dungeon_id = int(term)
-            matches = [e for e in self._entries
+            matches = [e for e in entries
                        if e["dungeon_id"] == dungeon_id
                        and (not rank_type or e["rank_type"] == rank_type)]
             if len(matches) == 1:
@@ -1494,14 +1538,14 @@ class RankingCog(commands.Cog):
             }
 
         scored = []
-        for entry in self._entries:
+        for entry in entries:
             if rank_type and entry["rank_type"] != rank_type:
                 continue
             score = _score_entry(entry, term)
             if score is not None:
                 scored.append((score[0], entry))
         if not scored:
-            return {"status": "not_found", "message": f"No mapping matched `{text}`."}
+            return {"status": "not_found", "message": f"No extracted leaderboard name matched `{text}`."}
         scored.sort(key=lambda item: (item[0], item[1]["rank_type"], item[1]["dungeon_id"]))
         best = scored[0][0]
         best_entries = [entry for rank, entry in scored if rank <= max(1, best)]
@@ -1562,7 +1606,8 @@ class RankingCog(commands.Cog):
     async def show_ranking_results(self, interaction: discord.Interaction, rank_type: str,
                                    dungeon_id: Optional[int], page: int = 1,
                                    target_pid: Optional[str] = None,
-                                   dungeon_label: Optional[str] = None) -> None:
+                                   dungeon_label: Optional[str] = None,
+                                   jump_to_target: bool = True) -> None:
         """Fetch and render one leaderboard page.
 
         The caller must have deferred the interaction already — the result is
@@ -1582,7 +1627,8 @@ class RankingCog(commands.Cog):
             user_pid = await self._resolve_user_pid(interaction)
 
             # Jump to the target player's page when an identifier was supplied
-            if target_pid:
+            page = max(1, int(page or 1))
+            if target_pid and jump_to_target and page == 1:
                 probe_response = await get_rank_list(rank_name, page=1, pid=target_pid)
                 if probe_response and probe_response.get('code') == 0:
                     probe_rank = (probe_response.get('result') or {}).get('my_rank', -1)
@@ -1615,7 +1661,17 @@ class RankingCog(commands.Cog):
                 return
 
             total_pages = max(1, (total_entries + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE)
-            page = max(1, min(page, total_pages))
+            clamped_page = max(1, min(page, total_pages))
+            if clamped_page != page:
+                response = await get_rank_list(rank_name, page=clamped_page, pid=fetch_pid)
+                if not response or response.get('code') != 0:
+                    await self._respond(interaction, "❌ Could not load the last available page. Please try again.")
+                    return
+                result = response.get('result') or {}
+                rank_list = result.get('rank_list') or []
+                my_data = result.get('my_data') or {}
+                my_rank = result.get('my_rank', -1)
+            page = clamped_page
 
             my_score = my_data.get('score') if my_data else None
 
@@ -1644,11 +1700,11 @@ class RankingCog(commands.Cog):
             if target_pid and my_data:
                 target_nickname = _extract_nickname(my_data.get('player_info', {}))
 
-            # Fall back to the registry name when the caller didn't supply one
-            if dungeon_label is None and dungeon_id is not None:
-                entry = await self._fetch_entry(rank_type, dungeon_id)
-                if entry:
-                    dungeon_label = entry.get('name')
+            # Always prefer the authoritative extracted name over caller/legacy labels.
+            if dungeon_id is not None:
+                entry = next((e for e in self.dungeon_assets.entries()
+                              if e["rank_type"] == rank_type and e["dungeon_id"] == dungeon_id), None)
+                dungeon_label = entry["name"] if entry else None
 
             view = RankingResultsView(
                 cog=self,
@@ -1663,20 +1719,41 @@ class RankingCog(commands.Cog):
             view.total_pages = total_pages
             view.total_entries = total_entries
             view.my_rank = my_rank if (my_rank is not None and my_rank >= 0) else None
+            view.queried_pid = fetch_pid
             view.my_score = my_score
             view.rank_list = rank_list
             view.last_place_score = last_place_score
             view.last_place_nickname = last_place_nickname
             view.target_nickname = target_nickname
+            if not dungeon_label and view.banner:
+                view.dungeon_label = view.banner.get('title')
+            files = []
+            if _art_images(view.banner):
+                try:
+                    for index, image in enumerate(_art_images(view.banner)):
+                        files.append(discord.File(image['path'], filename=_art_filename(index)))
+                except OSError:
+                    logger.warning('Dungeon gallery unavailable; rendering text leaderboard')
+                    for file in files:
+                        file.close()
+                    files = []
+                    view.banner = None
             view._rebuild()
-
-            await interaction.edit_original_response(content=None, embed=None, view=view)
-            await self.record_usage(rank_type, dungeon_id)
+            try:
+                await interaction.edit_original_response(content=None, embed=None, attachments=files, view=view, allowed_mentions=discord.AllowedMentions.none())
+            finally:
+                for file in files:
+                    file.close()
+            try:
+                await self.record_usage(rank_type, dungeon_id)
+            except Exception:
+                logger.warning('Leaderboard displayed but usage counter could not be updated', exc_info=True)
         except Exception as e:
             logger.error(f"Ranking results failed: {str(e)}", exc_info=True)
             try:
                 await interaction.edit_original_response(
-                    content=f"❌ Failed to load ranking data: `{str(e)}`", embed=None, view=None
+                    content=None, embed=None, attachments=[],
+                    view=LayoutView().add_item(Container(TextDisplay("❌ Failed to load ranking data. Please try again.")))
                 )
             except Exception:
                 pass
@@ -1684,11 +1761,11 @@ class RankingCog(commands.Cog):
     async def show_dungeon_picker(self, interaction: discord.Interaction, rank_type: str = "hr",
                                   target_pid: Optional[str] = None, page: int = 0) -> None:
         """Render (or replace the message with) the dungeon browser."""
-        entries = await self._fetch_entries()
+        entries = self.dungeon_assets.entries()
         view = DungeonPickerView(self, entries, rank_type=rank_type, page=page,
                                  target_pid=target_pid, owner_id=interaction.user.id)
         if interaction.response.is_done():
-            await interaction.edit_original_response(content=None, embed=None, view=view)
+            await interaction.edit_original_response(content=None, embed=None, attachments=[], view=view)
         else:
             await interaction.response.send_message(content=None, view=view)
 
@@ -1699,7 +1776,7 @@ class RankingCog(commands.Cog):
         view = RankingMapListView(self, entries, rank_type=rank_type, page=page,
                                   owner_id=interaction.user.id)
         if interaction.response.is_done():
-            await interaction.edit_original_response(content=None, embed=None, view=view)
+            await interaction.edit_original_response(content=None, embed=None, attachments=[], view=view)
         else:
             await interaction.response.send_message(content=None, view=view)
 
@@ -1751,8 +1828,7 @@ class RankingCog(commands.Cog):
         if resolved["status"] == "not_found":
             hint = ""
             if dungeon and dungeon.strip():
-                hint = (f"\n\nTry `/ranking map list` to see known dungeons, "
-                        f"or add it with `/ranking map add`.")
+                hint = "\n\nChoose an extracted name from autocomplete, or use an ID such as `hr:26` / `st:26`."
             await interaction.edit_original_response(
                 content=f"❌ {resolved.get('message', 'Not found.')}{hint}"
             )
@@ -1906,7 +1982,7 @@ class RankingCog(commands.Cog):
 
     async def _find_entry_for_input(self, raw: str) -> Optional[dict]:
         """Resolve autocompleted / free-typed input to an existing registry row."""
-        resolved = await self.resolve_dungeon_input(raw)
+        resolved = await self.resolve_dungeon_input(raw, legacy=True)
         if resolved.get("status") == "ok" and resolved.get("entry"):
             return resolved["entry"]
         return None

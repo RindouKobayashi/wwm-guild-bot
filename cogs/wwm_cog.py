@@ -8,6 +8,7 @@ from discord import app_commands
 from discord.ext import commands, tasks
 from discord.ui import LayoutView, Container, TextDisplay, Separator, ActionRow, Thumbnail, Section, MediaGallery, Button, Select
 import logging
+import math
 import aiosqlite
 import json
 from collections import defaultdict
@@ -19,8 +20,9 @@ import settings
 from utility.wwm import get_player_info, get_club_hostnums, get_full_guild_info, get_fashion_plan, get_fashion_score, get_club_by_name, get_bulk_players_info, get_bulk_players_info_multi_hostnum, get_club_brief_info_batch, find_people_by_nickname, fetch_player_data_by_pid, get_custom_guild_info, get_topics_likes, get_club_by_number_id, get_homeland_info, get_like_history, get_player_combat_plan, get_rank_list
 from settings import WWM_UID, WWM_TOKEN, WWM_API_URL, logger, CLUB_ID, BASE_DIR
 from utility.api_constants import SCHOOL_NAMES, SCHOOL_RANKING, SCHOOL_EMOTES, get_kongfu_ids_from_player, classify_kongfu_role, VOTE_COUNTS
-from utility.wwm import get_sect_election_ranking
+from utility.wwm import get_sect_election_ranking, resolve_player_identifier
 from utility.affix_mapper import map_data, init_db, load_affix_csv, load_equipment_names, get_equipment_name
+from utility.affix_display import format_affix_range
 from utility.item_names import load_item_names, get_item_name
 
 
@@ -1115,8 +1117,16 @@ class PlayerProfileView(LayoutView):
         self.energy_regen = energy_regen
         self.is_invisible = is_invisible
         self.oversea_tag = oversea_tag
-        self.online_hours = online_hours
-        self.create_time = create_time
+        try:
+            hours = float(online_hours)
+            self.online_hours = hours if math.isfinite(hours) and hours >= 0 else None
+        except (ValueError, TypeError, OverflowError):
+            self.online_hours = None
+        try:
+            created = int(create_time)
+            self.create_time = created if 0 < created <= discord.utils.utcnow().timestamp() else 0
+        except (ValueError, TypeError, OverflowError):
+            self.create_time = 0
         self.player_signature = player_signature
         self.cover_img = cover_img
         self.cover_img_path = cover_img_path
@@ -1217,7 +1227,7 @@ class PlayerProfileView(LayoutView):
             lines.append(f"🎂 **Birthday:** {self.birthday_str}")
         
         lines.append(f"🌍 **Region:** {self.oversea_tag}")
-        lines.append(f"⌛ **Online:** {self.online_hours}h")
+        lines.append(f"⌛ **Online:** {self.online_hours}h" if self.online_hours is not None else "⌛ **Online:** no data")
         
         if self.is_verified:
             lines.append(f"💃 **Elegance:** {int(self.fashion_score):,}" if int(self.fashion_score or 0) else "")
@@ -1340,6 +1350,7 @@ class PlayerProfileView(LayoutView):
             # Overview: Select menu
             select_options = [
                 discord.SelectOption(label="Combat", value="combat", emoji="⚔️"),
+                discord.SelectOption(label="Activity", value="activity", emoji="⌛"),
                 discord.SelectOption(label="Masteries", value="masteries", emoji="🎓"),
                 discord.SelectOption(label="Achievements", value="achievements", emoji="🏆"),
                 discord.SelectOption(label="Equipments", value="equipments", emoji="🛡️"),
@@ -1413,6 +1424,7 @@ class PlayerProfileView(LayoutView):
         
         handler_map = {
             "combat": self._handle_combat,
+            "activity": self._handle_activity,
             "masteries": self._handle_masteries,
             "achievements": self._handle_achievements,
             "equipments": self._handle_equipments,
@@ -1428,6 +1440,40 @@ class PlayerProfileView(LayoutView):
         if handler:
             await handler(interaction)
     
+    async def _handle_activity(self, interaction: discord.Interaction):
+        """Derived activity from this profile snapshot, without another API call."""
+        if not await ensure_owner(interaction, self):
+            return
+        await interaction.response.defer()
+        now = int(discord.utils.utcnow().timestamp())
+        lines = []
+        try:
+            hours = float(self.online_hours)
+            if not math.isfinite(hours) or hours < 0:
+                raise ValueError()
+        except (ValueError, TypeError, OverflowError):
+            hours = None
+        try:
+            created = int(self.create_time)
+            if created <= 0 or created > now:
+                raise ValueError()
+        except (ValueError, TypeError, OverflowError):
+            created = None
+        if created:
+            days = (now - created) // 86400
+            lines.append(f"📅 **Account created:** <t:{created}:D> (<t:{created}:R>)")
+            lines.append(f"🗓️ **Account age:** {days:,} days")
+        if hours is not None:
+            lines.append(f"⌛ **Recorded playtime:** {hours:,.1f} hours ({hours / 24:,.1f} days)")
+            if created and now - created >= 86400:
+                daily = hours / ((now - created) / 86400)
+                lines.append(f"📊 **Average since creation:** {daily:.2f} hours per calendar day")
+        state = "Invisible" if self.is_invisible else "Online" if self.is_online else "Offline"
+        lines.append(f"**Status at profile fetch:** {state}")
+        lines.append("-# Based on the fetched profile; the average includes inactive days. This is not a live session tracker.")
+        self._show_detail("⌛ Activity", lines, accent=0x3498DB)
+        await interaction.edit_original_response(view=self)
+
     async def _handle_combat(self, interaction: discord.Interaction):
         await interaction.response.defer()
         lines = []
@@ -2142,48 +2188,8 @@ class PlayerProfileView(LayoutView):
             return self._smart_round(affix_val)
 
         def _affix_range(affix_obj, affix_val):
-            """Format an affix value plus its name-level min-max range and the delta needed to reach max.
-
-            Uses the aggregated name_min/name_max (lowest min and highest max across all
-            affix IDs with the same english_name) so the range is consistent across gear tiers.
-
-            Example: value 51.3 with name-level min 7.5 / max 33.8 renders as
-            '**51.3** (7.5–33.8, +12.5 to max)' or '**51.3** (7.5–33.8, **MAX**)' if already at/over max.
-            """
-            if not isinstance(affix_obj, dict):
-                return ""
-            fmt = affix_obj.get('format', '')
-            # Prefer name-level min/max (aggregated across all affix IDs with the same name)
-            lo = affix_obj.get('name_min')
-            hi = affix_obj.get('name_max')
-            if lo is None or hi is None:
-                # Fall back to affix-specific min/max
-                lo = affix_obj.get('min')
-                hi = affix_obj.get('max')
-            if lo is None or hi is None:
-                return ""
-            try:
-                val_str = _format_affix_value(affix_obj, affix_val)
-                if fmt:
-                    lo_str = fmt.format(lo)
-                    hi_str = fmt.format(hi)
-                else:
-                    lo_str = self._smart_round(lo)
-                    hi_str = self._smart_round(hi)
-                # Calculate delta needed to max
-                try:
-                    float_val = float(affix_val)
-                    if hi > float_val:
-                        delta = hi - float_val
-                        delta_str = f"{fmt.format(delta)}" if fmt else self._smart_round(delta)
-                        delta_part = f" +{delta_str} to max"
-                    else:
-                        delta_part = " **MAX**"
-                except (ValueError, TypeError):
-                    delta_part = ""
-                return f"**{val_str}** ({lo_str}–{hi_str}{', ' + delta_part if delta_part else ''})"
-            except (ValueError, TypeError, IndexError):
-                return ""
+            """Prefer the exact ID reference; cross-ID ranges are labelled explicitly."""
+            return format_affix_range(affix_obj, affix_val, self._smart_round)
 
         # Slot number to human-readable name mapping
         SLOT_NAMES = {
@@ -3073,35 +3079,7 @@ class WWMCog(commands.Cog):
         Smart routing: if exactly 10 digits → number ID API, else → nickname API.
         Returns (pid, hostnum, player_data_dict) or (None, None, None).
         """
-        t0 = time.time()
-        # Smart routing based on format
-        if identifier.isdigit() and len(identifier) == 10:
-            # Exactly 10 digits → treat as Number ID
-            player_data = await get_player_info(identifier, fields=["base"], force_search=True)
-            t1 = time.time()
-            logger.debug(f"[timing] resolve_number_id_search: {t1 - t0:.3f}s")
-            if player_data and player_data.get('result') and player_data['result'].get('id'):
-                result = player_data['result']
-                pid = result.get('id')
-                hostnum = result.get('hostnum', 10595)
-                logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via number_id")
-                return pid, hostnum, result
-
-        # Otherwise → treat as nickname
-        nickname_data = await find_people_by_nickname(identifier, force_search=True)
-        t1 = time.time()
-        logger.debug(f"[timing] resolve_nickname_search: {t1 - t0:.3f}s")
-        if nickname_data and nickname_data.get('result'):
-            result = nickname_data['result']
-            pid = result.get('id')
-            hostnum = result.get('hostnum', 10595)
-            logger.debug(f"Resolved identifier '{identifier}' to PID {pid} via nickname")
-            return pid, hostnum, result
-
-        t1 = time.time()
-        logger.debug(f"[timing] resolve_total_failed: {t1 - t0:.3f}s")
-        logger.warning(f"Could not resolve identifier '{identifier}'")
-        return None, None, None
+        return await resolve_player_identifier(identifier)
 
     async def _fetch_player_profile_data(self, player_pid: str, player_hostnum: int, interaction: discord.Interaction = None) -> dict:
         """

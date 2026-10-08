@@ -12,6 +12,7 @@ Database: SQLite stored at BASE_DIR/data/affix_mappings.db
 import aiosqlite
 import csv
 import json
+import math
 import os
 import zipfile
 from pathlib import Path
@@ -435,7 +436,7 @@ def _extract_affix_ids(data: Any, path: str = "") -> List[Tuple[int, str, Any]]:
                         if isinstance(inner_value, dict):
                             for affix_key, affix_val in inner_value.items():
                                 try:
-                                    affix_id = int(affix_key)
+                                    affix_id = _affix_identifier(affix_key)
                                     found.append((affix_id, f"{current_path}.{inner_key}.{affix_key}", affix_val))
                                 except (ValueError, TypeError):
                                     pass
@@ -537,6 +538,20 @@ async def map_data(data: Any) -> Any:
     return _map_recursive(data, cache, parent_key="")
 
 
+def _affix_identifier(value):
+    """Accept exact integral IDs; never truncate decimals or map booleans."""
+    if type(value) is int:
+        return value
+    if type(value) is float and math.isfinite(value) and value.is_integer():
+        return int(value)
+    if isinstance(value, str) and value.lstrip('-').isdecimal():
+        try:
+            return int(value)
+        except ValueError:
+            pass
+    return None
+
+
 def _map_recursive(data: Any, cache: Dict[int, str], parent_key: str) -> Any:
     """Internal recursive mapper."""
     if isinstance(data, dict):
@@ -555,8 +570,8 @@ def _map_dict(data: dict, cache: Dict[int, str], parent_key: str) -> dict:
         # Check if this key is a known affix-key pattern
         if key in SINGLE_AFFIX_KEYS:
             # The value itself is an affix ID
-            if isinstance(value, (int, float)) and not isinstance(value, bool):
-                int_val = int(value)
+            if _affix_identifier(value) is not None:
+                int_val = _affix_identifier(value)
                 if int_val in cache:
                     result[key] = _make_affix_object(int_val, cache[int_val])
                 else:
@@ -569,8 +584,8 @@ def _map_dict(data: dict, cache: Dict[int, str], parent_key: str) -> dict:
             if isinstance(value, list) and len(value) >= 2:
                 affix_id = value[0]
                 affix_val = value[1]
-                if isinstance(affix_id, (int, float)) and int(affix_id) in cache:
-                    int_id = int(affix_id)
+                if _affix_identifier(affix_id) in cache:
+                    int_id = _affix_identifier(affix_id)
                     result[key] = [
                         _make_affix_object(int_id, cache[int_id]),
                         affix_val,
@@ -588,8 +603,8 @@ def _map_dict(data: dict, cache: Dict[int, str], parent_key: str) -> dict:
                     if isinstance(item, list) and len(item) >= 2:
                         affix_id = item[0]
                         affix_val = item[1]
-                        if isinstance(affix_id, (int, float)) and int(affix_id) in cache:
-                            int_id = int(affix_id)
+                        if _affix_identifier(affix_id) in cache:
+                            int_id = _affix_identifier(affix_id)
                             mapped_pairs.append([
                                 _make_affix_object(int_id, cache[int_id]),
                                 affix_val,
@@ -614,7 +629,7 @@ def _map_dict(data: dict, cache: Dict[int, str], parent_key: str) -> dict:
                         mapped_inner_dict = {}
                         for affix_key, affix_val in inner_dict.items():
                             try:
-                                affix_id = int(affix_key)
+                                affix_id = _affix_identifier(affix_key)
                                 if affix_id in cache:
                                     affix_obj = _make_affix_object(affix_id, cache[affix_id])
                                     affix_obj["value"] = affix_val
@@ -638,8 +653,8 @@ def _map_dict(data: dict, cache: Dict[int, str], parent_key: str) -> dict:
                     if isinstance(inner_value, list):
                         mapped_list = []
                         for item in inner_value:
-                            if isinstance(item, (int, float)) and int(item) in cache:
-                                int_id = int(item)
+                            if _affix_identifier(item) in cache:
+                                int_id = _affix_identifier(item)
                                 mapped_list.append(_make_affix_object(int_id, cache[int_id]))
                             else:
                                 mapped_list.append(_map_recursive(item, cache, key))

@@ -1,0 +1,65 @@
+{
+  "policy": "Reviewed original whole-dungeon cards. Hash-pinned; re-review required when the artwork changes. No inferred ordinal mapping.",
+  "reviews": [
+    {
+      "trial_row_id": 66,
+      "resource": "wulinlu_tongyou_pic_xj_25",
+      "png_sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+      "basis": "direct_guild_card",
+      "notes": "Direct trial_displays:66.guild_image; paired challenge row 67.",
+      "expected_trial_name": "Liminal Ascension",
+      "expected_fuben_id": 145,
+      "expected_challenge_row_id": 67
+    },
+    {
+      "trial_row_id": 78,
+      "resource": "wulinlu_tongyou_pic_xj_28",
+      "png_sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+      "basis": "direct_guild_card",
+      "notes": "Direct trial_displays:78.guild_image; paired challenge row 80.",
+      "expected_trial_name": "Horizon's Chart",
+      "expected_fuben_id": 166,
+      "expected_challenge_row_id": 80
+    },
+    {
+      "trial_row_id": 81,
+      "resource": "wulinlu_tongyou_pic_xj_30",
+      "png_sha256": "08e4ff713260992b585939e626cd2275272fea7b9d4e0ad152b0489938f38471",
+      "basis": "direct_guild_card",
+      "notes": "Direct trial_displays:81.guild_image; paired challenge row 84.",
+      "expected_trial_name": "Gilded Wolf",
+      "expected_fuben_id": 171,
+      "expected_challenge_row_id": 84
+    },
+    {
+      "trial_row_id": 65,
+      "resource": "wulinlu_tongyou_pic_xj_26",
+      "png_sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+      "basis": "reviewed_boss_art_identity",
+      "notes": "Original combined card shows Lodestar Swordmaster and Bell Toller. Swordmaster pose/flame armour matches huisu_sinanjiankehuanguai_bg.png. Instances 143/146 establish the dungeon pair.",
+      "expected_trial_name": "Compass & Chime",
+      "expected_fuben_id": 143,
+      "expected_challenge_row_id": 69
+    },
+    {
+      "trial_row_id": 75,
+      "resource": "wulinlu_tongyou_pic_xj_27",
+      "png_sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+      "basis": "reviewed_boss_art_identity",
+      "notes": "Combined card shows Rosy-Faced Dancer and The Mourner. The Mourner pose, fur collar and staff match Yelu A'buli / huisu_kufenren_bg.png. Instances 164/165 establish the dungeon pair. Boss display names differ across tables; these are recorded, not turned into player-facing aliases.",
+      "expected_trial_name": "Rouge & Rite",
+      "expected_fuben_id": 164,
+      "expected_challenge_row_id": 79
+    },
+    {
+      "trial_row_id": 82,
+      "resource": "wulinlu_tongyou_pic_xj_29",
+      "png_sha256": "470e7870e3b5ce20b402152fdc153de38ccab19b2f55ff2a18a30729672c26ef",
+      "basis": "reviewed_boss_art_identity",
+      "notes": "Both panels match original huisu_shoumoxie_bg.png and huisu_yumaodawang_bg.png. Instances 174/173 and all_boss_id 124/123 establish Inkpincer Scorpion/Cat Emperor. Scorpion fight_entity_id is copied from Bell Toller; it is not used as proof.",
+      "expected_trial_name": "Dushan Encounters",
+      "expected_fuben_id": 174,
+      "expected_challenge_row_id": 83
+    }
+  ]
+}
