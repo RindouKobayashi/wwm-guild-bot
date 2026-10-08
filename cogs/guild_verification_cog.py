@@ -5,7 +5,7 @@ import random
 import time
 from discord.ext import commands
 from discord import app_commands, ButtonStyle
-from settings import logger, BASE_DIR, WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL, CLUB_ID
+from settings import logger, BASE_DIR, WWM_UID, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL, CLUB_ID
 from datetime import datetime, timezone
 from discord.ext import tasks
 from utility.wwm import get_player_info, get_club_hostnums
@@ -230,7 +230,7 @@ class GuildVerificationCog(commands.Cog):
                 for row in rows_to_migrate:
                     rowid, user_id, character_uid = row
                     try:
-                        player_data = await get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+                        player_data = await get_player_info(character_uid, uid=WWM_UID, api_url=WWM_API_URL)
                         if player_data and 'result' in player_data:
                             player = player_data['result']
                             pid = player.get('id')
@@ -796,7 +796,7 @@ class GuildVerificationCog(commands.Cog):
         player_pid = ''
         try:
             from utility.wwm import get_club_hostnums
-            player_data = await get_player_info(character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+            player_data = await get_player_info(character_uid, uid=WWM_UID, api_url=WWM_API_URL)
             if player_data and 'result' in player_data:
                 player = player_data['result']
                 player_pid = str(player.get('id', ''))
@@ -1256,7 +1256,6 @@ class BoundAccountsPaginationView(discord.ui.View):
                                     "force_search": False
                                 },
                                 uid=WWM_UID,
-                                token=WWM_TOKEN
                             )
                             if pid_result and 'result' in pid_result and 'id' in pid_result['result']:
                                 pid = pid_result['result']['id']
@@ -1761,7 +1760,7 @@ class CharacterUIDModal(discord.ui.Modal, title="Bind Game Account"):
         await interaction.response.defer(ephemeral=True)
         
         try:
-            player_data = await get_player_info(uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL, force_search=True)
+            player_data = await get_player_info(uid, uid=WWM_UID, api_url=WWM_API_URL, force_search=True)
             
             if not player_data or 'result' not in player_data:
                 await interaction.followup.send(
@@ -1880,7 +1879,7 @@ class VerifySignatureView(discord.ui.View):
         await interaction.response.defer(ephemeral=True)
         
         try:
-            player_data = await get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL, force_search=True)
+            player_data = await get_player_info(self.character_uid, uid=WWM_UID, api_url=WWM_API_URL, force_search=True)
             
             if not player_data or 'result' not in player_data:
                 await interaction.followup.send(
@@ -2047,7 +2046,7 @@ class VerificationAdminView(discord.ui.View):
         player_pid = ''
         player_data_for_school = None
         try:
-            pid_data = await get_player_info(self.character_uid, uid=WWM_UID, token=WWM_TOKEN, api_url=WWM_API_URL)
+            pid_data = await get_player_info(self.character_uid, uid=WWM_UID, api_url=WWM_API_URL)
             if pid_data and 'result' in pid_data:
                 player_pid = str(pid_data['result'].get('id', ''))
                 player_data_for_school = pid_data['result']
