@@ -16,7 +16,7 @@ from cogs.wwm_cog import _compute_energy, MAX_ENERGY, ENERGY_REGEN_SECONDS
 # Energy regen alerts (opt-in)
 # ---------------------------------------------------------------------------
 # A subscriber is alerted when their energy rises past `threshold` while
-# offline. Three guards stop the 1-minute poll from pinging every minute:
+# online or offline. Three guards stop the 1-minute poll from pinging every minute:
 #
 #   * edge-triggered — we alert on the CROSSING, not on "energy > threshold",
 #     and remember the crossing in `was_above` so it survives restarts;
@@ -61,7 +61,7 @@ def extrapolate_energy(cached_energy: int, cached_ts: int, now_ts: int) -> tuple
     Returns ``(energy, extrapolated)``. ``energy`` is None when the cache is
     too old to be worth anything — better to say nothing than to guess.
     """
-    if not cached_ts or not cached_energy:
+    if not cached_ts or cached_energy is None:
         return None, False
     age = now_ts - cached_ts
     if age < 0 or age > CACHE_MAX_AGE:
@@ -80,9 +80,11 @@ def should_alert(energy: int, threshold: int, was_above: bool, last_alert_ts, no
     pinged exactly once no matter how many polls run.
     """
     # Below the re-arm line (threshold - margin): the user spent energy, so
-    # arm the next crossing. This also covers "below threshold at all".
-    if energy <= threshold - REARM_MARGIN:
+    # arm the next crossing; readings nearer the threshold retain their state.
+    if energy <= max(0, threshold - REARM_MARGIN):
         return False, False
+    if energy < threshold:
+        return False, bool(was_above)
     if was_above:
         return False, True  # already alerted for this climb — stay quiet
     if last_alert_ts and (now_ts - last_alert_ts) < ALERT_COOLDOWN:
@@ -377,7 +379,7 @@ class GuildVerificationCog(commands.Cog):
 
     async def _check_energy_alerts(self, players: dict, pid_to_userid_map: dict):
         """
-        Alert subscribers whose offline energy has risen past their threshold.
+        Alert subscribers whose energy has reached their threshold, online or offline.
 
         Runs on the 1-minute sync loop using the same bulk payload, so this
         costs no extra API call. Returns quietly when nobody has opted in.
@@ -412,6 +414,14 @@ class GuildVerificationCog(commands.Cog):
             energy, has_data, _regen = _compute_energy(resources, base, is_online)
             extrapolated = False
 
+            # Online alerts require fresh data: spending makes old estimates unsafe.
+            if is_online and not has_data:
+                updates.append((user_id, 0, 0, int(was_above), last_alert_ts))
+                continue
+            # Unknown presence must not be treated as confirmed offline.
+            if base.get('is_online') not in (0, 1):
+                continue
+
             if not has_data:
                 # Live service dropped the reading (offline too long) — continue
                 # from our own last sighting instead of going blind.
@@ -426,22 +436,18 @@ class GuildVerificationCog(commands.Cog):
             alert, new_was_above = should_alert(
                 energy, threshold, bool(was_above), last_alert_ts, now_ts
             )
-            new_last_alert = now_ts if alert else last_alert_ts
-            updates.append((user_id, cached_energy, cached_ts, int(new_was_above), new_last_alert))
-
-            if not alert:
-                continue
-
-            member = guild.get_member(user_id) if guild else None
-            if member is None:
-                logger.debug(f"Energy alert: member {user_id} not in guild, skipping send")
-                continue
-
-            await self._send_energy_alert(member, energy, threshold, extrapolated)
-            logger.info(
-                f"⚡ Energy alert sent to {member} ({energy}/{MAX_ENERGY} >= threshold "
-                f"{threshold}{', extrapolated' if extrapolated else ''})"
-            )
+            delivered = False
+            if alert:
+                member = guild.get_member(user_id) if guild else None
+                if member is not None:
+                    delivered = await self._send_energy_alert(member, energy, threshold, extrapolated)
+                if delivered:
+                    logger.info(f"Energy alert delivered to {user_id} ({energy}/{MAX_ENERGY})")
+                else:
+                    # Keep this crossing eligible for another delivery attempt.
+                    new_was_above = False
+            updates.append((user_id, cached_energy, cached_ts, int(new_was_above),
+                            now_ts if delivered else last_alert_ts))
 
         if updates:
             async with aiosqlite.connect(DB_PATH) as conn:
@@ -467,7 +473,7 @@ class GuildVerificationCog(commands.Cog):
                     f"Your energy is **{energy:,} / {MAX_ENERGY}** right now."
                     if is_test
                     else f"Your energy has risen to **{energy:,} / {MAX_ENERGY}**, "
-                         f"past your alert threshold of **{threshold:,}**."
+                         f"at or above your alert threshold of **{threshold:,}**."
                 )
             ),
             color=discord.Color.blurple() if is_test else discord.Color.green(),
@@ -492,27 +498,28 @@ class GuildVerificationCog(commands.Cog):
 
         try:
             await member.send(embed=embed)
+            return True
         except discord.Forbidden:
             # DMs are closed — fall back to this branch's alert channel.
             channel = self.bot.get_channel(getattr(settings, 'ENERGY_ALERT_CHANNEL_ID', 0))
             if channel:
-                await channel.send(
-                    content=f"{member.mention} *(couldn't DM — sending here)*",
-                    embed=embed,
-                )
+                try:
+                    await channel.send(content=f"{member.mention} *(couldn't DM — sending here)*", embed=embed)
+                    return True
+                except discord.HTTPException as channel_err:
+                    logger.error(f"Energy alert channel delivery failed for {member}: {channel_err}")
             else:
-                logger.warning(
-                    f"Energy alert: DMs closed for {member} and no ENERGY_ALERT_CHANNEL_ID"
-                )
+                logger.warning(f"Energy alert: DMs closed for {member} and no ENERGY_ALERT_CHANNEL_ID")
         except discord.HTTPException as dm_err:
             logger.error(f"Energy alert DM failed for {member}: {dm_err}")
+        return False
 
     
     @guild_member_sync_task.before_loop
     async def before_sync_task(self):
         await self.bot.wait_until_ready()
 
-    @app_commands.command(name="energy-alert", description="Get a DM when your energy regens past a threshold you choose")
+    @app_commands.command(name="energy-alert", description="Get a DM when your energy reaches a threshold, online or offline")
     async def energy_alert(self, interaction: discord.Interaction):
         """Opt in to (or out of) an energy regen alert. Configure it with the buttons below."""
         async with aiosqlite.connect(DB_PATH) as conn:
@@ -588,6 +595,8 @@ class GuildVerificationCog(commands.Cog):
                         )
                         if has_data:
                             return energy, False
+                        if base.get("is_online") != 0:
+                            return None, False
             except Exception as fetch_err:
                 logger.warning(f"Energy panel: live fetch failed for {user_id}: {fetch_err}")
 
@@ -605,12 +614,14 @@ class GuildVerificationCog(commands.Cog):
             return await cursor.fetchone()
 
     async def save_energy_alert(self, user_id: int, threshold: int, is_enabled: bool = True):
-        """Upsert a subscriber. Resets was_above so the next crossing alerts."""
+        """Update preferences while preserving cached readings and delivery cooldown."""
         async with aiosqlite.connect(DB_PATH) as conn:
             await conn.execute(
-                "REPLACE INTO energy_alerts "
+                "INSERT INTO energy_alerts "
                 "(user_id, threshold, is_enabled, last_energy, last_seen_ts, was_above, last_alert_ts, updated_at) "
-                "VALUES (?, ?, ?, 0, 0, 0, NULL, ?)",
+                "VALUES (?, ?, ?, 0, 0, 0, NULL, ?) "
+                "ON CONFLICT(user_id) DO UPDATE SET threshold = excluded.threshold, "
+                "is_enabled = excluded.is_enabled, was_above = 0, updated_at = excluded.updated_at",
                 (user_id, threshold, int(is_enabled), datetime.utcnow()),
             )
             await conn.commit()
@@ -1037,7 +1048,7 @@ class EnergyAlertView(discord.ui.View):
             state = "✅ **Enabled**" if self.is_enabled else "⏸️ **Paused**"
             status = (
                 f"{state}\n"
-                f"🔔 **Alert when energy rises past:** **{self.threshold} / {MAX_ENERGY}**"
+                f"🔔 **Alert when energy reaches:** **{self.threshold} / {MAX_ENERGY}**"
             )
             if self.last_alert_ts:
                 try:
@@ -1056,8 +1067,8 @@ class EnergyAlertView(discord.ui.View):
         self.embed = discord.Embed(
             title="⚡ Energy Regen Alert",
             description=(
-                "I'll DM you once when your energy regens **past** your threshold "
-                "while you're offline — only once, not every minute.\n\n" + description
+                "I'll DM you once when your energy reaches your threshold "
+                "online or offline — once per recharge, not every minute.\n\n" + description
             ),
             color=discord.Color.green() if self.is_enabled else discord.Color.greyple(),
         )
@@ -1135,9 +1146,12 @@ class EnergyAlertView(discord.ui.View):
             return
 
         self.current_energy = energy
-        await self.cog._send_energy_alert(
+        delivered = await self.cog._send_energy_alert(
             self.member, energy, self.threshold, extrapolated, is_test=True
         )
+        if not delivered:
+            await interaction.followup.send("Could not deliver the sample alert. Check your DMs or the configured alert channel.", ephemeral=True)
+            return
         await interaction.followup.send(
             f"🧪 Sample alert sent at your current energy (**{energy}/{MAX_ENERGY}**). "
             "If you got it, your DMs are open — otherwise check the bot's alert channel.",
@@ -1199,7 +1213,7 @@ class EnergyThresholdModal(discord.ui.Modal, title="Set Energy Alert Threshold")
             threshold=value,
             is_enabled=True,
         )
-        view.notice = f"✅ Alert set — I'll DM you when your energy rises past **{value}**."
+        view.notice = f"✅ Alert set — I'll DM you when your energy reaches **{value}**."
         view._rebuild()
         await interaction.response.edit_message(embed=view.embed, view=view)
 
