@@ -1067,7 +1067,7 @@ class LeaderboardCog(commands.Cog):
             if not member:
                 # User has left the guild — skip them and let the loop try
                 # the next entry in the leaderboard for this rank slot.
-                logger.info(
+                logger.debug(
                     f"Elegance role: skipping pid {pid} (uid {user_id}) — not in guild"
                 )
                 continue
@@ -1079,7 +1079,7 @@ class LeaderboardCog(commands.Cog):
             if role not in member.roles:
                 try:
                     await member.add_roles(role, reason=f"Elegance rank #{rank}")
-                    logger.info(f"Assigned {role.name} to {member} (rank #{rank})")
+                    logger.debug(f"Assigned {role.name} to {member} (rank #{rank})")
                 except Exception as e:
                     logger.error(f"Failed to assign elegance role to {member}: {e}")
 
@@ -1089,7 +1089,7 @@ class LeaderboardCog(commands.Cog):
                 if lower_role in member.roles:
                     try:
                         await member.remove_roles(lower_role, reason="Elegance rank upgraded")
-                        logger.info(f"Removed lower elegance role {lower_role.name} from {member}")
+                        logger.debug(f"Removed lower elegance role {lower_role.name} from {member}")
                     except Exception as e:
                         logger.error(f"Failed to remove lower elegance role from {member}: {e}")
             next_rank += 1
@@ -1115,7 +1115,7 @@ class LeaderboardCog(commands.Cog):
                     if role in member.roles:
                         try:
                             await member.remove_roles(role, reason="Elegance rank lost (dropped out of top 3)")
-                            logger.info(f"Removed elegance role {role.name} from {member} (uid={uid})")
+                            logger.debug(f"Removed elegance role {role.name} from {member} (uid={uid})")
                         except Exception as e:
                             logger.error(f"Failed to remove elegance role from {member}: {e}")
 
