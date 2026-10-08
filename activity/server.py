@@ -81,7 +81,8 @@ def create_app(live=False):
             if sessions[key]['expires']<time.monotonic():sessions.pop(key)
         if len(sessions)>=1024:raise web.HTTPServiceUnavailable(text='Too many sessions. Try again later.')
         sessions[token]={'id':identity['id'],'expires':time.monotonic()+min(int(oauth.get('expires_in',3600)),3600)}
-        return web.json_response({'session':token,'access_token':oauth['access_token'],'user':{'name':identity.get('global_name') or identity['username'],'bound':bool(binding(identity['id']))}},headers={'Cache-Control':'no-store'})
+        character_number = binding(identity['id'])
+        return web.json_response({'session':token,'access_token':oauth['access_token'],'user':{'name':identity.get('global_name') or identity['username'],'bound':bool(character_number),'character_number':character_number}},headers={'Cache-Control':'no-store'})
     async def snapshot(request):
         if live:raise web.HTTPForbidden(text='Saved preview data is unavailable in Discord mode.')
         return web.FileResponse(HERE/'public/snapshot.json')
