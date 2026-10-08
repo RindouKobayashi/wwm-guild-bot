@@ -6,6 +6,14 @@ from dotenv import dotenv_values
 HERE=Path(__file__).resolve().parent
 BOT=HERE.parent
 
+def funnel_matches(config,hostname,origin):
+    """Private Serve is not proof of public Funnel, including foreground routes."""
+    key=hostname+':443'
+    candidates=[config,*config.get('Foreground',{}).values()]
+    return any(candidate.get('AllowFunnel',{}).get(key) is True and
+               candidate.get('Web',{}).get(key,{}).get('Handlers',{}).get('/',{}).get('Proxy')==origin
+               for candidate in candidates if isinstance(candidate,dict))
+
 def linux_bot_running():
     """Refuse another manually started bot owned by this Linux user."""
     for directory in Path('/proc').iterdir():
@@ -109,17 +117,16 @@ def main():
             print(f'Stable {args.environment} Activity URL: https://{hostname}',flush=True)
             print('Set this once in the matching Discord application URL Mapping. Reboots retain this hostname.',flush=True)
             # Reuse an already-running route only when it serves this application.
-            reused=False
-            try:
-                with urllib.request.urlopen(f'https://{hostname}/api/config',timeout=3) as response:remote=json.load(response)
-                reused=remote.get('service')=='wwm-activity' and remote.get('mode')=='discord' and remote.get('client_id')==client
-            except (urllib.error.URLError,ValueError):pass
+            existing=subprocess.run([str(tunnel),'funnel','status','--json'],capture_output=True,text=True,check=True,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name=='nt' else 0)
+            reused=funnel_matches(json.loads(existing.stdout),hostname,origin)
             if reused:print('Existing matching Funnel reused; it will remain running after this launcher exits.',flush=True)
             else:spawn([str(tunnel),'funnel','--https=443',origin],'tunnel')
         else:spawn([str(tunnel),'tunnel','--url',origin,'--no-autoupdate'],'tunnel')
         if not args.activity_only:spawn([sys.executable,'-B','guildbot.py'],'bot')
         print(f'{"Activity + tunnel" if args.activity_only else "Bot + Activity + tunnel"} ready. Logs: {logs}. Ctrl+C stops processes started here.',flush=True)
         print('First Funnel use may need HTTPS/Funnel approval at the URL in the tunnel log.',flush=True)
+        if provider=='tailscale':print('Local HTTPS access is not a public-access test. Funnel DNS may take time to propagate; Discord cannot load the Activity until the hostname has public DNS records.',flush=True)
         position=0
         while all(p.poll() is None for p in children):
             if (logs/'tunnel.log').exists() and not (provider=='tailscale' and reused):

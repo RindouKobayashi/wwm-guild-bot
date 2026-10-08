@@ -47,7 +47,10 @@ def install_tailscale():
     with tempfile.TemporaryDirectory(prefix='wwm-tailscale-') as directory:
         script=Path(directory)/'install.sh'
         subprocess.run(['curl','--fail','--show-error','--silent','--location','https://tailscale.com/install.sh','--output',str(script)],check=True)
-        subprocess.run(['sh',str(script)],check=True)
+        try:
+            subprocess.run(['sh',str(script)],check=True)
+        except subprocess.CalledProcessError as error:
+            raise ValueError('Tailscale installation failed. Check the installer output above: any broken APT repository can block apt update. Repair that repository and rerun setup; the saved Activity credentials are preserved. Do not disable APT signature verification.') from error
 
 def tailscale_setup():
     status=subprocess.run(['tailscale','status','--json'],capture_output=True,text=True)
