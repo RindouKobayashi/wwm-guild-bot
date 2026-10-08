@@ -57,6 +57,7 @@ from discord.ui import (ActionRow, Button, Container, LayoutView, Section,
 import settings
 from settings import BASE_DIR, logger
 from utility.dungeon_assets import DungeonAssets
+from utility.abyss_rankings import AbyssAssets, AbyssRankingView
 from utility.api_constants import SCHOOL_NAMES
 from utility.wwm import get_bulk_players_info_multi_hostnum, get_rank_list
 
@@ -1133,7 +1134,7 @@ class RankingCog(commands.Cog):
 
     ranking_group = app_commands.Group(
         name="ranking",
-        description="View WWM leaderboards (HR, ST) and manage the name → ID registry",
+        description="View WWM leaderboards (HR, ST, Abyss) and manage dungeon mappings",
     )
 
     map_group = app_commands.Group(
@@ -1146,6 +1147,7 @@ class RankingCog(commands.Cog):
         self.bot = bot
         self.db_path = DB_PATH
         self.dungeon_assets = DungeonAssets(BASE_DIR / "data/ranking_assets")
+        self.abyss_assets = AbyssAssets(BASE_DIR / "data/abyss_assets")
         self._entries: List[dict] = []
         self._usage: Dict[Tuple[str, int], int] = {}
         self._cache_loaded = False
@@ -1468,13 +1470,23 @@ class RankingCog(commands.Cog):
     async def dungeon_acomplete(self, interaction: discord.Interaction, current: str):
         """Autocomplete for /ranking view dungeon.
 
-        A leading ``hr``/``st`` token in the typed text filters the list; the
+        A leading ``hr``/``st``/``abyss`` token in the typed text filters the list; the
         ``rank_type`` option is used too when the user filled it before focusing
         this option (Discord only sends options that were already chosen).
         """
         hint = getattr(interaction.namespace, "rank_type", None)
+        abyss_prefix = re.match(r"^\s*abyss(?:\s+trial)?(?::\s*|\s+|$)(.*)$", current, re.I)
+        if hint == "abyss" or abyss_prefix:
+            term = (abyss_prefix.group(1) if abyss_prefix else current).strip().casefold()
+            return [app_commands.Choice(name=f"Abyss · {r['name']} [trial {r['id']}]"[:100], value=f"abyss:{r['id']}")
+                    for r in self.abyss_assets.data()['trials']
+                    if term in r['name'].casefold() or term == str(r['id'])][:25]
         prefix_type, term = _split_type_prefix(current)
-        return await self._autocomplete_choices(term, prefix_type or hint)
+        choices = await self._autocomplete_choices(term, prefix_type or hint)
+        if not hint and not prefix_type and term.strip():
+            choices += [app_commands.Choice(name=f"Abyss · {r['name']}"[:100], value=f"abyss:{r['id']}")
+                        for r in self.abyss_assets.data()['trials'] if term.casefold() in r['name'].casefold()]
+        return choices[:25]
 
     async def entry_acomplete(self, interaction: discord.Interaction, current: str):
         """Autocomplete for the registry-management commands."""
@@ -1785,20 +1797,25 @@ class RankingCog(commands.Cog):
     # ------------------------------------------------------------------
     @ranking_group.command(
         name="view",
-        description="View an HR/ST leaderboard by dungeon name (autocomplete) or ID.",
+        description="View HR, ST or Abyss Trial rankings by extracted name or ID.",
     )
     @app_commands.describe(
-        dungeon="Type a dungeon name (autocomplete), or an ID like '26' / 'hr:26'",
+        dungeon="Search a dungeon/boss name; type abyss to browse trials. IDs: hr:26, st:26, abyss:3",
         player="Optional: player's 10-digit Number ID or nickname, to jump to their rank",
         page="Optional page number (20 entries per page)",
-        rank_type="Optional: narrow the lookup to one leaderboard type",
+        rank_type="Filter names and IDs: Hero's Realm, Sword Trial or Abyss Trial",
+        abyss_mode="Abyss only: fastest clears (default) or no-hit completion dates (UTC)",
     )
-    @app_commands.choices(rank_type=TYPE_CHOICES)
+    @app_commands.choices(
+        rank_type=TYPE_CHOICES + [app_commands.Choice(name="Abyss Trial", value="abyss")],
+        abyss_mode=[app_commands.Choice(name="Fastest clears", value="overall"),
+                    app_commands.Choice(name="No-hit completion dates", value="no_hit")],
+    )
     @app_commands.autocomplete(dungeon=dungeon_acomplete)
     async def ranking_view(self, interaction: discord.Interaction, dungeon: str,
                            player: Optional[str] = None, page: int = 1,
-                           rank_type: Optional[str] = None):
-        """Open a leaderboard: pick a mapped dungeon by name, or pass a raw ID."""
+                           rank_type: Optional[str] = None, abyss_mode: str = "overall"):
+        """Open HR/ST or Abyss rankings using extracted dungeon/boss names and IDs."""
         await interaction.response.defer()
 
         target_pid = None
@@ -1811,6 +1828,24 @@ class RankingCog(commands.Cog):
                 )
                 return
             target_pid = pid
+
+        entry = self.abyss_assets.resolve(dungeon)
+        is_abyss = rank_type == "abyss" or dungeon.strip().casefold().startswith("abyss:") or (rank_type is None and entry and not dungeon.strip().isdigit())
+        if is_abyss:
+            if not entry:
+                await interaction.edit_original_response(content="No extracted Abyss trial found. Choose a name from autocomplete with type Abyss Trial, or use `abyss:3`.")
+                return
+            if abyss_mode not in ('overall', 'no_hit'):
+                await interaction.edit_original_response(content="Choose Fastest clears or No-hit completion dates.")
+                return
+            view = AbyssRankingView(self, interaction.user.id, self.abyss_assets, entry,
+                                    mode=abyss_mode, target=target_pid)
+            await view.load(max(1, int(page or 1)), jump=bool(target_pid))
+            await interaction.edit_original_response(content=None, embed=None, view=view, attachments=view.attachments())
+            return
+        if abyss_mode != 'overall':
+            await interaction.edit_original_response(content="The Abyss mode option applies only to Abyss Trial boards.")
+            return
 
         resolved = await self.resolve_dungeon_input(dungeon, rank_type)
 
@@ -1828,7 +1863,7 @@ class RankingCog(commands.Cog):
         if resolved["status"] == "not_found":
             hint = ""
             if dungeon and dungeon.strip():
-                hint = "\n\nChoose an extracted name from autocomplete, or use an ID such as `hr:26` / `st:26`."
+                hint = "\n\nChoose an extracted name from autocomplete, or use `hr:26`, `st:26` or `abyss:3`. Type `abyss` to browse Abyss trials."
             await interaction.edit_original_response(
                 content=f"❌ {resolved.get('message', 'Not found.')}{hint}"
             )
@@ -1877,6 +1912,7 @@ class RankingCog(commands.Cog):
                 f"{counts.get(key, 0)} mapped\n   ↳ `{sample}`"
             )
         lines.append("")
+        lines.append(f"**Abyss Trial** · {len(self.abyss_assets.data()['trials'])} extracted trials · fastest-clear and no-hit boards\n   ↳ `abyss:3`")
         lines.append("Use `/ranking view` to open a board and `/ranking map list` to browse the registry.")
         await interaction.followup.send("\n".join(lines), ephemeral=True)
 

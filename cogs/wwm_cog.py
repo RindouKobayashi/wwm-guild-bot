@@ -1361,6 +1361,8 @@ class PlayerProfileView(LayoutView):
                 discord.SelectOption(label="Sect", value="school", emoji="🏫")
             ]
             # Only show Set Avatar option when head_id is present but no mapped avatar exists
+            if self.is_verified:
+                select_options.append(discord.SelectOption(label="Player Guild Battles", value="guild_battles", emoji="⚔️"))
             if self.head_id is not None and self.head_avatar_path is None and self.body_type in (0, 1):
                 select_options.append(discord.SelectOption(label="Set Avatar", value="set_avatar", emoji="🖼️"))
 
@@ -1429,6 +1431,7 @@ class PlayerProfileView(LayoutView):
             "achievements": self._handle_achievements,
             "equipments": self._handle_equipments,
             "guild": self._handle_guild,
+            "guild_battles": self._handle_guild_battles,
             "homestead": self._handle_homestead,
             "collection": self._handle_collection,
             "likes": self._handle_likes,
@@ -1440,6 +1443,53 @@ class PlayerProfileView(LayoutView):
         if handler:
             await handler(interaction)
     
+    async def _authorize_guild_battles(self, interaction: discord.Interaction):
+        if not await ensure_owner(interaction, self):
+            return False
+        try:
+            async with aiosqlite.connect(DB_PATH) as conn:
+                cursor = await conn.execute(
+                    "SELECT 1 FROM verified_members WHERE user_id = ? AND "
+                    "(NULLIF(TRIM(character_uid), '') IS NOT NULL OR NULLIF(TRIM(player_pid), '') IS NOT NULL)",
+                    (interaction.user.id,))
+                bound = await cursor.fetchone()
+        except Exception:
+            bound = None
+        if not bound:
+            message = "Bind your WWM account before viewing player guild battles. Your binding could not be verified."
+            if interaction.response.is_done():
+                await interaction.followup.send(message, ephemeral=True)
+            else:
+                await interaction.response.send_message(message, ephemeral=True)
+            return False
+        return True
+
+    async def _handle_guild_battles(self, interaction: discord.Interaction):
+        # Authorize the viewer, not the searched player; recheck on every drill-down.
+        if not await self._authorize_guild_battles(interaction):
+            return
+        await interaction.response.defer()
+        from utility.guild_battles import get_player_guild_battles
+        from utility.guild_battle_view import PlayerGuildBattleView
+        try:
+            data = await asyncio.wait_for(get_player_guild_battles(self.player_pid, self.player_hostnum), timeout=90)
+        except Exception:
+            logger.warning("Player guild battle lookup unavailable", exc_info=True)
+            data = {'status': 'unavailable', 'matches': []}
+        # A binding may have been removed while the API calls were running.
+        if not await self._authorize_guild_battles(interaction):
+            return
+        async def back_to_profile(back_interaction):
+            await back_interaction.response.defer()
+            self._build_overview()
+            await back_interaction.edit_original_response(view=self, attachments=self._resolve_files())
+        view = PlayerGuildBattleView(interaction.user.id, data, self.player_nickname,
+                                    self.number_id, self._authorize_guild_battles, back=back_to_profile)
+        await view.prepare()
+        if not await self._authorize_guild_battles(interaction):
+            return
+        await interaction.edit_original_response(view=view, attachments=[])
+
     async def _handle_activity(self, interaction: discord.Interaction):
         """Derived activity from this profile snapshot, without another API call."""
         if not await ensure_owner(interaction, self):

@@ -7,3 +7,5 @@ data/
 .env-backup
 test/
 wwm_extract/
+# Generated/private maintenance research output
+maintenance/research/output/
