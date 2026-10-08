@@ -1,0 +1,16 @@
+{
+  "name": "wwm-discord-activity",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "build:preview": "node build.mjs --preview"
+  },
+  "dependencies": {
+    "@discord/embedded-app-sdk": "^2.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

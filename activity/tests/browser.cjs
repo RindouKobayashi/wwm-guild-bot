@@ -1,0 +1,28 @@
+const {chromium}=require('C:/Users/User/.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright');
+const path=require('path');
+(async()=>{
+ const browser=await chromium.launch({headless:true,executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'});
+ const page=await browser.newPage({viewport:{width:1440,height:1000}});const errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await page.goto('http://127.0.0.1:8766');await page.waitForSelector('.rank-row');
+ if(!(await page.locator('#notice').innerText()).includes('SAVED')&&!(await page.locator('#notice').innerText()).includes('Saved'))throw Error('Snapshot label missing');
+ await page.selectOption('#board','abyss:5');await page.selectOption('#mode','path');await page.waitForSelector('.rank-row');await page.waitForFunction(()=>document.querySelector('#board-description').textContent.includes('Bellstrike'));
+ await page.locator('.rank-row').nth(1).click();
+ if(!(await page.locator('#rank-detail').innerText()).includes('Strategic'))throw Error('Mapped martial names missing');
+ await page.selectOption('#family','st');await page.fill('#search','Abyssal Lament');
+ await page.selectOption('#board','st:11');await page.waitForSelector('.rank-row');
+ if(!(await page.locator('#rank-detail').innerText()).includes('TEAM ROSTER'))throw Error('Team roster missing');
+ await page.click('[data-tab="guild"]');await page.waitForSelector('[data-pid]');
+ const old=await page.locator('#participant-detail h2').innerText();await page.locator('[data-pid]').nth(2).click();
+ if((await page.locator('#participant-detail h2').innerText())===old)throw Error('Participant selection failed');
+ await page.selectOption('#match','1');
+ await page.screenshot({path:path.join(__dirname,'guild-desktop.png'),fullPage:true});
+ await page.click('[data-tab="rankings"]');await page.selectOption('#family','abyss');await page.fill('#search','Lucky Seventeen');await page.selectOption('#mode','path');await page.waitForSelector('.rank-row');
+ await page.screenshot({path:path.join(__dirname,'rankings-desktop.png'),fullPage:true});
+ await page.fill('#search','Heartseeker');await page.waitForFunction(()=>document.querySelector('#rank-list').textContent.includes('special rules'));
+ await page.setViewportSize({width:390,height:844});await page.click('[data-tab="guild"]');
+ if(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1))throw Error('Mobile overflow');
+ await page.screenshot({path:path.join(__dirname,'guild-mobile.png'),fullPage:true});
+ if(errors.length)throw Error(errors.join('\n'));await browser.close();
+ console.log('PASS: snapshot label, path board and martial names, HR/ST roster, match and participant selection, special encounter, mobile width, no JavaScript errors');
+})().catch(e=>{console.error(e);process.exit(1)});

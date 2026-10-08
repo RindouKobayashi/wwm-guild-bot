@@ -48,7 +48,8 @@ async def on_ready():
     # Loading context menus
     translate_context_menu.setup_contextmenu(bot)
 
-    await bot.tree.sync() # Sync commands after loading cogs
+    from utility.activity_commands import sync_with_activity
+    await sync_with_activity(bot) # Preserve the Portal-managed Activity Launch command.
 
 async def main():
     try:

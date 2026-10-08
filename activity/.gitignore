@@ -1,0 +1,10 @@
+node_modules/
+public/snapshot.json
+.env
+.env.test
+.env.production
+
+logs/
+tests/*.png
+tools/
+dist/

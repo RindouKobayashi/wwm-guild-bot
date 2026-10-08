@@ -1,0 +1,2 @@
+# Launchers must remain runnable after Windows development / Linux git pulls.
+*.sh text eol=lf
