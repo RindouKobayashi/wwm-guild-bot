@@ -34,7 +34,7 @@ class AbyssTests(__import__("unittest").IsolatedAsyncioTestCase):
             api.assert_not_called()
             self.assertIn('Fastest clears',interaction.edit_original_response.call_args.kwargs['content'])
             self.assertNotIn('preset', ranking.RankingCog.ranking_view._params)
-            self.assertEqual([c.value for c in ranking.RankingCog.ranking_view._params['abyss_mode'].choices], ['overall','no_hit'])
+            self.assertEqual([c.value for c in ranking.RankingCog.ranking_view._params['abyss_mode'].choices], ['overall','no_hit','path'])
     async def test_target_first_rank_and_unknown_skills(self):
         cog=self.cog();entry=cog.abyss_assets.resolve('3')
         view=AbyssRankingView(cog,123,cog.abyss_assets,entry,target='p')
@@ -68,3 +68,52 @@ class AbyssTests(__import__("unittest").IsolatedAsyncioTestCase):
         interaction.namespace.rank_type='abyss'
         choices=await cog.dungeon_acomplete(interaction,'Ye Wanshan')
         self.assertEqual([c.value for c in choices],['abyss:3'])
+
+    async def test_path_command_uses_boss_path_board_and_name(self):
+        cog=self.cog();interaction=self.interaction()
+        with patch.object(wwm,'get_rank_list',AsyncMock(return_value=self.response())) as api:
+            await ranking.RankingCog.ranking_view.callback(cog,interaction,'abyss:3',abyss_mode='path')
+        self.assertEqual(api.call_args.args[0],'DynamicRank___tag1_recall_liupai___recall_tag2_4_12')
+        kwargs=interaction.edit_original_response.call_args.kwargs
+        payload=str(kwargs['view'].to_components())
+        self.assertIn('Bellstrike',payload)
+        self.assertNotIn('Preset',payload)
+        self.assertNotIn('preset',ranking.RankingCog.ranking_view._params)
+        for file in kwargs['attachments']:file.close()
+
+    async def test_special_encounters_have_no_path_requests(self):
+        for trial in ('abyss:1','abyss:75'):
+            interaction=self.interaction()
+            with patch.object(wwm,'get_rank_list',AsyncMock()) as api:
+                await ranking.RankingCog.ranking_view.callback(self.cog(),interaction,trial,abyss_mode='path')
+            api.assert_not_called()
+            self.assertIn('special rules',interaction.edit_original_response.call_args.kwargs['content'])
+
+    async def test_missing_or_ambiguous_path_fails_without_request(self):
+        from copy import deepcopy
+        for paths in ([],[{'name':None,'rank_name':'example'}],[{'name':'A','rank_name':'a'},{'name':'B','rank_name':'b'}]):
+            cog=self.cog();entry=deepcopy(cog.abyss_assets.resolve('3'));entry['paths']=paths
+            with patch.object(cog.abyss_assets,'resolve',return_value=entry), patch.object(wwm,'get_rank_list',AsyncMock()) as api:
+                interaction=self.interaction()
+                await ranking.RankingCog.ranking_view.callback(cog,interaction,'abyss:3',abyss_mode='path')
+            api.assert_not_called()
+            self.assertIn('No single named',interaction.edit_original_response.call_args.kwargs['content'])
+
+    async def test_path_keeps_encounter_recorded_martial_arts(self):
+        cog=self.cog();entry=cog.abyss_assets.resolve('55')
+        view=AbyssRankingView(cog,123,cog.abyss_assets,entry,mode='path',target='p')
+        response=self.response();response['result']['my_rank']=0
+        response['result']['rank_list'][0].update(pid='p',ud={'battle_skills':[10104,0,0,151,152,153,154]})
+        with patch.object(wwm,'get_rank_list',AsyncMock(return_value=response)):
+            await view.load(jump=True)
+        self.assertEqual(view.rank_name,'DynamicRank___tag1_recall_liupai___recall_tag2_56_69')
+        self.assertIn('ID 10104',str(view.to_components()))
+        self.assertTrue(view.target_found)
+
+    async def test_recorded_martial_names_reuse_profile_mapping(self):
+        cog=self.cog();view=AbyssRankingView(cog,123,cog.abyss_assets,cog.abyss_assets.resolve('3'))
+        self.assertEqual(view.mapped('martial',[10102,10202]),'Nameless Sword, Nameless Spear')
+        self.assertEqual(view.mapped('martial',[10101,10201]),'Strategic Sword, Heavenquaker Spear')
+        self.assertEqual(view.mapped('martial',[10104,0]),'ID 10104, Empty')
+        view.names['martial']={'10102':'Extracted sword name'}
+        self.assertEqual(view.mapped('martial',[10102]),'Extracted sword name')

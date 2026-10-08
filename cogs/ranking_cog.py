@@ -1804,12 +1804,13 @@ class RankingCog(commands.Cog):
         player="Optional: player's 10-digit Number ID or nickname, to jump to their rank",
         page="Optional page number (20 entries per page)",
         rank_type="Filter names and IDs: Hero's Realm, Sword Trial or Abyss Trial",
-        abyss_mode="Abyss only: fastest clears (default) or no-hit completion dates (UTC)",
+        abyss_mode="Abyss: fastest clears (default), no-hit dates (UTC), or the boss-specific Path Trial",
     )
     @app_commands.choices(
         rank_type=TYPE_CHOICES + [app_commands.Choice(name="Abyss Trial", value="abyss")],
         abyss_mode=[app_commands.Choice(name="Fastest clears", value="overall"),
-                    app_commands.Choice(name="No-hit completion dates", value="no_hit")],
+                    app_commands.Choice(name="No-hit completion dates", value="no_hit"),
+                    app_commands.Choice(name="Path Trial", value="path")],
     )
     @app_commands.autocomplete(dungeon=dungeon_acomplete)
     async def ranking_view(self, interaction: discord.Interaction, dungeon: str,
@@ -1835,9 +1836,17 @@ class RankingCog(commands.Cog):
             if not entry:
                 await interaction.edit_original_response(content="No extracted Abyss trial found. Choose a name from autocomplete with type Abyss Trial, or use `abyss:3`.")
                 return
-            if abyss_mode not in ('overall', 'no_hit'):
-                await interaction.edit_original_response(content="Choose Fastest clears or No-hit completion dates.")
+            if abyss_mode not in ('overall', 'no_hit', 'path'):
+                await interaction.edit_original_response(content="Choose Fastest clears, No-hit completion dates or Path Trial.")
                 return
+            if abyss_mode == 'path':
+                if entry.get('special_no_path_ui'):
+                    await interaction.edit_original_response(content="This encounter uses special rules; the game hides its normal Path Trial category. Choose Fastest clears or No-hit completion dates instead.")
+                    return
+                paths = entry.get('paths') or []
+                if len(paths) != 1 or not paths[0].get('name') or not paths[0].get('rank_name'):
+                    await interaction.edit_original_response(content="No single named Path Trial is available in the extracted data for this boss. Choose another mode, or refresh the Abyss assets.")
+                    return
             view = AbyssRankingView(self, interaction.user.id, self.abyss_assets, entry,
                                     mode=abyss_mode, target=target_pid)
             await view.load(max(1, int(page or 1)), jump=bool(target_pid))
@@ -1912,7 +1921,7 @@ class RankingCog(commands.Cog):
                 f"{counts.get(key, 0)} mapped\n   ↳ `{sample}`"
             )
         lines.append("")
-        lines.append(f"**Abyss Trial** · {len(self.abyss_assets.data()['trials'])} extracted trials · fastest-clear and no-hit boards\n   ↳ `abyss:3`")
+        lines.append(f"**Abyss Trial** · {len(self.abyss_assets.data()['trials'])} extracted trials · fastest-clear, no-hit and boss-specific Path Trial boards\n   ↳ `abyss:3`")
         lines.append("Use `/ranking view` to open a board and `/ranking map list` to browse the registry.")
         await interaction.followup.send("\n".join(lines), ephemeral=True)
 

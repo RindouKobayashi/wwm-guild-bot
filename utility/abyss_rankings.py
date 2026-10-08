@@ -3,6 +3,7 @@ import json,math
 from pathlib import Path
 from datetime import datetime,timezone
 import discord
+from utility.api_constants import KONGFU_WEAPON_MAP
 
 class AbyssAssets:
     def __init__(self,root):
@@ -34,6 +35,11 @@ class AbyssRankingView(discord.ui.LayoutView):
         self.page=1;self.rows=[];self.total=0;self.selected=0;self.target_found=None;self.error=False
         self.names=assets.data()['names']
         self.rank_name=entry['no_hit_rank_name'] if mode=='no_hit' else entry['overall_rank_name']
+        if mode=='path':
+            paths=entry.get('paths') or []
+            if entry.get('special_no_path_ui') or len(paths)!=1 or not paths[0].get('name') or not paths[0].get('rank_name'):
+                raise ValueError('No unambiguous extracted Path Trial for this boss')
+            self.rank_name=paths[0]['rank_name']
     async def interaction_check(self,interaction):
         if interaction.user.id==self.owner:return True
         await interaction.response.send_message('Only the command requester can browse this leaderboard.',ephemeral=True);return False
@@ -60,14 +66,20 @@ class AbyssRankingView(discord.ui.LayoutView):
         path=self.assets.image(self.entry)
         return [discord.File(path,filename='abyss.png')] if path else []
     def mapped(self,kind,values):
-        return ', '.join('Empty' if v==0 else clean(self.names.get(kind,{}).get(str(v),f'ID {v}'),38) for v in values) or 'Not recorded'
+        names = self.names.get(kind, {})
+        if kind == 'martial':
+            # Reuse the same martial-art labels as player profiles. Extracted
+            # names take precedence; unknown encounter-specific IDs stay visible.
+            names = {**{str(k):v['name'] for k,v in KONGFU_WEAPON_MAP.items() if v.get('name')}, **names}
+        return ', '.join('Empty' if v==0 else clean(names.get(str(v),f'ID {v}'),38) for v in values) or 'Not recorded'
     def rebuild(self):
         self.clear_items()
-        mode={'overall':'Fastest clears','no_hit':'No-hit completion dates'}[self.mode]
+        mode={'overall':'Fastest clears','no_hit':'No-hit completion dates','path':'Path Trial · '+clean((self.entry.get('paths') or [{}])[0].get('name',''))}[self.mode]
         items=[]
         if self.assets.image(self.entry):
             gallery=discord.ui.MediaGallery();gallery.add_item(media='attachment://abyss.png');items.append(gallery)
         items.append(discord.ui.TextDisplay(f'## ⚔️ Abyss Trial · {clean(self.entry["name"])}\n**{mode}**'+f'\n-# Trial {self.entry["id"]} · Boss {self.entry["boss_recall_id"]} · {self.total} ranked entries'))
+        if self.mode=='path':items.append(discord.ui.TextDisplay('Boss-specific path leaderboard · ranked by clear time. Recorded skills below reflect the actual run, including encounter-specific variations.'))
         if self.target_found is False:items.append(discord.ui.TextDisplay('The requested player was not returned on this board. This does not prove they never completed it.'))
         if self.error:items.append(discord.ui.TextDisplay('⚠️ The leaderboard API is unavailable. Try again later.'))
         elif not self.rows:items.append(discord.ui.TextDisplay('No ranked entries returned. This board may be empty, unavailable in this region, or not yet released.'))
