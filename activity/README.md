@@ -55,3 +55,35 @@ Offline tests: python -m unittest discover -s activity/tests -p 'test_*.py'. Bro
 Sessions/caches are process-local; use one worker. A restart asks Activity users to sign in again. Shared selection synchronization is not implemented. Review production rate limits before a broad public rollout.
 
 Official references: https://docs.discord.com/developers/activities/building-an-activity and https://tailscale.com/docs/features/tailscale-funnel
+
+
+## Player profiles and shared deployments
+
+The Players page supports a 10-digit Number ID (including leading zeroes) or exact nickname. My character uses the authenticated viewer's local bot binding. The server checks that binding on every player/guild request. It resolves the player and their host through the existing WWM utility, then returns only the displayed profile fields: name, Number ID, signature, level, status, region, mapped sect, account creation, online hours, achievement counts and current guild name. It does not return the raw player response, internal PID, credentials or other users' Discord bindings.
+
+Guild name lookup can fail independently without hiding the player profile. Missing values remain unavailable; no guild is distinct from unreported guild membership. Invisible status takes precedence over online status. A profile's guild battle button opens the same player in the existing reports page; personal Arena match history is not provided.
+
+The same committed server, player_profiles.py, public frontend, catalogue and art run on both hosts. No game folder, extraction tools or Node build is required after pulling the prepared runtime. Windows uses Start WWM Bot and Activity.cmd with activity/.env.test and port 8767; the Pi uses run.sh with activity/.env.production and port 8768. Credentials and data/guild_verification.db stay local and ignored by Git. Do not copy one host's profile or database over the other. Each bot keeps its own bindings. Frontend HTML, JS, styles and catalogue request revalidation so reopening an Activity after deployment can pick up updated files.
+
+Update Windows: stop the combined launcher with Ctrl+C, pull the commit, and restart the .cmd. Update Pi from the repository folder:
+
+```bash
+bash new_kill.sh
+git pull
+bash run.sh
+```
+
+Close and reopen the Activity after restarting the service. No new dependencies or Developer Portal mapping changes are required for player search. The original one-time OAuth and Funnel setup remains necessary on each host.
+
+Offline checks: python -m unittest discover -s activity/tests -p 'test_*.py'. The optional player UI check requires Node 20+ and Playwright: node activity/tests/player-browser.cjs. WWM_TEST_BROWSER can select an installed Chromium browser; all identity and game responses in this check are fixtures, and no Discord bot is started.
+
+
+## Expanded player details
+
+Profiles now include always-visible Energy & activity, Masteries, Base attributes, Martial arts & sect, Arena summaries and Fashion & social panels. These use the same data fields and existing rank/sect mappings as the bot. Energy follows the bot's cap and regeneration interval: online readings are authoritative, offline totals are estimates, and missing base readings are labelled regeneration floors. Hidden birthdays are not displayed. Arena summary totals and ranks do not imply access to personal match history.
+
+Equipment, Collections, Social and Homestead load automatically and remain visible. Equipment shows extracted item/affix names, game formatting and the reference range for the exact affix ID. Collections have name/category filtering with all returned rows in a scrollable table; category scopes prevent currency/title/outfit ID collisions. Unmapped or ambiguous IDs are labelled explicitly. Social resolves partner names on their recorded hosts and reports topic likes; partial failures stay visible. Homestead displays the returned name, level, Bounty Gourd, prosperity, mate and description.
+
+activity/player_mappings.json contains only extracted static names/constants, not player captures. It is tracked and included in runtime packaging, so the Pi does not need the mapping workbooks or a generated affix database. When those source files are updated, regenerate it from the bot folder with python activity/maintenance/build_player_mappings.py and commit the resulting JSON. The exporter reuses the existing bot's constants and original extracted CSV/XLSX names; do not edit guessed names into the export. Launchers and Pi setup check that the complete runtime was pulled.
+
+Player search automatically loads equipment, collections, social and homestead records into separate visible panels. A failed section does not hide the others. Equipment cards show exact-ID reference roll positions, recorded item retunes and base attributes; these percentages are not graduation scores. Collections show all returned rows in a scrollable, filterable table.

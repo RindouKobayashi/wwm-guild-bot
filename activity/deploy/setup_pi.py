@@ -15,6 +15,8 @@ def validate_bot(values):
     if identity!=PRODUCTION_ID:raise ValueError('Root .env DISCORD_API_TOKEN must belong to Goose Overlord. Test tokens will not be used.')
 
 def validate_assets():
+    for filename in ('server.py','player_profiles.py','player_mappings.json','runtime_version.py'):
+        if not (ACTIVITY/filename).is_file():raise ValueError(f'Missing Git runtime file: activity/{filename}. Pull the complete Activity update.')
     public=ACTIVITY/'public'
     for filename in ('index.html','style.css','app.js','discord-sdk.js','catalogue.json'):
         if not (public/filename).is_file():raise ValueError(f'Missing Git runtime asset: activity/public/{filename}. Push/pull the Activity public files too.')

@@ -4,7 +4,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 root = Path(__file__).resolve().parents[1]
 target = root / 'dist' / 'wwm-activity-runtime.zip'
-files = ['server.py', '.env.example', '.env.test.example', '.env.production.example', 'public/index.html', 'public/app.js',
+files = ['server.py', 'player_profiles.py', 'player_mappings.json', 'runtime_version.py', '.env.example', '.env.test.example', '.env.production.example', 'public/index.html', 'public/app.js',
          'public/discord-sdk.js', 'public/style.css', 'public/catalogue.json',
          'deploy/run-discord.sh', 'deploy/install-service.sh', 'deploy/PI-SETUP.md']
 paths = [root / name for name in files] + sorted((root / 'public/art').glob('*.png'))

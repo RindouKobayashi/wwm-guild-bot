@@ -45,7 +45,10 @@ def binding(user_id):
     return row[0] if row else None
 
 def create_app(live=False):
+    from activity.runtime_version import runtime_version
+    version=runtime_version()
     catalogue=json.loads((HERE/'public/catalogue.json').read_text(encoding='utf-8'))
+    player_mappings=json.loads((HERE/'player_mappings.json').read_text(encoding='utf8'))
     boards={b['key']:b for b in catalogue['boards']};sessions={};cache={};slots=asyncio.Semaphore(2)
     app_id=os.environ.get('DISCORD_CLIENT_ID','');secret=os.environ.get('DISCORD_CLIENT_SECRET','')
     if live and (not app_id.isdigit() or not secret):raise ValueError('Discord mode requires DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET')
@@ -63,7 +66,7 @@ def create_app(live=False):
         except Exception:
             return web.json_response({'error':'Data could not be loaded. Try again later.'},status=502)
     app=web.Application(middlewares=[errors],client_max_size=16384)
-    async def config(request):return web.json_response({'service':'wwm-activity','mode':'discord' if live else 'preview','client_id':app_id})
+    async def config(request):return web.json_response({'service':'wwm-activity','mode':'discord' if live else 'preview','client_id':app_id,'runtime_version':version},headers={'Cache-Control':'no-store'})
     async def auth(request):
         if not live:raise web.HTTPForbidden(text='Discord authentication is disabled in local preview.')
         if request.headers.get('Origin')!=f'https://{app_id}.discordsays.com':raise web.HTTPForbidden(text='Untrusted origin.')
@@ -132,14 +135,100 @@ def create_app(live=False):
                 return web.json_response(match)
             if data.get('matches'):await load_participant_names(data['matches'][0])
         return web.json_response({**data,'own':player['id']})
+    async def player_profile(request):
+        if not live:raise web.HTTPForbidden(text='Live player search is unavailable in local preview.')
+        session=await user(request)
+        if not binding(session['id']):raise web.HTTPForbidden(text='Bind your character using the Discord bot before searching players.')
+        identifier=request.query.get('identifier','').strip()
+        if not identifier or len(identifier)>64 or any(ord(c)<32 for c in identifier):
+            raise web.HTTPBadRequest(text='Enter a 10-digit Number ID or exact player nickname (up to 64 characters).')
+        if identifier.isdigit() and (len(identifier)!=10 or not identifier.isascii()):
+            raise web.HTTPBadRequest(text='A player Number ID must contain 10 ASCII digits.')
+        section=request.query.get('section','profile')
+        if section not in ('profile','equipment','collections','social','homestead'):
+            raise web.HTTPBadRequest(text='Unknown player detail section.')
+        async with slots:
+            from utility.wwm import resolve_player_identifier,fetch_player_data_by_pid,get_custom_guild_info
+            from utility.api_constants import SCHOOL_NAMES
+            from activity.player_profiles import FIELDS,profile,detail_groups,equipment,collections,number
+            pid,host,resolved=await resolve_player_identifier(identifier)
+            if not pid or not host:raise web.HTTPNotFound(text='Player not found. Try their Number ID or exact nickname.')
+            if section!='profile':
+                if section=='equipment':
+                    from utility.wwm import get_player_combat_plan
+                    response=await get_player_combat_plan(pid,host)
+                    if not response or response.get('code')!=0:raise web.HTTPBadGateway(text='Equipment service unavailable.')
+                    return web.json_response({'section':section,'items':equipment(response.get('result') or {},player_mappings)},headers={'Cache-Control':'no-store'})
+                fields={'collections':['fashion','guise','title_prop','ride'],'social':['jieyuan_info'],'homestead':['homeworld_data']}[section]
+                response=await fetch_player_data_by_pid(pid,hostnum=host,fields=fields)
+                if not response or response.get('code')!=0:raise web.HTTPBadGateway(text='Player detail service unavailable.')
+                extra=response.get('result') or {}
+                if section=='collections':
+                    return web.json_response({'section':section,'buckets':collections(extra,player_mappings)},headers={'Cache-Control':'no-store'})
+                if section=='homestead':
+                    from utility.wwm import get_homeland_info
+                    homes=(extra.get('homeworld_data') or {}).get('home_info') or {};home=next(iter(homes),None)
+                    if not home:return web.json_response({'section':section,'rows':[],'message':'No homestead reference was returned.'})
+                    home_response=await get_homeland_info(hostnum2pids={host:[home]})
+                    if not home_response or home_response.get('code')!=0:raise web.HTTPBadGateway(text='Homestead service unavailable.')
+                    result=home_response.get('result') or {};home_data=result.get(home,result if 'homeland_base' in result else {})
+                    base=home_data.get('homeland_base') or {}
+                    rows=[{'label':'Homestead','value':base.get('name')},{'label':'Level','value':number(base.get('level'))},
+                          {'label':'Bounty Gourd','value':number(base.get('token'))},{'label':'Prosperity','value':number(base.get('prosperity'))},
+                          {'label':'Mate','value':(home_data.get('homeland_mate') or {}).get('mate_info',{}).get('nickname')},
+                          {'label':'Description','value':(home_data.get('taoyuan_description') or {}).get('description')}]
+                    return web.json_response({'section':section,'rows':rows},headers={'Cache-Control':'no-store'})
+                from utility.wwm import get_topics_likes,get_bulk_players_info_multi_hostnum
+                partners=((extra.get('jieyuan_info') or {}).get('xialv_info') or {}).values()
+                partners=[p for p in partners if isinstance(p,dict) and p.get('pid') and p.get('hostnum')][:30]
+                groups={}
+                for partner in partners:groups.setdefault(partner['hostnum'],[]).append(partner['pid'])
+                names={};likes=None;partial=False
+                try:
+                    if groups:
+                        lookup=await get_bulk_players_info_multi_hostnum(groups,fields=['base'])
+                        if lookup and lookup.get('code')==0:names=lookup.get('result') or {}
+                        else:partial=True
+                except Exception:partial=True
+                try:
+                    result=await get_topics_likes(target_uuid=pid,target_hostnum=host)
+                    if result and result.get('code')==0:
+                        values=[number(p.get('n_likes')) for p in (result.get('result') or {}).values() if isinstance(p,dict)]
+                        likes=sum(v for v in values if v is not None) if any(v is not None for v in values) else None
+                    else:partial=True
+                except Exception:partial=True
+                return web.json_response({'section':section,'likes':likes,'partial':partial,
+                    'partners':[{'name':(names.get(p['pid']) or {}).get('base',{}).get('nickname') or 'Name unavailable',
+                                 'number':(names.get(p['pid']) or {}).get('base',{}).get('number_id'),'favor':number(p.get('favor'))} for p in partners]},headers={'Cache-Control':'no-store'})
+            response=await fetch_player_data_by_pid(pid,hostnum=host,fields=FIELDS)
+            if not response or response.get('code')!=0:raise web.HTTPBadGateway(text='Player profile service unavailable. Try again later.')
+            data=response.get('result') or {}
+            if not data.get('base'):raise web.HTTPBadGateway(text='The game returned an incomplete player profile. Try again later.')
+            guild_name=None;club=data.get('club') or {}
+            if club.get('club_id'):
+                try:
+                    guild_response=await get_custom_guild_info(club['club_id'],hostnum=club.get('hostnum') or host,fields={'base':[]})
+                    guild_name=(guild_response or {}).get('result',{}).get('base',{}).get('name')
+                except Exception:pass # An unavailable guild must not hide a usable player profile.
+            result=profile(data,SCHOOL_NAMES,guild_name)
+            from utility import api_constants
+            result['details']=detail_groups(data,catalogue['names'],player_mappings,getattr(api_constants,'SCHOOL_RANKING',{}))
+            if not result['number'] and identifier.isascii() and identifier.isdigit():result['number']=identifier
+            result['fetched_at']=int(time.time())
+        return web.json_response(result,headers={'Cache-Control':'no-store'})
     async def static(request):
         relative=request.match_info.get('path','') or 'index.html'
         path=(HERE/'public'/relative).resolve()
         if not path.is_relative_to((HERE/'public').resolve()) or not path.is_file():raise web.HTTPNotFound()
         if relative not in ('index.html','app.js','discord-sdk.js','style.css','catalogue.json') and not relative.startswith('art/'):raise web.HTTPNotFound()
-        return web.FileResponse(path)
+        if relative=='index.html':
+            html=path.read_text(encoding='utf8').replace('href="style.css"',f'href="style.css?v={version}"').replace('src="app.js"',f'src="app.js?v={version}"')
+            return web.Response(text=html,content_type='text/html',headers={'Cache-Control':'no-store'})
+        # Revalidate mutable frontend files after a Git pull on either host.
+        return web.FileResponse(path,headers={'Cache-Control':'no-cache'} if relative in ('index.html','app.js','style.css','catalogue.json') else {})
     app.router.add_get('/api/config',config);app.router.add_post('/api/auth',auth)
     app.router.add_get('/api/snapshot',snapshot);app.router.add_get('/api/rank',rank);app.router.add_get('/api/guild',guild)
+    app.router.add_get('/api/player',player_profile)
     app.router.add_get('/{path:.*}',static)
     async def close(app):
         if live:

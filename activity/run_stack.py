@@ -5,6 +5,7 @@ from dotenv import dotenv_values
 
 HERE=Path(__file__).resolve().parent
 BOT=HERE.parent
+sys.path.insert(0,str(BOT))
 
 def funnel_matches(config,hostname,origin):
     """Private Serve is not proof of public Funnel, including foreground routes."""
@@ -48,7 +49,7 @@ def configuration(environment='test'):
         found=shutil.which('tailscale' if provider=='tailscale' else 'cloudflared')
         if not found:raise ValueError(f'Install {provider} first.')
         tunnel=Path(found)
-    for file in ['public/app.js','public/discord-sdk.js','public/catalogue.json']:
+    for file in ['server.py','player_profiles.py','player_mappings.json','runtime_version.py','public/app.js','public/discord-sdk.js','public/catalogue.json']:
         if not (HERE/file).exists():raise ValueError('Missing Activity runtime file: '+file)
     return client,branches[0],tunnel,provider,activity
 
@@ -57,6 +58,8 @@ def main():
     client,branch,tunnel,provider,activity=configuration(args.environment)
     port=8767 if args.environment=='test' else 8768
     origin=f'http://127.0.0.1:{port}'
+    from activity.runtime_version import runtime_version
+    expected_version=runtime_version()
     print(f'Configuration OK: {"test" if branch!="main" else "production"} bot, application {client}',flush=True)
     if args.check:return
     if sys.platform=='linux' and not args.activity_only and linux_bot_running():
@@ -88,6 +91,8 @@ def main():
             with urllib.request.urlopen(origin+'/api/config',timeout=2) as r:state=json.load(r)
             if state.get('service')!='wwm-activity' or state.get('mode')!='discord' or state.get('client_id')!=client:
                 raise ValueError(f'Port {port} belongs to a different Activity configuration. Stop it first.')
+            if state.get('runtime_version')!=expected_version:
+                raise ValueError(f'An older Activity server is still running on port {port}. Stop its Activity launcher before restarting; the updated runtime was not started.')
             ready=True
         except urllib.error.URLError:pass
         if not ready:
