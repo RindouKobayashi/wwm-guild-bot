@@ -32,6 +32,8 @@ with (BOT/'data/all_affix_id_english_names.csv').open(encoding='utf-8-sig',newli
         if row.get('english_name'):
             affixes[row['affix_id']]={k:row.get(v) for k,v in [('name','english_name'),('format','value_show_format'),('minimum','minimum'),('maximum','maximum')]}
 target=ROOT/'player_mappings.json'
-target.write_text(json.dumps({'sources':['data/All_Equipment_Item_Names.xlsx','data/All_Item_Names.xlsx','data/all_affix_id_english_names.csv','cogs/wwm_cog.py'],
+extra_path=BOT/'data/equipment_metadata.json'
+extra=json.loads(extra_path.read_text(encoding='utf-8')) if extra_path.exists() else {k:v for k,v in json.loads(target.read_text(encoding='utf-8')).items() if k.startswith('equipment_') or k=='legacy_limits'} if target.exists() else {}
+target.write_text(json.dumps({**extra,'sources':extra.get('sources',[])+['data/All_Equipment_Item_Names.xlsx','data/All_Item_Names.xlsx','data/all_affix_id_english_names.csv','cogs/wwm_cog.py'],
     'constants':constants,'equipment':equipment,'items':items,'affixes':affixes},ensure_ascii=False,separators=(',',':')),encoding='utf8')
 print(f'Exported {len(equipment)} equipment names, {len(items)} scoped item IDs, {len(affixes)} affixes: {target}')

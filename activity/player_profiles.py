@@ -91,38 +91,57 @@ def detail_groups(data, names, mappings, school_ranks=None, now=None):
     }
 
 
+GEAR_ORDER = ['1','2','10','11','3','4','8','5','9','21']
+GEAR_ATTRIBUTES = {'MIN_W_ATK':'Min Physical Attack','MAX_W_ATK':'Max Physical Attack',
+    'W_DEF':'Physical Defense','HP_MAX':'Max HP','STR':'Power','CON':'Body','BAS':'Momentum',
+    'CRI':'Agility','AGI':'Defense','ARCHER_DAMAGE':'Bow Damage','ARCHER_WEAKPOINT_DAMAGE':'Bow Weakpoint Damage'}
+QUALITY_NAMES = {1:'Common',2:'Uncommon',3:'Rare',4:'Epic',5:'Legendary'}
+
+
 def equipment(result, mappings):
     slots = mappings['constants']['SLOT_NAMES']; entries=[]
+    def limit(raw):
+        try:return number(float(raw)) if raw is not None else None
+        except (ValueError,TypeError):return None
+    def display_value(fmt,value):
+        if value is None:return None
+        if fmt:
+            try:return fmt.replace('米','m').replace('秒','s').replace('点','pt').format(value)
+            except (ValueError,TypeError,IndexError,KeyError):pass
+        return f'{value:g}'
     for slot,item in (result.get('wear_equips') or {}).items():
         if not isinstance(item,dict):continue
-        ex = item.get('ex') or {}; item_id = str(item.get('No',''))
+        slot=str(slot);ex=item.get('ex') or {};item_id=str(item.get('No',''))
+        metadata=mappings.get('equipment_metadata',{}).get(item_id,{})
+        tier=number(metadata.get('tier'));quality=number(metadata.get('quality_code'))
+        relayed=number(ex.get('legacy_origin_no')) is not None and ex['legacy_origin_no']>0
         affixes=[]
         for pair in ex.get('base_affixes') or []:
             if not isinstance(pair,list) or len(pair)<2:continue
             affix=mappings['affixes'].get(str(pair[0]),{})
-            display=None; fmt=affix.get('format') or ''
-            if fmt and number(pair[1]) is not None:
-                try:display=fmt.replace('米','m').replace('秒','s').replace('点','pt').format(pair[1])
-                except (ValueError,TypeError,IndexError,KeyError):pass
-            affixes.append({'name':affix.get('name') or f'Unmapped affix (ID {pair[0]})','display':display,
-                            'value':number(pair[1]),'format':affix.get('format') or None,
-                            'minimum':affix.get('minimum') or None,'maximum':affix.get('maximum') or None})
-        for affix in affixes:
-            def limit(raw):
-                try:return number(float(raw)) if raw is not None else None
-                except (ValueError,TypeError):return None
-            lo,hi,value=limit(affix['minimum']),limit(affix['maximum']),affix['value']
-            affix['roll_percent']=round((value-lo)/(hi-lo)*100,1) if value is not None and lo is not None and hi is not None and hi>lo and lo<=value<=hi else None
-            affix['range_status']='Comparable' if affix['roll_percent'] is not None else 'Fixed reference' if lo is not None and lo==hi else 'Outside reference range' if value is not None and lo is not None and hi is not None and hi>lo else 'Range unavailable'
-        entries.append({'slot':slots.get(str(slot),f'Slot {slot}'),
-                        'name':mappings['equipment'].get(item_id) or f'Unmapped equipment (ID {item_id})',
-                        'durability':number(ex.get('durability')),
-                        'retuned_count':number(ex.get('retoned')),
-                        'next_retune':number(ex.get('next_retone_ts')),
-                        'acquired':number(ex.get('gain_ts')),
-                        'attributes':[{'label':str(k),'value':number(v)} for k,v in (ex.get('base_attrs') or {}).items()],
-                        'affixes':affixes})
-    return entries
+            fmt=affix.get('format') or '';lo=limit(affix.get('minimum'));hi=limit(affix.get('maximum'));value=number(pair[1])
+            # Values at a bound can differ by floating-point noise (77.80000000000001 vs 77.8).
+            if value is not None:
+                if lo is not None and math.isclose(value,lo,rel_tol=1e-7,abs_tol=1e-9):value=lo
+                if hi is not None and math.isclose(value,hi,rel_tol=1e-7,abs_tol=1e-9):value=hi
+            valid=value is not None and lo is not None and hi is not None and 0<=lo<hi and lo<=value<=hi
+            percent=round(value/hi*100,1) if valid else None
+            status='Comparable' if percent is not None else 'Fixed reference' if lo is not None and lo==hi else 'Outside reference range' if value is not None and lo is not None and hi is not None and hi>lo else 'Range unavailable'
+            affixes.append({'name':affix.get('name') or f'Unmapped affix (ID {pair[0]})',
+                'display':display_value(fmt,value),'value':value,'format':fmt or None,
+                'minimum':lo,'maximum':hi,'minimum_display':display_value(fmt,lo),
+                'maximum_display':display_value(fmt,hi),'roll_percent':percent,'range_status':status})
+        group='Offensive' if slot in GEAR_ORDER[:4] else 'Defensive' if slot in GEAR_ORDER[4:8] else 'Ring & bow' if slot in GEAR_ORDER[8:] else 'Other'
+        label=slots.get(slot,f'Slot {slot}') if slot in ['1','2'] else mappings.get('equipment_slots',{}).get(slot,slots.get(slot,f'Slot {slot}'))
+        entries.append({'slot':label,'slot_id':slot,'group':group,
+            'name':mappings['equipment'].get(item_id) or f'Unmapped equipment (ID {item_id})',
+            'tier':tier,'quality':QUALITY_NAMES.get(quality,f'Unmapped quality (code {quality})' if quality is not None else None),
+            'set':mappings.get('equipment_sets',{}).get(str(ex.get('suffix'))),
+            'relayed':relayed,'relay_limit_percent':round(mappings.get('legacy_limits',{}).get(str(tier),0)*100,1) or None if relayed else None,
+            'durability':number(ex.get('durability')),'retuned_count':number(ex.get('retoned')),
+            'attributes':[{'label':GEAR_ATTRIBUTES.get(str(k),f'Unmapped attribute ({k})'),'value':number(v)} for k,v in (ex.get('base_attrs') or {}).items()],
+            'affixes':affixes})
+    return sorted(entries,key=lambda item:GEAR_ORDER.index(item['slot_id']) if item['slot_id'] in GEAR_ORDER else len(GEAR_ORDER))
 
 
 def collections(data, mappings):

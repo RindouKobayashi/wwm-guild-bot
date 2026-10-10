@@ -44,6 +44,36 @@ class PlayerProfileTests(unittest.TestCase):
             self.assertEqual(item['affixes'][0]['range_status'],status)
             self.assertEqual(item['retuned_count'],0)
 
+    def test_percent_of_maximum_precision_relay_and_group_order(self):
+        mappings=self.mappings()
+        rows={'8':{'No':1101663,'ex':{'suffix':2,'base_affixes':[[9793108,77.80000000000001]]}},
+              '1':{'No':1101673,'ex':{'suffix':1,'legacy_origin_no':1101673,'base_affixes':[[9713002,73.13199999999999]]}},
+              '21':{'No':1101671,'ex':{'suffix':45,'base_affixes':[]}}}
+        items=profiles.equipment({'wear_equips':rows},mappings)
+        self.assertEqual([i['slot_id'] for i in items],['1','8','21'])
+        self.assertEqual(items[0]['affixes'][0]['roll_percent'],94)
+        self.assertEqual(items[1]['affixes'][0]['roll_percent'],100)
+        self.assertEqual(items[0]['tier'],96)
+        self.assertEqual(items[0]['quality'],'Legendary')
+        self.assertEqual(items[0]['set'],'Jadeware')
+        self.assertEqual(items[1]['set'],'Formbend')
+        self.assertEqual(items[2]['set'],'Startling String')
+        self.assertTrue(items[0]['relayed'])
+        self.assertEqual(items[0]['relay_limit_percent'],94)
+        self.assertFalse(items[1]['relayed'])
+        self.assertEqual(items[2]['slot'],'Bow')
+        self.assertEqual(items[1]['group'],'Defensive')
+
+    def test_unknown_metadata_and_percentage_units(self):
+        mappings=self.mappings()
+        item=profiles.equipment({'wear_equips':{'99':{'No':-1,'ex':{'suffix':-1,'base_affixes':[[9793013,0.0846]]}}}},mappings)[0]
+        self.assertIsNone(item['tier'])
+        self.assertIsNone(item['quality'])
+        self.assertIsNone(item['set'])
+        self.assertEqual(item['group'],'Other')
+        self.assertIn('%',item['affixes'][0]['maximum_display'])
+        self.assertEqual(item['affixes'][0]['roll_percent'],94)
+
     def test_collection_names_are_scoped_and_ambiguous_not_guessed(self):
         mappings={'constants':{'COLLECTION_CATEGORY_SCOPES':{'titles':['title'],'guise':['outfit']}},
                   'items':{'1':{'resource':['Wrong currency'],'title':['Correct title'],'outfit':['A','B']}}}
