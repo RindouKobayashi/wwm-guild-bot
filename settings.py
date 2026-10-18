@@ -90,6 +90,7 @@ BOT_OWNER_ID = int(os.getenv("BOT_OWNER_ID"))
 # WWM API Settings
 WWM_UID = os.getenv("WWM_UID")
 WWM_TOKEN = os.getenv("WWM_TOKEN")
+WWM_AUTH_MODE = os.getenv("WWM_AUTH_MODE", "legacy").strip().lower()
 WWM_API_URL = os.getenv("WWM_API_URL")
 WWM_CLUB_HOSTNUMS_URL = os.getenv("WWM_CLUB_HOSTNUMS_URL")
 WWM_FULL_GUILD_URL = os.getenv("WWM_FULL_GUILD_URL")

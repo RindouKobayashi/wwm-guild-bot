@@ -1,4 +1,5 @@
 aiohappyeyeballs==2.6.1
+-r requirements-auth.txt
 aiohttp==3.13.5
 aiosignal==1.4.0
 aiosqlite==0.22.1

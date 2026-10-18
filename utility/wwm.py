@@ -11,7 +11,7 @@ import random
 import time
 from typing import Dict, Any, Optional, List, Tuple
 from settings import (
-    WWM_SALT, WWM_TOKEN_SPECIAL_KEY, WWM_TOPICS_LIKES_URL, WWM_UID, WWM_TOKEN, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL,
+    WWM_SALT, WWM_TOKEN_SPECIAL_KEY, WWM_TOPICS_LIKES_URL, WWM_UID, WWM_TOKEN, WWM_AUTH_MODE, WWM_API_URL, WWM_CLUB_HOSTNUMS_URL,
     WWM_FULL_GUILD_URL, WWM_FASHION_PLAN_URL, WWM_CLUB_BY_NAME_URL,
     WWM_CLUB_BRIEF_INFO_BATCH_URL, WWM_CLUB_CHAT_URL,
     WWM_FIND_PEOPLE_BY_NICKNAME_URL, WWM_HOST, logger,
@@ -24,12 +24,16 @@ from settings import (
 # -----------------------------------------------------------------------------
 # Shared Constants
 # -----------------------------------------------------------------------------
-async def get_default_headers():
+async def get_default_headers(token_override=None, uid_override=None):
+    request_uid = uid_override or WWM_UID
+    if WWM_AUTH_MODE == 'saved_login' and not token_override and not uid_override:
+        from wwm_auth.service import request_identity
+        request_uid = await asyncio.to_thread(request_identity)
     return {
         "Host": WWM_HOST,
         "Connection": "close",
-        "h72-ms-uid": WWM_UID,
-        "h72-ms-token": await generate_token(),
+        "h72-ms-uid": request_uid,
+        "h72-ms-token": token_override if token_override else await generate_token(),
         "Accept-Encoding": "gzip, deflate",
     "Content-Type": "application/octet-stream",
 }
@@ -244,7 +248,12 @@ async def _wwm_api_post(
     This is a non-blocking async function that uses aiohttp instead of requests,
     so it does not block the asyncio event loop.
     """
-    headers = await get_default_headers()
+    headers = await get_default_headers(token_override=token, uid_override=uid)
+    if (WWM_AUTH_MODE == 'saved_login' and not token and not uid and raw_payload is None
+            and payload.get('uid') == WWM_UID):
+        # The default payload UID is a callback/correlation field. Keep it in
+        # step with the managed header without modifying the caller's mapping.
+        payload = dict(payload, uid=headers['h72-ms-uid'][17:])
 
     # Override credentials if provided
     if uid:
@@ -256,6 +265,7 @@ async def _wwm_api_post(
     req_timeout = aiohttp.ClientTimeout(total=timeout)
 
     last_error = None
+    auth_refreshed = False
     for attempt in range(max_retries + 1):
         try:
             # Pack payload unless raw bytes are explicitly provided
@@ -287,7 +297,22 @@ async def _wwm_api_post(
                         )
                         return _convert_bytes_to_str(raw_result)
 
-                logger.warning(f"API Request failed {url}: HTTP {response.status}")
+                if response.status in (401, 403):
+                    if WWM_AUTH_MODE == 'saved_login' and not token and not auth_refreshed and attempt < max_retries:
+                        from wwm_auth.service import get_token_async
+                        rejected = headers['h72-ms-token']
+                        headers['h72-ms-token'] = await get_token_async(force=True, rejected_token=rejected)
+                        auth_refreshed = True
+                        continue
+                    logger.warning(
+                        "WWM API authorization rejected at %s: HTTP %s. "
+                        "Check token source and expiry; the updated client uses "
+                        "ms_request_token2 rather than the legacy local signer. "
+                        "This response alone does not distinguish expiry from other authorization failures.",
+                        url, response.status,
+                    )
+                else:
+                    logger.warning(f"API Request failed {url}: HTTP {response.status}")
                 return None
 
         except (
@@ -311,6 +336,17 @@ async def _wwm_api_post(
     return None
 
 async def generate_token(a: Optional[int] = None, b: str = WWM_TOKEN_SPECIAL_KEY, c: str = WWM_SALT):
+    """Use the configured saved-login provider, or the opt-in legacy signer.
+
+    The legacy formula was rejected by the observed updated endpoint. Current
+    tokens are delivered by the server; changing a timestamp is not renewal.
+    Explicit request tokens bypass provider retrieval in get_default_headers.
+    """
+    if WWM_AUTH_MODE == 'saved_login':
+        from wwm_auth.service import get_token_async
+        return await get_token_async()
+    if WWM_AUTH_MODE != 'legacy':
+        raise ValueError('WWM_AUTH_MODE must be legacy or saved_login')
     import hashlib
     # Generate fresh timestamp if not provided
     if a is None:

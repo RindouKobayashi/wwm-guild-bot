@@ -12,4 +12,8 @@ if ! .venv/bin/python -c 'import dotenv, aiohttp, discord, msgpack' >/dev/null 2
     echo 'Installing project dependencies into .venv.'
     .venv/bin/python -m pip install -r requirements.txt
 fi
+if [[ "${1:-}" != '--check' ]] && ! .venv/bin/python -c 'import cryptography' >/dev/null 2>&1; then
+    echo 'Installing portable WWM authentication dependency.'
+    .venv/bin/python -m pip install -r requirements-auth.txt
+fi
 exec .venv/bin/python -B activity/deploy/setup_pi.py "$@"

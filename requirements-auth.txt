@@ -1,0 +1,6 @@
+# Standalone saved-login provider: no mitmproxy, Steam or game installation.
+cryptography==46.0.4
+msgpack==1.1.2
+python-dotenv==1.2.2
+cffi==2.0.0
+pycparser==3.0

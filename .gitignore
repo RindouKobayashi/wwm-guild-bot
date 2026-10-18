@@ -9,3 +9,5 @@ test/
 wwm_extract/
 # Generated/private maintenance research output
 maintenance/research/output/
+# Portable login credentials, API token cache and provider locks (local only)
+.wwm-auth/
