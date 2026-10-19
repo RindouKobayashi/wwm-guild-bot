@@ -9,6 +9,14 @@ ROOT = Path(__file__).resolve().parents[1]
 BOT = ROOT.parent
 sys.path.insert(0, str(BOT))
 from utility.xlsx_reader import iter_xlsx_rows
+from utility.game_assets import current
+
+bundle = current()
+if bundle.directory:
+    target=ROOT/'player_mappings.json'
+    target.write_text(json.dumps(bundle.section('player_mappings'),ensure_ascii=False,separators=(',',':')),encoding='utf-8')
+    print('Exported player mappings from the shared validated asset bundle.')
+    raise SystemExit(0)
 
 tree = ast.parse((BOT / 'cogs/wwm_cog.py').read_text(encoding='utf8'))
 keys = {'GRADE_NAMES', 'SMALL_GRADE_SUFFIXES', 'SLOT_NAMES', 'COLLECTION_CATEGORY_SCOPES', 'MAX_ENERGY', 'ENERGY_REGEN_SECONDS'}
@@ -30,7 +38,7 @@ affixes={}
 with (BOT/'data/all_affix_id_english_names.csv').open(encoding='utf-8-sig',newline='') as f:
     for row in csv.DictReader(f):
         if row.get('english_name'):
-            affixes[row['affix_id']]={k:row.get(v) for k,v in [('name','english_name'),('format','value_show_format'),('minimum','minimum'),('maximum','maximum')]}
+            affixes[row['affix_id']]={k:row.get(v) for k,v in [('attribute_id','attribute_id'),('name','english_name'),('format','value_show_format'),('minimum','minimum'),('maximum','maximum')]}
 target=ROOT/'player_mappings.json'
 extra_path=BOT/'data/equipment_metadata.json'
 extra=json.loads(extra_path.read_text(encoding='utf-8')) if extra_path.exists() else {k:v for k,v in json.loads(target.read_text(encoding='utf-8')).items() if k.startswith('equipment_') or k=='legacy_limits'} if target.exists() else {}

@@ -11,4 +11,6 @@ def runtime_version():
         # Normalize Git's Windows/Linux text line endings.
         digest.update(name.encode())
         digest.update((root/name).read_bytes().replace(b'\r\n',b'\n'))
+    pointer=root.parent/'assets/wwm/current.json'
+    if pointer.exists():digest.update(pointer.read_bytes().replace(b'\r\n',b'\n'))
     return digest.hexdigest()[:16]

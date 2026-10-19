@@ -7,6 +7,9 @@ BOT = next(parent for parent in Path(__file__).resolve().parents if (parent / 'g
 packages = BOT / '.venv/Lib/site-packages'
 if packages.is_dir():
     sys.path.insert(0, str(packages))
-suite = unittest.defaultTestLoader.discover(str(BOT / 'maintenance/checks/tests'), pattern='test_wwm_offline_improvements.py')
+suite = unittest.TestSuite(
+    unittest.defaultTestLoader.discover(str(BOT / 'maintenance/checks/tests'), pattern=pattern)
+    for pattern in ('test_wwm_offline_improvements.py', 'test_game_asset_pipeline.py')
+)
 result = unittest.TextTestRunner(verbosity=2).run(suite)
 raise SystemExit(not result.wasSuccessful())

@@ -14,6 +14,11 @@ def normalize_title(value):
 class DungeonAssets:
     def __init__(self, root):
         self.root = Path(root).resolve()
+        from utility.game_assets import ROOT, current
+        if self.root == (ROOT.parents[1] / 'data/ranking_assets').resolve():
+            bundle = current()
+            if bundle.directory:
+                self.root = bundle.directory / 'dungeons'
         self._stamp = None
         self._entries = {}
         self._run = None

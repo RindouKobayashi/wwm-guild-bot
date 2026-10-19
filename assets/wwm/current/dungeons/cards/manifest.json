@@ -1,0 +1,4128 @@
+{
+  "source_sha256": {
+    "dungeons\\trial_rank_ids.csv": "2b3367deb07d095d34814c324b33d59c5bde5d650dd91dfaf862ad3baf09970d",
+    "dungeons\\trial_dungeons.csv": "0f659f0d205f6057995a080536ee95556a90db5512aa9b42bbd5c45add7620af",
+    "dungeon_library\\art_manifest.json": "899e49d3558cbe7ac6d5bdf540db81d3f0ca9760aad5dbb2fa8f5847fc4efce3",
+    "dungeon_library\\dungeon_catalogue.json": "8eb7bb417da4398f2737e1a49795a085d449537cb87caeeaaf52eb87dd0fdb84",
+    "bindings.json": "5eb463e7b48d9f2134cff9007950aa32a5c91fe12ff80b2315b1dbfe2c0cf430",
+    "art_manifest.json": "2e8b4cb343fafeb829e3bf641fcde89a3bc86fa2e0f7ea1e5310e71bbee07c03",
+    "dungeon_card_reviews.json": "229685607b41a387a5b0d5901e477d39d8d018076019ffdfef05317788146098",
+    "art_selection_policy": "readable-dungeon-artwork-paths-v10"
+  },
+  "boards": {
+    "hr:1": {
+      "rank_name": "rank_team10_dungeon_1",
+      "title": "Dream Jinming Pool Top 500",
+      "file": "artwork/hero-realm/dream-jinming-pool.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_09",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 63,
+              "locator": "0a0032020f013000",
+              "name": "Dream Jinming Pool",
+              "rank_id": "rank_team10_dungeon_1",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            },
+            {
+              "source": "index4:9901",
+              "key": 11,
+              "locator": "0a003502df003000",
+              "name": "Dream Jinming Pool",
+              "rank_id": "rank_team10_dungeon_1",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32000,
+              "locator": "0a0038021b033000",
+              "name": "Dream Jinming Pool",
+              "rank_id": "rank_team10_dungeon_1",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            }
+          ],
+          "file": "artwork/hero-realm/dream-jinming-pool.png",
+          "sha256": "67c93dc6ca38244c57052bd7d3001430b80f1f7a0f4b20c8ed53fc2f205cdd2d",
+          "bytes": 403407
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "dream jinming pool",
+      "mode": "normal",
+      "dungeon_rows": [
+        "4"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_09",
+      "sha256": "67c93dc6ca38244c57052bd7d3001430b80f1f7a0f4b20c8ed53fc2f205cdd2d",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "st:1": {
+      "rank_name": "rank_team_dungeon_1",
+      "title": "Formless Pass Top 500",
+      "file": "artwork/sword-trial/formless-pass.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_08",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 60,
+              "locator": "0a00320288002d00",
+              "name": "The Void King Ye Wanshan",
+              "rank_id": "rank_team_dungeon_1",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_08"
+            },
+            {
+              "source": "index4:9901",
+              "key": 12,
+              "locator": "0a0035020f012d00",
+              "name": "The Void King Ye Wanshan",
+              "rank_id": "rank_team_dungeon_1",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_08"
+            }
+          ],
+          "file": "artwork/sword-trial/formless-pass.png",
+          "sha256": "4c9abd2654c29494dc0f7f9b2ea8f3cdb442fc6e859335fdf4fe3da34e4e5ddf",
+          "bytes": 329716
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "formless pass",
+      "mode": "normal",
+      "dungeon_rows": [],
+      "resource": "wulinlu_tongyou_pic_xj_08",
+      "sha256": "4c9abd2654c29494dc0f7f9b2ea8f3cdb442fc6e859335fdf4fe3da34e4e5ddf",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "hr:2": {
+      "rank_name": "rank_team10_dungeon_2",
+      "title": "Dream Jinming Pool: Supreme Top 400",
+      "file": "artwork/hero-realm/dream-jinming-pool-supreme.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_09",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 64,
+              "locator": "0a0032023f012f00",
+              "name": "Dream Jinming Pool",
+              "rank_id": "rank_team10_dungeon_2",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32001,
+              "locator": "0a0038024b032f00",
+              "name": "Dream Jinming Pool",
+              "rank_id": "rank_team10_dungeon_2",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            },
+            {
+              "source": "index4:9901",
+              "key": 15,
+              "locator": "0a00350296012f00",
+              "name": "Dream Jinming Pool",
+              "rank_id": "rank_team10_dungeon_2",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            }
+          ],
+          "file": "artwork/hero-realm/dream-jinming-pool-supreme.png",
+          "sha256": "67c93dc6ca38244c57052bd7d3001430b80f1f7a0f4b20c8ed53fc2f205cdd2d",
+          "bytes": 403407
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "dream jinming pool supreme",
+      "mode": "normal",
+      "dungeon_rows": [
+        "10"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_09",
+      "sha256": "67c93dc6ca38244c57052bd7d3001430b80f1f7a0f4b20c8ed53fc2f205cdd2d",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "st:2": {
+      "rank_name": "rank_team_dungeon_2",
+      "title": "Fire of Blood and Iron Top 400",
+      "file": "artwork/sword-trial/fire-of-blood-and-iron.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_07",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 61,
+              "locator": "0a003202b5002d00",
+              "name": "Ye Wanshan Lucky Seventeen",
+              "rank_id": "rank_team_dungeon_2",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_07"
+            },
+            {
+              "source": "index4:9901",
+              "key": 13,
+              "locator": "0a0035023c012d00",
+              "name": "Ye Wanshan Lucky Seventeen",
+              "rank_id": "rank_team_dungeon_2",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_07"
+            }
+          ],
+          "file": "artwork/sword-trial/fire-of-blood-and-iron.png",
+          "sha256": "59e008624f015ebf315d9812da8540162be247d145ee4b0b8759c838983b5feb",
+          "bytes": 349038
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "fire of blood and iron",
+      "mode": "normal",
+      "dungeon_rows": [
+        "8",
+        "26",
+        "35",
+        "58"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_07",
+      "sha256": "59e008624f015ebf315d9812da8540162be247d145ee4b0b8759c838983b5feb",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "hr:3": {
+      "rank_name": "rank_team10_dungeon_3",
+      "title": "Blazing Gale Dance Top 300",
+      "file": "artwork/hero-realm/blazing-gale-dance.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_11",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 67,
+              "locator": "0a00320291012f00",
+              "name": "Blazing Gale Dance",
+              "rank_id": "rank_team10_dungeon_3",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_11"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32002,
+              "locator": "0a0038027a032f00",
+              "name": "Blazing Gale Dance",
+              "rank_id": "rank_team10_dungeon_3",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_11"
+            },
+            {
+              "source": "index4:9901",
+              "key": 26,
+              "locator": "0a00350292022f00",
+              "name": "Blazing Gale Dance",
+              "rank_id": "rank_team10_dungeon_3",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_11"
+            }
+          ],
+          "file": "artwork/hero-realm/blazing-gale-dance.png",
+          "sha256": "9e38992b6e307631026895e8ce028ec24dbbdb16f99969934e8167bf4bfd050b",
+          "bytes": 393517
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "blazing gale dance",
+      "mode": "normal",
+      "dungeon_rows": [
+        "12"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_11",
+      "sha256": "9e38992b6e307631026895e8ce028ec24dbbdb16f99969934e8167bf4bfd050b",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "st:3": {
+      "rank_name": "rank_team_dungeon_3",
+      "title": "Ocean of Vengeance Top 400",
+      "file": "artwork/sword-trial/ocean-of-vengeance.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_01",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 62,
+              "locator": "0a003202e2002d00",
+              "name": "The Void King Ye Wanshan Lucky Seventeen",
+              "rank_id": "rank_team_dungeon_3",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_01"
+            },
+            {
+              "source": "index4:9901",
+              "key": 14,
+              "locator": "0a00350269012d00",
+              "name": "The Void King Ye Wanshan Lucky Seventeen",
+              "rank_id": "rank_team_dungeon_3",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_01"
+            }
+          ],
+          "file": "artwork/sword-trial/ocean-of-vengeance.png",
+          "sha256": "fc1550ec9bcf6a6bf4783f22658de2732a71137154aab032d32a06a92aa0e128",
+          "bytes": 376528
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "ocean of vengeance",
+      "mode": "normal",
+      "dungeon_rows": [
+        "9",
+        "25",
+        "34",
+        "57"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_01",
+      "sha256": "fc1550ec9bcf6a6bf4783f22658de2732a71137154aab032d32a06a92aa0e128",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "hr:4": {
+      "rank_name": "rank_team10_dungeon_4",
+      "title": "Sorrow of Mortalbound Top 300",
+      "file": "artwork/hero-realm/sorrow-of-mortalbound.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_10",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 71,
+              "locator": "0a0032022a022f00",
+              "name": "Sorrow of Mortalbound",
+              "rank_id": "rank_team10_dungeon_4",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_10"
+            },
+            {
+              "source": "index4:9901",
+              "key": 302,
+              "locator": "0a003502b2052f00",
+              "name": "Sorrow of Mortalbound",
+              "rank_id": "rank_team10_dungeon_4",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_10"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32003,
+              "locator": "0a003802a9032f00",
+              "name": "Sorrow of Mortalbound",
+              "rank_id": "rank_team10_dungeon_4",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_10"
+            }
+          ],
+          "file": "artwork/hero-realm/sorrow-of-mortalbound.png",
+          "sha256": "eb56aeac42851e3b550d382f4754cda7e022883e10a237862070b8adc2f2659d",
+          "bytes": 394754
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "sorrow of mortalbound",
+      "mode": "normal",
+      "dungeon_rows": [
+        "14"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_10",
+      "sha256": "eb56aeac42851e3b550d382f4754cda7e022883e10a237862070b8adc2f2659d",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "st:4": {
+      "rank_name": "rank_team_dungeon_4",
+      "title": "Crimson Dream Top 300",
+      "file": "artwork/sword-trial/crimson-dream.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_09",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 70,
+              "locator": "0a003202fd012d00",
+              "name": "Dream Jinming Pool",
+              "rank_id": "rank_team_dungeon_4",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            },
+            {
+              "source": "index4:9901",
+              "key": 23,
+              "locator": "0a0035024a022d00",
+              "name": "Dream Jinming Pool",
+              "rank_id": "rank_team_dungeon_4",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            }
+          ],
+          "file": "artwork/sword-trial/crimson-dream.png",
+          "sha256": "67c93dc6ca38244c57052bd7d3001430b80f1f7a0f4b20c8ed53fc2f205cdd2d",
+          "bytes": 403407
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "crimson dream",
+      "mode": "normal",
+      "dungeon_rows": [
+        "13",
+        "28",
+        "40",
+        "49"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_09",
+      "sha256": "67c93dc6ca38244c57052bd7d3001430b80f1f7a0f4b20c8ed53fc2f205cdd2d",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "st:5": {
+      "rank_name": "rank_team_dungeon_5",
+      "title": "Crimson Dream - Supreme Top 300",
+      "file": "artwork/sword-trial/crimson-dream-supreme.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_09",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 72,
+              "locator": "0a00320259022d00",
+              "name": "Crimson Dream - Supreme",
+              "rank_id": "rank_team_dungeon_5",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            },
+            {
+              "source": "index4:9901",
+              "key": 19,
+              "locator": "0a003502c5012d00",
+              "name": "Crimson Dream - Supreme",
+              "rank_id": "rank_team_dungeon_5",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            }
+          ],
+          "file": "artwork/sword-trial/crimson-dream-supreme.png",
+          "sha256": "67c93dc6ca38244c57052bd7d3001430b80f1f7a0f4b20c8ed53fc2f205cdd2d",
+          "bytes": 403407
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "crimson dream supreme",
+      "mode": "normal",
+      "dungeon_rows": [
+        "15"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_09",
+      "sha256": "67c93dc6ca38244c57052bd7d3001430b80f1f7a0f4b20c8ed53fc2f205cdd2d",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "hr:6": {
+      "rank_name": "rank_team10_dungeon_6",
+      "title": "Sorrow of Mortalbound: Supreme 01 - Top 500",
+      "file": "artwork/hero-realm/sorrow-of-mortalbound-supreme-01.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_10",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 77,
+              "locator": "0a0032020e033600",
+              "name": "Sorrow of Mortalbound - Supreme",
+              "rank_id": "rank_team10_dungeon_6",
+              "rank_id_replace": [
+                "rank_team10_dungeon_60003"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_10"
+            },
+            {
+              "source": "index4:9901",
+              "key": 304,
+              "locator": "0a00350219063600",
+              "name": "Sorrow of Mortalbound - Supreme",
+              "rank_id": "rank_team10_dungeon_6",
+              "rank_id_replace": [
+                "rank_team10_dungeon_60003"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_10"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32004,
+              "locator": "0a003802d8033600",
+              "name": "Sorrow of Mortalbound - Supreme",
+              "rank_id": "rank_team10_dungeon_6",
+              "rank_id_replace": [
+                "rank_team10_dungeon_60003"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_10"
+            }
+          ],
+          "file": "artwork/hero-realm/sorrow-of-mortalbound-supreme-01.png",
+          "sha256": "eb56aeac42851e3b550d382f4754cda7e022883e10a237862070b8adc2f2659d",
+          "bytes": 394754
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "sorrow of mortalbound supreme 01",
+      "mode": "normal",
+      "dungeon_rows": [],
+      "resource": "wulinlu_tongyou_pic_xj_10",
+      "sha256": "eb56aeac42851e3b550d382f4754cda7e022883e10a237862070b8adc2f2659d",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "hr:7": {
+      "rank_name": "rank_team10_dungeon_7",
+      "title": "Yama's Seal Top 500 - Phase 1",
+      "file": "artwork/hero-realm/yamas-seal.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_13",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 75,
+              "locator": "0a003202df022f00",
+              "name": "Yama's Seal",
+              "rank_id": "rank_team10_dungeon_7",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_13"
+            },
+            {
+              "source": "index4:9901",
+              "key": 87,
+              "locator": "0a003502e5042f00",
+              "name": "Yama's Seal",
+              "rank_id": "rank_team10_dungeon_7",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_13"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32005,
+              "locator": "0a0038020e042f00",
+              "name": "Yama's Seal",
+              "rank_id": "rank_team10_dungeon_7",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_13"
+            }
+          ],
+          "file": "artwork/hero-realm/yamas-seal.png",
+          "sha256": "ff36ef127ef41763a40edff75a6a48eb32d975ea77bf276a44d43e43728d9ca4",
+          "bytes": 348993
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "yama s seal",
+      "mode": "normal",
+      "dungeon_rows": [
+        "16"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_13",
+      "sha256": "ff36ef127ef41763a40edff75a6a48eb32d975ea77bf276a44d43e43728d9ca4",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 2
+    },
+    "hr:8": {
+      "rank_name": "rank_team10_dungeon_8",
+      "title": "Yama's Seal Top 500 - Phase 1",
+      "file": "artwork/hero-realm/yamas-seal.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_13",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 91,
+              "locator": "0a0032028b052f00",
+              "name": "Yama's Seal - Supreme",
+              "rank_id": "rank_team10_dungeon_8",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_13"
+            },
+            {
+              "source": "index4:9901",
+              "key": 331,
+              "locator": "0a0036025b012f00",
+              "name": "Yama's Seal - Supreme",
+              "rank_id": "rank_team10_dungeon_8",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_13"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32007,
+              "locator": "0a0038026c042f00",
+              "name": "Yama's Seal - Supreme",
+              "rank_id": "rank_team10_dungeon_8",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_13"
+            }
+          ],
+          "file": "artwork/hero-realm/yamas-seal.png",
+          "sha256": "ff36ef127ef41763a40edff75a6a48eb32d975ea77bf276a44d43e43728d9ca4",
+          "bytes": 348993
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "yama s seal",
+      "mode": "normal",
+      "dungeon_rows": [
+        "16"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_13",
+      "sha256": "ff36ef127ef41763a40edff75a6a48eb32d975ea77bf276a44d43e43728d9ca4",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 2
+    },
+    "st:8": {
+      "rank_name": "rank_team_dungeon_8",
+      "title": "Drunken Verse 01 - Top 500",
+      "file": "artwork/sword-trial/drunken-verse-01.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_12",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 73,
+              "locator": "0a00320286023800",
+              "name": "Drunken Verse",
+              "rank_id": "rank_team_dungeon_8",
+              "rank_id_replace": [
+                "rank_team_dungeon_60001",
+                "rank_team_dungeon_60002"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_12"
+            },
+            {
+              "source": "index4:9901",
+              "key": 303,
+              "locator": "0a003502e1053800",
+              "name": "Drunken Verse",
+              "rank_id": "rank_team_dungeon_8",
+              "rank_id_replace": [
+                "rank_team_dungeon_60001",
+                "rank_team_dungeon_60002"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_12"
+            }
+          ],
+          "file": "artwork/sword-trial/drunken-verse-01.png",
+          "sha256": "efc470eb3d4f86666f7e24fe8a68b9f072b62dfc07559bcfa794f49d0e378284",
+          "bytes": 345076
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "drunken verse 01",
+      "mode": "normal",
+      "dungeon_rows": [],
+      "resource": "wulinlu_tongyou_pic_xj_12",
+      "sha256": "efc470eb3d4f86666f7e24fe8a68b9f072b62dfc07559bcfa794f49d0e378284",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "hr:10": {
+      "rank_name": "rank_team10_dungeon_10",
+      "title": "Bloodstained Sands Top 500",
+      "file": "artwork/hero-realm/bloodstained-sands.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_16",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 89,
+              "locator": "0a00320223052f00",
+              "name": "Bloodstained Sands",
+              "rank_id": "rank_team10_dungeon_10",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_16"
+            },
+            {
+              "source": "index4:9901",
+              "key": 311,
+              "locator": "0a0035024e072f00",
+              "name": "Bloodstained Sands",
+              "rank_id": "rank_team10_dungeon_10",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_16"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32006,
+              "locator": "0a0038023d042f00",
+              "name": "Bloodstained Sands",
+              "rank_id": "rank_team10_dungeon_10",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_16"
+            }
+          ],
+          "file": "artwork/hero-realm/bloodstained-sands.png",
+          "sha256": "430e00540d1363a41172fa46ab05fa6cc87136d4f4126ea6abde15166f79afd8",
+          "bytes": 336635
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "bloodstained sands",
+      "mode": "normal",
+      "dungeon_rows": [
+        "31"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_16",
+      "sha256": "430e00540d1363a41172fa46ab05fa6cc87136d4f4126ea6abde15166f79afd8",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "hr:11": {
+      "rank_name": "rank_team10_dungeon_11",
+      "title": "Bloodstained Sands: Supreme Top 500 - Phase 1",
+      "file": "artwork/hero-realm/bloodstained-sands-supreme.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_16",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 100,
+              "locator": "0a00320235073600",
+              "name": "Bloodstained Sands - Supreme",
+              "rank_id": "rank_team10_dungeon_11",
+              "rank_id_replace": [
+                "rank_team10_dungeon_12"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_16"
+            },
+            {
+              "source": "index4:9901",
+              "key": 348,
+              "locator": "0a003602de023600",
+              "name": "Bloodstained Sands - Supreme",
+              "rank_id": "rank_team10_dungeon_11",
+              "rank_id_replace": [
+                "rank_team10_dungeon_12"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_16"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32008,
+              "locator": "0a0038029b043600",
+              "name": "Bloodstained Sands - Supreme",
+              "rank_id": "rank_team10_dungeon_11",
+              "rank_id_replace": [
+                "rank_team10_dungeon_12"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_16"
+            }
+          ],
+          "file": "artwork/hero-realm/bloodstained-sands-supreme.png",
+          "sha256": "430e00540d1363a41172fa46ab05fa6cc87136d4f4126ea6abde15166f79afd8",
+          "bytes": 336635
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "bloodstained sands supreme",
+      "mode": "normal",
+      "dungeon_rows": [
+        "38"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_16",
+      "sha256": "430e00540d1363a41172fa46ab05fa6cc87136d4f4126ea6abde15166f79afd8",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 2
+    },
+    "st:11": {
+      "rank_name": "rank_team_dungeon_11",
+      "title": "Abyssal Lament Top 500 - Phase 1",
+      "file": "artwork/sword-trial/abyssal-lament.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_15",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 90,
+              "locator": "0a00320252053900",
+              "name": "Abyssal Lament",
+              "rank_id": "rank_team_dungeon_11",
+              "rank_id_replace": [
+                "rank_team_dungeon_12",
+                "rank_team_dungeon_60004"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_15"
+            },
+            {
+              "source": "index4:9901",
+              "key": 305,
+              "locator": "0a0035024f063900",
+              "name": "Abyssal Lament",
+              "rank_id": "rank_team_dungeon_11",
+              "rank_id_replace": [
+                "rank_team_dungeon_12",
+                "rank_team_dungeon_60004"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_15"
+            }
+          ],
+          "file": "artwork/sword-trial/abyssal-lament.png",
+          "sha256": "9c2fd0135d14bc2c76138de720c76cd3f5485da7f3e3046370a0d91229d0aedd",
+          "bytes": 375190
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "abyssal lament",
+      "mode": "normal",
+      "dungeon_rows": [
+        "20",
+        "56",
+        "72"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_15",
+      "sha256": "9c2fd0135d14bc2c76138de720c76cd3f5485da7f3e3046370a0d91229d0aedd",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:12": {
+      "rank_name": "rank_team10_dungeon_12",
+      "title": "Bloodstained Sands: Supreme Top 500 - Phase 2",
+      "file": "artwork/hero-realm/bloodstained-sands-supreme.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_16",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 100,
+              "locator": "0a00320235073600",
+              "name": "Bloodstained Sands - Supreme",
+              "rank_id": "rank_team10_dungeon_11",
+              "rank_id_replace": [
+                "rank_team10_dungeon_12"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_16"
+            },
+            {
+              "source": "index4:9901",
+              "key": 348,
+              "locator": "0a003602de023600",
+              "name": "Bloodstained Sands - Supreme",
+              "rank_id": "rank_team10_dungeon_11",
+              "rank_id_replace": [
+                "rank_team10_dungeon_12"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_16"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32008,
+              "locator": "0a0038029b043600",
+              "name": "Bloodstained Sands - Supreme",
+              "rank_id": "rank_team10_dungeon_11",
+              "rank_id_replace": [
+                "rank_team10_dungeon_12"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_16"
+            }
+          ],
+          "file": "artwork/hero-realm/bloodstained-sands-supreme.png",
+          "sha256": "430e00540d1363a41172fa46ab05fa6cc87136d4f4126ea6abde15166f79afd8",
+          "bytes": 336635
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "bloodstained sands supreme",
+      "mode": "normal",
+      "dungeon_rows": [
+        "38"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_16",
+      "sha256": "430e00540d1363a41172fa46ab05fa6cc87136d4f4126ea6abde15166f79afd8",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 2
+    },
+    "st:12": {
+      "rank_name": "rank_team_dungeon_12",
+      "title": "Abyssal Lament Top 500 - Phase 2",
+      "file": "artwork/sword-trial/abyssal-lament.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_15",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 90,
+              "locator": "0a00320252053900",
+              "name": "Abyssal Lament",
+              "rank_id": "rank_team_dungeon_11",
+              "rank_id_replace": [
+                "rank_team_dungeon_12",
+                "rank_team_dungeon_60004"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_15"
+            },
+            {
+              "source": "index4:9901",
+              "key": 305,
+              "locator": "0a0035024f063900",
+              "name": "Abyssal Lament",
+              "rank_id": "rank_team_dungeon_11",
+              "rank_id_replace": [
+                "rank_team_dungeon_12",
+                "rank_team_dungeon_60004"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_15"
+            }
+          ],
+          "file": "artwork/sword-trial/abyssal-lament.png",
+          "sha256": "9c2fd0135d14bc2c76138de720c76cd3f5485da7f3e3046370a0d91229d0aedd",
+          "bytes": 375190
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "abyssal lament",
+      "mode": "normal",
+      "dungeon_rows": [
+        "20",
+        "56",
+        "72"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_15",
+      "sha256": "9c2fd0135d14bc2c76138de720c76cd3f5485da7f3e3046370a0d91229d0aedd",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:13": {
+      "rank_name": "rank_team10_dungeon_13",
+      "title": "Resounding Majesty Top 500 Phase 1",
+      "file": "artwork/hero-realm/resounding-majesty.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_18",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 92,
+              "locator": "0a003202ba053600",
+              "name": "Resounding Majesty",
+              "rank_id": "rank_team10_dungeon_13",
+              "rank_id_replace": [
+                "rank_team10_dungeon_14"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_18"
+            },
+            {
+              "source": "index4:9901",
+              "key": 336,
+              "locator": "0a0036028a013600",
+              "name": "Resounding Majesty",
+              "rank_id": "rank_team10_dungeon_13",
+              "rank_id_replace": [
+                "rank_team10_dungeon_14"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_18"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32009,
+              "locator": "0a003802d1043600",
+              "name": "Resounding Majesty",
+              "rank_id": "rank_team10_dungeon_13",
+              "rank_id_replace": [
+                "rank_team10_dungeon_14"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_18"
+            }
+          ],
+          "file": "artwork/hero-realm/resounding-majesty.png",
+          "sha256": "10698dd854482c7afc5e4ad4ee574fe90bcf7c334ac2dbcb6fa728ec8f404108",
+          "bytes": 359880
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "resounding majesty",
+      "mode": "normal",
+      "dungeon_rows": [
+        "32"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_18",
+      "sha256": "10698dd854482c7afc5e4ad4ee574fe90bcf7c334ac2dbcb6fa728ec8f404108",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 2
+    },
+    "st:13": {
+      "rank_name": "rank_team_dungeon_13",
+      "title": "Serpent's Fang Top 500 - Phase 1",
+      "file": "artwork/sword-trial/serpents-fang.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_17",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 93,
+              "locator": "0a003202f0053800",
+              "name": "Serpent's Fang",
+              "rank_id": "rank_team_dungeon_13",
+              "rank_id_replace": [
+                "rank_team_dungeon_14",
+                "rank_team_dungeon_15"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_17"
+            },
+            {
+              "source": "index4:9901",
+              "key": 338,
+              "locator": "0a003602c0013800",
+              "name": "Serpent's Fang",
+              "rank_id": "rank_team_dungeon_13",
+              "rank_id_replace": [
+                "rank_team_dungeon_14",
+                "rank_team_dungeon_15"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_17"
+            }
+          ],
+          "file": "artwork/sword-trial/serpents-fang.png",
+          "sha256": "4d82a85d196468ceb24d1a616d8e0eca27134507323d2137de7dc7b6a6ed8a40",
+          "bytes": 359810
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "serpent s fang",
+      "mode": "normal",
+      "dungeon_rows": [
+        "33",
+        "53",
+        "70"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_17",
+      "sha256": "4d82a85d196468ceb24d1a616d8e0eca27134507323d2137de7dc7b6a6ed8a40",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:14": {
+      "rank_name": "rank_team10_dungeon_14",
+      "title": "Resounding Majesty Top 500 Phase 2",
+      "file": "artwork/hero-realm/resounding-majesty.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_18",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 92,
+              "locator": "0a003202ba053600",
+              "name": "Resounding Majesty",
+              "rank_id": "rank_team10_dungeon_13",
+              "rank_id_replace": [
+                "rank_team10_dungeon_14"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_18"
+            },
+            {
+              "source": "index4:9901",
+              "key": 336,
+              "locator": "0a0036028a013600",
+              "name": "Resounding Majesty",
+              "rank_id": "rank_team10_dungeon_13",
+              "rank_id_replace": [
+                "rank_team10_dungeon_14"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_18"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32009,
+              "locator": "0a003802d1043600",
+              "name": "Resounding Majesty",
+              "rank_id": "rank_team10_dungeon_13",
+              "rank_id_replace": [
+                "rank_team10_dungeon_14"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_18"
+            }
+          ],
+          "file": "artwork/hero-realm/resounding-majesty.png",
+          "sha256": "10698dd854482c7afc5e4ad4ee574fe90bcf7c334ac2dbcb6fa728ec8f404108",
+          "bytes": 359880
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "resounding majesty",
+      "mode": "normal",
+      "dungeon_rows": [
+        "32"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_18",
+      "sha256": "10698dd854482c7afc5e4ad4ee574fe90bcf7c334ac2dbcb6fa728ec8f404108",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 2
+    },
+    "st:14": {
+      "rank_name": "rank_team_dungeon_14",
+      "title": "Serpent's Fang Top 500 - Phase 2",
+      "file": "artwork/sword-trial/serpents-fang.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_17",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 93,
+              "locator": "0a003202f0053800",
+              "name": "Serpent's Fang",
+              "rank_id": "rank_team_dungeon_13",
+              "rank_id_replace": [
+                "rank_team_dungeon_14",
+                "rank_team_dungeon_15"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_17"
+            },
+            {
+              "source": "index4:9901",
+              "key": 338,
+              "locator": "0a003602c0013800",
+              "name": "Serpent's Fang",
+              "rank_id": "rank_team_dungeon_13",
+              "rank_id_replace": [
+                "rank_team_dungeon_14",
+                "rank_team_dungeon_15"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_17"
+            }
+          ],
+          "file": "artwork/sword-trial/serpents-fang.png",
+          "sha256": "4d82a85d196468ceb24d1a616d8e0eca27134507323d2137de7dc7b6a6ed8a40",
+          "bytes": 359810
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "serpent s fang",
+      "mode": "normal",
+      "dungeon_rows": [
+        "33",
+        "53",
+        "70"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_17",
+      "sha256": "4d82a85d196468ceb24d1a616d8e0eca27134507323d2137de7dc7b6a6ed8a40",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:15": {
+      "rank_name": "rank_team_dungeon_15",
+      "title": "Serpent's Fang Top 750 Phase 3",
+      "file": "artwork/sword-trial/serpents-fang.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_17",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 93,
+              "locator": "0a003202f0053800",
+              "name": "Serpent's Fang",
+              "rank_id": "rank_team_dungeon_13",
+              "rank_id_replace": [
+                "rank_team_dungeon_14",
+                "rank_team_dungeon_15"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_17"
+            },
+            {
+              "source": "index4:9901",
+              "key": 338,
+              "locator": "0a003602c0013800",
+              "name": "Serpent's Fang",
+              "rank_id": "rank_team_dungeon_13",
+              "rank_id_replace": [
+                "rank_team_dungeon_14",
+                "rank_team_dungeon_15"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_17"
+            }
+          ],
+          "file": "artwork/sword-trial/serpents-fang.png",
+          "sha256": "4d82a85d196468ceb24d1a616d8e0eca27134507323d2137de7dc7b6a6ed8a40",
+          "bytes": 359810
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "serpent s fang",
+      "mode": "normal",
+      "dungeon_rows": [
+        "33",
+        "53",
+        "70"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_17",
+      "sha256": "4d82a85d196468ceb24d1a616d8e0eca27134507323d2137de7dc7b6a6ed8a40",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:17": {
+      "rank_name": "rank_team10_dungeon_17",
+      "title": "Ravening Banes Top 500 Phase 1",
+      "file": "artwork/hero-realm/ravening-banes.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_20",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 132,
+              "locator": "0a003302dc013600",
+              "name": "Ravening Banes",
+              "rank_id": "rank_team10_dungeon_17",
+              "rank_id_replace": [
+                "rank_team10_dungeon_18"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            },
+            {
+              "source": "index4:9901",
+              "key": 351,
+              "locator": "0a0036026e033600",
+              "name": "Ravening Banes",
+              "rank_id": "rank_team10_dungeon_17",
+              "rank_id_replace": [
+                "rank_team10_dungeon_18"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32010,
+              "locator": "0a00380207053600",
+              "name": "Ravening Banes",
+              "rank_id": "rank_team10_dungeon_17",
+              "rank_id_replace": [
+                "rank_team10_dungeon_18"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            }
+          ],
+          "file": "artwork/hero-realm/ravening-banes.png",
+          "sha256": "5e53edc3104f4f8684c102505897b5c624e22bbd50163498c177dbbe4c4ce56d",
+          "bytes": 347161
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "ravening banes",
+      "mode": "normal",
+      "dungeon_rows": [
+        "41"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_20",
+      "sha256": "5e53edc3104f4f8684c102505897b5c624e22bbd50163498c177dbbe4c4ce56d",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 2
+    },
+    "st:17": {
+      "rank_name": "rank_team_dungeon_17",
+      "title": "Landscourge Thunder Top 750 Phase 1",
+      "file": "artwork/sword-trial/landscourge-thunder.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_19",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 144,
+              "locator": "0a00330296023b00",
+              "name": "Landscourge Thunder",
+              "rank_id": "rank_team_dungeon_17",
+              "rank_id_replace": [
+                "rank_team_dungeon_18",
+                "rank_team_dungeon_19"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            },
+            {
+              "source": "index4:9901",
+              "key": 352,
+              "locator": "0a003602a4033b00",
+              "name": "Landscourge Thunder",
+              "rank_id": "rank_team_dungeon_17",
+              "rank_id_replace": [
+                "rank_team_dungeon_18",
+                "rank_team_dungeon_19"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            }
+          ],
+          "file": "artwork/sword-trial/landscourge-thunder.png",
+          "sha256": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
+          "bytes": 279534
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "landscourge thunder",
+      "mode": "normal",
+      "dungeon_rows": [
+        "42",
+        "55",
+        "71"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_19",
+      "sha256": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:18": {
+      "rank_name": "rank_team10_dungeon_18",
+      "title": "Ravening Banes Top 500 Phase 2",
+      "file": "artwork/hero-realm/ravening-banes.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_20",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 132,
+              "locator": "0a003302dc013600",
+              "name": "Ravening Banes",
+              "rank_id": "rank_team10_dungeon_17",
+              "rank_id_replace": [
+                "rank_team10_dungeon_18"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            },
+            {
+              "source": "index4:9901",
+              "key": 351,
+              "locator": "0a0036026e033600",
+              "name": "Ravening Banes",
+              "rank_id": "rank_team10_dungeon_17",
+              "rank_id_replace": [
+                "rank_team10_dungeon_18"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32010,
+              "locator": "0a00380207053600",
+              "name": "Ravening Banes",
+              "rank_id": "rank_team10_dungeon_17",
+              "rank_id_replace": [
+                "rank_team10_dungeon_18"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            }
+          ],
+          "file": "artwork/hero-realm/ravening-banes.png",
+          "sha256": "5e53edc3104f4f8684c102505897b5c624e22bbd50163498c177dbbe4c4ce56d",
+          "bytes": 347161
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "ravening banes",
+      "mode": "normal",
+      "dungeon_rows": [
+        "41"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_20",
+      "sha256": "5e53edc3104f4f8684c102505897b5c624e22bbd50163498c177dbbe4c4ce56d",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 2
+    },
+    "st:18": {
+      "rank_name": "rank_team_dungeon_18",
+      "title": "Landscourge Thunder Top 750 Phase 2",
+      "file": "artwork/sword-trial/landscourge-thunder.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_19",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 144,
+              "locator": "0a00330296023b00",
+              "name": "Landscourge Thunder",
+              "rank_id": "rank_team_dungeon_17",
+              "rank_id_replace": [
+                "rank_team_dungeon_18",
+                "rank_team_dungeon_19"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            },
+            {
+              "source": "index4:9901",
+              "key": 352,
+              "locator": "0a003602a4033b00",
+              "name": "Landscourge Thunder",
+              "rank_id": "rank_team_dungeon_17",
+              "rank_id_replace": [
+                "rank_team_dungeon_18",
+                "rank_team_dungeon_19"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            }
+          ],
+          "file": "artwork/sword-trial/landscourge-thunder.png",
+          "sha256": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
+          "bytes": 279534
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "landscourge thunder",
+      "mode": "normal",
+      "dungeon_rows": [
+        "42",
+        "55",
+        "71"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_19",
+      "sha256": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:19": {
+      "rank_name": "rank_team_dungeon_19",
+      "title": "Landscourge Thunder Top 750 Phase 3",
+      "file": "artwork/sword-trial/landscourge-thunder.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_19",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 144,
+              "locator": "0a00330296023b00",
+              "name": "Landscourge Thunder",
+              "rank_id": "rank_team_dungeon_17",
+              "rank_id_replace": [
+                "rank_team_dungeon_18",
+                "rank_team_dungeon_19"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            },
+            {
+              "source": "index4:9901",
+              "key": 352,
+              "locator": "0a003602a4033b00",
+              "name": "Landscourge Thunder",
+              "rank_id": "rank_team_dungeon_17",
+              "rank_id_replace": [
+                "rank_team_dungeon_18",
+                "rank_team_dungeon_19"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            }
+          ],
+          "file": "artwork/sword-trial/landscourge-thunder.png",
+          "sha256": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
+          "bytes": 279534
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "landscourge thunder",
+      "mode": "normal",
+      "dungeon_rows": [
+        "42",
+        "55",
+        "71"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_19",
+      "sha256": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:20": {
+      "rank_name": "rank_team10_dungeon_20",
+      "title": "Ravening Banes - Challenge Top 500 - Phase 1",
+      "file": "artwork/hero-realm/ravening-banes-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_20",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 149,
+              "locator": "0a003302a2033200",
+              "name": "Ravening Banes: Challenge",
+              "rank_id": "rank_team10_dungeon_20",
+              "rank_id_replace": [
+                "rank_team10_dungeon_21"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            },
+            {
+              "source": "index4:9901",
+              "key": 369,
+              "locator": "0a003602d8043200",
+              "name": "Ravening Banes: Challenge",
+              "rank_id": "rank_team10_dungeon_20",
+              "rank_id_replace": [
+                "rank_team10_dungeon_21"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            }
+          ],
+          "file": "artwork/hero-realm/ravening-banes-challenge.png",
+          "sha256": "5e53edc3104f4f8684c102505897b5c624e22bbd50163498c177dbbe4c4ce56d",
+          "bytes": 347161
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "ravening banes",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "46"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_20",
+      "sha256": "5e53edc3104f4f8684c102505897b5c624e22bbd50163498c177dbbe4c4ce56d",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 2
+    },
+    "st:20": {
+      "rank_name": "rank_team_dungeon_20",
+      "title": "Landscourge Thunder - Challenge Top 750 - Phase 1",
+      "file": "artwork/sword-trial/landscourge-thunder-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_19",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 147,
+              "locator": "0a00330230033a00",
+              "name": "Landscourge Thunder: Challenge",
+              "rank_id": "rank_team_dungeon_20",
+              "rank_id_replace": [
+                "rank_team_dungeon_21",
+                "rank_team_dungeon_60039"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            },
+            {
+              "source": "index4:9901",
+              "key": 367,
+              "locator": "0a0036029e043a00",
+              "name": "Landscourge Thunder: Challenge",
+              "rank_id": "rank_team_dungeon_20",
+              "rank_id_replace": [
+                "rank_team_dungeon_21",
+                "rank_team_dungeon_60039"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            }
+          ],
+          "file": "artwork/sword-trial/landscourge-thunder-challenge.png",
+          "sha256": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
+          "bytes": 279534
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "landscourge thunder",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "44"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_19",
+      "sha256": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:21": {
+      "rank_name": "rank_team10_dungeon_21",
+      "title": "Ravening Banes - Challenge Top 500 - Phase 2",
+      "file": "artwork/hero-realm/ravening-banes-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_20",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 149,
+              "locator": "0a003302a2033200",
+              "name": "Ravening Banes: Challenge",
+              "rank_id": "rank_team10_dungeon_20",
+              "rank_id_replace": [
+                "rank_team10_dungeon_21"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            },
+            {
+              "source": "index4:9901",
+              "key": 369,
+              "locator": "0a003602d8043200",
+              "name": "Ravening Banes: Challenge",
+              "rank_id": "rank_team10_dungeon_20",
+              "rank_id_replace": [
+                "rank_team10_dungeon_21"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            }
+          ],
+          "file": "artwork/hero-realm/ravening-banes-challenge.png",
+          "sha256": "5e53edc3104f4f8684c102505897b5c624e22bbd50163498c177dbbe4c4ce56d",
+          "bytes": 347161
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "ravening banes",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "46"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_20",
+      "sha256": "5e53edc3104f4f8684c102505897b5c624e22bbd50163498c177dbbe4c4ce56d",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 2
+    },
+    "st:21": {
+      "rank_name": "rank_team_dungeon_21",
+      "title": "Landscourge Thunder - Challenge Top 750 - Phase 2",
+      "file": "artwork/sword-trial/landscourge-thunder-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_19",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 147,
+              "locator": "0a00330230033a00",
+              "name": "Landscourge Thunder: Challenge",
+              "rank_id": "rank_team_dungeon_20",
+              "rank_id_replace": [
+                "rank_team_dungeon_21",
+                "rank_team_dungeon_60039"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            },
+            {
+              "source": "index4:9901",
+              "key": 367,
+              "locator": "0a0036029e043a00",
+              "name": "Landscourge Thunder: Challenge",
+              "rank_id": "rank_team_dungeon_20",
+              "rank_id_replace": [
+                "rank_team_dungeon_21",
+                "rank_team_dungeon_60039"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            }
+          ],
+          "file": "artwork/sword-trial/landscourge-thunder-challenge.png",
+          "sha256": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
+          "bytes": 279534
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "landscourge thunder",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "44"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_19",
+      "sha256": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:22": {
+      "rank_name": "rank_team10_dungeon_22",
+      "title": "Carnival Voyage Top 500 - Phase 1",
+      "file": "artwork/hero-realm/carnival-voyage.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_22",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 146,
+              "locator": "0a003302f5023b00",
+              "name": "Carnival Voyage",
+              "rank_id": "rank_team10_dungeon_22",
+              "rank_id_replace": [
+                "rank_team10_dungeon_23",
+                "rank_team10_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32011,
+              "locator": "0a0038023d053b00",
+              "name": "Carnival Voyage",
+              "rank_id": "rank_team10_dungeon_22",
+              "rank_id_replace": [
+                "rank_team10_dungeon_23",
+                "rank_team10_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "index4:9901",
+              "key": 363,
+              "locator": "0a0036023f043b00",
+              "name": "Carnival Voyage",
+              "rank_id": "rank_team10_dungeon_22",
+              "rank_id_replace": [
+                "rank_team10_dungeon_23",
+                "rank_team10_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            }
+          ],
+          "file": "artwork/hero-realm/carnival-voyage.png",
+          "sha256": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
+          "bytes": 364179
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "carnival voyage",
+      "mode": "normal",
+      "dungeon_rows": [
+        "43"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_22",
+      "sha256": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:22": {
+      "rank_name": "rank_team_dungeon_22",
+      "title": "Dragonscale Tamer Top 500 - Phase 1",
+      "file": "artwork/sword-trial/dragonscale-tamer.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_21",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 148,
+              "locator": "0a0033026a033800",
+              "name": "Dragonscale Tamer",
+              "rank_id": "rank_team_dungeon_22",
+              "rank_id_replace": [
+                "rank_team_dungeon_27",
+                "rank_team_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "index4:9901",
+              "key": 370,
+              "locator": "0a0036020a053800",
+              "name": "Dragonscale Tamer",
+              "rank_id": "rank_team_dungeon_22",
+              "rank_id_replace": [
+                "rank_team_dungeon_27",
+                "rank_team_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            }
+          ],
+          "file": "artwork/sword-trial/dragonscale-tamer.png",
+          "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+          "bytes": 278648
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "dragonscale tamer",
+      "mode": "normal",
+      "dungeon_rows": [
+        "45",
+        "73"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_21",
+      "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 4
+    },
+    "hr:23": {
+      "rank_name": "rank_team10_dungeon_23",
+      "title": "Carnival Voyage Top 500 - Phase 2",
+      "file": "artwork/hero-realm/carnival-voyage.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_22",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 146,
+              "locator": "0a003302f5023b00",
+              "name": "Carnival Voyage",
+              "rank_id": "rank_team10_dungeon_22",
+              "rank_id_replace": [
+                "rank_team10_dungeon_23",
+                "rank_team10_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32011,
+              "locator": "0a0038023d053b00",
+              "name": "Carnival Voyage",
+              "rank_id": "rank_team10_dungeon_22",
+              "rank_id_replace": [
+                "rank_team10_dungeon_23",
+                "rank_team10_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "index4:9901",
+              "key": 363,
+              "locator": "0a0036023f043b00",
+              "name": "Carnival Voyage",
+              "rank_id": "rank_team10_dungeon_22",
+              "rank_id_replace": [
+                "rank_team10_dungeon_23",
+                "rank_team10_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            }
+          ],
+          "file": "artwork/hero-realm/carnival-voyage.png",
+          "sha256": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
+          "bytes": 364179
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "carnival voyage",
+      "mode": "normal",
+      "dungeon_rows": [
+        "43"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_22",
+      "sha256": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:23": {
+      "rank_name": "rank_team_dungeon_23",
+      "title": "Dragonscale Tamer Top 750 - Phase 2",
+      "file": "artwork/sword-trial/dragonscale-tamer.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_21",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 148,
+              "locator": "0a0033026a033800",
+              "name": "Dragonscale Tamer",
+              "rank_id": "rank_team_dungeon_22",
+              "rank_id_replace": [
+                "rank_team_dungeon_27",
+                "rank_team_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "index4:9901",
+              "key": 370,
+              "locator": "0a0036020a053800",
+              "name": "Dragonscale Tamer",
+              "rank_id": "rank_team_dungeon_22",
+              "rank_id_replace": [
+                "rank_team_dungeon_27",
+                "rank_team_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            }
+          ],
+          "file": "artwork/sword-trial/dragonscale-tamer.png",
+          "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+          "bytes": 278648
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; exact extracted activity-card name/mode and ranking namespace",
+      "join": "exact extracted activity-card name/mode and ranking namespace",
+      "alias_used": false,
+      "dungeon_family": "dragonscale tamer",
+      "mode": "normal",
+      "dungeon_rows": [
+        "45",
+        "73"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_21",
+      "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 4
+    },
+    "hr:24": {
+      "rank_name": "rank_team10_dungeon_24",
+      "title": "Carnival Voyage Top 500 - Phase 3",
+      "file": "artwork/hero-realm/carnival-voyage.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_22",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 146,
+              "locator": "0a003302f5023b00",
+              "name": "Carnival Voyage",
+              "rank_id": "rank_team10_dungeon_22",
+              "rank_id_replace": [
+                "rank_team10_dungeon_23",
+                "rank_team10_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32011,
+              "locator": "0a0038023d053b00",
+              "name": "Carnival Voyage",
+              "rank_id": "rank_team10_dungeon_22",
+              "rank_id_replace": [
+                "rank_team10_dungeon_23",
+                "rank_team10_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "index4:9901",
+              "key": 363,
+              "locator": "0a0036023f043b00",
+              "name": "Carnival Voyage",
+              "rank_id": "rank_team10_dungeon_22",
+              "rank_id_replace": [
+                "rank_team10_dungeon_23",
+                "rank_team10_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            }
+          ],
+          "file": "artwork/hero-realm/carnival-voyage.png",
+          "sha256": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
+          "bytes": 364179
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "carnival voyage",
+      "mode": "normal",
+      "dungeon_rows": [
+        "43"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_22",
+      "sha256": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:24": {
+      "rank_name": "rank_team_dungeon_24",
+      "title": "Dragonscale Tamer Top 750 - Phase 3",
+      "file": "artwork/sword-trial/dragonscale-tamer.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_21",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 148,
+              "locator": "0a0033026a033800",
+              "name": "Dragonscale Tamer",
+              "rank_id": "rank_team_dungeon_22",
+              "rank_id_replace": [
+                "rank_team_dungeon_27",
+                "rank_team_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "index4:9901",
+              "key": 370,
+              "locator": "0a0036020a053800",
+              "name": "Dragonscale Tamer",
+              "rank_id": "rank_team_dungeon_22",
+              "rank_id_replace": [
+                "rank_team_dungeon_27",
+                "rank_team_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            }
+          ],
+          "file": "artwork/sword-trial/dragonscale-tamer.png",
+          "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+          "bytes": 278648
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "dragonscale tamer",
+      "mode": "normal",
+      "dungeon_rows": [
+        "45",
+        "73"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_21",
+      "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 4
+    },
+    "hr:25": {
+      "rank_name": "rank_team10_dungeon_25",
+      "title": "Carnival Voyage - Challenge Top 500 - Phase 1",
+      "file": "artwork/hero-realm/carnival-voyage-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_22",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 168,
+              "locator": "0a00330298053900",
+              "name": "Carnival Voyage: Challenge",
+              "rank_id": "rank_team10_dungeon_25",
+              "rank_id_replace": [
+                "rank_team10_dungeon_26",
+                "rank_team10_dungeon_27"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "index4:9901",
+              "key": 386,
+              "locator": "0a003602c4063900",
+              "name": "Carnival Voyage: Challenge",
+              "rank_id": "rank_team10_dungeon_25",
+              "rank_id_replace": [
+                "rank_team10_dungeon_26",
+                "rank_team10_dungeon_27"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            }
+          ],
+          "file": "artwork/hero-realm/carnival-voyage-challenge.png",
+          "sha256": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
+          "bytes": 364179
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "carnival voyage",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "59"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_22",
+      "sha256": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:25": {
+      "rank_name": "rank_team_dungeon_25",
+      "title": "Dragonscale Tamer - Challenge Top 500 - Phase 1",
+      "file": "artwork/sword-trial/dragonscale-tamer-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_21",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 169,
+              "locator": "0a003302d1053800",
+              "name": "Dragonscale Tamer - Challenge",
+              "rank_id": "rank_team_dungeon_25",
+              "rank_id_replace": [
+                "rank_team_dungeon_26",
+                "rank_team_dungeon_28"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "index4:9901",
+              "key": 385,
+              "locator": "0a0036028c063800",
+              "name": "Dragonscale Tamer - Challenge",
+              "rank_id": "rank_team_dungeon_25",
+              "rank_id_replace": [
+                "rank_team_dungeon_26",
+                "rank_team_dungeon_28"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            }
+          ],
+          "file": "artwork/sword-trial/dragonscale-tamer-challenge.png",
+          "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+          "bytes": 278648
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "dragonscale tamer",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "60"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_21",
+      "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:26": {
+      "rank_name": "rank_team10_dungeon_26",
+      "title": "Carnival Voyage - Challenge Top 500 - Phase 2",
+      "file": "artwork/hero-realm/carnival-voyage-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_22",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 168,
+              "locator": "0a00330298053900",
+              "name": "Carnival Voyage: Challenge",
+              "rank_id": "rank_team10_dungeon_25",
+              "rank_id_replace": [
+                "rank_team10_dungeon_26",
+                "rank_team10_dungeon_27"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "index4:9901",
+              "key": 386,
+              "locator": "0a003602c4063900",
+              "name": "Carnival Voyage: Challenge",
+              "rank_id": "rank_team10_dungeon_25",
+              "rank_id_replace": [
+                "rank_team10_dungeon_26",
+                "rank_team10_dungeon_27"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            }
+          ],
+          "file": "artwork/hero-realm/carnival-voyage-challenge.png",
+          "sha256": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
+          "bytes": 364179
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "carnival voyage",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "59"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_22",
+      "sha256": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:26": {
+      "rank_name": "rank_team_dungeon_26",
+      "title": "Dragonscale Tamer - Challenge Top 750 - Phase 2",
+      "file": "artwork/sword-trial/dragonscale-tamer-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_21",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 169,
+              "locator": "0a003302d1053800",
+              "name": "Dragonscale Tamer - Challenge",
+              "rank_id": "rank_team_dungeon_25",
+              "rank_id_replace": [
+                "rank_team_dungeon_26",
+                "rank_team_dungeon_28"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "index4:9901",
+              "key": 385,
+              "locator": "0a0036028c063800",
+              "name": "Dragonscale Tamer - Challenge",
+              "rank_id": "rank_team_dungeon_25",
+              "rank_id_replace": [
+                "rank_team_dungeon_26",
+                "rank_team_dungeon_28"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            }
+          ],
+          "file": "artwork/sword-trial/dragonscale-tamer-challenge.png",
+          "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+          "bytes": 278648
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "dragonscale tamer",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "60"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_21",
+      "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:27": {
+      "rank_name": "rank_team10_dungeon_27",
+      "title": "Carnival Voyage - Challenge Top 500 - Phase 3",
+      "file": "artwork/hero-realm/carnival-voyage-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_22",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 168,
+              "locator": "0a00330298053900",
+              "name": "Carnival Voyage: Challenge",
+              "rank_id": "rank_team10_dungeon_25",
+              "rank_id_replace": [
+                "rank_team10_dungeon_26",
+                "rank_team10_dungeon_27"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "index4:9901",
+              "key": 386,
+              "locator": "0a003602c4063900",
+              "name": "Carnival Voyage: Challenge",
+              "rank_id": "rank_team10_dungeon_25",
+              "rank_id_replace": [
+                "rank_team10_dungeon_26",
+                "rank_team10_dungeon_27"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            }
+          ],
+          "file": "artwork/hero-realm/carnival-voyage-challenge.png",
+          "sha256": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
+          "bytes": 364179
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "carnival voyage",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "59"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_22",
+      "sha256": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:27": {
+      "rank_name": "rank_team_dungeon_27",
+      "title": "Dragonscale Tamer Top 750 - Phase 2",
+      "file": "artwork/sword-trial/dragonscale-tamer.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_21",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 148,
+              "locator": "0a0033026a033800",
+              "name": "Dragonscale Tamer",
+              "rank_id": "rank_team_dungeon_22",
+              "rank_id_replace": [
+                "rank_team_dungeon_27",
+                "rank_team_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "index4:9901",
+              "key": 370,
+              "locator": "0a0036020a053800",
+              "name": "Dragonscale Tamer",
+              "rank_id": "rank_team_dungeon_22",
+              "rank_id_replace": [
+                "rank_team_dungeon_27",
+                "rank_team_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            }
+          ],
+          "file": "artwork/sword-trial/dragonscale-tamer.png",
+          "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+          "bytes": 278648
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "dragonscale tamer",
+      "mode": "normal",
+      "dungeon_rows": [
+        "45",
+        "73"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_21",
+      "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 4
+    },
+    "hr:28": {
+      "rank_name": "rank_team10_dungeon_28",
+      "title": "Snowfall's Reckoning Top 500 - Phase 1",
+      "file": "artwork/hero-realm/snowfalls-reckoning.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_24",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 170,
+              "locator": "0a00330209063e00",
+              "name": "Snowfall's Reckoning",
+              "rank_id": "rank_team10_dungeon_28",
+              "rank_id_replace": [
+                "rank_team10_dungeon_29",
+                "rank_team10_dungeon_30"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "index4:9901",
+              "key": 388,
+              "locator": "0a00360238073e00",
+              "name": "Snowfall's Reckoning",
+              "rank_id": "rank_team10_dungeon_28",
+              "rank_id_replace": [
+                "rank_team10_dungeon_29",
+                "rank_team10_dungeon_30"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32012,
+              "locator": "0a00380278053e00",
+              "name": "Snowfall's Reckoning",
+              "rank_id": "rank_team10_dungeon_28",
+              "rank_id_replace": [
+                "rank_team10_dungeon_29",
+                "rank_team10_dungeon_30"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            }
+          ],
+          "file": "artwork/hero-realm/snowfalls-reckoning.png",
+          "sha256": "0363ed210ea4170d32dd6f3dd584847bdec417d226437211aaaa05a95ca61e4e",
+          "bytes": 300124
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "snowfall s reckoning",
+      "mode": "normal",
+      "dungeon_rows": [
+        "61"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_24",
+      "sha256": "0363ed210ea4170d32dd6f3dd584847bdec417d226437211aaaa05a95ca61e4e",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:28": {
+      "rank_name": "rank_team_dungeon_28",
+      "title": "Dragonscale Tamer - Challenge Top 750 - Phase 3",
+      "file": "artwork/sword-trial/dragonscale-tamer-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_21",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 169,
+              "locator": "0a003302d1053800",
+              "name": "Dragonscale Tamer - Challenge",
+              "rank_id": "rank_team_dungeon_25",
+              "rank_id_replace": [
+                "rank_team_dungeon_26",
+                "rank_team_dungeon_28"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "index4:9901",
+              "key": 385,
+              "locator": "0a0036028c063800",
+              "name": "Dragonscale Tamer - Challenge",
+              "rank_id": "rank_team_dungeon_25",
+              "rank_id_replace": [
+                "rank_team_dungeon_26",
+                "rank_team_dungeon_28"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            }
+          ],
+          "file": "artwork/sword-trial/dragonscale-tamer-challenge.png",
+          "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+          "bytes": 278648
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "dragonscale tamer",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "60"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_21",
+      "sha256": "63c1e642597272ec07195ce00f0ccc2e202b784dd2e2dd2c1b752e271235ad88",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:29": {
+      "rank_name": "rank_team10_dungeon_29",
+      "title": "Snowfall's Reckoning Top 500 - Phase 2",
+      "file": "artwork/hero-realm/snowfalls-reckoning.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_24",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 170,
+              "locator": "0a00330209063e00",
+              "name": "Snowfall's Reckoning",
+              "rank_id": "rank_team10_dungeon_28",
+              "rank_id_replace": [
+                "rank_team10_dungeon_29",
+                "rank_team10_dungeon_30"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "index4:9901",
+              "key": 388,
+              "locator": "0a00360238073e00",
+              "name": "Snowfall's Reckoning",
+              "rank_id": "rank_team10_dungeon_28",
+              "rank_id_replace": [
+                "rank_team10_dungeon_29",
+                "rank_team10_dungeon_30"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32012,
+              "locator": "0a00380278053e00",
+              "name": "Snowfall's Reckoning",
+              "rank_id": "rank_team10_dungeon_28",
+              "rank_id_replace": [
+                "rank_team10_dungeon_29",
+                "rank_team10_dungeon_30"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            }
+          ],
+          "file": "artwork/hero-realm/snowfalls-reckoning.png",
+          "sha256": "0363ed210ea4170d32dd6f3dd584847bdec417d226437211aaaa05a95ca61e4e",
+          "bytes": 300124
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "snowfall s reckoning",
+      "mode": "normal",
+      "dungeon_rows": [
+        "61"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_24",
+      "sha256": "0363ed210ea4170d32dd6f3dd584847bdec417d226437211aaaa05a95ca61e4e",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:29": {
+      "rank_name": "rank_team_dungeon_29",
+      "title": "Segmented Puppets Top 750 - Phase 1",
+      "file": "artwork/sword-trial/segmented-puppets.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_23",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 171,
+              "locator": "0a00330247063b00",
+              "name": "Segmented Puppets",
+              "rank_id": "rank_team_dungeon_29",
+              "rank_id_replace": [
+                "rank_team_dungeon_30",
+                "rank_team_dungeon_31"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            },
+            {
+              "source": "index4:9901",
+              "key": 387,
+              "locator": "0a003602fd063b00",
+              "name": "Segmented Puppets",
+              "rank_id": "rank_team_dungeon_29",
+              "rank_id_replace": [
+                "rank_team_dungeon_30",
+                "rank_team_dungeon_31"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            }
+          ],
+          "file": "artwork/sword-trial/segmented-puppets.png",
+          "sha256": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
+          "bytes": 269209
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "segmented puppets",
+      "mode": "normal",
+      "dungeon_rows": [
+        "62",
+        "74"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_23",
+      "sha256": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:30": {
+      "rank_name": "rank_team10_dungeon_30",
+      "title": "Snowfall's Reckoning Top 500 - Phase 3",
+      "file": "artwork/hero-realm/snowfalls-reckoning.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_24",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 170,
+              "locator": "0a00330209063e00",
+              "name": "Snowfall's Reckoning",
+              "rank_id": "rank_team10_dungeon_28",
+              "rank_id_replace": [
+                "rank_team10_dungeon_29",
+                "rank_team10_dungeon_30"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "index4:9901",
+              "key": 388,
+              "locator": "0a00360238073e00",
+              "name": "Snowfall's Reckoning",
+              "rank_id": "rank_team10_dungeon_28",
+              "rank_id_replace": [
+                "rank_team10_dungeon_29",
+                "rank_team10_dungeon_30"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32012,
+              "locator": "0a00380278053e00",
+              "name": "Snowfall's Reckoning",
+              "rank_id": "rank_team10_dungeon_28",
+              "rank_id_replace": [
+                "rank_team10_dungeon_29",
+                "rank_team10_dungeon_30"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            }
+          ],
+          "file": "artwork/hero-realm/snowfalls-reckoning.png",
+          "sha256": "0363ed210ea4170d32dd6f3dd584847bdec417d226437211aaaa05a95ca61e4e",
+          "bytes": 300124
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "snowfall s reckoning",
+      "mode": "normal",
+      "dungeon_rows": [
+        "61"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_24",
+      "sha256": "0363ed210ea4170d32dd6f3dd584847bdec417d226437211aaaa05a95ca61e4e",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:30": {
+      "rank_name": "rank_team_dungeon_30",
+      "title": "Segmented Puppets Top 750 - Phase 2",
+      "file": "artwork/sword-trial/segmented-puppets.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_23",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 171,
+              "locator": "0a00330247063b00",
+              "name": "Segmented Puppets",
+              "rank_id": "rank_team_dungeon_29",
+              "rank_id_replace": [
+                "rank_team_dungeon_30",
+                "rank_team_dungeon_31"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            },
+            {
+              "source": "index4:9901",
+              "key": 387,
+              "locator": "0a003602fd063b00",
+              "name": "Segmented Puppets",
+              "rank_id": "rank_team_dungeon_29",
+              "rank_id_replace": [
+                "rank_team_dungeon_30",
+                "rank_team_dungeon_31"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            }
+          ],
+          "file": "artwork/sword-trial/segmented-puppets.png",
+          "sha256": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
+          "bytes": 269209
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "segmented puppets",
+      "mode": "normal",
+      "dungeon_rows": [
+        "62",
+        "74"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_23",
+      "sha256": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:31": {
+      "rank_name": "rank_team10_dungeon_31",
+      "title": "Snowfall's Reckoning - Challenge Top 500 - Phase 1",
+      "file": "artwork/hero-realm/snowfalls-reckoning-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_24",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 172,
+              "locator": "0a00330282063a00",
+              "name": "Snowfall's Reckoning - Challenge",
+              "rank_id": "rank_team10_dungeon_31",
+              "rank_id_replace": [
+                "rank_team10_dungeon_32",
+                "rank_team10_dungeon_33"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "index4:9901",
+              "key": 403,
+              "locator": "0a00370252003a00",
+              "name": "Snowfall's Reckoning - Challenge",
+              "rank_id": "rank_team10_dungeon_31",
+              "rank_id_replace": [
+                "rank_team10_dungeon_32",
+                "rank_team10_dungeon_33"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            }
+          ],
+          "file": "artwork/hero-realm/snowfalls-reckoning-challenge.png",
+          "sha256": "0363ed210ea4170d32dd6f3dd584847bdec417d226437211aaaa05a95ca61e4e",
+          "bytes": 300124
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "snowfall s reckoning",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "63"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_24",
+      "sha256": "0363ed210ea4170d32dd6f3dd584847bdec417d226437211aaaa05a95ca61e4e",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:31": {
+      "rank_name": "rank_team_dungeon_31",
+      "title": "Segmented Puppets Top 750 - Phase 3",
+      "file": "artwork/sword-trial/segmented-puppets.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_23",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 171,
+              "locator": "0a00330247063b00",
+              "name": "Segmented Puppets",
+              "rank_id": "rank_team_dungeon_29",
+              "rank_id_replace": [
+                "rank_team_dungeon_30",
+                "rank_team_dungeon_31"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            },
+            {
+              "source": "index4:9901",
+              "key": 387,
+              "locator": "0a003602fd063b00",
+              "name": "Segmented Puppets",
+              "rank_id": "rank_team_dungeon_29",
+              "rank_id_replace": [
+                "rank_team_dungeon_30",
+                "rank_team_dungeon_31"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            }
+          ],
+          "file": "artwork/sword-trial/segmented-puppets.png",
+          "sha256": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
+          "bytes": 269209
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "segmented puppets",
+      "mode": "normal",
+      "dungeon_rows": [
+        "62",
+        "74"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_23",
+      "sha256": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:32": {
+      "rank_name": "rank_team10_dungeon_32",
+      "title": "Snowfall's Reckoning - Challenge Top 500 - Phase 2",
+      "file": "artwork/hero-realm/snowfalls-reckoning-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_24",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 172,
+              "locator": "0a00330282063a00",
+              "name": "Snowfall's Reckoning - Challenge",
+              "rank_id": "rank_team10_dungeon_31",
+              "rank_id_replace": [
+                "rank_team10_dungeon_32",
+                "rank_team10_dungeon_33"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "index4:9901",
+              "key": 403,
+              "locator": "0a00370252003a00",
+              "name": "Snowfall's Reckoning - Challenge",
+              "rank_id": "rank_team10_dungeon_31",
+              "rank_id_replace": [
+                "rank_team10_dungeon_32",
+                "rank_team10_dungeon_33"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            }
+          ],
+          "file": "artwork/hero-realm/snowfalls-reckoning-challenge.png",
+          "sha256": "0363ed210ea4170d32dd6f3dd584847bdec417d226437211aaaa05a95ca61e4e",
+          "bytes": 300124
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "snowfall s reckoning",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "63"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_24",
+      "sha256": "0363ed210ea4170d32dd6f3dd584847bdec417d226437211aaaa05a95ca61e4e",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:32": {
+      "rank_name": "rank_team_dungeon_32",
+      "title": "Segmented Puppets - Challenge Top 750 - Phase 1",
+      "file": "artwork/sword-trial/segmented-puppets-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_23",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 173,
+              "locator": "0a003302bc063a00",
+              "name": "Segmented Puppets - Challenge",
+              "rank_id": "rank_team_dungeon_32",
+              "rank_id_replace": [
+                "rank_team_dungeon_33",
+                "rank_team_dungeon_34"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            },
+            {
+              "source": "index4:9901",
+              "key": 402,
+              "locator": "0a00370218003a00",
+              "name": "Segmented Puppets - Challenge",
+              "rank_id": "rank_team_dungeon_32",
+              "rank_id_replace": [
+                "rank_team_dungeon_33",
+                "rank_team_dungeon_34"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            }
+          ],
+          "file": "artwork/sword-trial/segmented-puppets-challenge.png",
+          "sha256": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
+          "bytes": 269209
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "segmented puppets",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "64"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_23",
+      "sha256": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:33": {
+      "rank_name": "rank_team10_dungeon_33",
+      "title": "Snowfall's Reckoning - Challenge Top 500 - Phase 3",
+      "file": "artwork/hero-realm/snowfalls-reckoning-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_24",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 172,
+              "locator": "0a00330282063a00",
+              "name": "Snowfall's Reckoning - Challenge",
+              "rank_id": "rank_team10_dungeon_31",
+              "rank_id_replace": [
+                "rank_team10_dungeon_32",
+                "rank_team10_dungeon_33"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "index4:9901",
+              "key": 403,
+              "locator": "0a00370252003a00",
+              "name": "Snowfall's Reckoning - Challenge",
+              "rank_id": "rank_team10_dungeon_31",
+              "rank_id_replace": [
+                "rank_team10_dungeon_32",
+                "rank_team10_dungeon_33"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            }
+          ],
+          "file": "artwork/hero-realm/snowfalls-reckoning-challenge.png",
+          "sha256": "0363ed210ea4170d32dd6f3dd584847bdec417d226437211aaaa05a95ca61e4e",
+          "bytes": 300124
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "snowfall s reckoning",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "63"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_24",
+      "sha256": "0363ed210ea4170d32dd6f3dd584847bdec417d226437211aaaa05a95ca61e4e",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:33": {
+      "rank_name": "rank_team_dungeon_33",
+      "title": "Segmented Puppets - Challenge Top 750 - Phase 2",
+      "file": "artwork/sword-trial/segmented-puppets-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_23",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 173,
+              "locator": "0a003302bc063a00",
+              "name": "Segmented Puppets - Challenge",
+              "rank_id": "rank_team_dungeon_32",
+              "rank_id_replace": [
+                "rank_team_dungeon_33",
+                "rank_team_dungeon_34"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            },
+            {
+              "source": "index4:9901",
+              "key": 402,
+              "locator": "0a00370218003a00",
+              "name": "Segmented Puppets - Challenge",
+              "rank_id": "rank_team_dungeon_32",
+              "rank_id_replace": [
+                "rank_team_dungeon_33",
+                "rank_team_dungeon_34"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            }
+          ],
+          "file": "artwork/sword-trial/segmented-puppets-challenge.png",
+          "sha256": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
+          "bytes": 269209
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "segmented puppets",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "64"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_23",
+      "sha256": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:34": {
+      "rank_name": "rank_team10_dungeon_34",
+      "title": "Liminal Ascension Top 500 - Phase 1",
+      "file": "artwork/hero-realm/liminal-ascension.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_25",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 175,
+              "locator": "0a0033022f073c00",
+              "name": "Liminal Ascension",
+              "rank_id": "rank_team10_dungeon_34",
+              "rank_id_replace": [
+                "rank_team10_dungeon_35",
+                "rank_team10_dungeon_36"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32013,
+              "locator": "0a003802b6053c00",
+              "name": "Liminal Ascension",
+              "rank_id": "rank_team10_dungeon_34",
+              "rank_id_replace": [
+                "rank_team10_dungeon_35",
+                "rank_team10_dungeon_36"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "index4:9901",
+              "key": 405,
+              "locator": "0a003702c5003c00",
+              "name": "Liminal Ascension",
+              "rank_id": "rank_team10_dungeon_34",
+              "rank_id_replace": [
+                "rank_team10_dungeon_35",
+                "rank_team10_dungeon_36"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            }
+          ],
+          "file": "artwork/hero-realm/liminal-ascension.png",
+          "sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+          "bytes": 273860
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "liminal ascension",
+      "mode": "normal",
+      "dungeon_rows": [
+        "66"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_25",
+      "sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:34": {
+      "rank_name": "rank_team_dungeon_34",
+      "title": "Segmented Puppets - Challenge Top 750 - Phase 3",
+      "file": "artwork/sword-trial/segmented-puppets-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_23",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 173,
+              "locator": "0a003302bc063a00",
+              "name": "Segmented Puppets - Challenge",
+              "rank_id": "rank_team_dungeon_32",
+              "rank_id_replace": [
+                "rank_team_dungeon_33",
+                "rank_team_dungeon_34"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            },
+            {
+              "source": "index4:9901",
+              "key": 402,
+              "locator": "0a00370218003a00",
+              "name": "Segmented Puppets - Challenge",
+              "rank_id": "rank_team_dungeon_32",
+              "rank_id_replace": [
+                "rank_team_dungeon_33",
+                "rank_team_dungeon_34"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            }
+          ],
+          "file": "artwork/sword-trial/segmented-puppets-challenge.png",
+          "sha256": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
+          "bytes": 269209
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "segmented puppets",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "64"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_23",
+      "sha256": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:35": {
+      "rank_name": "rank_team10_dungeon_35",
+      "title": "Liminal Ascension Top 500 - Phase 2",
+      "file": "artwork/hero-realm/liminal-ascension.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_25",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 175,
+              "locator": "0a0033022f073c00",
+              "name": "Liminal Ascension",
+              "rank_id": "rank_team10_dungeon_34",
+              "rank_id_replace": [
+                "rank_team10_dungeon_35",
+                "rank_team10_dungeon_36"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32013,
+              "locator": "0a003802b6053c00",
+              "name": "Liminal Ascension",
+              "rank_id": "rank_team10_dungeon_34",
+              "rank_id_replace": [
+                "rank_team10_dungeon_35",
+                "rank_team10_dungeon_36"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "index4:9901",
+              "key": 405,
+              "locator": "0a003702c5003c00",
+              "name": "Liminal Ascension",
+              "rank_id": "rank_team10_dungeon_34",
+              "rank_id_replace": [
+                "rank_team10_dungeon_35",
+                "rank_team10_dungeon_36"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            }
+          ],
+          "file": "artwork/hero-realm/liminal-ascension.png",
+          "sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+          "bytes": 273860
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "liminal ascension",
+      "mode": "normal",
+      "dungeon_rows": [
+        "66"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_25",
+      "sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:35": {
+      "rank_name": "rank_team_dungeon_35",
+      "title": "Compass & Chime Top 750 - Phase 1",
+      "file": "artwork/sword-trial/compass-and-chime.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_26",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 174,
+              "locator": "0a003302f6063900",
+              "name": "Compass & Chime",
+              "rank_id": "rank_team_dungeon_35",
+              "rank_id_replace": [
+                "rank_team_dungeon_36",
+                "rank_team_dungeon_37"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            },
+            {
+              "source": "index4:9901",
+              "key": 404,
+              "locator": "0a0037028c003900",
+              "name": "Compass & Chime",
+              "rank_id": "rank_team_dungeon_35",
+              "rank_id_replace": [
+                "rank_team_dungeon_36",
+                "rank_team_dungeon_37"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            }
+          ],
+          "file": "artwork/sword-trial/compass-and-chime.png",
+          "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+          "bytes": 299606
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "compass chime",
+      "mode": "normal",
+      "dungeon_rows": [
+        "65",
+        "85"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_26",
+      "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:36": {
+      "rank_name": "rank_team10_dungeon_36",
+      "title": "Liminal Ascension Top 500 - Phase 3",
+      "file": "artwork/hero-realm/liminal-ascension.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_25",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 175,
+              "locator": "0a0033022f073c00",
+              "name": "Liminal Ascension",
+              "rank_id": "rank_team10_dungeon_34",
+              "rank_id_replace": [
+                "rank_team10_dungeon_35",
+                "rank_team10_dungeon_36"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32013,
+              "locator": "0a003802b6053c00",
+              "name": "Liminal Ascension",
+              "rank_id": "rank_team10_dungeon_34",
+              "rank_id_replace": [
+                "rank_team10_dungeon_35",
+                "rank_team10_dungeon_36"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "index4:9901",
+              "key": 405,
+              "locator": "0a003702c5003c00",
+              "name": "Liminal Ascension",
+              "rank_id": "rank_team10_dungeon_34",
+              "rank_id_replace": [
+                "rank_team10_dungeon_35",
+                "rank_team10_dungeon_36"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            }
+          ],
+          "file": "artwork/hero-realm/liminal-ascension.png",
+          "sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+          "bytes": 273860
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "liminal ascension",
+      "mode": "normal",
+      "dungeon_rows": [
+        "66"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_25",
+      "sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:36": {
+      "rank_name": "rank_team_dungeon_36",
+      "title": "Compass & Chime Top 750 - Phase 2",
+      "file": "artwork/sword-trial/compass-and-chime.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_26",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 174,
+              "locator": "0a003302f6063900",
+              "name": "Compass & Chime",
+              "rank_id": "rank_team_dungeon_35",
+              "rank_id_replace": [
+                "rank_team_dungeon_36",
+                "rank_team_dungeon_37"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            },
+            {
+              "source": "index4:9901",
+              "key": 404,
+              "locator": "0a0037028c003900",
+              "name": "Compass & Chime",
+              "rank_id": "rank_team_dungeon_35",
+              "rank_id_replace": [
+                "rank_team_dungeon_36",
+                "rank_team_dungeon_37"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            }
+          ],
+          "file": "artwork/sword-trial/compass-and-chime.png",
+          "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+          "bytes": 299606
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "compass chime",
+      "mode": "normal",
+      "dungeon_rows": [
+        "65",
+        "85"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_26",
+      "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:37": {
+      "rank_name": "rank_team10_dungeon_37",
+      "title": "Liminal Ascension - Challenge Top 500 - Phase 1",
+      "file": "artwork/hero-realm/liminal-ascension-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_25",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 176,
+              "locator": "0a0033026b073700",
+              "name": "Liminal Ascension - Challenge",
+              "rank_id": "rank_team10_dungeon_37",
+              "rank_id_replace": [
+                "rank_team10_dungeon_38",
+                "rank_team10_dungeon_39"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "index4:9901",
+              "key": 409,
+              "locator": "0a00370238013700",
+              "name": "Liminal Ascension - Challenge",
+              "rank_id": "rank_team10_dungeon_37",
+              "rank_id_replace": [
+                "rank_team10_dungeon_38",
+                "rank_team10_dungeon_39"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            }
+          ],
+          "file": "artwork/hero-realm/liminal-ascension-challenge.png",
+          "sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+          "bytes": 273860
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "liminal ascension",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "67"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_25",
+      "sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:37": {
+      "rank_name": "rank_team_dungeon_37",
+      "title": "Compass & Chime Top 750 - Phase 3",
+      "file": "artwork/sword-trial/compass-and-chime.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_26",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 174,
+              "locator": "0a003302f6063900",
+              "name": "Compass & Chime",
+              "rank_id": "rank_team_dungeon_35",
+              "rank_id_replace": [
+                "rank_team_dungeon_36",
+                "rank_team_dungeon_37"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            },
+            {
+              "source": "index4:9901",
+              "key": 404,
+              "locator": "0a0037028c003900",
+              "name": "Compass & Chime",
+              "rank_id": "rank_team_dungeon_35",
+              "rank_id_replace": [
+                "rank_team_dungeon_36",
+                "rank_team_dungeon_37"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            }
+          ],
+          "file": "artwork/sword-trial/compass-and-chime.png",
+          "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+          "bytes": 299606
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "compass chime",
+      "mode": "normal",
+      "dungeon_rows": [
+        "65",
+        "85"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_26",
+      "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:38": {
+      "rank_name": "rank_team10_dungeon_38",
+      "title": "Liminal Ascension - Challenge Top 500 - Phase 2",
+      "file": "artwork/hero-realm/liminal-ascension-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_25",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 176,
+              "locator": "0a0033026b073700",
+              "name": "Liminal Ascension - Challenge",
+              "rank_id": "rank_team10_dungeon_37",
+              "rank_id_replace": [
+                "rank_team10_dungeon_38",
+                "rank_team10_dungeon_39"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "index4:9901",
+              "key": 409,
+              "locator": "0a00370238013700",
+              "name": "Liminal Ascension - Challenge",
+              "rank_id": "rank_team10_dungeon_37",
+              "rank_id_replace": [
+                "rank_team10_dungeon_38",
+                "rank_team10_dungeon_39"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            }
+          ],
+          "file": "artwork/hero-realm/liminal-ascension-challenge.png",
+          "sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+          "bytes": 273860
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "liminal ascension",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "67"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_25",
+      "sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:38": {
+      "rank_name": "rank_team_dungeon_38",
+      "title": "Compass & Chime - Challenge Top 750 - Phase 1",
+      "file": "artwork/sword-trial/compass-and-chime-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_26",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 177,
+              "locator": "0a003302a2073800",
+              "name": "Compass & Chime - Challenge",
+              "rank_id": "rank_team_dungeon_38",
+              "rank_id_replace": [
+                "rank_team_dungeon_39",
+                "rank_team_dungeon_40"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            },
+            {
+              "source": "index4:9901",
+              "key": 410,
+              "locator": "0a0037026f013800",
+              "name": "Compass & Chime - Challenge",
+              "rank_id": "rank_team_dungeon_38",
+              "rank_id_replace": [
+                "rank_team_dungeon_39",
+                "rank_team_dungeon_40"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            }
+          ],
+          "file": "artwork/sword-trial/compass-and-chime-challenge.png",
+          "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+          "bytes": 299606
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "compass chime",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "69"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_26",
+      "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:39": {
+      "rank_name": "rank_team10_dungeon_39",
+      "title": "Liminal Ascension - Challenge Top 500 - Phase 3",
+      "file": "artwork/hero-realm/liminal-ascension-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_25",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 176,
+              "locator": "0a0033026b073700",
+              "name": "Liminal Ascension - Challenge",
+              "rank_id": "rank_team10_dungeon_37",
+              "rank_id_replace": [
+                "rank_team10_dungeon_38",
+                "rank_team10_dungeon_39"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "index4:9901",
+              "key": 409,
+              "locator": "0a00370238013700",
+              "name": "Liminal Ascension - Challenge",
+              "rank_id": "rank_team10_dungeon_37",
+              "rank_id_replace": [
+                "rank_team10_dungeon_38",
+                "rank_team10_dungeon_39"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            }
+          ],
+          "file": "artwork/hero-realm/liminal-ascension-challenge.png",
+          "sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+          "bytes": 273860
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "liminal ascension",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "67"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_25",
+      "sha256": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:39": {
+      "rank_name": "rank_team_dungeon_39",
+      "title": "Compass & Chime - Challenge Top 750 - Phase 2",
+      "file": "artwork/sword-trial/compass-and-chime-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_26",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 177,
+              "locator": "0a003302a2073800",
+              "name": "Compass & Chime - Challenge",
+              "rank_id": "rank_team_dungeon_38",
+              "rank_id_replace": [
+                "rank_team_dungeon_39",
+                "rank_team_dungeon_40"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            },
+            {
+              "source": "index4:9901",
+              "key": 410,
+              "locator": "0a0037026f013800",
+              "name": "Compass & Chime - Challenge",
+              "rank_id": "rank_team_dungeon_38",
+              "rank_id_replace": [
+                "rank_team_dungeon_39",
+                "rank_team_dungeon_40"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            }
+          ],
+          "file": "artwork/sword-trial/compass-and-chime-challenge.png",
+          "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+          "bytes": 299606
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "compass chime",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "69"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_26",
+      "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:40": {
+      "rank_name": "rank_team_dungeon_40",
+      "title": "Compass & Chime - Challenge Top 750 - Phase 3",
+      "file": "artwork/sword-trial/compass-and-chime-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_26",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 177,
+              "locator": "0a003302a2073800",
+              "name": "Compass & Chime - Challenge",
+              "rank_id": "rank_team_dungeon_38",
+              "rank_id_replace": [
+                "rank_team_dungeon_39",
+                "rank_team_dungeon_40"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            },
+            {
+              "source": "index4:9901",
+              "key": 410,
+              "locator": "0a0037026f013800",
+              "name": "Compass & Chime - Challenge",
+              "rank_id": "rank_team_dungeon_38",
+              "rank_id_replace": [
+                "rank_team_dungeon_39",
+                "rank_team_dungeon_40"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            }
+          ],
+          "file": "artwork/sword-trial/compass-and-chime-challenge.png",
+          "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+          "bytes": 299606
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "compass chime",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "69"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_26",
+      "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:60001": {
+      "rank_name": "rank_team_dungeon_60001",
+      "title": "Drunken Verse 02 - Top 500",
+      "file": "artwork/sword-trial/drunken-verse-02.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_12",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 73,
+              "locator": "0a00320286023800",
+              "name": "Drunken Verse",
+              "rank_id": "rank_team_dungeon_8",
+              "rank_id_replace": [
+                "rank_team_dungeon_60001",
+                "rank_team_dungeon_60002"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_12"
+            },
+            {
+              "source": "index4:9901",
+              "key": 303,
+              "locator": "0a003502e1053800",
+              "name": "Drunken Verse",
+              "rank_id": "rank_team_dungeon_8",
+              "rank_id_replace": [
+                "rank_team_dungeon_60001",
+                "rank_team_dungeon_60002"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_12"
+            }
+          ],
+          "file": "artwork/sword-trial/drunken-verse-02.png",
+          "sha256": "efc470eb3d4f86666f7e24fe8a68b9f072b62dfc07559bcfa794f49d0e378284",
+          "bytes": 345076
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "drunken verse 02",
+      "mode": "normal",
+      "dungeon_rows": [],
+      "resource": "wulinlu_tongyou_pic_xj_12",
+      "sha256": "efc470eb3d4f86666f7e24fe8a68b9f072b62dfc07559bcfa794f49d0e378284",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "st:60002": {
+      "rank_name": "rank_team_dungeon_60002",
+      "title": "Drunken Verse 03 - Top 500\n",
+      "file": "artwork/sword-trial/drunken-verse-03.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_12",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 73,
+              "locator": "0a00320286023800",
+              "name": "Drunken Verse",
+              "rank_id": "rank_team_dungeon_8",
+              "rank_id_replace": [
+                "rank_team_dungeon_60001",
+                "rank_team_dungeon_60002"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_12"
+            },
+            {
+              "source": "index4:9901",
+              "key": 303,
+              "locator": "0a003502e1053800",
+              "name": "Drunken Verse",
+              "rank_id": "rank_team_dungeon_8",
+              "rank_id_replace": [
+                "rank_team_dungeon_60001",
+                "rank_team_dungeon_60002"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_12"
+            }
+          ],
+          "file": "artwork/sword-trial/drunken-verse-03.png",
+          "sha256": "efc470eb3d4f86666f7e24fe8a68b9f072b62dfc07559bcfa794f49d0e378284",
+          "bytes": 345076
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "drunken verse 03",
+      "mode": "normal",
+      "dungeon_rows": [],
+      "resource": "wulinlu_tongyou_pic_xj_12",
+      "sha256": "efc470eb3d4f86666f7e24fe8a68b9f072b62dfc07559bcfa794f49d0e378284",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "hr:60003": {
+      "rank_name": "rank_team10_dungeon_60003",
+      "title": "Sorrow of Mortalbound: Supreme 02 - Top 500",
+      "file": "artwork/hero-realm/sorrow-of-mortalbound-supreme-02.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_10",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 77,
+              "locator": "0a0032020e033600",
+              "name": "Sorrow of Mortalbound - Supreme",
+              "rank_id": "rank_team10_dungeon_6",
+              "rank_id_replace": [
+                "rank_team10_dungeon_60003"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_10"
+            },
+            {
+              "source": "index4:9901",
+              "key": 304,
+              "locator": "0a00350219063600",
+              "name": "Sorrow of Mortalbound - Supreme",
+              "rank_id": "rank_team10_dungeon_6",
+              "rank_id_replace": [
+                "rank_team10_dungeon_60003"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_10"
+            },
+            {
+              "source": "index4:9901",
+              "key": 32004,
+              "locator": "0a003802d8033600",
+              "name": "Sorrow of Mortalbound - Supreme",
+              "rank_id": "rank_team10_dungeon_6",
+              "rank_id_replace": [
+                "rank_team10_dungeon_60003"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_10"
+            }
+          ],
+          "file": "artwork/hero-realm/sorrow-of-mortalbound-supreme-02.png",
+          "sha256": "eb56aeac42851e3b550d382f4754cda7e022883e10a237862070b8adc2f2659d",
+          "bytes": 394754
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "sorrow of mortalbound supreme 02",
+      "mode": "normal",
+      "dungeon_rows": [],
+      "resource": "wulinlu_tongyou_pic_xj_10",
+      "sha256": "eb56aeac42851e3b550d382f4754cda7e022883e10a237862070b8adc2f2659d",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 1
+    },
+    "st:60004": {
+      "rank_name": "rank_team_dungeon_60004",
+      "title": "Abyssal Lament Top 500 - Phase 3",
+      "file": "artwork/sword-trial/abyssal-lament.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_15",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 90,
+              "locator": "0a00320252053900",
+              "name": "Abyssal Lament",
+              "rank_id": "rank_team_dungeon_11",
+              "rank_id_replace": [
+                "rank_team_dungeon_12",
+                "rank_team_dungeon_60004"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_15"
+            },
+            {
+              "source": "index4:9901",
+              "key": 305,
+              "locator": "0a0035024f063900",
+              "name": "Abyssal Lament",
+              "rank_id": "rank_team_dungeon_11",
+              "rank_id_replace": [
+                "rank_team_dungeon_12",
+                "rank_team_dungeon_60004"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_15"
+            }
+          ],
+          "file": "artwork/sword-trial/abyssal-lament.png",
+          "sha256": "9c2fd0135d14bc2c76138de720c76cd3f5485da7f3e3046370a0d91229d0aedd",
+          "bytes": 375190
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "abyssal lament",
+      "mode": "normal",
+      "dungeon_rows": [
+        "20",
+        "56",
+        "72"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_15",
+      "sha256": "9c2fd0135d14bc2c76138de720c76cd3f5485da7f3e3046370a0d91229d0aedd",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:60039": {
+      "rank_name": "rank_team_dungeon_60039",
+      "title": "Landscourge Thunder - Challenge Top 750 - Phase 3",
+      "file": "artwork/sword-trial/landscourge-thunder-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_19",
+          "evidence_by_difficulty": [
+            {
+              "source": "index4:9897",
+              "key": 147,
+              "locator": "0a00330230033a00",
+              "name": "Landscourge Thunder: Challenge",
+              "rank_id": "rank_team_dungeon_20",
+              "rank_id_replace": [
+                "rank_team_dungeon_21",
+                "rank_team_dungeon_60039"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            },
+            {
+              "source": "index4:9901",
+              "key": 367,
+              "locator": "0a0036029e043a00",
+              "name": "Landscourge Thunder: Challenge",
+              "rank_id": "rank_team_dungeon_20",
+              "rank_id_replace": [
+                "rank_team_dungeon_21",
+                "rank_team_dungeon_60039"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            }
+          ],
+          "file": "artwork/sword-trial/landscourge-thunder-challenge.png",
+          "sha256": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
+          "bytes": 279534
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "landscourge thunder",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "44"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_19",
+      "sha256": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    }
+  }
+}

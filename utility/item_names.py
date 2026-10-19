@@ -108,6 +108,14 @@ def load_item_names(
     if _ITEM_NAMES_INDEX is not None and not force:
         return _ITEM_NAMES_INDEX
 
+    if xlsx_path is None:
+        from utility.game_assets import current
+        bundled = current().section('item_index')
+        if bundled is not None:
+            _ITEM_NAMES_INDEX = {key: [tuple(row) for row in value] for key, value in bundled.items()}
+            logger.info('Loaded %s scoped item IDs from portable game assets', len(_ITEM_NAMES_INDEX))
+            return _ITEM_NAMES_INDEX
+
     path = Path(xlsx_path) if xlsx_path else ITEM_NAMES_XLSX_PATH
     if not path.exists():
         logger.warning(f"Item names xlsx not found at {path}")

@@ -1,0 +1,1823 @@
+{
+  "trials": [
+    {
+      "id": 1,
+      "name": "\"Heartseeker\"",
+      "boss_recall_id": 2,
+      "rank_tag2": "recall_tag2_2",
+      "trial_plan_ids": [
+        12
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_2",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_2",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_2_12"
+      ],
+      "special_no_path_ui": true,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Splendor",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_2_12"
+        }
+      ],
+      "image": "art/trial_1.png",
+      "image_source": "huisu_xinhu_bg.png",
+      "sha256": "1a211e82de50fa6e888f1cc48bcf6cfff8d62d17409f68808d5ce9a7bc5b392f"
+    },
+    {
+      "id": 3,
+      "name": "Ye Wanshan",
+      "boss_recall_id": 4,
+      "rank_tag2": "recall_tag2_4",
+      "trial_plan_ids": [
+        12
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_4",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_4",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_4_12"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Splendor",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_4_12"
+        }
+      ],
+      "image": "art/trial_3.png",
+      "image_source": "huisu_kuhai_bg.png",
+      "sha256": "12a8f3c088ccd4668c9b069a691001bb4e7c4aaea7431caa5b14cf76b3f2b9cb"
+    },
+    {
+      "id": 5,
+      "name": "Lucky Seventeen",
+      "boss_recall_id": 6,
+      "rank_tag2": "recall_tag2_6",
+      "trial_plan_ids": [
+        13
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_6",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_6",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_6_13"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Umbra",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_6_13"
+        }
+      ],
+      "image": "art/trial_5.png",
+      "image_source": "huisu_bieguan_bg.png",
+      "sha256": "cf87956de5ff81c9f4560c15c3593f78097b06187aa512792d3b14b223113e47"
+    },
+    {
+      "id": 7,
+      "name": "The Void King",
+      "boss_recall_id": 8,
+      "rank_tag2": "recall_tag2_8",
+      "trial_plan_ids": [
+        12
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_8",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_8",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_8_12"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Splendor",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_8_12"
+        }
+      ],
+      "image": "art/trial_7.png",
+      "image_source": "bm_huisu_yingyuan_bg.png",
+      "sha256": "1ed5db97075bd7c5ed0600507a5e295e32456175ebfd82c2a1f6d892049fe923"
+    },
+    {
+      "id": 9,
+      "name": "Dao Lord",
+      "boss_recall_id": 10,
+      "rank_tag2": "recall_tag2_10",
+      "trial_plan_ids": [
+        14
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_10",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_10",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_10_14"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Stonesplit - Might",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_10_14"
+        }
+      ],
+      "image": "art/trial_9.png",
+      "image_source": "huisu_wuyoudong_bg.png",
+      "sha256": "ef8201b118cc6e2d5b4ef2fae6983cac27f9e8a8310d71e9bfd014e937bfc86f"
+    },
+    {
+      "id": 11,
+      "name": "Tian Ying",
+      "boss_recall_id": 12,
+      "rank_tag2": "recall_tag2_12",
+      "trial_plan_ids": [
+        14
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_12",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_12",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_12_14"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Stonesplit - Might",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_12_14"
+        }
+      ],
+      "image": "art/trial_11.png",
+      "image_source": "huisu_foguangding_bg.png",
+      "sha256": "2a45acfa4a2290e9a860ac3dc4fbd452fe0521d2f54b4eee3526ad4895b0862a"
+    },
+    {
+      "id": 13,
+      "name": "Snake Doctor",
+      "boss_recall_id": 14,
+      "rank_tag2": "recall_tag2_14",
+      "trial_plan_ids": [
+        21
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_14",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_14",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_14_21"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Silkbind - Jade",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_14_21"
+        }
+      ],
+      "image": "art/trial_13.png",
+      "image_source": "huisu_guishou_bg.png",
+      "sha256": "cdc9eb9470d9d1a8be92c9c4b5147c95477d6e632a795f1f3635e154ee24f7b8"
+    },
+    {
+      "id": 15,
+      "name": "Puppeteer - Overture",
+      "boss_recall_id": 16,
+      "rank_tag2": "recall_tag2_16",
+      "trial_plan_ids": [
+        13
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_16",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_16",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_16_13"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Umbra",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_16_13"
+        }
+      ],
+      "image": "art/trial_15.png",
+      "image_source": "huisu_piyingshi_bg.png",
+      "sha256": "a3c5bd5a1ab34d17d30f108863e64108ceadad6c0c45beb65353077c18fb0546"
+    },
+    {
+      "id": 17,
+      "name": "Murong Yuan",
+      "boss_recall_id": 18,
+      "rank_tag2": "recall_tag2_18",
+      "trial_plan_ids": [
+        33
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_18",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_18",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_18_33"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bamboocut - Wind",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_18_33"
+        }
+      ],
+      "image": "art/trial_17.png",
+      "image_source": "huisu_jinmingchi_bg.png",
+      "sha256": "3cbb263cf06920bdbd932bf6f1999693b91ada5f097de2cf0673112da80effdb"
+    },
+    {
+      "id": 19,
+      "name": "Qianye",
+      "boss_recall_id": 20,
+      "rank_tag2": "recall_tag2_20",
+      "trial_plan_ids": [
+        14
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_20",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_20",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_20_14"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Stonesplit - Might",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_20_14"
+        }
+      ],
+      "image": "art/trial_19.png",
+      "image_source": "huisu_qianye_bg.png",
+      "sha256": "33c9129d78a30f51b2594a49ec66862024d40efd78f988e9b224e4813e57c005"
+    },
+    {
+      "id": 21,
+      "name": "Puppeteer - Curtaincall",
+      "boss_recall_id": 22,
+      "rank_tag2": "recall_tag2_22",
+      "trial_plan_ids": [
+        12
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_22",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_22",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_22_12"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Splendor",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_22_12"
+        }
+      ],
+      "image": "art/trial_21.png",
+      "image_source": "huisu_piyingshi_bg.png",
+      "sha256": "a3c5bd5a1ab34d17d30f108863e64108ceadad6c0c45beb65353077c18fb0546"
+    },
+    {
+      "id": 23,
+      "name": "Yi Dao",
+      "boss_recall_id": 24,
+      "rank_tag2": "recall_tag2_24",
+      "trial_plan_ids": [
+        14
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_24",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_24",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_24_14"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Stonesplit - Might",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_24_14"
+        }
+      ],
+      "image": "art/trial_23.png",
+      "image_source": "huisu_yidao_bg.png",
+      "sha256": "bdc930c345632ea96f521aa037b19d7def096347e68ab9863605d4f8dd06915a"
+    },
+    {
+      "id": 25,
+      "name": "Sleeping Daoist",
+      "boss_recall_id": 26,
+      "rank_tag2": "recall_tag2_26",
+      "trial_plan_ids": [
+        21
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_26",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_26",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_26_21"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Silkbind - Jade",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_26_21"
+        }
+      ],
+      "image": "art/trial_25.png",
+      "image_source": "huisu_shuidaoren_bg.png",
+      "sha256": "c82df3143209daccc8d13a4f98d25c5b1e89b098bf42320114fb282a56feb596"
+    },
+    {
+      "id": 27,
+      "name": "Earth Fiend Deity",
+      "boss_recall_id": 28,
+      "rank_tag2": "recall_tag2_28",
+      "trial_plan_ids": [
+        13
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_28",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_28",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_28_13"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Umbra",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_28_13"
+        }
+      ],
+      "image": "art/trial_27.png",
+      "image_source": "huisu_shadishen_bg.png",
+      "sha256": "01bbb06bcc2004a0dc35c4966546a21ca6e6430c52e4a542264904810dd6e154"
+    },
+    {
+      "id": 29,
+      "name": "Drunk Martial Artist",
+      "boss_recall_id": 30,
+      "rank_tag2": "recall_tag2_30",
+      "trial_plan_ids": [
+        14
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_30",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_30",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_30_14"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Stonesplit - Might",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_30_14"
+        }
+      ],
+      "image": "art/trial_29.png",
+      "image_source": "huisu_zuiquan_bg.png",
+      "sha256": "2a5ce13ab03175a0c2a14ebef1877e0c1be88bcf654678d462cfe54cd299ba92"
+    },
+    {
+      "id": 31,
+      "name": "Coffin Master",
+      "boss_recall_id": 32,
+      "rank_tag2": "recall_tag2_32",
+      "trial_plan_ids": [
+        12
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_32",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_32",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_32_12"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Splendor",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_32_12"
+        }
+      ],
+      "image": "art/trial_31.png",
+      "image_source": "huisu_jiguanzhu_bg.png",
+      "sha256": "9b8f6a9dc2c1a3e997d1d007f40527859b35099ff6b6429ec86ec5dd769385ec"
+    },
+    {
+      "id": 33,
+      "name": "Twin Lions",
+      "boss_recall_id": 34,
+      "rank_tag2": "recall_tag2_34",
+      "trial_plan_ids": [
+        12
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_34",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_34",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_34_12"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Splendor",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_34_12"
+        }
+      ],
+      "image": "art/trial_33.png",
+      "image_source": "huisu_wushiren_bg.png",
+      "sha256": "e6c7a3be66c8d0339f1a1285dcff0550b462438d35b565ef11d976185e091e79"
+    },
+    {
+      "id": 35,
+      "name": "Ghost Master",
+      "boss_recall_id": 36,
+      "rank_tag2": "recall_tag2_36",
+      "trial_plan_ids": [
+        33
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_36",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_36",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_36_33"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bamboocut - Wind",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_36_33"
+        }
+      ],
+      "image": "art/trial_35.png",
+      "image_source": "huisu_guigongzi_bg.png",
+      "sha256": "b03a843663da6e5ce21d5089f994212bcd95ca2fdc049bd6f3859172aa931d9f"
+    },
+    {
+      "id": 37,
+      "name": "Wolf Maiden",
+      "boss_recall_id": 38,
+      "rank_tag2": "recall_tag2_38",
+      "trial_plan_ids": [
+        13
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_38",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_38",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_38_13"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Umbra",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_38_13"
+        }
+      ],
+      "image": "art/trial_37.png",
+      "image_source": "huisu_bailangmu_bg.png",
+      "sha256": "4437048d6535686b0c45259d2cd262c3ead02781a69a93bdbd2b5beabcbcf635"
+    },
+    {
+      "id": 39,
+      "name": "Zheng E",
+      "boss_recall_id": 40,
+      "rank_tag2": "recall_tag2_40",
+      "trial_plan_ids": [
+        21
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_40",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_40",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_40_21"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Silkbind - Jade",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_40_21"
+        }
+      ],
+      "image": "art/trial_39.png",
+      "image_source": "huisu_zhenge_bg.png",
+      "sha256": "881759892043482e7e0f3a030ef349020867b51f2e2911fdff744eb3343147c1"
+    },
+    {
+      "id": 41,
+      "name": "River Master",
+      "boss_recall_id": 42,
+      "rank_tag2": "recall_tag2_42",
+      "trial_plan_ids": [
+        21
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_42",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_42",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_42_21"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Silkbind - Jade",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_42_21"
+        }
+      ],
+      "image": "art/trial_41.png",
+      "image_source": "huisu_tianshanglai_bg.png",
+      "sha256": "c994cce5a32f74ea7f8fef3d390de5ad7594a72e409711a9e995d9bcb77f7901"
+    },
+    {
+      "id": 43,
+      "name": "Horse Tamer",
+      "boss_recall_id": 44,
+      "rank_tag2": "recall_tag2_44",
+      "trial_plan_ids": [
+        33
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_44",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_44",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_44_33"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bamboocut - Wind",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_44_33"
+        }
+      ],
+      "image": "art/trial_43.png",
+      "image_source": "huisu_wumaren_bg.png",
+      "sha256": "148a3099ad0a90ca10f0d9b85ea9acd5d472a581ecc4b59498d6eb7bfc7c088a"
+    },
+    {
+      "id": 45,
+      "name": "God of Avarice",
+      "boss_recall_id": 46,
+      "rank_tag2": "recall_tag2_46",
+      "trial_plan_ids": [
+        33
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_46",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_46",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_46_33"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bamboocut - Wind",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_46_33"
+        }
+      ],
+      "image": "art/trial_45.png",
+      "image_source": "huisu_heicaishen_bg.png",
+      "sha256": "3a8280ad39ae014ca51e7cb996caed8a7db1480686161d83274bb23d705fe37c"
+    },
+    {
+      "id": 47,
+      "name": "Wandering Ark",
+      "boss_recall_id": 48,
+      "rank_tag2": "recall_tag2_48",
+      "trial_plan_ids": [
+        21
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_48",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_48",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_48_21"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Silkbind - Jade",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_48_21"
+        }
+      ],
+      "image": "art/trial_47.png",
+      "image_source": "huisu_dachuan_bg.png",
+      "sha256": "0f9a2fc8ed65d47a115f89f70470efc8efb2c594f3cd0e7c2e866477a935c744"
+    },
+    {
+      "id": 49,
+      "name": "Nameless General",
+      "boss_recall_id": 50,
+      "rank_tag2": "recall_tag2_50",
+      "trial_plan_ids": [
+        13
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_50",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_50",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_50_13"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Umbra",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_50_13"
+        }
+      ],
+      "image": "art/trial_49.png",
+      "image_source": "huisu_wumingjiangjun_bg.png",
+      "sha256": "eeb69e8b2e3a69b7a38a7ea47a1defdb6928e5265f333b7b3307d2cd2055d440"
+    },
+    {
+      "id": 51,
+      "name": "Feng Ruzhi",
+      "boss_recall_id": 52,
+      "rank_tag2": "recall_tag2_52",
+      "trial_plan_ids": [
+        33
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_52",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_52",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_52_33"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bamboocut - Wind",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_52_33"
+        }
+      ],
+      "image": "art/trial_51.png",
+      "image_source": "huisu_fengruzhi_bg.png",
+      "sha256": "74016da6be2ba9141ff5adf54b93e8f538d5ca265117e59a6a31fb3a705ee2e2"
+    },
+    {
+      "id": 53,
+      "name": "Grand Protector of Anxi",
+      "boss_recall_id": 54,
+      "rank_tag2": "recall_tag2_54",
+      "trial_plan_ids": [
+        29
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_54",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_54",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_54_29"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Bamboocut - Dust Path",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_54_29"
+        }
+      ],
+      "image": "art/trial_53.png",
+      "image_source": "huisu_guoxin_bg.png",
+      "sha256": "1016e948ce8e821f05db9fa30df233d3246f018b5ded346d2107e30fede905e4"
+    },
+    {
+      "id": 55,
+      "name": "Moongazing Maiden",
+      "boss_recall_id": 56,
+      "rank_tag2": "recall_tag2_56",
+      "trial_plan_ids": [
+        69
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_56",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_56",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_56_69"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Umbra",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_56_69"
+        }
+      ],
+      "image": "art/trial_55.png",
+      "image_source": "huisu_wangyuechanyuan_bg.png",
+      "sha256": "ca18bf33a118b6ae81f4cde78ebc8404d730d5ba42120b7a0fa3a25cee26d90a"
+    },
+    {
+      "id": 57,
+      "name": "Snowplum Requiem",
+      "boss_recall_id": 58,
+      "rank_tag2": "recall_tag2_58",
+      "trial_plan_ids": [
+        38
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_58",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_58",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_58_38"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Stonesplit - Strength",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_58_38"
+        }
+      ],
+      "image": "art/trial_57.png",
+      "image_source": "huisu_shuangrenqinmo_bg.png",
+      "sha256": "f8bf7f04151a1cfc4597fdbb9d186a6040bcfd6cf1e9cb3804c0a4ab444cf9ed"
+    },
+    {
+      "id": 59,
+      "name": "Everdeer",
+      "boss_recall_id": 60,
+      "rank_tag2": "recall_tag2_60",
+      "trial_plan_ids": [
+        21
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_60",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_60",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_60_21"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Silkbind - Jade",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_60_21"
+        }
+      ],
+      "image": "art/trial_59.png",
+      "image_source": "huisu_tianlu_bg.png",
+      "sha256": "5d5f6f9016223835471b450f5d126495a04ed5bfe192d5f908a1c222b6eefad8"
+    },
+    {
+      "id": 61,
+      "name": "Sentinel Howlion",
+      "boss_recall_id": 62,
+      "rank_tag2": "recall_tag2_62",
+      "trial_plan_ids": [
+        33
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_62",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_62",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_62_33"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bamboocut - Wind",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_62_33"
+        }
+      ],
+      "image": "art/trial_61.png",
+      "image_source": "huisu_yueguangshizi_bg.png",
+      "sha256": "3be897f77d56e74411c0a42632c641a3ac952ab98d6d02bdcf546ff35bf2886d"
+    },
+    {
+      "id": 63,
+      "name": "Wucan",
+      "boss_recall_id": 64,
+      "rank_tag2": "recall_tag2_64",
+      "trial_plan_ids": [
+        12
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_64",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_64",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_64_12"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Splendor",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_64_12"
+        }
+      ],
+      "image": "art/trial_63.png",
+      "image_source": "huisu_wucan_bg.png",
+      "sha256": "ad94a4486298ef7602abe5ce4972886e9992273ce94d1a28459670f75ff81bcc"
+    },
+    {
+      "id": 65,
+      "name": "Pocketrupt Circus",
+      "boss_recall_id": 66,
+      "rank_tag2": "recall_tag2_66",
+      "trial_plan_ids": [
+        14
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_66",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_66",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_66_14"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Stonesplit - Might",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_66_14"
+        }
+      ],
+      "image": "art/trial_65.png",
+      "image_source": "huisu_baxituan_bg.png",
+      "sha256": "0d6a0531d5aabb84b13afa51209b15fbe115ac80b2d941d2ec0c8e052d64cd2e"
+    },
+    {
+      "id": 67,
+      "name": "Gambit Beneath the Shimmer",
+      "boss_recall_id": 68,
+      "rank_tag2": "recall_tag2_68",
+      "trial_plan_ids": [
+        14
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_68",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_68",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_68_14"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Stonesplit - Might",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_68_14"
+        }
+      ],
+      "image": "art/trial_67.png",
+      "image_source": "huisu_liyu_bg.png",
+      "sha256": "1019e2d48bcd966042911ae6c17ff8d613af09f98da9950111ec144841d8ee9b"
+    },
+    {
+      "id": 69,
+      "name": "Zhang Wanshi",
+      "boss_recall_id": 70,
+      "rank_tag2": "recall_tag2_70",
+      "trial_plan_ids": [
+        38
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_70",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_70",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_70_38"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Stonesplit - Strength",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_70_38"
+        }
+      ],
+      "image": "art/trial_69.png",
+      "image_source": "huisu_zhangwanshi_bg.png",
+      "sha256": "6faca49a7cf4b91e187278475cc51559227e78500f0751f5d97e50fe9103d160"
+    },
+    {
+      "id": 71,
+      "name": "Ci & Cuo",
+      "boss_recall_id": 72,
+      "rank_tag2": "recall_tag2_72",
+      "trial_plan_ids": [
+        33
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_72",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_72",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_72_33"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bamboocut - Wind",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_72_33"
+        }
+      ],
+      "image": "art/trial_71.png",
+      "image_source": "huisu_shuangziwuji_bg.png",
+      "sha256": "41d6808223dd816833cf5fd24c2556b4b76a6c885b7b0b6de3d5f73e826a4f68"
+    },
+    {
+      "id": 73,
+      "name": "Ironheart Centipede",
+      "boss_recall_id": 74,
+      "rank_tag2": "recall_tag2_74",
+      "trial_plan_ids": [
+        38
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_74",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_74",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_74_38"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Stonesplit - Strength",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_74_38"
+        }
+      ],
+      "image": "art/trial_73.png",
+      "image_source": "huisu_tiexinwu_bg.png",
+      "sha256": "4ebc092ee4033fc101639dd2e92652ef3650fba4ad03f62125e06e8f286df859"
+    },
+    {
+      "id": 75,
+      "name": "Lord Crimson Carp",
+      "boss_recall_id": 76,
+      "rank_tag2": "recall_tag2_76",
+      "trial_plan_ids": [
+        12
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_76",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_76",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_76_12"
+      ],
+      "special_no_path_ui": true,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Splendor",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_76_12"
+        }
+      ],
+      "image": "art/trial_75.png",
+      "image_source": "huisu_chijinhuan_bg.png",
+      "sha256": "6f09657b5f7f055a1689a9d38e0f2c372e527c8f349197bb81caae910aa40de8"
+    },
+    {
+      "id": 77,
+      "name": "Veiled Lady",
+      "boss_recall_id": 78,
+      "rank_tag2": "recall_tag2_78",
+      "trial_plan_ids": [
+        38
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_78",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_78",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_78_38"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Stonesplit - Strength",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_78_38"
+        }
+      ],
+      "image": "art/trial_77.png",
+      "image_source": "huisu_qingdengye_bg.png",
+      "sha256": "c686d95e540d26c4d8ba270c7a97913f47571fa1f865759a5aef7a6fd9f95634"
+    },
+    {
+      "id": 79,
+      "name": "Lunar Eidolon",
+      "boss_recall_id": 80,
+      "rank_tag2": "recall_tag2_80",
+      "trial_plan_ids": [
+        38
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_80",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_80",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_80_38"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Stonesplit - Strength",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_80_38"
+        }
+      ],
+      "image": "art/trial_79.png",
+      "image_source": "huisu_xianchenghu_bg.png",
+      "sha256": "0e6831e5cb123a8350c75edac62244b08a76a6cda52ff95c9c05b0b25e0830fa"
+    },
+    {
+      "id": 81,
+      "name": "Bell Toller",
+      "boss_recall_id": 82,
+      "rank_tag2": "recall_tag2_82",
+      "trial_plan_ids": [
+        98
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_82",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_82",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_82_98"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Bamboocut - Kite Path",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_82_98"
+        }
+      ],
+      "image": "art/trial_81.png",
+      "image_source": "huisu_dagengren_bg.png",
+      "sha256": "cf0448a6570a6a7e94cb3fb3fda40290406584c38b31237568f089380a19bddd"
+    },
+    {
+      "id": 83,
+      "name": "Halcyon",
+      "boss_recall_id": 84,
+      "rank_tag2": "recall_tag2_84",
+      "trial_plan_ids": [
+        98
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_84",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_84",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_84_98"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Bamboocut - Kite Path",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_84_98"
+        }
+      ],
+      "image": "art/trial_83.png",
+      "image_source": "huisu_qing_bg.png",
+      "sha256": "161dbf3440cedbbfa7313073d945fc8dc16434aa2accc4d48728b59645241964"
+    },
+    {
+      "id": 85,
+      "name": "Xiao Han",
+      "boss_recall_id": 86,
+      "rank_tag2": "recall_tag2_86",
+      "trial_plan_ids": [
+        38
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_86",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_86",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_86_38"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Stonesplit - Strength",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_86_38"
+        }
+      ],
+      "image": "art/trial_85.png",
+      "image_source": "huisu_xiaohan_bg.png",
+      "sha256": "9b32a579b8e053759880f45b32849df38789b85b2a75db7c571aed671edbdd59"
+    },
+    {
+      "id": 87,
+      "name": "Lodestar Swordmaster",
+      "boss_recall_id": 88,
+      "rank_tag2": "recall_tag2_88",
+      "trial_plan_ids": [
+        98
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_88",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_88",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_88_98"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Bamboocut - Kite Path",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_88_98"
+        }
+      ],
+      "image": "art/trial_87.png",
+      "image_source": "huisu_sinanjiankehuanguai_bg.png",
+      "sha256": "cb5ce89a678b7778f0e626812babb6b592d7eb178effe9950d698bdf940f1102"
+    },
+    {
+      "id": 89,
+      "name": "Inkpincer Scorpion",
+      "boss_recall_id": 90,
+      "rank_tag2": "recall_tag2_90",
+      "trial_plan_ids": [
+        38
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_90",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_90",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_90_38"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Stonesplit - Strength",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_90_38"
+        }
+      ],
+      "image": "art/trial_89.png",
+      "image_source": "huisu_shoumoxie_bg.png",
+      "sha256": "86c5c56c2c0a45ffed8d06e6e1668fc3761a330b4dff89bc49855e417d4954a7"
+    },
+    {
+      "id": 91,
+      "name": "Cloudclutch Serpent",
+      "boss_recall_id": 92,
+      "rank_tag2": "recall_tag2_92",
+      "trial_plan_ids": [
+        29
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_92",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_92",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_92_29"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Bamboocut - Dust Path",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_92_29"
+        }
+      ],
+      "image": "art/trial_91.png",
+      "image_source": "huisu_tianmanshe_bg.png",
+      "sha256": "379982175ccdface0e5348d50b3ba6c920d081defa425dfe5fa80a6e3486cf34"
+    },
+    {
+      "id": 97,
+      "name": "Peng",
+      "boss_recall_id": 98,
+      "rank_tag2": "recall_tag2_98",
+      "trial_plan_ids": [
+        13
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_98",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_98",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_98_13"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Umbra",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_98_13"
+        }
+      ],
+      "image": "art/trial_97.png",
+      "image_source": "huisu_peng_bg.png",
+      "sha256": "fefb19c8f5790118336ffecdfdbae268670e06dd0ba9c008f9c47d180bdd5154"
+    },
+    {
+      "id": 101,
+      "name": "Gilded Lament",
+      "boss_recall_id": 102,
+      "rank_tag2": "recall_tag2_102",
+      "trial_plan_ids": [
+        29
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_102",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_102",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_102_29"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Bamboocut - Dust Path",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_102_29"
+        }
+      ],
+      "image": "art/trial_101.png",
+      "image_source": "huisu_lisifu_bg.png",
+      "sha256": "63d604b59d6ea09572afd4f3927f2a68b14c6d8e7d3b82e913f07ef6adc3b7ab"
+    },
+    {
+      "id": 103,
+      "name": "Cat Emperor",
+      "boss_recall_id": 104,
+      "rank_tag2": "recall_tag2_104",
+      "trial_plan_ids": [
+        14
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_104",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_104",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_104_14"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Stonesplit - Might",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_104_14"
+        }
+      ],
+      "image": "art/trial_103.png",
+      "image_source": "huisu_yumaodawang_bg.png",
+      "sha256": "3f1b39863ec89368302dc58f53bbf943d2c8ee1d57b2073fdd015e128ce5f978"
+    },
+    {
+      "id": 105,
+      "name": "Black Rogue",
+      "boss_recall_id": 106,
+      "rank_tag2": "recall_tag2_106",
+      "trial_plan_ids": [
+        12
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_106",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_106",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_106_12"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Splendor",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_106_12"
+        }
+      ],
+      "image": "art/trial_105.png",
+      "image_source": "huisu_jingniang_bg",
+      "sha256": "b463b20cd1d009f0ec5767c568e3d5b8351ce0330842846e9be2216f9e11bb58"
+    },
+    {
+      "id": 107,
+      "name": "The Lone Tyrant",
+      "boss_recall_id": 108,
+      "rank_tag2": "recall_tag2_108",
+      "trial_plan_ids": [
+        38
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_108",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_108",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_108_38"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Stonesplit - Strength",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_108_38"
+        }
+      ],
+      "image": "art/trial_107.png",
+      "image_source": "huisu_dufu_bg.png",
+      "sha256": "0f5b16de5e9caaefb8d0f9c2de8b14c8a06e29ff32c65d18f3b7074c1c902ad8"
+    },
+    {
+      "id": 109,
+      "name": "Yelu A'buli",
+      "boss_recall_id": 110,
+      "rank_tag2": "recall_tag2_110",
+      "trial_plan_ids": [
+        29
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_110",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_110",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_110_29"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Bamboocut - Dust Path",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_110_29"
+        }
+      ],
+      "image": "art/trial_109.png",
+      "image_source": "huisu_kufenren_bg.png",
+      "sha256": "08d07a31c0482333ad0d3b3a2bf064751d3181c39cc141ae367f134707bb0a84"
+    },
+    {
+      "id": 111,
+      "name": "Wayfarer Bingshen",
+      "boss_recall_id": 112,
+      "rank_tag2": "recall_tag2_112",
+      "trial_plan_ids": [
+        38
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_112",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_112",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_112_38"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Stonesplit - Strength",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_112_38"
+        }
+      ],
+      "image": "art/trial_111.png",
+      "image_source": "huisu_tianyake_bg.png",
+      "sha256": "890ce899ac3736c6609db7cb4fd7d2d88667db90417401fcc6c39b6aaee28b7e"
+    },
+    {
+      "id": 113,
+      "name": "Goshawk",
+      "boss_recall_id": 114,
+      "rank_tag2": "recall_tag2_114",
+      "trial_plan_ids": [
+        38
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_114",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_114",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_114_38"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Stonesplit - Strength",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_114_38"
+        }
+      ],
+      "image": "art/trial_113.png",
+      "image_source": "huisu_datiehua_bg.png",
+      "sha256": "5f45e8d2e491bcf11d399e02a6bbaf73259ccf7076bc88121a2244994b143946"
+    },
+    {
+      "id": 115,
+      "name": "Tidewatcher",
+      "boss_recall_id": 116,
+      "rank_tag2": "recall_tag2_116",
+      "trial_plan_ids": [
+        98
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_116",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_116",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_116_98"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Bamboocut - Kite Path",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_116_98"
+        }
+      ],
+      "image": "art/trial_115.png",
+      "image_source": "huisu_guanhcaoke_bg.png",
+      "sha256": "5ca9a30524dd20f3dc2440e671b2c83df69cd5028ebdbba056e687b1f2ac2a01"
+    },
+    {
+      "id": 117,
+      "name": "Golden Colossus Taicu",
+      "boss_recall_id": 118,
+      "rank_tag2": "recall_tag2_118",
+      "trial_plan_ids": [
+        12
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_118",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_118",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_118_12"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Bellstrike - Splendor",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_118_12"
+        }
+      ],
+      "image": "art/trial_117.png",
+      "image_source": "huisu_jinrentaicu_bg.png",
+      "sha256": "cc7d0d79a06c887df115d67d20c628dbf715b2e03c07c73307afb309ebdb2c45"
+    },
+    {
+      "id": 119,
+      "name": "Old Raftsman",
+      "boss_recall_id": 120,
+      "rank_tag2": "recall_tag2_120",
+      "trial_plan_ids": [
+        38
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_120",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_120",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_120_38"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Stonesplit - Strength",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_120_38"
+        }
+      ],
+      "image": "art/trial_119.png",
+      "image_source": "huisu_fangpaiweng_bg.png",
+      "sha256": "bc254c9e7f33d554ed77e7241f68585f47f395baeee1543a37bc5561418bba47"
+    },
+    {
+      "id": 121,
+      "name": "Pei Hang",
+      "boss_recall_id": 122,
+      "rank_tag2": "recall_tag2_122",
+      "trial_plan_ids": [
+        98
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_122",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_122",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_122_98"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Bamboocut - Kite Path",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_122_98"
+        }
+      ],
+      "image": "art/trial_121.png",
+      "image_source": "huisu_peihang_bg.png",
+      "sha256": "fb34ff47ae032ef64a3ef5f3de1c5c8ca3af9cd72ffdc302e43781ef561e321c"
+    },
+    {
+      "id": 123,
+      "name": "Shuttlecock Champion",
+      "boss_recall_id": 124,
+      "rank_tag2": "recall_tag2_124",
+      "trial_plan_ids": [
+        98
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_124",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_124",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_124_98"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Bamboocut - Kite Path",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_124_98"
+        }
+      ],
+      "image": "art/trial_123.png",
+      "image_source": "huisu_tijianzi_bg.png",
+      "sha256": "4fdad2080271ab80fcd59e830201b48edb5d95f7822668b02885bf3c6ae20d82"
+    },
+    {
+      "id": 125,
+      "name": "Master of Spring Silkworm Manor",
+      "boss_recall_id": 126,
+      "rank_tag2": "recall_tag2_126",
+      "trial_plan_ids": [
+        21
+      ],
+      "overall_rank_name": "DynamicRank___tag1_recall___recall_tag2_126",
+      "no_hit_rank_name": "DynamicRank___tag1_recall_wushang___recall_tag2_126",
+      "build_rank_names": [
+        "DynamicRank___tag1_recall_liupai___recall_tag2_126_21"
+      ],
+      "special_no_path_ui": false,
+      "paths": [
+        {
+          "name": "Path: Silkbind - Jade",
+          "rank_name": "DynamicRank___tag1_recall_liupai___recall_tag2_126_21"
+        }
+      ],
+      "image": "art/trial_125.png",
+      "image_source": "huisu_xufu_bg.png",
+      "sha256": "ea3d4a2ac3f85a1054513204daf7f046e1ed41f702752c58d65387ca3897fcbc"
+    }
+  ],
+  "names": {
+    "martial": {},
+    "inner": {
+      "100009": "HP - Rare",
+      "116911": "Heavenwill Gauntlets",
+      "154": "Sword Horizon",
+      "502": "Towline Sweep",
+      "112911": "Everspring Umbrella",
+      "1": "Wind Beneath Wings",
+      "504": "Song of Tang",
+      "601": "Soaring High",
+      "113911": "Unfettered Rope Dart",
+      "46": "Evasive Charge",
+      "100005": "Defense - Uncommon",
+      "114911": "Snowparting Blade",
+      "41": "Envigorated Warrior",
+      "100020": "Twilight Rage",
+      "106911": "Panacea Fan",
+      "151": "Wolfchaser's Art",
+      "44": "Fury Harvest",
+      "301": "Gourd Toss",
+      "100016": "Soul Return",
+      "402": "Trapped Beast",
+      "604": "Celestial Vigor",
+      "354": "Mending Loom",
+      "103": "Battle Anthem",
+      "352": "Restoring Blossom",
+      "304": "Blossom Barrage",
+      "404": "Rock Solid",
+      "2": "Evening Snow",
+      "554": "Wildfire Surge",
+      "100001": "Attack - Common",
+      "100010": "Active - Rare",
+      "100024": "Raging Waves",
+      "101911": "Nameless Spear",
+      "108911": "Inkwell Fan",
+      "115911": "Phalanxbane Blade",
+      "42": "Bitter Seasons",
+      "100003": "HP - Common",
+      "503": "Light Anew",
+      "100022": "Blade's Return",
+      "353": "Esoteric Revival",
+      "302": "Thunderous Bloom",
+      "4": "Shadow Assault",
+      "104": "Sword Morph",
+      "351": "Royal Remedy",
+      "100006": "HP - Uncommon",
+      "82": "Seasonal Edge",
+      "100011": "Special - Rare",
+      "100015": "Heal - Rare",
+      "100002": "Defense - Common",
+      "100012": "Charge - Rare",
+      "100026": "Divinecraft - Water",
+      "603": "Empirical Edge",
+      "5": "Fivefold Bleed",
+      "100021": "Qi Surge",
+      "48": "Heart of Fire",
+      "103911": "Heavenquaker Spear",
+      "43": "Vital Leech",
+      "47": "Light and Shadow Alike",
+      "102911": "Strategic Sword",
+      "100023": "Snowprint Step",
+      "105911": "Stormbreaker Spear",
+      "100008": "Defense - Rare",
+      "553": "Throat-Piercing Art",
+      "453": "Breaking Point",
+      "3": "Steadfast Stance",
+      "102": "Wildfire Spark",
+      "403": "Art of Resistance",
+      "552": "Steadfast Devotion",
+      "45": "Divine Roulette",
+      "303": "Star Reacher",
+      "100004": "Attack - Uncommon",
+      "602": "Sky Gripped",
+      "100017": "Vitality Regen",
+      "551": "Frost-Clad Night",
+      "100025": "Divinecraft - Fire",
+      "100911": "Nameless Sword",
+      "6": "Sandswirl Tail",
+      "104911": "Thundercry Blade",
+      "101": "Mountain's Might",
+      "454": "Riptide Reflex",
+      "100013": "Light/Heavy Attack - Rare",
+      "501": "Phantom Rally",
+      "100018": "Chasing the Moon",
+      "100019": "Blood Feast",
+      "111911": "Mortal Rope Dart",
+      "110911": "Infernal Twinblades",
+      "117911": "Skygrasp Rope Dart",
+      "100027": "Divinecraft - Poison",
+      "100007": "Attack: Rare",
+      "401": "Exquisite Scenery",
+      "451": "Echoes of Oblivion",
+      "452": "Vendetta",
+      "107911": "Vernal Umbrella",
+      "109911": "Soulshade Umbrella",
+      "152": "Adaptive Steel",
+      "81": "Morale Chant",
+      "153": "Insightful Strike"
+    },
+    "mystic": {
+      "49": "Paired Radiance",
+      "307": "Fan Glider",
+      "54": "Snow Lion Form",
+      "502": "Morph: Wild Storm",
+      "519": "Place horse barrier",
+      "1": "Touch of Death",
+      "504": "Morph: Serene Sanctuary",
+      "33": "Yaksha Rush",
+      "10": "Ghost Bind",
+      "601": "Duo Stage - Contortion",
+      "38": "Soaring Spin",
+      "40": "Golden Body",
+      "46": "Goosy Slide",
+      "306": "Meteor Flight",
+      "515": "Morph: Puppetry Legacy",
+      "520": "Place flamethrower",
+      "50": "Cyclone Spin",
+      "107": "Contortion",
+      "41": "Dragon Head",
+      "505": "Morph: Fiery Kite",
+      "44": "Honking Havoc",
+      "55": "Mohist Craft",
+      "106": "Cloud Steps",
+      "301": "Threefold Skywalk",
+      "518": "Place Spike Trap",
+      "103": "Celestial Seize",
+      "304": "Safe Mighty Drop",
+      "315": "Moonleap Morph",
+      "2": "Dragon's Breath",
+      "516": "Morph: Gale Force Counter",
+      "312": "Wallstride - Shadowdash",
+      "37": "Wolflike Frenzy",
+      "514": "Morph: Disorientation",
+      "704": "Explosive Barrel",
+      "27": "Wind Sense",
+      "42": "Ghostly Steps",
+      "507": "Morph: Rolling Assault",
+      "503": "Morph: Death Stride",
+      "32": "Serene Breeze",
+      "52": "Bursting Nine",
+      "302": "Skywalk Dash",
+      "305": "Thousand-Mile Flight",
+      "4": "Lion's Roar",
+      "513": "Morph: Swordbound",
+      "14": "Guardian Palm",
+      "703": "Vortex Wheel",
+      "39": "Flaming Meteor",
+      "509": "Morph: Shattered Form",
+      "316": "Idle Wind",
+      "53": "World to Sword",
+      "43": "Blinding Mist",
+      "311": "Wallstride - Swiftstride",
+      "517": "Place crossbow",
+      "3": "Drunken Poet",
+      "102": "Meridian Touch",
+      "35": "Star Shift",
+      "510": "Morph: Fowl Play",
+      "45": "Flute of the Tides",
+      "303": "Mighty Drop",
+      "11": "Leaping Toad",
+      "602": "Duo Stage - Flute of the Tides",
+      "6": "Blinding Mist",
+      "17": "Nightborne Glow",
+      "13": "Talon Strike",
+      "101": "Tai Chi",
+      "501": "Morph: Thunder Roar",
+      "310": "Wind Rider",
+      "506": "Morph: Frosty Feathers",
+      "34": "Veil of Stillness",
+      "56": "Wealth Galore",
+      "31": "Divine Counter",
+      "36": "Free Morph",
+      "314": "Abyss Dive",
+      "401": "Still Waters",
+      "705": "Bladed Puppet"
+    },
+    "preset": {
+      "3125": "Bamboocut - Kite Path",
+      "3035": "Path: Silkbind - Jade",
+      "2204": "Beginner Jiang Wulang",
+      "2033": "Path: Bamboocut - Wind",
+      "88": "Silkbind - Deluge",
+      "122": "Xiamo Pure Inner Way Level Adjustment",
+      "96": "PVP Tutorial",
+      "3071": "Path: Stonesplit - Might",
+      "1005": "Mercantile War Human Barrier Attack - World Level 5",
+      "38": "Stonesplit - Strength",
+      "2032": "Path: Bamboocut - Wind",
+      "9": "Path: Bellstrike - Splendor",
+      "131": "Bamboocut - Kite Path",
+      "76": "Path: Bellstrike - Umbra",
+      "107": "Path: Silkbind - Jade",
+      "128": "Silkbind - Deluge Path",
+      "2036": "Stonesplit - Strength",
+      "30": "Beginner Jiang Wulang",
+      "95": "Use Player Combo",
+      "2203": "Beginner Jiang Wulang",
+      "3055": "Path: Bamboocut - Wind",
+      "91": "Use Player Combo",
+      "1012": "Mercantile War Human Barrier Attack - World Level 12",
+      "3003": "Beginner Jiang Wulang",
+      "3072": "Path: Stonesplit - Might",
+      "3013": "Path: Bellstrike - Splendor",
+      "2098": "Bamboocut - Kite Path",
+      "1002": "Guild War Bulwark Attack - World Level 2",
+      "3031": "Path: Silkbind - Jade",
+      "103": "Path: Bellstrike - Splendor",
+      "2020": "Path: Silkbind - Jade",
+      "3101": "Bamboocut - Dust Path",
+      "1004": "Mercantile War Human Barrier Attack - World Level 4",
+      "87": "Path: Silkbind - Jade",
+      "3126": "Jianghu Martial Games 2.0 - All Skills",
+      "19": "Swamp",
+      "3127": "Ultimate Slap",
+      "3129": "Jianghu Martial Games 2.0 - Explosive Barrel",
+      "3133": "Jianghu Martial Games 2.0 - Explosive Barrel Puppet",
+      "3103": "Bamboocut - Dust Path",
+      "114": "Palace Maid Jianghu Legacy - Sword",
+      "32": "Path: Bamboocut - Wind",
+      "3011": "Path: Bellstrike - Splendor",
+      "1001": "Guild War Bulwark Attack - World Level 1",
+      "3061": "Path: Bellstrike - Umbra",
+      "3104": "Bamboocut - Dust Path",
+      "104": "Path: Bellstrike - Umbra",
+      "14": "Path: Stonesplit - Might",
+      "7": "Use Player Combo",
+      "125": "Path: Stonesplit - Might",
+      "1016": "Guild War Bulwark Attack - World Level 16",
+      "74": "Use Player Combo",
+      "86": "Stonesplit - Strength",
+      "108": "Silkbind - Deluge Path",
+      "1010": "Mercantile Human Barrier Attack - World Level 10",
+      "2021": "Path: Silkbind - Jade",
+      "1007": "Mercantile War Human Barrier Attack - World Level 7",
+      "23": "Heart Lake",
+      "1008": "Mercantile War Human Barrier Attack - World Level 8",
+      "5": "Use Player Combo",
+      "1009": "Mercantile War Human Barrier Attack - World Level 9",
+      "80": "Shimmer of South Boss Phase 1 & 2 Balancing",
+      "1014": "All Professions vs Human Shield Attack - World Level 14",
+      "2035": "Stonesplit - Strength",
+      "3024": "Stonesplit - Strength Path",
+      "118": "Cockfighting Gameplay",
+      "102": "Beginner Jiang Wulang",
+      "90": "Bamboocut - Dust Path",
+      "3012": "Path: Bellstrike - Splendor",
+      "3105": "Bamboocut - Dust Path",
+      "18": "Exploration",
+      "77": "Use Player Combo",
+      "11": "Path: Stonesplit - Might",
+      "2201": "Beginner Jiang Wulang",
+      "124": "Path: Bellstrike - Umbra",
+      "17": "Sword",
+      "13": "Path: Bellstrike - Umbra",
+      "69": "Path: Bellstrike - Umbra",
+      "101": "Lord Crimson Carp's Legacy",
+      "1013": "All Professions vs Human Shield Attack - World Level 13",
+      "2038": "Bamboocut - Kite Path",
+      "3124": "Bamboocut - Kite Path",
+      "3130": "Jianghu Martial Games 2.0 - Puppet",
+      "3021": "Stonesplit - Strength Path",
+      "31": "Use Player Combo",
+      "2007": "Use Player Combo",
+      "89": "Path: Bamboocut - Wind",
+      "3074": "Path: Stonesplit - Might",
+      "36": "Stonesplit - Strength",
+      "3073": "Path: Stonesplit - Might",
+      "68": "Path: Bellstrike - Umbra",
+      "66": "Path: Bamboocut - Wind",
+      "1018": "Guild War Bulwark Attack - World Level 18",
+      "81": "Use Player Combo",
+      "121": "Wang Qing Sleeping Puppet Level Adjustment",
+      "1003": "Mercantile War Human Barrier Attack - World Level 3",
+      "79": "Use Player Combo",
+      "25": "Lv. 30 Attribute Balancing",
+      "84": "Path: Bellstrike - Umbra",
+      "54": "Sword",
+      "71": "Use Player Combo",
+      "98": "Bamboocut - Kite Path",
+      "110": "Bamboocut - Dust Path",
+      "12": "Path: Bellstrike - Splendor",
+      "129": "Path: Bamboocut - Wind",
+      "33": "Path: Bamboocut - Wind",
+      "10": "Path: Bellstrike - Umbra",
+      "62": "Path: Bellstrike - Umbra",
+      "1015": "All Professions vs Human Shield Attack - World Level 15",
+      "2005": "Use Player Combo",
+      "2037": "Bamboocut - Kite Path",
+      "2202": "Beginner Jiang Wulang",
+      "1019": "Guild War Bulwark Attack - World Level 19",
+      "2009": "Path: Bellstrike - Splendor",
+      "3014": "Path: Bellstrike - Splendor",
+      "3032": "Path: Silkbind - Jade",
+      "2014": "Path: Stonesplit - Might",
+      "3052": "Path: Bamboocut - Wind",
+      "3075": "Path: Stonesplit - Might",
+      "50": "Lv. 50 Attribute Balancing",
+      "3082": "Silkbind - Deluge Path",
+      "99": "Bamboocut - Kite Path",
+      "3123": "Bamboocut - Kite Path",
+      "2097": "Bamboocut - Kite Path",
+      "126": "Stonesplit - Strength",
+      "1011": "Mercantile Human Barrier Attack - World Level 11",
+      "22": "Beginner Jiang Wulang",
+      "106": "Stonesplit - Strength",
+      "93": "Use Player Combo",
+      "3051": "Path: Bamboocut - Wind",
+      "64": "Path: Silkbind - Jade",
+      "3054": "Path: Bamboocut - Wind",
+      "3063": "Path: Bellstrike - Umbra",
+      "83": "Path: Bellstrike - Splendor",
+      "72": "Use Player Combo",
+      "127": "Path: Silkbind - Jade",
+      "26": "Lv. 50 Attribute Balancing",
+      "61": "Path: Bellstrike - Splendor",
+      "3053": "Path: Bamboocut - Wind",
+      "3085": "Silkbind - Deluge Path",
+      "37": "Stonesplit - Strength",
+      "3023": "Stonesplit - Strength Path",
+      "3064": "Path: Bellstrike - Umbra",
+      "2011": "Path: Stonesplit - Might",
+      "2039": "Golden Lion Apex Luxury",
+      "3131": "Jianghu Martial Games 2.0 - Enemy Gathering Explosive Barrel",
+      "3121": "Bamboocut - Kite Path",
+      "3132": "Jianghu Martial Games 2.0 - Enemy Gathering Puppet",
+      "16": "Sword & Spear Combo",
+      "67": "Bamboocut - Dust Path",
+      "82": "Brocade Carp Boss Fight Level Adjustment",
+      "100": "Lord Crimson Carp's Legacy",
+      "2012": "Path: Bellstrike - Splendor",
+      "3015": "Path: Bellstrike - Splendor",
+      "3083": "Silkbind - Deluge Path",
+      "123": "Path: Bellstrike - Splendor",
+      "1017": "Guild War Bulwark Attack - World Level 17",
+      "29": "Bamboocut - Dust Path",
+      "1006": "Mercantile War Human Barrier Attack - World Level 6",
+      "75": "Path: Bellstrike - Umbra",
+      "65": "Silkbind - Deluge Path",
+      "63": "Path: Stonesplit - Might",
+      "21": "Path: Silkbind - Jade",
+      "53": "Dragon Maiden Boss Fight Balancing",
+      "94": "PVP Tutorial",
+      "105": "Path: Stonesplit - Might",
+      "112": "Palace Maid Jianghu Legacy - Sword",
+      "115": "Stonesplit - Strength",
+      "20": "Path: Silkbind - Jade",
+      "2010": "Path: Bellstrike - Umbra",
+      "3022": "Stonesplit - Strength Path",
+      "3025": "Stonesplit - Strength Path",
+      "35": "Stonesplit - Strength",
+      "113": "Palace Maid Jianghu Legacy - Bow and Arrow",
+      "2013": "Path: Bellstrike - Umbra",
+      "78": "Use Player Combo",
+      "3081": "Silkbind - Deluge Path",
+      "3122": "Bamboocut - Kite Path",
+      "3128": "Jianghu Martial Games 2.0 - Enemy Gathering",
+      "132": "Wang Qing Sleeping Puppet Level Adjustment",
+      "3065": "Path: Bellstrike - Umbra",
+      "109": "Path: Bamboocut - Wind",
+      "3004": "Beginner Jiang Wulang",
+      "111": "Encounter - Sword - Lv.95 Attribute",
+      "34": "Tomb Raiding Balancing",
+      "130": "Bamboocut - Dust Path",
+      "56": "Dodge",
+      "92": "Grayscale Test",
+      "3002": "Beginner Jiang Wulang",
+      "73": "Use Player Combo",
+      "85": "Path: Stonesplit - Might",
+      "3001": "Beginner Jiang Wulang",
+      "3102": "Bamboocut - Dust Path",
+      "28": "Bamboocut - Dust Path",
+      "97": "Bamboocut - Kite Path",
+      "3033": "Path: Silkbind - Jade",
+      "3034": "Path: Silkbind - Jade",
+      "3062": "Path: Bellstrike - Umbra",
+      "3084": "Silkbind - Deluge Path"
+    }
+  }
+}

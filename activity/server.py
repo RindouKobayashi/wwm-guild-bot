@@ -7,6 +7,10 @@ HERE=Path(__file__).resolve().parent
 BOT=HERE.parent
 sys.path.insert(0,str(BOT))
 
+def public_number(value):
+    text=str(value) if value is not None else ''
+    return text if len(text)==10 and text.isascii() and text.isdigit() else None
+
 async def resolve_rank_names(result):
     """Use each member's recorded host; never guess a server from the team ID."""
     from utility.wwm import get_bulk_players_info_multi_hostnum
@@ -16,13 +20,14 @@ async def resolve_rank_names(result):
         profiles={row.get('pid'):info} if 'base' in info else info
         for pid,profile in profiles.items():
             if isinstance(profile,dict) and profile.get('base',{}).get('nickname'):
-                names[pid]={'name':profile['base']['nickname']}
+                names[pid]={'name':profile['base']['nickname'],'number':public_number(profile['base'].get('number_id'))}
         members=ud.get('members') or [row.get('pid')]
         for member in members:
             pid=member if isinstance(member,str) else member.get('pid')
             meta=ud.get(pid,{})
-            host=meta.get('hostnum') or (row.get('hostnum') if not ud.get('members') else None)
-            if pid and host and pid not in names:targets[pid]=host
+            meta=meta if isinstance(meta,dict) else {}
+            host=meta.get('hostnum') or (member.get('hostnum') if isinstance(member,dict) else None) or (row.get('hostnum') if not ud.get('members') else None)
+            if pid and host and not names.get(pid,{}).get('number'):targets[pid]=host
     pairs=list(targets.items())[:400]
     for offset in range(0,len(pairs),40):
         groups={}
@@ -32,7 +37,7 @@ async def resolve_rank_names(result):
             if response and response.get('code')==0:
                 for pid,profile in response.get('result',{}).items():
                     base=profile.get('base') or {}
-                    if base.get('nickname'):names[pid]={'name':base['nickname'],'number':base.get('number_id')}
+                    if base.get('nickname'):names[pid]={'name':base['nickname'],'number':public_number(base.get('number_id'))}
         except Exception:
             pass # A missing/deleted profile must not hide the recorded run.
     return {**result,'player_names':names}
@@ -49,6 +54,13 @@ def create_app(live=False):
     version=runtime_version()
     catalogue=json.loads((HERE/'public/catalogue.json').read_text(encoding='utf-8'))
     player_mappings=json.loads((HERE/'player_mappings.json').read_text(encoding='utf8'))
+    from utility.game_assets import current
+    bundle=current()
+    asset_public=HERE/'public'
+    if bundle.directory and HERE==Path(__file__).resolve().parent:
+        asset_public=bundle.directory/'activity'
+        catalogue=json.loads((asset_public/'catalogue.json').read_text(encoding='utf-8'))
+        player_mappings=bundle.section('player_mappings')
     boards={b['key']:b for b in catalogue['boards']};sessions={};cache={};slots=asyncio.Semaphore(2)
     app_id=os.environ.get('DISCORD_CLIENT_ID','');secret=os.environ.get('DISCORD_CLIENT_SECRET','')
     if live and (not app_id.isdigit() or not secret):raise ValueError('Discord mode requires DISCORD_CLIENT_ID and DISCORD_CLIENT_SECRET')
@@ -218,8 +230,9 @@ def create_app(live=False):
         return web.json_response(result,headers={'Cache-Control':'no-store'})
     async def static(request):
         relative=request.match_info.get('path','') or 'index.html'
-        path=(HERE/'public'/relative).resolve()
-        if not path.is_relative_to((HERE/'public').resolve()) or not path.is_file():raise web.HTTPNotFound()
+        source=asset_public if relative=='catalogue.json' or relative.startswith('art/') else HERE/'public'
+        path=(source/relative).resolve()
+        if not path.is_relative_to(source.resolve()) or not path.is_file():raise web.HTTPNotFound()
         if relative not in ('index.html','app.js','discord-sdk.js','style.css','catalogue.json') and not relative.startswith('art/'):raise web.HTTPNotFound()
         if relative=='index.html':
             html=path.read_text(encoding='utf8').replace('href="style.css"',f'href="style.css?v={version}"').replace('src="app.js"',f'src="app.js?v={version}"')

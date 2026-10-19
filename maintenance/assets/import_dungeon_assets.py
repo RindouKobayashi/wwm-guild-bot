@@ -400,9 +400,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--game-data-run", type=Path)
     parser.add_argument("--destination", type=Path, default=BOT / "data/ranking_assets")
+    parser.add_argument("--cards-root", type=Path)
     args = parser.parse_args()
     run = args.game_data_run
     if run is None:
         base = BOT.parent / "WWM-Toolkit/output/game_data"
         run = base / json.loads((base / "latest.json").read_text(encoding="utf-8"))["run"].replace("\\", "/")
-    print(json.dumps(build(run, args.destination)))
+    print(json.dumps(build(run, args.destination, args.cards_root)))

@@ -1,10 +1,14 @@
 """Copy extracted Abyss definitions and original artwork into bot-local data."""
-import json,shutil
+import argparse,json,shutil
 from pathlib import Path
 BOT=Path(__file__).resolve().parents[2]
 def main():
-    source=BOT.parent/'WWM-Toolkit/output/game_data/abyss_trials'
-    output=BOT/'data/abyss_assets';(output/'art').mkdir(parents=True,exist_ok=True)
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--source',type=Path,default=BOT.parent/'WWM-Toolkit/output/game_data/abyss_trials')
+    parser.add_argument('--destination',type=Path,default=BOT/'data/abyss_assets')
+    args=parser.parse_args()
+    source=args.source
+    output=args.destination;(output/'art').mkdir(parents=True,exist_ok=True)
     data=json.loads((source/'abyss_trials.json').read_text(encoding='utf-8'))
     mappings=json.loads((source/'loadout_name_tables.json').read_text(encoding='utf-8'))
     boards=[]

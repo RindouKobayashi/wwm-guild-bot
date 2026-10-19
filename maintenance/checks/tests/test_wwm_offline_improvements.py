@@ -121,6 +121,57 @@ class OfflineCase(unittest.IsolatedAsyncioTestCase):
         profile=PlayerProfileView(player_nickname='Offline',number_id='1234567890',collection_data=build_collection_data({}))
         self.assertTrue(profile.to_components())
 
+    async def test_equipment_navigation_splits_large_pages_without_losing_text(self):
+        profile=PlayerProfileView(player_nickname='😀'*100,number_id='1234567890',owner_id=123)
+        profile._equipments_sections=[('Total Stats',[['stat']]),
+            ('Weapons',[[f'Item {i}', 'Long affix 😀 '*100, f'End of item {i}'] for i in range(4)]),
+            ('Armor',[['armor']]),('Ranged & Jade',[['bow']])]
+        profile.equipments_page=1
+        interaction=self.interaction()
+        await profile._show_equipments_page(interaction)
+        total=profile._equipments_page_count
+        self.assertGreater(total,4)
+        def texts(items):
+            for item in items:
+                if item.get('type')==10:yield item['content']
+                yield from texts(item.get('components',[]))
+                if 'accessory' in item:yield from texts([item['accessory']])
+        for page in range(total):
+            profile.equipments_page=page
+            await profile._show_equipments_page(interaction)
+            size=sum(len(value.encode('utf-16-le'))//2 for value in texts(profile.to_components()))
+            self.assertLessEqual(size,4000)
+        from utility.component_pages import text_pages
+        original='Very long 😀 line'*900+'\nLast affix'
+        chunks=text_pages(original)
+        self.assertEqual(''.join(chunks),original)
+        self.assertTrue(all(len(value.encode('utf-16-le'))//2<=2800 for value in chunks))
+
+    async def test_likes_history_uses_same_resolver_as_breakdown(self):
+        profile=PlayerProfileView(player_nickname='Offline',number_id='1234567890',owner_id=123)
+        profile.likes_data_raw={'112':{'n_likes':2}}
+        profile.likes_history=[{'nickname':'Liker','level':50,'topic_id':'112','timestamp':0}]
+        items=profile._build_likes_detail()
+        self.assertIn('Profile Likes',str(items[0].content))
+        self.assertIn('Liker',str(items[0].content))
+
+    async def test_equipment_items_stay_whole_and_oversize_details_attach(self):
+        from utility.component_pages import item_pages
+        blocks=[['Primary weapon', 'affix '*100],['Secondary weapon','affix '*100]]
+        pages=item_pages([('Weapons',blocks),('Armor',[['Helmet','roll '*500],['Chest','roll '*500]])])
+        self.assertIn('Primary weapon',pages[0][1])
+        self.assertIn('Secondary weapon',pages[0][1])
+        for block in blocks:
+            self.assertEqual(sum('\n'.join(block) in body for _,body,_ in pages),1)
+        profile=PlayerProfileView(player_nickname='Offline',number_id='1234567890',owner_id=123)
+        original=['Huge item','😀'*3000,'Last affix']
+        profile._equipments_sections=[('Weapons',[original])]
+        profile.equipments_page=0
+        interaction=self.interaction()
+        await profile._show_equipments_page(interaction)
+        file=interaction.edit_original_response.call_args.kwargs['attachments'][-1]
+        self.assertEqual(file.fp.getvalue().decode('utf-8'),'\n'.join(original))
+
     async def test_full_ranking_page_stays_within_text_budget(self):
         cog=self.cog();view=ranking.RankingResultsView(cog,'hr',1,'rank_team10_dungeon_1')
         view.rank_list=[{'score':-75,'ud':{'ts':1791336898},'player_info':{'base':{'nickname':'*'*48}}} for _ in range(20)]
@@ -311,6 +362,10 @@ class PureTests(unittest.TestCase):
 
     def test_all_upcoming_families_have_one_original_card(self):
         assets=DungeonAssets(BOT/'data/ranking_assets')
+        # This fixed-ID regression describes the historical reviewed fixture;
+        # current exports can retire boards. Current bundle coverage is checked
+        # independently by test_every_imported_banner_exists.
+        assets.root=(BOT/'data/ranking_assets').resolve()
         expected={('hr',34):'25',('hr',37):'25',('st',35):'26',('st',38):'26',
                   ('st',41):'27',('st',44):'27',('hr',40):'28',('hr',43):'28',
                   ('st',47):'29',('st',50):'29',('hr',46):'30',('hr',49):'30'}
@@ -319,7 +374,8 @@ class PureTests(unittest.TestCase):
             self.assertEqual(len(row['images']),1)
             self.assertEqual(row['resource'],'wulinlu_tongyou_pic_xj_'+suffix)
             self.assertTrue(row['path'].is_file())
-            self.assertIn(row['join'],('direct_guild_card','reviewed_boss_art_identity'))
+            self.assertIn(row['join'],('direct_guild_card','reviewed_boss_art_identity',
+                                       'explicit activity-card rank_id/rank_id_replace'))
 
     def test_changed_upcoming_art_requires_new_review(self):
         args=self.upcoming_fixture();rank,matches,cat,reviews,art=args
@@ -443,13 +499,14 @@ class PureTests(unittest.TestCase):
         self.assertIsNone(assets.get('pet',1));self.assertIsNone(assets.get('st',99999))
 
     def test_every_imported_banner_exists(self):
-        root=BOT/'data/ranking_assets';run=root/json.loads((root/'latest.json').read_text())['run']
-        data=json.loads((run/'manifest.json').read_text());assets=DungeonAssets(root)
+        assets=DungeonAssets(BOT/'data/ranking_assets');root=assets.root
+        run=root/json.loads((root/'latest.json').read_text())['run']
+        data=json.loads((run/'manifest.json').read_text())
         self.assertTrue(data['boards'])
         for key in data['boards']:
             team,identifier=key.split(':');row=assets.get(team,identifier)
             if data['boards'][key]['file']:self.assertTrue((run/data['boards'][key]['file']).is_file())
-            if row['art_status'] in ('verified_dungeon_card','reviewed_dungeon_card'):self.assertTrue(row['path'].is_file())
+            if row['art_status'] in ('explicit_leaderboard_art','verified_dungeon_card','reviewed_dungeon_card'):self.assertTrue(row['path'].is_file())
             else:self.assertIsNone(row['path'])
 
     def test_asset_pointer_cannot_escape_bot_bundle(self):

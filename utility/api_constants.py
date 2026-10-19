@@ -347,6 +347,32 @@ KONGFU_WEAPON_MAP = {
     20503: {"name": "Riven Twinblades", "icon": "zuiquan_small_1_oversea_0_0_ui.png", "emoji": "<:zuiquan_small_1_oversea_0_0_ui:1547626058650488962>", "role": "DPS"},
 }
 
+from utility.game_assets import current as _game_assets
+_extracted_api = _game_assets().section('api_constants', {})
+if _extracted_api:
+    # Discord emoji IDs, role assignments and app role-classification policy stay
+    # local. Game display labels and election allowances come from reviewed data.
+    SCHOOL_NAMES = {int(key): value for key, value in _extracted_api['school_names'].items()}
+    SCHOOL_RANKING = dict(_extracted_api['school_ranks'])
+    VOTE_COUNTS = dict(_extracted_api['vote_counts'])
+    LIKES.update({int(key): value for key, value in _extracted_api['likes'].items()})
+    if _extracted_api.get('boss_names'):
+        BOSS_NAMES = {int(key): value for key, value in _extracted_api['boss_names'].items()}
+for _identifier, _name in _game_assets().section('martial_names', {}).items():
+    if str(_identifier).isdigit() and isinstance(_name, str) and _name:
+        KONGFU_WEAPON_MAP.setdefault(int(_identifier), {})['name'] = _name
+
+
+def get_like_topic_name(topic_id):
+    """Prefer localized UI labels; otherwise identify the original enum explicitly."""
+    topic_id = int(topic_id)
+    if topic_id in LIKES:
+        return LIKES[topic_id]
+    symbol = _extracted_api.get('like_topic_symbols', {}).get(str(topic_id))
+    if symbol:
+        return symbol.removeprefix('TOPIC_').replace('_', ' ').title() + ' (game topic)'
+    return f'Unmapped topic {topic_id}'
+
 HEALER_WEAPONS = {10301, 20602}
 TANK_WEAPONS = {20103, 20401}
 
@@ -373,9 +399,9 @@ def classify_kongfu_role(weapon_ids: list) -> str:
 
 def format_kongfu_display(weapon_ids: list) -> str:
     """Format weapon names and role classification into a display string."""
-    weapon_names = [KONGFU_WEAPON_MAP.get(w, f"Unknown ({w})").get("name", f"Unknown ({w})") for w in weapon_ids]
+    weapon_names = [KONGFU_WEAPON_MAP.get(w, {}).get("name", f"Unknown ({w})") for w in weapon_ids]
     role = classify_kongfu_role(weapon_ids)
-    role_emoji = (KONGFU_WEAPON_MAP.get(w, f"Unknown ({w})").get("emoji", "") for w in weapon_ids)
+    role_emoji = (KONGFU_WEAPON_MAP.get(w, {}).get("emoji", "") for w in weapon_ids)
 
     weapons_str = ", ".join(weapon_names)
     return f"{weapons_str} | {' '.join(role_emoji)} {role}"

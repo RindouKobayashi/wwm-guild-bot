@@ -1,5 +1,5 @@
 """Refresh original dungeon activity-card bindings from installed game files (read only)."""
-import json,sys,struct
+import argparse,json,sys,struct
 from pathlib import Path
 BOT=next(parent for parent in Path(__file__).resolve().parents if (parent / 'guildbot.py').is_file())
 sys.path.insert(0,str(BOT.parent/'WWM-Toolkit/app'))
@@ -9,7 +9,11 @@ from table_discovery import catalogue, archives
 from dungeon_library import export_art
 
 def main():
- game=Path(r'C:\Program Files (x86)\Steam\steamapps\common\Where Winds Meet')
+ parser=argparse.ArgumentParser(description=__doc__)
+ parser.add_argument('--game-root',type=Path,default=Path(r'C:\Program Files (x86)\Steam\steamapps\common\Where Winds Meet'))
+ parser.add_argument('--output',type=Path,default=BOT/'maintenance/research/output/dungeon_cards')
+ args=parser.parse_args()
+ game=args.game_root
  root=game/'Package/HD/oversea'
  cat=catalogue(root,BOT.parent/'WWM-Toolkit/cache/table_schema_catalogue.json')
  tables=[t for t in cat['tables'] if {'game','game_list_image','rank_id','mate_info_id','team_game_id'}<=set(t['fields'])]
@@ -42,7 +46,7 @@ def main():
    rows.append({'source':f"{t['archive']}:{t['frame']}",'key':key,'locator':loc.hex(),'name':locale.get(raw.get('game')),'raw':raw})
   except (ValueError,TypeError,IndexError,UnicodeError,struct.error):continue
  if not rows:raise RuntimeError('No validated dungeon activity-card bindings found; previous bundle retained')
- out=BOT/'maintenance/research/output/dungeon_cards';out.mkdir(parents=True,exist_ok=True)
+ out=args.output;out.mkdir(parents=True,exist_ok=True)
  reviews=json.loads((BOT/'maintenance/assets/dungeon_card_reviews.json').read_text(encoding='utf-8'))['reviews']
  groups={'cards':{'art':[{'resource':r['raw']['game_list_image']} for r in rows] + [{'resource':r['resource']} for r in reviews]}}
  manifest=export_art(game,out,groups)

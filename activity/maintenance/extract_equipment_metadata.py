@@ -12,6 +12,7 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--game-root',type=Path,default=Path(r'C:\Program Files (x86)\Steam\steamapps\common\Where Winds Meet\Package\HD\oversea'))
     parser.add_argument('--details',type=Path)
+    parser.add_argument('--output',type=Path,default=BOT/'data/equipment_metadata.json')
     args=parser.parse_args()
     details=args.details or max(TOOLKIT.glob('output/game_data/runs/*/equipment/all_equipment_item_details.csv'),key=lambda p:p.stat().st_mtime)
     catalogue=json.loads((TOOLKIT/'cache/table_schema_catalogue.json').read_text(encoding='utf-8'))['tables']
@@ -53,6 +54,6 @@ def main():
         if 'legacy_affix_upper_limit' in row:legacy[str(row['level'])]=row['legacy_affix_upper_limit']
     result={'sources':[str(details.relative_to(TOOLKIT)), 'cache/table_schema_catalogue.json','installed equipment, set, slot and legacy tables; English locale'],
             'equipment_metadata':metadata,'equipment_sets':sets,'equipment_slots':slots,'legacy_limits':legacy,'unresolved_metadata':failures}
-    target=BOT/'data/equipment_metadata.json';target.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
+    target=args.output;target.parent.mkdir(parents=True,exist_ok=True);target.write_text(json.dumps(result,ensure_ascii=False,indent=2),encoding='utf-8')
     print(f'Exported {len(metadata)} equipment records, {len(sets)} sets, {len(slots)} slot names, {len(legacy)} relay limits; {len(failures)} unresolved.')
 if __name__=='__main__':main()

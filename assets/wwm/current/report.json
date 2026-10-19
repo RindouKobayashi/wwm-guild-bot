@@ -1,0 +1,1700 @@
+{
+  "provenance": {
+    "mode": "fresh_game_extraction",
+    "sections_requested": [
+      "constants"
+    ],
+    "warnings": [
+      "Manual compatibility labels remain explicit policy until verified game table sources are recovered.",
+      "Abyss loadout display names reuse the existing reviewed loadout_name_tables.json; this updater does not yet regenerate those auxiliary names.",
+      "Partial update: unselected sections retain their previous release data."
+    ],
+    "source_sha256": {},
+    "unresolved_artwork": [],
+    "api_mapping_sources": {
+      "sects": {
+        "archive": "index4",
+        "frame": 8922,
+        "fields": [
+          "button1_icon",
+          "button1_name",
+          "button1_type",
+          "button2_icon",
+          "button2_name",
+          "button2_type",
+          "button3_icon",
+          "button3_name",
+          "button3_type",
+          "button4_icon",
+          "button4_name",
+          "button4_type",
+          "no",
+          "school_show",
+          "sect_icon",
+          "sect_name",
+          "sect_name_icon",
+          "sect_picture",
+          "sect_pos",
+          "sect_text",
+          "sect_type"
+        ],
+        "records": 11,
+        "key": "no",
+        "identity": "key no equals base.school"
+      },
+      "statuses": {
+        "archive": "index4",
+        "frame": 8931,
+        "fields": [
+          "id",
+          "identify",
+          "name_school_identity",
+          "name_school_identity_show",
+          "school",
+          "left_bg",
+          "school_diploma",
+          "vote_time",
+          "leveldown_tip",
+          "levelup_notice",
+          "levelup_tip",
+          "popularity_level",
+          "popularity_up",
+          "promote_rank",
+          "school_token",
+          "reduce_rank",
+          "loyal_show",
+          "npc_behavior",
+          "school_badge",
+          "vote_rewards",
+          "left_bg_color_pic",
+          "promote_main_text",
+          "right_text",
+          "special_join_again_cd",
+          "special_pantao_cd",
+          "special_pantao_tag_time",
+          "special_pantao_task_finish",
+          "special_pantao_task_forgive",
+          "special_pantao_task_get",
+          "store_permission",
+          "title",
+          "title_level",
+          "top10_npc_list",
+          "top10_npc_no_list",
+          "zhy_paper_right",
+          "school_rule",
+          "school_level_mail",
+          "downgrading_stuff",
+          "name_school_identity_color",
+          "title2",
+          "school_achievement_no",
+          "school_toy_reward",
+          "title3",
+          "wjg_declare",
+          "wjg_huban",
+          "wjg_justice"
+        ],
+        "records": 55,
+        "key": "id",
+        "identity": "string index key equals school_identify and API school.status"
+      },
+      "likes": {
+        "archive": "index3",
+        "frame": 726,
+        "fields": [
+          "goto_id",
+          "history_upvote_text",
+          "id",
+          "server_id",
+          "sort",
+          "unlock_no",
+          "unlock_toast",
+          "upvote_text",
+          "special_unlock_condition",
+          "day_like_limit",
+          "per_people_day_like"
+        ],
+        "records": 13,
+        "key": "id",
+        "identity": "server_id list contains API topic IDs; row id is UI group ID"
+      },
+      "bosses": {
+        "archive": "index1",
+        "frame": 9392,
+        "fields": [
+          "boss_player_lv",
+          "boss_world_lv",
+          "button_goto_id",
+          "button_name",
+          "expect_time",
+          "fight_difficult",
+          "fight_flow",
+          "fight_position",
+          "fight_time",
+          "fix_id",
+          "game_region",
+          "id",
+          "image",
+          "instance_no",
+          "name",
+          "nengli_limit",
+          "open_time",
+          "step_reward",
+          "task_state",
+          "task_target",
+          "task_title",
+          "total_time",
+          "transport_id",
+          "watcher_location",
+          "yanji_goto",
+          "forward_id"
+        ],
+        "records": 30,
+        "key": "id",
+        "identity": "Guild boss-fight schedule boss_id; verified against existing guild boss IDs, distinct from HR/ST and recall IDs"
+      },
+      "like_topic_symbols": {
+        "source": "hexm/common/consts/likeunlike_consts.lua",
+        "sha256": "31ea09433c12569a45b1e82881cb3d22bd9098524789aa6ea7ca0675e0d2777b",
+        "kind": "direct Lua constant assignments; symbolic names, not localized display labels"
+      }
+    },
+    "api_mapping_limitations": [
+      "UI like groups do not include every server topic. Legacy Market/Kitty/Pet labels remain compatibility fallbacks.",
+      "Shipped sect definitions do not prove that a sect is currently available to players.",
+      "Vote allowance is configuration, not remaining votes or proof that an election is open."
+    ]
+  },
+  "counts": {
+    "equipment_metadata": 2582,
+    "equipment_sets": 77,
+    "equipment_slots": 22,
+    "legacy_limits": 5,
+    "constants": 6,
+    "equipment": 2412,
+    "items": 30570,
+    "affixes": 5190
+  },
+  "changes": {
+    "affixes": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "equipment": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "items": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "equipment_metadata": {
+      "added": [],
+      "removed": [],
+      "changed": []
+    }
+  },
+  "unresolved_artwork": [],
+  "manual_policy_still_used": [
+    "energy constants",
+    "PvP grade labels",
+    "quality labels",
+    "martial role classification",
+    "UI slot labels"
+  ],
+  "review": {
+    "baseline_available": true,
+    "summary": {
+      "abyss_names": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 4
+      },
+      "affixes": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 5190
+      },
+      "api_constants.boss_names": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 30
+      },
+      "api_constants.like_compatibility": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 3
+      },
+      "api_constants.like_groups": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 13
+      },
+      "api_constants.like_topic_symbols": {
+        "added": 80,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 0
+      },
+      "api_constants.likes": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 19
+      },
+      "api_constants.school_names": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 12
+      },
+      "api_constants.school_ranks": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 55
+      },
+      "api_constants.school_statuses": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 55
+      },
+      "api_constants.vote_counts": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 54
+      },
+      "constants": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 6
+      },
+      "equipment": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 2412
+      },
+      "equipment_metadata": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 2582
+      },
+      "equipment_sets": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 77
+      },
+      "equipment_slots": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 22
+      },
+      "item_index": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 30570
+      },
+      "items": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 30570
+      },
+      "legacy_limits": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 5
+      },
+      "martial_names": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 0
+      },
+      "ranking_boards": {
+        "added": 0,
+        "changed": 0,
+        "removed": 0,
+        "unchanged": 134
+      }
+    },
+    "records": [
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "10004",
+        "status": "added",
+        "name": "TOPIC_WAY_LANGZHONG",
+        "before": null,
+        "after": "TOPIC_WAY_LANGZHONG",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WAY_LANGZHONG",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "10005",
+        "status": "added",
+        "name": "TOPIC_WAY_TIANJI",
+        "before": null,
+        "after": "TOPIC_WAY_TIANJI",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WAY_TIANJI",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "10006",
+        "status": "added",
+        "name": "TOPIC_WAY_PRISON_CONCERT",
+        "before": null,
+        "after": "TOPIC_WAY_PRISON_CONCERT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WAY_PRISON_CONCERT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "10007",
+        "status": "added",
+        "name": "TOPIC_WAY_ROOM_JUDIAN",
+        "before": null,
+        "after": "TOPIC_WAY_ROOM_JUDIAN",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WAY_ROOM_JUDIAN",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "10008",
+        "status": "added",
+        "name": "TOPIC_WAY_MAJIANG",
+        "before": null,
+        "after": "TOPIC_WAY_MAJIANG",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WAY_MAJIANG",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "10010",
+        "status": "added",
+        "name": "TOPIC_WAY_PVP",
+        "before": null,
+        "after": "TOPIC_WAY_PVP",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WAY_PVP",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "10011",
+        "status": "added",
+        "name": "TOPIC_WAY_MULTI_MWZX",
+        "before": null,
+        "after": "TOPIC_WAY_MULTI_MWZX",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WAY_MULTI_MWZX",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "10012",
+        "status": "added",
+        "name": "TOPIC_WAY_NAME_CARD",
+        "before": null,
+        "after": "TOPIC_WAY_NAME_CARD",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WAY_NAME_CARD",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "10020",
+        "status": "added",
+        "name": "TOPIC_WAY_BAIYE_ARENA_WIN",
+        "before": null,
+        "after": "TOPIC_WAY_BAIYE_ARENA_WIN",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WAY_BAIYE_ARENA_WIN",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "10030",
+        "status": "added",
+        "name": "TOPIC_WAY_DRAGON_ARENA_END",
+        "before": null,
+        "after": "TOPIC_WAY_DRAGON_ARENA_END",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WAY_DRAGON_ARENA_END",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "101",
+        "status": "added",
+        "name": "TOPIC_YINGSHENG",
+        "before": null,
+        "after": "TOPIC_YINGSHENG",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_YINGSHENG",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "102",
+        "status": "added",
+        "name": "TOPIC_WORLD_AREA",
+        "before": null,
+        "after": "TOPIC_WORLD_AREA",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WORLD_AREA",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "103",
+        "status": "added",
+        "name": "TOPIC_TIANJI_DUNGEON",
+        "before": null,
+        "after": "TOPIC_TIANJI_DUNGEON",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_TIANJI_DUNGEON",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "104",
+        "status": "added",
+        "name": "TOPIC_COMBAT_SYS_PLAN",
+        "before": null,
+        "after": "TOPIC_COMBAT_SYS_PLAN",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_COMBAT_SYS_PLAN",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "105",
+        "status": "added",
+        "name": "TOPIC_PRISON_CONCERT",
+        "before": null,
+        "after": "TOPIC_PRISON_CONCERT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_PRISON_CONCERT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "106",
+        "status": "added",
+        "name": "TOPIC_ROAD_SIGN",
+        "before": null,
+        "after": "TOPIC_ROAD_SIGN",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_ROAD_SIGN",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "107",
+        "status": "added",
+        "name": "TOPIC_MODE_HELP",
+        "before": null,
+        "after": "TOPIC_MODE_HELP",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_MODE_HELP",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "111",
+        "status": "added",
+        "name": "TOPIC_SZYY",
+        "before": null,
+        "after": "TOPIC_SZYY",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_SZYY",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "112",
+        "status": "added",
+        "name": "TOPIC_NAME_CARD",
+        "before": null,
+        "after": "TOPIC_NAME_CARD",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_NAME_CARD",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "113",
+        "status": "added",
+        "name": "TOPIC_ACHIEVEMENT_COMMENT",
+        "before": null,
+        "after": "TOPIC_ACHIEVEMENT_COMMENT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_ACHIEVEMENT_COMMENT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "114",
+        "status": "added",
+        "name": "TOPIC_ROOM_JUDIAN",
+        "before": null,
+        "after": "TOPIC_ROOM_JUDIAN",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_ROOM_JUDIAN",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "115",
+        "status": "added",
+        "name": "TOPIC_ROAD_SIGN_COMMENT",
+        "before": null,
+        "after": "TOPIC_ROAD_SIGN_COMMENT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_ROAD_SIGN_COMMENT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "116",
+        "status": "added",
+        "name": "TOPIC_MAJIANG",
+        "before": null,
+        "after": "TOPIC_MAJIANG",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_MAJIANG",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "117",
+        "status": "added",
+        "name": "TOPIC_CLUB_BATH",
+        "before": null,
+        "after": "TOPIC_CLUB_BATH",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_CLUB_BATH",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "118",
+        "status": "added",
+        "name": "TOPIC_MULTI_MWZX",
+        "before": null,
+        "after": "TOPIC_MULTI_MWZX",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_MULTI_MWZX",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "119",
+        "status": "added",
+        "name": "TOPIC_QX_ALCHEMY",
+        "before": null,
+        "after": "TOPIC_QX_ALCHEMY",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_QX_ALCHEMY",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "120",
+        "status": "added",
+        "name": "TOPIC_HEDENG_COMMENT",
+        "before": null,
+        "after": "TOPIC_HEDENG_COMMENT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_HEDENG_COMMENT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "121",
+        "status": "added",
+        "name": "TOPIC_TRACK_BUILD",
+        "before": null,
+        "after": "TOPIC_TRACK_BUILD",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_TRACK_BUILD",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "122",
+        "status": "added",
+        "name": "TOPIC_HUIWU",
+        "before": null,
+        "after": "TOPIC_HUIWU",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_HUIWU",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "123",
+        "status": "added",
+        "name": "TOPIC_FACE_COMMENT",
+        "before": null,
+        "after": "TOPIC_FACE_COMMENT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_FACE_COMMENT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "124",
+        "status": "added",
+        "name": "TOPIC_MINGAN_XINAN",
+        "before": null,
+        "after": "TOPIC_MINGAN_XINAN",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_MINGAN_XINAN",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "125",
+        "status": "added",
+        "name": "TOPIC_WV_FORCE_COMMENT",
+        "before": null,
+        "after": "TOPIC_WV_FORCE_COMMENT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WV_FORCE_COMMENT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "126",
+        "status": "added",
+        "name": "TOPIC_WV_PEOPLE_COMMENT",
+        "before": null,
+        "after": "TOPIC_WV_PEOPLE_COMMENT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WV_PEOPLE_COMMENT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "127",
+        "status": "added",
+        "name": "TOPIC_SCHOOL_LIYUAN",
+        "before": null,
+        "after": "TOPIC_SCHOOL_LIYUAN",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_SCHOOL_LIYUAN",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "129",
+        "status": "added",
+        "name": "TOPIC_HOARD_PROFITEER",
+        "before": null,
+        "after": "TOPIC_HOARD_PROFITEER",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_HOARD_PROFITEER",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "131",
+        "status": "added",
+        "name": "TOPIC_HOARD_PROFITEER_ANNOUNCE_COMMENT",
+        "before": null,
+        "after": "TOPIC_HOARD_PROFITEER_ANNOUNCE_COMMENT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_HOARD_PROFITEER_ANNOUNCE_COMMENT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "132",
+        "status": "added",
+        "name": "TOPIC_MERIT_STELE",
+        "before": null,
+        "after": "TOPIC_MERIT_STELE",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_MERIT_STELE",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "133",
+        "status": "added",
+        "name": "TOPIC_BAIYE_ARENA",
+        "before": null,
+        "after": "TOPIC_BAIYE_ARENA",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_BAIYE_ARENA",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "134",
+        "status": "added",
+        "name": "TOPIC_QIYU",
+        "before": null,
+        "after": "TOPIC_QIYU",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_QIYU",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "135",
+        "status": "added",
+        "name": "TOPIC_NEWSPAPER",
+        "before": null,
+        "after": "TOPIC_NEWSPAPER",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_NEWSPAPER",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "136",
+        "status": "added",
+        "name": "TOPIC_NEWSPAPER_AUTHOR",
+        "before": null,
+        "after": "TOPIC_NEWSPAPER_AUTHOR",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_NEWSPAPER_AUTHOR",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "137",
+        "status": "added",
+        "name": "TOPIC_MOJIN",
+        "before": null,
+        "after": "TOPIC_MOJIN",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_MOJIN",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "138",
+        "status": "added",
+        "name": "TOPIC_BOWU",
+        "before": null,
+        "after": "TOPIC_BOWU",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_BOWU",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "139",
+        "status": "added",
+        "name": "TOPIC_PAINTING_BOAT_MASKER",
+        "before": null,
+        "after": "TOPIC_PAINTING_BOAT_MASKER",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_PAINTING_BOAT_MASKER",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "140",
+        "status": "added",
+        "name": "TOPIC_DRAGON_ARENA",
+        "before": null,
+        "after": "TOPIC_DRAGON_ARENA",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_DRAGON_ARENA",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "141",
+        "status": "added",
+        "name": "TOPIC_PRISON_YOUJIE",
+        "before": null,
+        "after": "TOPIC_PRISON_YOUJIE",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_PRISON_YOUJIE",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "142",
+        "status": "added",
+        "name": "TOPIC_XUANSHAN",
+        "before": null,
+        "after": "TOPIC_XUANSHAN",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_XUANSHAN",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "143",
+        "status": "added",
+        "name": "TOPIC_LONGMEN_INN_NIGHT",
+        "before": null,
+        "after": "TOPIC_LONGMEN_INN_NIGHT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_LONGMEN_INN_NIGHT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "144",
+        "status": "added",
+        "name": "TOPIC_NEWSPAPER_NEWS_COMMENT",
+        "before": null,
+        "after": "TOPIC_NEWSPAPER_NEWS_COMMENT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_NEWSPAPER_NEWS_COMMENT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "146",
+        "status": "added",
+        "name": "TOPIC_DIELUOHAN",
+        "before": null,
+        "after": "TOPIC_DIELUOHAN",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_DIELUOHAN",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "147",
+        "status": "added",
+        "name": "TOPIC_CHIJINJI",
+        "before": null,
+        "after": "TOPIC_CHIJINJI",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_CHIJINJI",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "151",
+        "status": "added",
+        "name": "TOPIC_TREASURE_MEOW",
+        "before": null,
+        "after": "TOPIC_TREASURE_MEOW",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_TREASURE_MEOW",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "152",
+        "status": "added",
+        "name": "TOPIC_RANK",
+        "before": null,
+        "after": "TOPIC_RANK",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_RANK",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "153",
+        "status": "added",
+        "name": "TOPIC_COMPE_LUNJIAN",
+        "before": null,
+        "after": "TOPIC_COMPE_LUNJIAN",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_COMPE_LUNJIAN",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "154",
+        "status": "added",
+        "name": "TOPIC_COMPE_HUIWU",
+        "before": null,
+        "after": "TOPIC_COMPE_HUIWU",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_COMPE_HUIWU",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "155",
+        "status": "added",
+        "name": "TOPIC_SNOWBALL",
+        "before": null,
+        "after": "TOPIC_SNOWBALL",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_SNOWBALL",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "156",
+        "status": "added",
+        "name": "TOPIC_QIXI_FLOWER",
+        "before": null,
+        "after": "TOPIC_QIXI_FLOWER",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_QIXI_FLOWER",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "157",
+        "status": "added",
+        "name": "TOPIC_BJS_TOWER_DEFENSE",
+        "before": null,
+        "after": "TOPIC_BJS_TOWER_DEFENSE",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_BJS_TOWER_DEFENSE",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "158",
+        "status": "added",
+        "name": "TOPIC_HOMELAND_COMMUNITY",
+        "before": null,
+        "after": "TOPIC_HOMELAND_COMMUNITY",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_HOMELAND_COMMUNITY",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "159",
+        "status": "added",
+        "name": "TOPIC_FILM",
+        "before": null,
+        "after": "TOPIC_FILM",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_FILM",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "160",
+        "status": "added",
+        "name": "TOPIC_BJS_BATTLE",
+        "before": null,
+        "after": "TOPIC_BJS_BATTLE",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_BJS_BATTLE",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "161",
+        "status": "added",
+        "name": "TOPIC_FOLK_FLYING",
+        "before": null,
+        "after": "TOPIC_FOLK_FLYING",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_FOLK_FLYING",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "162",
+        "status": "added",
+        "name": "TOPIC_TRAVEL_EVENT_COMMENT",
+        "before": null,
+        "after": "TOPIC_TRAVEL_EVENT_COMMENT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_TRAVEL_EVENT_COMMENT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "163",
+        "status": "added",
+        "name": "TOPIC_MONOPOLY",
+        "before": null,
+        "after": "TOPIC_MONOPOLY",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_MONOPOLY",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "170",
+        "status": "added",
+        "name": "TOPIC_KFC_BATTLE",
+        "before": null,
+        "after": "TOPIC_KFC_BATTLE",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_KFC_BATTLE",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "171",
+        "status": "added",
+        "name": "TOPIC_DIDI",
+        "before": null,
+        "after": "TOPIC_DIDI",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_DIDI",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "172",
+        "status": "added",
+        "name": "TOPIC_PET_WISH",
+        "before": null,
+        "after": "TOPIC_PET_WISH",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_PET_WISH",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "173",
+        "status": "added",
+        "name": "TOPIC_YANKOV",
+        "before": null,
+        "after": "TOPIC_YANKOV",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_YANKOV",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "174",
+        "status": "added",
+        "name": "TOPIC_DORM_BEHAVIOR",
+        "before": null,
+        "after": "TOPIC_DORM_BEHAVIOR",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_DORM_BEHAVIOR",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "175",
+        "status": "added",
+        "name": "TOPIC_HUASHU",
+        "before": null,
+        "after": "TOPIC_HUASHU",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_HUASHU",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "176",
+        "status": "added",
+        "name": "TOPIC_QL_DANCE",
+        "before": null,
+        "after": "TOPIC_QL_DANCE",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_QL_DANCE",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "177",
+        "status": "added",
+        "name": "TOPIC_DIALOGUE_COMMENT",
+        "before": null,
+        "after": "TOPIC_DIALOGUE_COMMENT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_DIALOGUE_COMMENT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "178",
+        "status": "added",
+        "name": "TOPIC_CUTSCENE_COMMENT",
+        "before": null,
+        "after": "TOPIC_CUTSCENE_COMMENT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_CUTSCENE_COMMENT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "179",
+        "status": "added",
+        "name": "TOPIC_ZHANGJIE_COMMENT",
+        "before": null,
+        "after": "TOPIC_ZHANGJIE_COMMENT",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_ZHANGJIE_COMMENT",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "180",
+        "status": "added",
+        "name": "TOPIC_WJG_CLASS_NPC_TEACHER",
+        "before": null,
+        "after": "TOPIC_WJG_CLASS_NPC_TEACHER",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WJG_CLASS_NPC_TEACHER",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "181",
+        "status": "added",
+        "name": "TOPIC_WJG_CLASS_TEACHER",
+        "before": null,
+        "after": "TOPIC_WJG_CLASS_TEACHER",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_WJG_CLASS_TEACHER",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "182",
+        "status": "added",
+        "name": "TOPIC_HEXI_MUSEUM",
+        "before": null,
+        "after": "TOPIC_HEXI_MUSEUM",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_HEXI_MUSEUM",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "183",
+        "status": "added",
+        "name": "TOPIC_YANKOV_RELIC",
+        "before": null,
+        "after": "TOPIC_YANKOV_RELIC",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_YANKOV_RELIC",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "186",
+        "status": "added",
+        "name": "TOPIC_PET_TRAVEL_TAKE_OFFICE",
+        "before": null,
+        "after": "TOPIC_PET_TRAVEL_TAKE_OFFICE",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_PET_TRAVEL_TAKE_OFFICE",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      },
+      {
+        "section": "api_constants.like_topic_symbols",
+        "id": "189",
+        "status": "added",
+        "name": "TOPIC_HIDESEEK",
+        "before": null,
+        "after": "TOPIC_HIDESEEK",
+        "fields": [
+          {
+            "field": "value",
+            "before": null,
+            "after": "TOPIC_HIDESEEK",
+            "before_present": true,
+            "after_present": true
+          }
+        ]
+      }
+    ]
+  }
+}

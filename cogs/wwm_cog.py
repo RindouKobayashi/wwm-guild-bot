@@ -1312,7 +1312,7 @@ class PlayerProfileView(LayoutView):
         
         return "\n".join(filter(None, lines))
     
-    def _build_container(self, detail_items: list = None) -> Container:
+    def _build_container(self, detail_items: list = None, compact_header: bool = False) -> Container:
         """Build a single Container: header + optional detail."""
         inner = []
         
@@ -1330,6 +1330,8 @@ class PlayerProfileView(LayoutView):
         
         # Header: text display (with optional head avatar thumbnail)
         header_text = self._build_header_text()
+        if compact_header:
+            header_text = f"# {str(self.player_nickname)[:100]} | {str(self.number_id)[:30]}"
         if self.head_avatar_path:
             head_ext = os.path.splitext(self.head_avatar_path)[1] or ".png"
             head_filename = f"head_pfp{head_ext}"
@@ -1721,7 +1723,7 @@ class PlayerProfileView(LayoutView):
 
     def _build_likes_detail(self) -> list:
         """Build the likes detail view items (text + buttons) without responding to interaction."""
-        from utility.api_constants import LIKES
+        from utility.api_constants import get_like_topic_name
         lines = []
         
         # Section 1: Topic breakdown
@@ -1736,7 +1738,7 @@ class PlayerProfileView(LayoutView):
                         tid = int(topic_id_str)
                     except (ValueError, TypeError):
                         continue
-                    topic_name = LIKES.get(tid, f"Topic {tid}")
+                    topic_name = get_like_topic_name(tid)
                     lines.append(f"❤️ **{topic_name}:** {n_likes:,}")
                     total += n_likes
             if total > 0:
@@ -1768,7 +1770,10 @@ class PlayerProfileView(LayoutView):
                 timestamp = liker.get('timestamp', 0)
                 
                 # Format topic name if available
-                topic_name = LIKES.get(topic_id, '')
+                try:
+                    topic_name = get_like_topic_name(topic_id) if topic_id else ''
+                except (TypeError, ValueError):
+                    topic_name = ''
                 topic_str = f" ({topic_name})" if topic_name else ""
                 
                 # Format timestamp in both absolute and relative formats
@@ -2422,43 +2427,45 @@ class PlayerProfileView(LayoutView):
 
         # Define page groups: (slots, label)
         PAGE_GROUPS = [
-            ({1, 2, 10, 11}, "Weapons & Accessories"),
+            ({1, 2}, "Weapons"),
+            ({10, 11}, "Accessories"),
             ({3, 4, 5, 8}, "Armor"),
             ({9, 21}, "Ranged & Jade"),
         ]
 
         # Assign each item to a page (indices 1, 2, 3; index 0 = total stats)
-        page_items = {0: total_lines, 1: [], 2: [], 3: []}
+        page_items = {i + 1: [] for i in range(len(PAGE_GROUPS))}
         for slot_num, slot_name, slot_lines in all_lines:
             for page_idx, (slots, _) in enumerate(PAGE_GROUPS):
                 if slot_num in slots:
-                    page_items[page_idx + 1].extend(slot_lines)
+                    page_items[page_idx + 1].append(slot_lines)
                     break
             else:
                 # Unknown slot — put on page 1 (Weapons & Accessories)
-                page_items[1].extend(slot_lines)
+                page_items.setdefault(5, []).append(slot_lines)
 
         # Store the page data for navigation
-        self._equipments_lines = [page_items[i] for i in range(4)]
+        self._equipments_sections = [('Total Stats', [total_lines or ['*No total stats available*']])]
+        self._equipments_sections.extend((label, page_items[i + 1]) for i, (_, label) in enumerate(PAGE_GROUPS))
+        if page_items.get(5):
+            self._equipments_sections.append(('Other Equipment', page_items[5]))
         self.equipments_page = 0
 
         await self._show_equipments_page(interaction)
 
     async def _show_equipments_page(self, interaction: discord.Interaction):
         """Display the current equipment page with navigation buttons."""
-        page = self.equipments_page
-        total_pages = 4
-        page_labels = ["Total Stats", "Weapons & Accessories", "Armor", "Ranged & Jade"]
-
-        lines = self._equipments_lines[page]
-        if not lines:
-            lines = ["*No items on this page*"]
-
-        title = f"🛡️ Equipments — {page_labels[page]} ({page + 1}/{total_pages})"
+        from utility.component_pages import item_pages
+        pages = item_pages(self._equipments_sections)
+        total_pages = len(pages)
+        self._equipments_page_count = total_pages
+        page = self.equipments_page = max(0, min(self.equipments_page, total_pages - 1))
+        label, body, full_text = pages[page]
+        title = f"🛡️ Equipments — {label} ({page + 1}/{total_pages})"
 
         # Build detail items with navigation
         inner = []
-        inner.append(TextDisplay(f"# {title}\n\n" + "\n".join(lines)))
+        inner.append(TextDisplay(f"# {title}\n\n" + body))
         inner.append(Separator(spacing=discord.SeparatorSpacing.small))
 
         # Navigation row
@@ -2509,8 +2516,15 @@ class PlayerProfileView(LayoutView):
         inner.append(back_row)
 
         self.clear_items()
-        self.add_item(self._build_container(detail_items=inner))
-        await interaction.edit_original_response(view=self)
+        self.add_item(self._build_container(detail_items=inner, compact_header=True))
+        if full_text:
+            import io
+            attachment = discord.File(io.BytesIO(full_text.encode('utf-8')), filename='equipment-details.txt')
+            existing = [a for a in getattr(getattr(interaction, 'message', None), 'attachments', [])
+                        if a.filename != 'equipment-details.txt']
+            await interaction.edit_original_response(view=self, attachments=[*existing, attachment])
+        else:
+            await interaction.edit_original_response(view=self)
 
     async def _handle_equip_prev(self, interaction: discord.Interaction):
         if not await ensure_owner(interaction, self):
@@ -2524,7 +2538,7 @@ class PlayerProfileView(LayoutView):
         if not await ensure_owner(interaction, self):
             return
         await interaction.response.defer()
-        if self.equipments_page < 3:
+        if self.equipments_page < getattr(self, '_equipments_page_count', 4) - 1:
             self.equipments_page += 1
         await self._show_equipments_page(interaction)
 

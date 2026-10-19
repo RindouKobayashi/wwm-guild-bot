@@ -8,6 +8,10 @@ from utility.api_constants import KONGFU_WEAPON_MAP
 class AbyssAssets:
     def __init__(self,root):
         self.root=Path(root)
+        from utility.game_assets import ROOT,current
+        if self.root.resolve()==(ROOT.parents[1]/'data/abyss_assets').resolve():
+            bundle=current()
+            if bundle.directory:self.root=bundle.directory/'abyss'
     def data(self):
         try:return json.loads((self.root/'catalogue.json').read_text(encoding='utf-8'))
         except (OSError,ValueError):return {'trials':[],'names':{}}

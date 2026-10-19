@@ -25,12 +25,12 @@ DB_PATH = BASE_DIR / "data" / "affix_mappings.db"
 AFFIX_CSV_PATH = BASE_DIR / "data" / "all_affix_id_english_names.csv"
 EQUIPMENT_NAMES_XLSX_PATH = BASE_DIR / "data" / "All_Equipment_Item_Names.xlsx"
 
-# Chinese unit characters found in value_show_format → English equivalents
-# e.g. "{0:.1f}米/秒" becomes "{0:.1f}m/s", "{0:.2f}秒" becomes "{0:.2f}s"
+# Chinese unit characters found in value_show_format â†’ English equivalents
+# e.g. "{0:.1f}ç±³/ç§’" becomes "{0:.1f}m/s", "{0:.2f}ç§’" becomes "{0:.2f}s"
 CHINESE_UNIT_TRANSLATIONS = {
-    "米": "m",      # meter
-    "秒": "s",      # second
-    "点": "pt",     # point
+    "ç±³": "m",      # meter
+    "ç§’": "s",      # second
+    "ç‚¹": "pt",     # point
 }
 
 def _sanitize_format_string(fmt: str) -> str:
@@ -63,6 +63,13 @@ def load_equipment_names(xlsx_path: Optional[str] = None) -> Dict[str, str]:
     path = Path(xlsx_path) if xlsx_path else EQUIPMENT_NAMES_XLSX_PATH
     if _EQUIPMENT_NAME_CACHE:
         return _EQUIPMENT_NAME_CACHE
+
+    if xlsx_path is None:
+        from utility.game_assets import current
+        mappings = current().section('player_mappings', {})
+        if mappings.get('equipment'):
+            _EQUIPMENT_NAME_CACHE = dict(mappings['equipment'])
+            return _EQUIPMENT_NAME_CACHE
 
     if not path.exists():
         logger.warning(f"Equipment names xlsx not found at {path}")
@@ -112,7 +119,7 @@ CREATE TABLE IF NOT EXISTS affix_mappings (
 """
 
 # ---------------------------------------------------------------------------
-# Known affix key patterns – these define WHERE in a JSON tree affix IDs live.
+# Known affix key patterns â€“ these define WHERE in a JSON tree affix IDs live.
 # The mapper uses these to decide which values to look up.
 # ---------------------------------------------------------------------------
 
@@ -181,35 +188,44 @@ async def load_affix_csv(csv_path: Optional[str] = None) -> int:
     Returns the number of rows loaded (0 if the CSV is missing).
     """
     path = Path(csv_path) if csv_path else AFFIX_CSV_PATH
-    if not path.exists():
+    bundled = None
+    if csv_path is None:
+        from utility.game_assets import current
+        mappings = current().section('player_mappings', {})
+        if mappings.get('affixes'):
+            bundled = [dict(affix_id=key, english_name=row['name'],
+                            value_show_format=row.get('format', ''), minimum=row.get('minimum'), maximum=row.get('maximum'))
+                       for key, row in mappings['affixes'].items()]
+    if bundled is None and not path.exists():
         logger.warning(f"Affix CSV not found at {path}")
         return 0
 
     rows = []
-    with open(path, "r", encoding="utf-8-sig") as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            try:
-                affix_id = int(row["affix_id"])
-            except (ValueError, TypeError, KeyError):
-                continue
-            name = row.get("english_name", "").strip()
-            if not name:
-                continue
-            value_format = _sanitize_format_string(
-                row.get("value_show_format", "").strip()
-            )
-            min_raw = row.get("minimum", "")
-            max_raw = row.get("maximum", "")
-            try:
-                minimum = float(min_raw) if min_raw not in (None, "") else None
-            except (ValueError, TypeError):
-                minimum = None
-            try:
-                maximum = float(max_raw) if max_raw not in (None, "") else None
-            except (ValueError, TypeError):
-                maximum = None
-            rows.append((affix_id, name, value_format, minimum, maximum))
+    if bundled is None:
+        with open(path, "r", encoding="utf-8-sig") as f:
+            bundled = list(csv.DictReader(f))
+    for row in bundled:
+        try:
+            affix_id = int(row["affix_id"])
+        except (ValueError, TypeError, KeyError):
+            continue
+        name = row.get("english_name", "").strip()
+        if not name:
+            continue
+        value_format = _sanitize_format_string(
+            row.get("value_show_format", "").strip()
+        )
+        min_raw = row.get("minimum", "")
+        max_raw = row.get("maximum", "")
+        try:
+            minimum = float(min_raw) if min_raw not in (None, "") else None
+        except (ValueError, TypeError):
+            minimum = None
+        try:
+            maximum = float(max_raw) if max_raw not in (None, "") else None
+        except (ValueError, TypeError):
+            maximum = None
+        rows.append((affix_id, name, value_format, minimum, maximum))
 
     if not rows:
         logger.warning(f"No valid affix rows found in {path.name}")
@@ -250,7 +266,7 @@ async def load_affix_csv(csv_path: Optional[str] = None) -> int:
         )
         await db.commit()
 
-    logger.info(f"Loaded {len(final_rows)} affix mappings from {path.name}")
+    logger.info('Loaded %s affix mappings from %s', len(final_rows), 'portable assets' if csv_path is None and mappings.get('affixes') else path.name)
     return len(final_rows)
 
 
@@ -394,7 +410,7 @@ async def search_mappings(query: str, limit: int = 25) -> List[Dict[str, Any]]:
 
 
 # ---------------------------------------------------------------------------
-# Data Scanner – finds all affix IDs in a JSON structure
+# Data Scanner â€“ finds all affix IDs in a JSON structure
 # ---------------------------------------------------------------------------
 
 def _extract_affix_ids(data: Any, path: str = "") -> List[Tuple[int, str, Any]]:
@@ -666,7 +682,7 @@ def _map_dict(data: dict, cache: Dict[int, str], parent_key: str) -> dict:
                 result[key] = _map_recursive(value, cache, key)
 
         else:
-            # Not a known affix key – recurse normally
+            # Not a known affix key â€“ recurse normally
             result[key] = _map_recursive(value, cache, key)
 
     return result
