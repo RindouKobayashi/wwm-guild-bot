@@ -3,7 +3,8 @@ import json
 import struct
 
 class Reader:
-    def __init__(self, data): self.data, self.pos = data, 0
+    def __init__(self, data, instructions=False):
+        self.data, self.pos, self.instructions = data, 0, instructions
     def take(self, count):
         result = self.data[self.pos:self.pos+count]
         if len(result) != count: raise ValueError('Truncated chunk')
@@ -24,7 +25,7 @@ class Reader:
         first, last = self.integer(), self.integer()
         params, vararg, stack = self.take(3)
         count = self.integer()
-        self.take(count * 4)
+        code = self.take(count * 4)
         constants = []
         for _ in range(self.integer()):
             tag = self.take(1)[0]
@@ -44,10 +45,13 @@ class Reader:
         for _ in range(self.integer()):
             locals_.append(self.string()); self.integer(); self.integer()
         upvalues = [self.string() for _ in range(self.integer())]
-        return {'source':source,'first_line':first,'last_line':last,'parameters':params,'instruction_count':count,'constants':constants,'locals':locals_,'upvalue_names':upvalues,'children':children}
+        result = {'source':source,'first_line':first,'last_line':last,'parameters':params,'instruction_count':count,'constants':constants,'locals':locals_,'upvalue_names':upvalues,'children':children}
+        if self.instructions:
+            result['instructions'] = list(struct.unpack(f'<{count}I', code))
+        return result
 
-def inspect(data):
-    r = Reader(data)
+def inspect(data, instructions=False):
+    r = Reader(data, instructions=instructions)
     if r.take(12) != b'\x1bLua\x54\x00\x19\x93\r\n\x1a\n': raise ValueError('Not standard Lua 5.4')
     if r.take(3) != bytes([4,8,8]): raise ValueError('Unsupported sizes')
     if struct.unpack('<q',r.take(8))[0] != 0x5678: raise ValueError('Wrong integer encoding')

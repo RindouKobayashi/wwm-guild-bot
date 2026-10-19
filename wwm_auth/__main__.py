@@ -35,6 +35,9 @@ def main():
             print('Offline check only; no login or API requests sent.')
         return 0
     except Exception as exc:
+        if isinstance(exc, RuntimeError):
+            print('Not ready: ' + str(exc))
+            return 1
         print('Not ready: ' + type(exc).__name__ + '. Check private context, permissions and dependencies; see wwm_auth/README.md.')
         return 1
 

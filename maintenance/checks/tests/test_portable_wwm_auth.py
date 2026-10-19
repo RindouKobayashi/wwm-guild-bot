@@ -50,6 +50,33 @@ def callback(label, args):
 
 
 class PortableTests(unittest.TestCase):
+    def test_fresh_export_preserves_backup_and_guards_identity(self):
+        import importlib.util
+        spec = importlib.util.spec_from_file_location('fresh_export_test', ROOT / 'maintenance/research/fresh_portable_context.py')
+        export = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(export)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'context.json'
+            old = fixture()
+            write_private(path, old)
+            info = dict(old['auth_info'], authjson=json.dumps(dict(old['auth'], sessionid='fresh-secret')))
+            with patch.dict('os.environ', {'WWM_AUTH_CONTEXT': str(path)}):
+                candidate, previous = export.prepare(info, old['device'], old['expected_sdkuid_sha256'],
+                                                     'test-steam', PID, 10401, 10401)
+                self.assertEqual(json.loads(path.read_text()), old)
+                export.install(candidate, previous)
+                self.assertEqual(json.loads(path.read_text())['auth']['sessionid'], 'fresh-secret')
+                backups = list((path.parent / 'backups').glob('*.json'))
+                self.assertEqual(len(backups), 1)
+                self.assertEqual(json.loads(backups[0].read_text()), old)
+                self.assertNotIn('authjson', candidate['auth_info'])
+                with self.assertRaises(ValueError):
+                    export.prepare(info, old['device'], old['expected_sdkuid_sha256'],
+                                   'main-steam', PID, 10401, 10401)
+                with self.assertRaises(ValueError):
+                    export.install(candidate, old)
+                self.assertFalse((path.parent / 'provider.lock').exists())
+
     def test_context_rejects_other_account_and_device(self):
         validate(fixture())
         for location, key, value in [('auth', 'sdkuid', 'main'), ('device', 'sdk_uid', 'main'),
@@ -133,6 +160,20 @@ class PortableTests(unittest.TestCase):
                         get_token()
                 self.assertEqual(fetch.call_count, 1)
             self.assertFalse((path.parent / 'provider.lock').exists())
+
+    def test_failure_diagnostics_preserve_safe_reason_and_hide_secrets(self):
+        from wwm_auth.service import failure_reason
+        self.assertEqual(failure_reason(ValueError('Game connection closed')), 'Game connection closed')
+        self.assertNotIn('private-secret', failure_reason(ValueError('private-secret')))
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / 'context.json'
+            write_private(path, fixture())
+            with patch.dict('os.environ', {'WWM_AUTH_CONTEXT': str(path)}), patch('wwm_auth.provider.retrieve_token', side_effect=ValueError('Game connection closed')) as fetch:
+                with self.assertRaisesRegex(RuntimeError, 'Game connection closed'):
+                    get_token()
+                with self.assertRaisesRegex(RuntimeError, r'retry available in .*Game connection closed'):
+                    get_token()
+                self.assertEqual(fetch.call_count, 1)
 
     def test_runtime_imports_from_standalone_copy_without_research(self):
         with tempfile.TemporaryDirectory() as directory:

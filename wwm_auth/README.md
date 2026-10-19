@@ -22,6 +22,22 @@ or distinguish every possible reason for API-token invalidation.
 
 ## One-time private setup
 
+### Renew from the Windows test account
+
+Run `maintenance/research/Get Test WWM API Token.cmd` with Steam signed into
+the verified test account. After owned-character API validation succeeds, it
+installs the fresh login in `.wwm-auth/context.json` and backs up the previous
+context under `.wwm-auth/backups/`. These contain private plaintext credentials
+and are Git-ignored. Failed login/validation preserves the existing context;
+account/character changes and active portable refreshes are rejected.
+
+Then run `.venv\Scripts\python.exe -m wwm_auth --fetch` to independently verify
+reuse without Steam, SDK or MITM calls. Only after that passes, securely copy the
+new context to the Pi using the commands below. Do not copy the DPAPI token file
+or caches. The fresh launcher requires local Windows research inputs, whereas
+the Pi runtime does not. No automatic Steam renewal or transfer is installed.
+Immediate successful reuse does not establish how long the saved login lasts.
+
 The prepared local file is `.wwm-auth/context.json`. **It contains a reusable
 login credential in plaintext**, like a secret .env file; keep it private. It
 contains only the verified test account's authentication/device/routing context,
@@ -116,3 +132,13 @@ Diagnostics: `.wwm-auth/last-result.json` is redacted; `token-cache.json` contai
 the actual private API token. A hard-killed provider may leave `provider.lock`;
 check that no provider is running before removing that stale lock. Normal exits
 remove it. Do not delete credentials as a troubleshooting step.
+# Diagnosing a failed refresh
+
+The provider waits 60 seconds after a failed login to avoid a retry loop.
+The cooldown is not the original failure. Errors now include a safe reason
+and remaining wait; private `failure.json` also records that reason without
+credentials. After the wait, run `python -m wwm_auth --fetch` from the bot
+folder to make one bounded test-account attempt without starting Discord.
+Do not delete the cooldown file repeatedly or replace the credential with
+your main account. A successful old `last-result.json` describes only that
+earlier attempt, not the current provider state.

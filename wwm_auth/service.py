@@ -13,6 +13,27 @@ from .context import context_path, load, write_private
 
 _mutex = threading.Lock()
 
+# Only local, fixed messages may reach Discord or the diagnostic file.
+_SAFE_REASONS = frozenset({
+    'Saved login rejected or continuation unsupported', 'Game connection closed',
+    'Game connection rejected', 'Account entity not received',
+    'Authenticated account mismatch', 'Avatar identity mismatch',
+    'Test character selection mismatch', 'Relay outside verified game peers',
+    'Unsupported transport', 'Expected encrypted SessionKeyOK',
+    'No validated token within bounded session', 'Saved login session time limit reached',
+})
+
+
+def failure_reason(error):
+    message = str(error)
+    if message in _SAFE_REASONS:
+        return message
+    if isinstance(error, TimeoutError):
+        return 'Connection or token retrieval timed out'
+    if isinstance(error, OSError):
+        return 'Network connection failed'
+    return 'Saved-login protocol or response could not be validated'
+
 
 def request_identity():
     """Use the configured token issuer for headers, not an old .env account ID."""
@@ -73,13 +94,19 @@ def get_token(force=False, rejected_token=None):
             if failure.exists():
                 last = json.loads(failure.read_text())
                 if last.get('context_sha256') == identity and time.time() < last.get('retry_after', 0):
-                    raise RuntimeError('Saved-login provider is cooling down after a failed attempt')
+                    remaining = max(1, int(last['retry_after'] - time.time()) + 1)
+                    reason = last.get('reason')
+                    if reason not in _SAFE_REASONS | {'Connection or token retrieval timed out', 'Network connection failed', 'Saved-login protocol or response could not be validated'}:
+                        reason = 'Earlier failure reason was not recorded'
+                    raise RuntimeError(f'Saved-login retry available in {remaining}s. {reason}')
             try:
                 from .provider import retrieve_token
                 token, report = retrieve_token(context)
-            except Exception:
-                write_private(failure, {'context_sha256': identity, 'retry_after': time.time() + 60})
-                raise RuntimeError('Saved test login could not provide a validated token; credential may need replacement') from None
+            except Exception as error:
+                reason = failure_reason(error)
+                write_private(failure, {'context_sha256': identity, 'retry_after': time.time() + 60,
+                                        'reason': reason})
+                raise RuntimeError(f'Saved-login token retrieval failed: {reason}. Retry in 60s.') from None
             write_private(cache, {'context_sha256': identity, 'obtained_at': time.time(), 'token': token})
             write_private(path.parent / 'last-result.json', report)
             failure.unlink(missing_ok=True)
