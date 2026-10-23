@@ -18,6 +18,10 @@ from .session import Session
 API_URL = 'https://h72naxx2gb-ms-prod.easebar.com/flk/redis_player/get_players_info'
 
 
+class SavedLoginExpired(ValueError):
+    """Only the verified SDK-relay rejection permits upstream renewal."""
+
+
 def validate_token(token, context):
     raw_token = token.encode('ascii') if isinstance(token, str) else token
     if not TOKEN.fullmatch(raw_token):
@@ -90,6 +94,9 @@ def retrieve_token(context):
                     pending.setdefault(guid, set()).add(token)
             if method in (10, 11):
                 for label, args in incoming_calls(method, body):
+                    if (label == 'login_fail' and isinstance(args, list) and len(args) > 1
+                            and type(args[1]) is int and args[1] == 40046):
+                        raise SavedLoginExpired('Saved login rejected or continuation unsupported')
                     if label in ('login_fail', 'logout_by_server', 'logout_by_other', 'on_relay_to_account', 'need_queue_up'):
                         raise ValueError('Saved login rejected or continuation unsupported')
                     if label == 'set_login_info':

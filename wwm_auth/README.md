@@ -1,10 +1,15 @@
 # Portable saved-login API provider
 
 This package runs under ordinary Python on Windows or Linux, including a
-Raspberry Pi. It has no mitmproxy, Steam, game installation, Ghidra, Toolkit,
+Raspberry Pi. Saved-login reuse has no mitmproxy, desktop Steam, game installation, Ghidra, Toolkit,
 research-output or Windows DPAPI runtime dependency. The saved context is still
 a private TEST-account game login, not anonymous access or a locally generated
 API signature. It may replace a lingering session of that configured test account.
+
+Automatic SDK-login renewal is now available through the headless Steam helper.
+See [headless setup and Pi transfer](headless_steam/README.md). It needs .NET 8
+and two additional private files; it authenticates directly with Steam servers.
+The Windows end-to-end renewal and protected test-character lookup passed.
 
 ## What is established
 
@@ -35,7 +40,7 @@ Then run `.venv\Scripts\python.exe -m wwm_auth --fetch` to independently verify
 reuse without Steam, SDK or MITM calls. Only after that passes, securely copy the
 new context to the Pi using the commands below. Do not copy the DPAPI token file
 or caches. The fresh launcher requires local Windows research inputs, whereas
-the Pi runtime does not. No automatic Steam renewal or transfer is installed.
+the Pi runtime does not. Alternatively use the headless renewal setup linked above.
 Immediate successful reuse does not establish how long the saved login lasts.
 
 The prepared local file is `.wwm-auth/context.json`. **It contains a reusable
@@ -111,10 +116,11 @@ and different environment files. If using the same test-game account on both,
 avoid simultaneous manual fetches: native handover replaces that account's
 existing game session. There is no distributed lock between computers.
 
-There is no automatic Steam fallback, character creation, gameplay RPC, RAM read
-or new SDK login. An expired/revoked saved login causes a clear provider failure
-and cooldown; replacement/renewal remains unresolved. Do not describe this as
-one-time setup that is guaranteed to work forever.
+When configured, the verified SDK rejection code 40046 triggers one headless
+Steam/SDK renewal and one validation attempt before replacing the context.
+There is no character creation, gameplay RPC or RAM read. Failed renewal applies
+a cooldown and preserves the old context. Steam credentials can still be
+revoked; this is not a guarantee of permanent unattended access.
 
 ## Updates and checks
 

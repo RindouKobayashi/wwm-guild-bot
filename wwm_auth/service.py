@@ -64,7 +64,7 @@ def read_cache(path, identity, ttl):
     return None
 
 
-def get_token(force=False, rejected_token=None):
+def get_token(force=False, rejected_token=None, renew_login=False):
     with _mutex:
         path = context_path()
         context = load(path)
@@ -74,9 +74,9 @@ def get_token(force=False, rejected_token=None):
             raise ValueError('WWM_AUTH_CACHE_SECONDS must be 60..600')
         cache, lock, failure = (path.parent / name for name in ('token-cache.json', 'provider.lock', 'failure.json'))
         token = read_cache(cache, identity, ttl)
-        if token and (not force or (rejected_token is not None and rejected_token != token)):
+        if token and not renew_login and (not force or (rejected_token is not None and rejected_token != token)):
             return token
-        deadline = time.monotonic() + 65
+        deadline = time.monotonic() + 180
         while True:
             try:
                 descriptor = os.open(lock, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
@@ -88,8 +88,11 @@ def get_token(force=False, rejected_token=None):
                     raise RuntimeError('Saved-login provider locked; check the other process or stale lock')
                 time.sleep(0.2)
         try:
+            # Another process may have renewed the context while we waited.
+            context = load(path)
+            identity = fingerprint(context)
             token = read_cache(cache, identity, ttl)
-            if token and (not force or (rejected_token is not None and rejected_token != token)):
+            if token and not renew_login and (not force or (rejected_token is not None and rejected_token != token)):
                 return token
             if failure.exists():
                 last = json.loads(failure.read_text())
@@ -100,8 +103,27 @@ def get_token(force=False, rejected_token=None):
                         reason = 'Earlier failure reason was not recorded'
                     raise RuntimeError(f'Saved-login retry available in {remaining}s. {reason}')
             try:
-                from .provider import retrieve_token
-                token, report = retrieve_token(context)
+                from .provider import retrieve_token, SavedLoginExpired
+                try:
+                    if renew_login:
+                        raise SavedLoginExpired('Saved login rejected or continuation unsupported')
+                    token, report = retrieve_token(context)
+                except SavedLoginExpired:
+                    if not ((path.parent / 'steam-headless.json').is_file()
+                            and (path.parent / 'sdk-renewal.json').is_file()):
+                        raise
+                    from .renewal import renew
+                    candidate = renew(context)
+                    # No recursive retry: validate the new login once before installing it.
+                    token, report = retrieve_token(candidate)
+                    if load(path) != context:
+                        raise ValueError('Context changed during renewal')
+                    backup = path.parent / 'backups' / ('context-' + str(time.time_ns()) + '.json')
+                    write_private(backup, context)
+                    write_private(path, candidate)
+                    context = candidate
+                    identity = fingerprint(context)
+                    report.update(headless_login_renewed=True, steam_calls=1, sdk_requests=1)
             except Exception as error:
                 reason = failure_reason(error)
                 write_private(failure, {'context_sha256': identity, 'retry_after': time.time() + 60,
