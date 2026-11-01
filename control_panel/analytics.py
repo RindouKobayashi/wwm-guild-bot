@@ -38,47 +38,10 @@ def conditions(kind, since=0, until=None, search='', source='', level='', outcom
     return ' AND '.join(clauses), args
 
 def aggregate(db, **filters):
-    where, args = conditions('request', **filters)
-    rows = db.execute("SELECT time,source,json_extract(body,'$.data.endpoint'),json_extract(body,'$.data.label'),"
-        "json_extract(body,'$.data.outcome'),json_extract(body,'$.data.duration_ms'),"
-        "json_array_length(json_extract(body,'$.data.attempts')),"
-        "EXISTS(SELECT 1 FROM json_each(json_extract(events.body,'$.data.attempts')) WHERE json_extract(value,'$.error') IN ('TimeoutError','ServerTimeoutError')) "
-        'FROM events WHERE '+where, args)
-    start, end = window(filters.get('since',0), filters.get('until'))
-    width = max(60, math.ceil((end-start)/120))
-    buckets = {start+i*width: {'time':start+i*width,'count':0,'errors':0,'latency_sum':0.0}
-               for i in range(max(1, math.ceil((end-start)/width)))}
-    counts = {'total':0,'success':0,'error':0,'unknown':0,'retries':0,'timeouts':0,'activity_requests':0}
-    durations, endpoints = [], {}
-    for stamp, source, endpoint, label, outcome, duration, attempts, timeout in rows:
-        if source == 'activity':
-            counts['activity_requests'] += 1
-            continue
-        outcome = outcome if outcome in ('success','error') else 'unknown'
-        duration = float(duration or 0)
-        if not math.isfinite(duration) or duration < 0:
-            duration = 0
-        counts['total'] += 1; counts[outcome] += 1
-        counts['retries'] += max(0,(attempts or 0)-1); counts['timeouts'] += int(timeout)
-        durations.append(duration)
-        group = endpoints.setdefault(endpoint or '/', {'endpoint':endpoint or '/', 'label':label or endpoint or '/', 'count':0,'errors':0})
-        if label:
-            group['label'] = label
-        group['count'] += 1; group['errors'] += int(outcome == 'error')
-        index = min(len(buckets)-1, max(0,int((stamp-start)//width)))
-        bucket = buckets[start+index*width]
-        bucket['count'] += 1; bucket['errors'] += int(outcome == 'error'); bucket['latency_sum'] += duration
-    durations.sort()
-    counts.update(median_ms=(durations[(len(durations)-1)//2]+durations[len(durations)//2])/2 if durations else None,
-        p95_ms=durations[max(0,math.ceil(len(durations)*.95)-1)] if durations else None)
-    for outcome in ('success','error','unknown'):
-        counts[outcome+'_rate'] = counts[outcome]/counts['total'] if counts['total'] else None
-    series = [dict(bucket, mean_ms=bucket['latency_sum']/bucket['count'] if bucket['count'] else None)
-              for bucket in buckets.values()]
-    for bucket in series:
-        del bucket['latency_sum']
-    return {'since':start,'until':end,'summary':counts,'series':series,
-            'endpoints':sorted(endpoints.values(),key=lambda item:(-item['count'],item['endpoint']))}
+    # Compatibility for internal callers; analytics now uses indexed scalars.
+    from .metadata import aggregate as indexed_aggregate
+    return indexed_aggregate(db, **filters)
+
 
 def failure_reason(data):
     if data.get('status') in (401,403):

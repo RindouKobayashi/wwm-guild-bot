@@ -1,5 +1,26 @@
 # WWM Control Room
 
+## Time-window performance update
+
+Live health, history tables and analytics now refresh independently. Health polls every five seconds; analytics refreshes at most every ten seconds. Window/filter changes cancel superseded requests and query work. A slow history request displays a history-specific message while live health remains responsive. Previous results retain their original selection label until replacement results arrive.
+
+SQLite schema 3 adds compact metadata and WAL mode. Existing history is indexed in resumable background batches; incomplete totals are explicitly labelled. New events are indexed immediately, and full payloads remain available in the request inspector. Exact medians/p95 and the existing retention limits are preserved.
+
+Analytics accepts `range_seconds=900|3600|86400|259200` or the existing `since`/`until` parameters. Responses include `since`, `until`, `as_of` and `indexing`. Identical range queries share work and a ten-second cache. `summary=true` on the existing request listing returns lightweight table records; omitting it preserves the previous payload-bearing response shape. Overload/timeouts return HTTP 503 with `code: history_busy`, `retryable: true` and `Retry-After: 2`.
+
+History has two read slots, read-only snapshots and a three-second execution budget. Writes remain on their own connection. Maintenance uses bounded batches and page reclamation instead of repeated full-file VACUUM. Legacy non-incremental databases reuse freed pages; they are not force-compacted during traffic. The size budget accounts for the DB, its indexes/metadata, WAL and SHM.
+
+History performance counters are visible in Diagnostics and `/api/status.performance`: active readers, cache hits, shared/cancelled/timed-out queries, capacity rejections, queue wait, query duration and health-sample delay. `/api/status.indexing` reports backfill progress, and `/api/status.storage` reports physical files versus the configured budget.
+
+Review [PERFORMANCE-REVIEW.md](PERFORMANCE-REVIEW.md) before deploying. After pulling this release, stop the old combined launcher and run `bash run.sh` again. Do not delete the history database or increase the heartbeat stale timeout to work around loading delays.
+
+Additional verification:
+
+```bash
+python -m unittest discover -s control_panel/tests -p test_history_performance.py -v
+node --test control_panel/tests/refresh.test.mjs
+```
+
 ## Expansion release
 
 The expanded panel adds complete-window API analytics (15m/1h/24h/72h), outcome/status/duration/retry filters, request investigations with correlated logs, command metrics, explicitly instrumented background jobs, dashboard-only incidents, runtime version reporting and startup progress. Filters and the selected page are bookmarkable; mobile navigation uses a drawer.

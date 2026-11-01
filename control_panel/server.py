@@ -20,6 +20,7 @@ from .storage import Store
 from .supervisor import BOT, Supervisor, FileLock
 from .incidents import Monitor
 from .version import versions
+from .history import History, HistoryBusy
 
 PUBLIC = Path(__file__).parent/'public'
 
@@ -31,6 +32,7 @@ class Panel:
         self.supervisor = Supervisor(environment, self.secret)
         self.executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix='panel-store')
         self.store = Store(BOT/'control_panel'/'data'/environment/'history.db')
+        self.history = History(self.store)
         self.pending = asyncio.Queue(1024)
         self.heartbeats, self.subscribers = {}, set()
         self.dropped, self.storage_error = {}, None
@@ -41,6 +43,12 @@ class Panel:
         self.monitor = Monitor()
         self.running_versions = versions()
         self.disk_versions = self.running_versions
+        self.operational_cache={'incidents':[],'operations':[],'updated_at':None}
+        self.indexing_cache={'complete':False,'cursor':0,'target':None}
+        self.authentication_mode=self.auth_mode()
+        self.health_delay_ms=0
+        self.operation_records={}
+        self.storage_cache={}
 
     async def db(self, method, *args, **kwargs):
         return await asyncio.get_running_loop().run_in_executor(self.executor,
@@ -53,6 +61,7 @@ class Panel:
 
     async def writer(self):
         tick = 0
+        last_prune=0
         while True:
             await asyncio.sleep(1)
             events = []
@@ -65,10 +74,15 @@ class Panel:
                 if events:
                     await self.db('append', events)
                     self.publish('update')
+                self.indexing_cache=await self.db('backfill')
                 tick += 1
-                if tick % 60 == 0:
+                pressure=self.store.storage_bytes()>self.store.budget*.9
+                maintenance=tick%60==0 or (pressure and time.monotonic()-last_prune>=5)
+                if maintenance:
                     await self.db('prune')
-                if events or tick % 60 == 0:
+                    last_prune=time.monotonic()
+                self.storage_cache={'physical_bytes':self.store.storage_bytes(),'budget_bytes':self.store.budget}
+                if events or maintenance:
                     self.storage_error = None
             except Exception:
                 self.storage_error = 'History write failed. Check available disk space and directory permissions.'
@@ -76,8 +90,12 @@ class Panel:
     async def sample(self):
         tick = 0
         while True:
+            cycle_started=time.monotonic()
             try:
-                services = await self.supervisor.states()
+                try:
+                    services=await asyncio.wait_for(self.supervisor.states(include_tailscale=False),timeout=2)
+                except asyncio.TimeoutError:
+                    services={name:dict(value,state='Unknown') for name,value in self.supervisor.last.items()}
                 now = time.time()
                 for name, service in services.items():
                     beat = self.heartbeats.get(name)
@@ -99,29 +117,51 @@ class Panel:
                 host = {'cpu_percent': psutil.cpu_percent(), 'memory_percent': memory.percent,
                         'memory_used': memory.used, 'memory_total': memory.total, 'disk_free': disk.free,
                         'temperature_c': temperature}
-                if tick % 12 == 0:
-                    self.disk_versions = await asyncio.to_thread(versions)
-                await self.monitor.check(self,services,host)
-                incidents = await self.db('incidents')
                 self.status = {'environment': self.environment, 'hostname': self.hostname, 'host_label': socket.gethostname(),
                     'bot_id': self.supervisor.client, 'services': services, 'host': host, 'sampled_at': now,
                     'other_url': self.other_url, 'dropped': self.dropped, 'storage_error': self.storage_error,
-                    'authentication': {'mode': self.auth_mode(), 'token_expiry': 'Unknown'},
+                    'authentication': {'mode': self.authentication_mode, 'token_expiry': 'Unknown'},
                     'busy': self.busy, 'capabilities': ['start', 'stop', 'restart', 'diagnostics'],
-                    'operations': await self.db('operations')}
-                self.status.update(incidents=incidents, progress=getattr(self.supervisor,'progress',[]),
+                    'operations': self.operational_cache['operations']}
+                self.status.update(incidents=self.operational_cache['incidents'], progress=getattr(self.supervisor,'progress',[]),
+                    history_updated_at=self.operational_cache['updated_at'],indexing=self.indexing_cache,
                     versions={'running':self.running_versions,'disk':self.disk_versions,
                         'restart_required':self.running_versions['runtime_id']!=self.disk_versions['runtime_id']})
                 if tick % 12 == 0:
                     self.enqueue({'kind': 'metric', 'time': now, 'source': 'panel', 'environment': self.environment,
                                   'data': host})
                 self.publish('status')
+                self.health_delay_ms=max(0,round((time.monotonic()-cycle_started-5)*1000,2))
                 tick += 1
             except asyncio.CancelledError:
                 raise
             except Exception:
-                self.storage_error = 'Status collection failed; previous values are stale.'
+                self.status['health_error']='Status collection failed; previous values are stale.'
+            await asyncio.sleep(max(0,5-(time.monotonic()-cycle_started)))
+
+    async def operational(self):
+        tick=0
+        while True:
+            try:
+                if self.status:
+                    await self.monitor.check(self,self.status.get('services',{}),self.status['host'])
+                incidents=await self.db('incidents')
+                operations=await self.db('operations')
+                self.operational_cache=dict(incidents=incidents,operations=operations,updated_at=time.time())
+                if tick%12==0:self.disk_versions=await asyncio.to_thread(versions)
+                tick+=1
+            except asyncio.CancelledError:raise
+            except Exception:
+                pass  # Health sampling remains independent of history failures.
             await asyncio.sleep(5)
+
+    async def tailscale_checks(self):
+        while True:
+            try:
+                await self.supervisor.refresh_tailscale()
+            except asyncio.CancelledError:raise
+            except Exception:pass
+            await asyncio.sleep(30)
 
     def auth_mode(self):
         from dotenv import dotenv_values
@@ -158,6 +198,8 @@ class Panel:
             await asyncio.sleep(5)
 
     async def operation(self, record, work):
+        self.operation_records[record['id']]=record
+        while len(self.operation_records)>30:self.operation_records.pop(next(iter(self.operation_records)))
         try:
             record['state'] = 'running'
             await self.db('operation', item=record)
@@ -240,6 +282,8 @@ def create_app(panel):
             response = await handler(request)
         except web.HTTPException as exc:
             response = web.json_response({'error': exc.text}, status=exc.status)
+        except HistoryBusy as exc:
+            response=web.json_response({'error':str(exc),'code':'history_busy','retryable':True},status=503,headers={'Retry-After':'2'})
         except (ValueError, TypeError, json.JSONDecodeError):
             response = web.json_response({'error': 'Invalid request'}, status=400)
         except Exception:
@@ -251,11 +295,27 @@ def create_app(panel):
 
     app = web.Application(middlewares=[security], client_max_size=1024*1024)
     async def status(request):
-        return web.json_response(dict(panel.status, csrf=panel.csrf, busy=panel.busy, storage_error=panel.storage_error))
+        return web.json_response(dict(panel.status, csrf=panel.csrf, busy=panel.busy, storage_error=panel.storage_error,
+            performance=dict(panel.history.performance(),writer_queue=panel.pending.qsize(),health_sample_delay_ms=panel.health_delay_ms),
+            indexing=panel.indexing_cache,storage=panel.storage_cache))
+
+    async def read(request, method, *args, **kwargs):
+        task=asyncio.create_task(panel.history.read(method,*args,**kwargs))
+        try:
+            while not task.done():
+                await asyncio.wait({task},timeout=.1)
+                if request.transport is None or request.transport.is_closing():
+                    task.cancel()
+                    raise asyncio.CancelledError()
+            return await task
+        finally:
+            if not task.done():task.cancel()
+            await asyncio.gather(task,return_exceptions=True)
 
     async def listing(request):
         kind = {'requests': 'request', 'logs': 'log', 'metrics': 'metric','commands':'command'}[request.match_info['collection']]
-        result = await panel.db('query', kind, before=request.query.get('before'), limit=request.query.get('limit', 100),
+        result = await read(request,'query', kind, before=request.query.get('before'), limit=request.query.get('limit', 100),
+            summary=request.query.get('summary')=='true',
             search=request.query.get('q', ''), source=request.query.get('source', ''), level=request.query.get('level', ''),
             since=max(float(request.query.get('since', 0)), time.time()-(14*86400 if kind == 'metric' else 72*3600)),
             **request_filters(request))
@@ -265,14 +325,21 @@ def create_app(panel):
         return {key:request.query[key] for key in ('until','outcome','http_status','min_duration','retried','endpoint_name') if key in request.query}
 
     async def analytics(request):
-        return web.json_response(await panel.db('analytics',since=float(request.query.get('since',0)),
+        dates={'range_seconds':request.query['range_seconds']} if 'range_seconds' in request.query else {'since':float(request.query.get('since',0))}
+        if 'range_seconds' in dates and ('since' in request.query or 'until' in request.query):raise web.HTTPBadRequest(text='Choose a range or explicit dates.')
+        return web.json_response(await read(request,'analytics',**dates,
             search=request.query.get('q',''),source=request.query.get('source',''),**request_filters(request)))
 
     async def command_summary(request):
-        return web.json_response(await panel.db('command_summary',since=float(request.query.get('since',0))))
+        since=float(request.query.get('since',0))
+        if 'range_seconds' in request.query:
+            seconds=int(request.query['range_seconds'])
+            if seconds not in (900,3600,86400,259200):raise web.HTTPBadRequest(text='Invalid range')
+            since=int(time.time()//10)*10-seconds
+        return web.json_response(await read(request,'command_summary',since=since))
 
     async def investigation(request):
-        result = await panel.db('investigation',request.match_info['id'])
+        result = await read(request,'investigation',request.match_info['id'])
         if result is None:
             raise web.HTTPNotFound()
         return web.json_response(result)
@@ -280,10 +347,10 @@ def create_app(panel):
     async def jobs(request):
         beat = panel.heartbeats.get('bot')
         return web.json_response({'items':(beat['data'].get('tasks',[]) if beat else []),
-            'fresh':bool(beat and time.time()-beat['time']<=15), 'history':await panel.db('jobs')})
+            'fresh':bool(beat and time.time()-beat['time']<=15), 'history':await read(request,'jobs')})
 
     async def incidents(request):
-        return web.json_response({'items':await panel.db('incidents')})
+        return web.json_response({'items':await read(request,'incidents')})
 
     async def acknowledge(request):
         body = await request.json()
@@ -296,7 +363,7 @@ def create_app(panel):
         return web.json_response({'acknowledged':True,'time':time.time(),'note':redact(note)})
 
     async def detail(request):
-        item = await panel.db('request', request.match_info['id'])
+        item = await read(request,'request', request.match_info['id'])
         if not item:
             raise web.HTTPNotFound()
         return web.json_response(item)
@@ -361,14 +428,15 @@ def create_app(panel):
         return web.json_response(record, status=202)
 
     async def operation(request):
-        item = await panel.db('operation', key=request.match_info['id'])
+        item=panel.operation_records.get(request.match_info['id'])
+        if item is None:item=await read(request,'operation',key=request.match_info['id'])
         if not item:
             raise web.HTTPNotFound()
         return web.json_response(item)
 
     async def export(request):
-        data = {'status': panel.status, 'requests': await panel.db('query', 'request', limit=100),
-                'logs': await panel.db('query', 'log', limit=100)}
+        data = {'status': panel.status, 'requests': await read(request,'query', 'request', limit=100),
+                'logs': await read(request,'query', 'log', limit=100)}
         # Identity and CSRF/ingestion secrets are not part of support exports.
         data['status'] = {key: value for key, value in panel.status.items() if key not in ('operations','incidents')}
         return web.json_response(data, headers={'Content-Disposition':'attachment; filename="wwm-support.json"'})
@@ -418,7 +486,8 @@ def create_app(panel):
     app.router.add_get('/{path:.*}', static)
 
     async def startup(app):
-        panel.tasks.extend([asyncio.create_task(panel.writer()), asyncio.create_task(panel.sample()), asyncio.create_task(panel.legacy())])
+        panel.tasks.extend([asyncio.create_task(panel.writer()), asyncio.create_task(panel.sample()), asyncio.create_task(panel.legacy()),
+                            asyncio.create_task(panel.operational()),asyncio.create_task(panel.tailscale_checks())])
         if getattr(panel, 'start_stack', False):
             record = {'id': uuid.uuid4().hex, 'state': 'queued', 'started': time.time(),
                       'environment': panel.environment, 'identity': 'local launcher',
@@ -434,6 +503,7 @@ def create_app(panel):
             task.cancel()
         await asyncio.gather(*panel.tasks, return_exceptions=True)
         await panel.supervisor.close()
+        await panel.history.close()
         await panel.db('close')
         panel.executor.shutdown(wait=True)
     app.on_startup.append(startup); app.on_cleanup.append(cleanup)

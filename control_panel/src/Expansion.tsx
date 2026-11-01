@@ -1,7 +1,8 @@
-import {useEffect,useState} from 'react';
+import {useCallback,useEffect,useState} from 'react';
+import {useResource} from './refresh';
 
 type Fetcher=(url:string,init?:RequestInit)=>Promise<any>;
-export type Analytics={summary:{total:number;success:number;error:number;unknown:number;retries:number;timeouts:number;activity_requests:number;median_ms:number|null;p95_ms:number|null;success_rate:number|null;error_rate:number|null;unknown_rate:number|null};series:{time:number;count:number;errors:number;mean_ms:number|null}[];endpoints:{endpoint:string;label:string;count:number;errors:number}[]};
+export type Analytics={since?:number;until?:number;as_of?:number;indexing?:{complete:boolean;cursor:number;target:number};summary:{total:number;success:number;error:number;unknown:number;retries:number;timeouts:number;activity_requests:number;median_ms:number|null;p95_ms:number|null;success_rate:number|null;error_rate:number|null;unknown_rate:number|null};series:{time:number;count:number;errors:number;mean_ms:number|null}[];endpoints:{endpoint:string;label:string;count:number;errors:number}[]};
 const when=(value?:number)=>value?new Date(value*1000).toLocaleString(undefined,{hour12:false}):'Not observed';
 const duration=(value?:number)=>value!=null?value.toFixed(1)+' ms':'—';
 
@@ -15,7 +16,17 @@ export function Investigation({id,fetchJSON,onRequest}:{id:string;fetchJSON:Fetc
 
 export function BotActivity({fetchJSON,query,onRequest}:{fetchJSON:Fetcher;query:string;onRequest:(id:string)=>void}){
  const [jobs,setJobs]=useState<any>({items:[],history:[],fresh:false}),[summary,setSummary]=useState<any>(null),[commands,setCommands]=useState<any[]>([]),[error,setError]=useState('');
- useEffect(()=>{let active=true;const load=async()=>{try{const [j,c,s]=await Promise.all([fetchJSON('/api/jobs'),fetchJSON('/api/commands?'+query),fetchJSON('/api/commands/summary?'+query)]);if(active){setJobs(j);setCommands(c.items);setSummary(s);setError('')}}catch(e){if(active)setError((e as Error).message)}};load();const timer=setInterval(load,5000);return()=>{active=false;clearInterval(timer)}},[query,fetchJSON]);
+ const jobsUrl=useCallback(()=>'/api/jobs',[]);
+ const commandsUrl=useCallback(()=>{const params=new URLSearchParams(query);const seconds=Number(params.get('range_seconds')||3600);return '/api/commands?since='+String(Date.now()/1000-seconds)},[query]);
+ const summaryUrl=useCallback(()=>'/api/commands/summary?'+query,[query]);
+ const jobResource=useResource<any>('jobs',jobsUrl,5000);
+ const commandResource=useResource<any>('commands'+query,commandsUrl,5000);
+ const summaryResource=useResource<any>('summary'+query,summaryUrl,10000);
+ useEffect(()=>{if(jobResource.data)setJobs(jobResource.data)},[jobResource.data]);
+ useEffect(()=>{if(commandResource.data)setCommands(commandResource.data.items)},[commandResource.data]);
+ useEffect(()=>{if(summaryResource.data)setSummary(summaryResource.data)},[summaryResource.data]);
+ useEffect(()=>setError(jobResource.error||commandResource.error||summaryResource.error),[jobResource.error,commandResource.error,summaryResource.error]);
+
  const [selected,setSelected]=useState<any>(null);
  const current=jobs.items.filter((job:any)=>job.instrumented);
  const rows=current.length?current:jobs.history.map((event:any)=>({...event.data,historical:true}));
@@ -24,7 +35,7 @@ export function BotActivity({fetchJSON,query,onRequest}:{fetchJSON:Fetcher;query
 
 function CommandDetail({event,fetchJSON,onRequest}:{event:any;fetchJSON:Fetcher;onRequest:(id:string)=>void}){
  const [related,setRelated]=useState<any[]>([]);
- useEffect(()=>{let active=true;fetchJSON('/api/requests?q='+encodeURIComponent(event.data.id)).then(result=>{if(active)setRelated(result.items)}).catch(()=>{if(active)setRelated([])});return()=>{active=false}},[event,fetchJSON]);
+ useEffect(()=>{let active=true;fetchJSON('/api/requests?summary=true&q='+encodeURIComponent(event.data.id)).then(result=>{if(active)setRelated(result.items)}).catch(()=>{if(active)setRelated([])});return()=>{active=false}},[event,fetchJSON]);
  return <div className="command-detail"><h3>{event.data.name}</h3><code>{event.data.id}</code>{related.map(row=><p key={row.cursor}><button className="endpoint" onClick={()=>onRequest(row.data.id)}>{row.data.label||row.data.endpoint} · {duration(row.data.duration_ms)}</button></p>)}{!related.length&&<p className="muted">No related WWM requests retained.</p>}</div>
 }
 

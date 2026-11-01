@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit && vite build",
-    "dev": "vite --host 127.0.0.1"
+    "dev": "vite --host 127.0.0.1",
+    "test": "node --test tests/refresh.test.mjs"
   },
   "dependencies": {
     "@tanstack/react-virtual": "3.13.12",

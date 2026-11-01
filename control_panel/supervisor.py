@@ -14,8 +14,8 @@ import psutil
 from activity.run_stack import BOT, HERE, configuration, funnel_matches
 from .locks import FileLock
 
-def run_json(command):
-    result = subprocess.run(command, capture_output=True, text=True, timeout=10,
+def run_json(command, timeout=10):
+    result = subprocess.run(command, capture_output=True, text=True, timeout=timeout,
                             creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
     if result.returncode:
         raise RuntimeError('Tailscale command failed. Check device login and serving permissions.')
@@ -53,6 +53,7 @@ class Supervisor:
         self.identities = {}
         self.expected_running = set()
         self.progress = []
+        self.tailscale_cache={}
 
     def matches_process(self, name, pid, instance):
         """Windows venv launchers may forward to a child Python interpreter."""
@@ -78,7 +79,18 @@ class Supervisor:
         except Exception:
             return 'Offline'
 
-    async def states(self):
+    async def refresh_tailscale(self):
+        if self.provider!='tailscale':return
+        try:
+            ts=await asyncio.to_thread(run_json,[str(self.tunnel),'status','--json'],2)
+            self.hostname=ts.get('Self',{}).get('DNSName','').rstrip('.')
+            routes=await asyncio.to_thread(run_json,[str(self.tunnel),'funnel','status','--json'],2)
+            self.tailscale_cache={'configured':funnel_matches(routes,self.hostname,self.origin),
+                'checked_at':time.time(),'check_ok':True,'public_reachability':'Unknown — not externally verified'}
+        except Exception:
+            self.tailscale_cache=dict(self.tailscale_cache,checked_at=time.time(),check_ok=False)
+
+    async def states(self, include_tailscale=True):
         activity = await self.activity_state()
         bot_external = await asyncio.to_thread(external_bot)
         result = {}
@@ -101,19 +113,16 @@ class Supervisor:
                 except psutil.Error:
                     result[name]['state'] = 'Unknown'
         if self.provider == 'tailscale':
-            try:
-                ts = await asyncio.to_thread(run_json, [str(self.tunnel), 'status', '--json'])
-                self.hostname = ts.get('Self', {}).get('DNSName', '').rstrip('.')
-                routes = await asyncio.to_thread(run_json, [str(self.tunnel), 'funnel', 'status', '--json'])
-                matches = funnel_matches(routes, self.hostname, self.origin)
-                result['tunnel']['configured'] = matches
-                result['tunnel']['public_reachability'] = 'Unknown — not externally verified'
-                if matches and result['tunnel']['ownership'] != 'owned':
-                    result['tunnel'].update(ownership='external', state='Unknown')
-                elif result['tunnel']['ownership'] == 'owned' and not matches:
-                    result['tunnel']['state'] = 'Degraded'
-            except Exception:
+            if include_tailscale:await self.refresh_tailscale()
+            cached=getattr(self,'tailscale_cache',{})
+            result['tunnel'].update(cached)
+            result['tunnel']['check_stale']=time.time()-cached.get('checked_at',0)>45
+            if not cached.get('check_ok') or time.time()-cached.get('checked_at',0)>45:
                 result['tunnel']['state'] = 'Unknown'
+            elif cached.get('configured') and result['tunnel']['ownership']!='owned':
+                result['tunnel'].update(ownership='external',state='Unknown')
+            elif result['tunnel']['ownership']=='owned' and not cached.get('configured'):
+                result['tunnel']['state']='Degraded'
         self.last = result
         return result
 

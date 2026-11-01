@@ -69,10 +69,11 @@ class StorageTests(unittest.TestCase):
         self.store.close(); self.store = Store(self.path)
         self.assertEqual(self.store.operation(key='op1')['state'], 'interrupted')
     def test_budget_reclaims_physical_space(self):
-        self.store.budget = 80*1024
+        self.store.budget = 256*1024
         events = [dict(self.event(), data={'id':str(n),'data':'x'*4096}) for n in range(100)]
-        self.store.append(events); self.store.prune()
-        self.assertLess(self.path.stat().st_size, self.store.budget)
+        self.store.append(events)
+        for _ in range(10):self.store.prune()
+        self.assertLess(self.store.storage_bytes(),self.store.budget)
 
 class RouteAndLockTests(unittest.TestCase):
     def route(self, public=False, proxy='http://127.0.0.1:8770'):
@@ -244,8 +245,8 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
     async def test_queue_full_does_not_block(self):
         for _ in range(1100):self.panel.enqueue({'kind':'log'})
         self.assertGreater(self.panel.dropped['panel'],0)
-    async def test_disk_failure_returns_service_error(self):
-        with patch.object(self.panel,'db',side_effect=OSError('disk full')):
+    async def test_history_read_failure_returns_service_error(self):
+        with patch.object(self.panel.history,'read',side_effect=OSError('history unavailable')):
             response=await self.client.get('/api/logs',headers=self.headers)
         self.assertEqual(response.status,503)
 

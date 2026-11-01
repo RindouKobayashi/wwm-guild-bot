@@ -94,7 +94,7 @@ class MigrationTests(unittest.TestCase):
             store=Store(path)
             try:
                 self.assertEqual(store.request('old')['data']['id'],'old')
-                self.assertEqual(store.db.execute('PRAGMA user_version').fetchone()[0],2)
+                self.assertEqual(store.db.execute('PRAGMA user_version').fetchone()[0],3)
             finally:store.close()
     def test_future_schema_refused_without_downgrade(self):
         with tempfile.TemporaryDirectory() as temp:
