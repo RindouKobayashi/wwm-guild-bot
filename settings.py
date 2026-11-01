@@ -177,10 +177,12 @@ LOGGING_CONFIG = {
         },
         "file": {
             "level": "INFO",
-            "class": "logging.FileHandler",
+            "class": "logging.handlers.RotatingFileHandler",
             "filename": "logs/infos.log",
             "formatter": "verbose",
-            "mode": "w",
+            "mode": "a",
+            "maxBytes": 5242880,
+            "backupCount": 3,
             "encoding": "utf-8",
         },        
     },
@@ -200,4 +202,8 @@ LOGGING_CONFIG = {
 
 logger = logging.getLogger("bot")
 
+(BASE_DIR / 'logs').mkdir(exist_ok=True)
 dictConfig(LOGGING_CONFIG)
+
+from control_panel.telemetry import attach_logging
+attach_logging()

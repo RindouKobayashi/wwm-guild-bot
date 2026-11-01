@@ -16,6 +16,9 @@ bot = commands.Bot(
 
 @bot.event
 async def setup_hook():
+    from control_panel.telemetry import enabled, heartbeat
+    if enabled():
+        bot.panel_heartbeat = asyncio.create_task(heartbeat(bot))
     # Import cog modules that have persistent views so their module-level
     # register() calls execute BEFORE register_all_views is called.
     from cogs.view_registry import register_all_views
@@ -52,16 +55,40 @@ async def on_ready():
     await sync_with_activity(bot) # Preserve the Portal-managed Activity Launch command.
 
 async def main():
+    import signal
+    import os
+    loop = asyncio.get_running_loop()
+    from control_panel.shutdown import install_shutdown
+    install_shutdown(loop, lambda: asyncio.create_task(bot.close()))
+    def shutdown_signal(*_):
+        loop.call_soon_threadsafe(lambda: asyncio.create_task(bot.close()))
+    if os.name == 'nt' and hasattr(signal, 'SIGBREAK'):
+        signal.signal(signal.SIGBREAK, shutdown_signal)
+    elif os.name != 'nt':
+        loop.add_signal_handler(signal.SIGTERM, shutdown_signal)
     try:
         await bot.start(settings.DISCORD_API_TOKEN)
     except KeyboardInterrupt:
         logger.info("Keyboard Interrupt received. Shutting down the bot.")
     finally:
+        task = getattr(bot, 'panel_heartbeat', None)
+        if task:
+            task.cancel()
         logger.info("Closing bot...")
         await bot.close()
         from utility.wwm import close_session
         await close_session()
         logger.info("Bot closed successfully.")
+
+@bot.listen('on_disconnect')
+async def panel_disconnect():
+    from control_panel.telemetry import emit
+    emit('log', {'level': 'WARNING', 'module': 'discord', 'message': 'Discord gateway disconnected'})
+
+@bot.listen('on_command_error')
+async def panel_command_error(context, error):
+    from control_panel.telemetry import emit
+    emit('log', {'level': 'ERROR', 'module': 'discord', 'message': 'Command failed', 'exception': type(error).__name__})
 
 def run():
     loop = asyncio.get_event_loop()
@@ -78,4 +105,9 @@ def run():
         logger.info("The bot has been shut down successfully.")
 
 if __name__ == "__main__":
-    run()
+    from control_panel.locks import FileLock
+    bot_lock = FileLock(settings.BASE_DIR / 'data' / 'bot-process.lock')
+    try:
+        run()
+    finally:
+        bot_lock.close()

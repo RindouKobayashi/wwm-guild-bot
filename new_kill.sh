@@ -26,7 +26,8 @@ def matches():
         args = (proc / 'cmdline').read_bytes().split(b'\0')
         return (proc.stat().st_uid == os.getuid()
                 and (proc / 'cwd').resolve() == root
-                and b'activity/run_stack.py' in args
+                and (b'activity/run_stack.py' in args
+                     or (b'-m' in args and b'control_panel' in args))
                 and b'--environment' in args and b'production' in args)
     except FileNotFoundError:
         return False
@@ -35,7 +36,7 @@ if not matches():
     raise SystemExit('Recorded PID is no longer this production launcher; no process was signalled.')
 os.kill(pid, signal.SIGTERM)
 print(f'Stopping production launcher {pid} and its owned components...')
-for _ in range(60):
+for _ in range(180):
     if not matches():
         pid_file.unlink(missing_ok=True)
         print('Launcher stopped. Previously reused services remain running.')

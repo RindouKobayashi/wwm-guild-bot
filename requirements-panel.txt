@@ -1,0 +1,4 @@
+# Only needed to run the optional private control panel.
+aiohttp==3.13.5
+python-dotenv==1.2.2
+psutil==7.2.2

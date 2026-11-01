@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Start the production bot, Activity and tunnel in the background.
+# Start the private panel and its production bot stack in the background.
 set -euo pipefail
 cd -- "$(dirname -- "${BASH_SOURCE[0]}")"
 
@@ -24,4 +24,7 @@ printf '%s\n' "$stack_pid" > "$log_dir/launcher.pid"
 printf 'Production launcher started in background (PID %s).\n' "$stack_pid"
 echo 'Startup progress: tail -f activity/logs/production/launcher.log'
 echo 'Bot, Activity and tunnel logs: activity/logs/production/'
+echo 'The private control panel URL is printed in launcher.log (HTTPS port 8443).'
+echo 'Open it from your Tailscale-connected computer or phone; no Pi desktop browser is required.'
+echo 'The panel stays available if a bot component fails; inspect its service states and operation history.'
 echo 'Stop this launcher and its owned processes: kill -TERM '"$stack_pid"

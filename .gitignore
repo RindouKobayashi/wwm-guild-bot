@@ -14,3 +14,6 @@ maintenance/research/output/
 assets/wwm/releases/
 # Portable login credentials, API token cache and provider locks (local only)
 .wwm-auth/
+control_panel/local.json
+control_panel/data/
+control_panel/node_modules/

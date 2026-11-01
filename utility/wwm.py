@@ -230,6 +230,8 @@ def _convert_bytes_to_str(obj):
 # -----------------------------------------------------------------------------
 # Base API Request Handler (all common logic in one place)
 # -----------------------------------------------------------------------------
+from control_panel.telemetry import observe_wwm
+
 async def _wwm_api_post(
     url: str,
     payload: Dict[str, Any],
@@ -248,6 +250,8 @@ async def _wwm_api_post(
     This is a non-blocking async function that uses aiohttp instead of requests,
     so it does not block the asyncio event loop.
     """
+    from control_panel.telemetry import attempt as record_attempt
+    import time as request_clock
     headers = await get_default_headers(token_override=token, uid_override=uid)
     if (WWM_AUTH_MODE == 'saved_login' and not token and not uid and raw_payload is None
             and payload.get('uid') == WWM_UID):
@@ -267,9 +271,12 @@ async def _wwm_api_post(
     last_error = None
     auth_refreshed = False
     for attempt in range(max_retries + 1):
+        attempt_started = request_clock.monotonic()
+        attempt_record = {'number': attempt + 1, 'status': None, 'request_bytes': 0, 'response_bytes': 0}
         try:
             # Pack payload unless raw bytes are explicitly provided
             request_data = raw_payload if raw_payload is not None else msgpack.packb(payload)
+            attempt_record['request_bytes'] = len(request_data)
 
             async with session.post(
                 url,
@@ -278,10 +285,12 @@ async def _wwm_api_post(
                 timeout=req_timeout,
                 allow_redirects=False,
             ) as response:
+                attempt_record['status'] = response.status
                 logger.debug(f"API Request {url} status: {response.status}")
 
                 if response.status == 200:
                     body = await response.read()
+                    attempt_record['response_bytes'] = len(body)
                     try:
                         return msgpack.unpackb(
                             body,
@@ -322,6 +331,7 @@ async def _wwm_api_post(
             ConnectionError,
             OSError,
         ) as e:
+            attempt_record['error'] = type(e).__name__
             last_error = e
             if attempt < max_retries:
                 delay = base_delay * (2 ** attempt)
@@ -330,10 +340,17 @@ async def _wwm_api_post(
             else:
                 logger.error(f"API Request failed {url} after {max_retries + 1} attempts: {str(e)}")
         except Exception as e:
+            attempt_record['error'] = type(e).__name__
             logger.error(f"API Request failed {url}: {str(e)}", exc_info=True)
             return None
+        finally:
+            attempt_record['duration_ms'] = round((request_clock.monotonic() - attempt_started) * 1000, 2)
+            record_attempt(**attempt_record)
 
     return None
+
+# Keep the core helper independently compilable for existing auth contract tests.
+_wwm_api_post = observe_wwm(_wwm_api_post)
 
 async def generate_token(a: Optional[int] = None, b: str = WWM_TOKEN_SPECIAL_KEY, c: str = WWM_SALT):
     """Use the configured saved-login provider, or the opt-in legacy signer.

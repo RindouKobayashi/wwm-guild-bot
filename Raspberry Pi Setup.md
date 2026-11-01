@@ -1,5 +1,7 @@
 # Raspberry Pi: same repository, production configuration
 
+For the private control panel and current combined startup, follow [control_panel/README.md](control_panel/README.md#raspberry-pi). Normal `bash run.sh` now starts the panel and its bot stack; configure the private panel once before using that launcher. Open its printed HTTPS URL from a Tailscale-connected computer or phone.
+
 After committing/pushing these changes, SSH into the Pi and run:
 
 ```sh

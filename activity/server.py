@@ -50,6 +50,32 @@ def binding(user_id):
     return row[0] if row else None
 
 def create_app(live=False):
+    from control_panel.telemetry import enabled, heartbeat, parent_id, emit, attach_logging
+    import uuid
+    attach_logging()
+    @web.middleware
+    async def panel_observer(request, handler):
+        if not enabled():
+            return await handler(request)
+        identity = uuid.uuid4().hex
+        token = parent_id.set(identity)
+        started = time.time()
+        status = 500
+        try:
+            response = await handler(request)
+            status = response.status
+            return response
+        except web.HTTPException as error:
+            status = error.status
+            raise
+        finally:
+            parent_id.reset(token)
+            if request.path.startswith('/api/'):
+                emit('request', {'id': identity, 'parent_id': None, 'endpoint': request.path,
+                    'method': request.method, 'started': started, 'duration_ms': round((time.time()-started)*1000, 2),
+                    'status': status, 'outcome': 'success' if status < 400 else 'error', 'attempts': [],
+                    'request': {'omitted': 'Activity request bodies are private'},
+                    'response': {'omitted': 'Inspect correlated WWM requests'}})
     from activity.runtime_version import runtime_version
     version=runtime_version()
     catalogue=json.loads((HERE/'public/catalogue.json').read_text(encoding='utf-8'))
@@ -77,7 +103,7 @@ def create_app(live=False):
             return web.json_response({'error':e.text},status=e.status)
         except Exception:
             return web.json_response({'error':'Data could not be loaded. Try again later.'},status=502)
-    app=web.Application(middlewares=[errors],client_max_size=16384)
+    app=web.Application(middlewares=[panel_observer,errors],client_max_size=16384)
     async def config(request):return web.json_response({'service':'wwm-activity','mode':'discord' if live else 'preview','client_id':app_id,'runtime_version':version},headers={'Cache-Control':'no-store'})
     async def auth(request):
         if not live:raise web.HTTPForbidden(text='Discord authentication is disabled in local preview.')
@@ -244,12 +270,27 @@ def create_app(live=False):
     app.router.add_get('/api/player',player_profile)
     app.router.add_get('/{path:.*}',static)
     async def close(app):
+        if 'panel_heartbeat' in app:
+            app['panel_heartbeat'].cancel()
         if live:
             from utility.wwm import close_session
             await close_session()
     app.on_cleanup.append(close)
+    async def panel_start(app):
+        from control_panel.shutdown import install_shutdown
+        def graceful_exit():
+            raise web.GracefulExit()
+        install_shutdown(asyncio.get_running_loop(), graceful_exit)
+        if enabled():
+            app['panel_heartbeat'] = asyncio.create_task(heartbeat())
+    app.on_startup.append(panel_start)
     return app
 if __name__=='__main__':
+    import signal
+    if hasattr(signal, 'SIGBREAK'):
+        def panel_shutdown(*_):
+            raise KeyboardInterrupt
+        signal.signal(signal.SIGBREAK, panel_shutdown)
     from dotenv import load_dotenv
     parser=argparse.ArgumentParser();parser.add_argument('--discord',action='store_true');parser.add_argument('--port',type=int,default=8766);parser.add_argument('--profile',choices=['test','production']);args=parser.parse_args()
     load_dotenv(HERE/('.env.'+args.profile if args.profile else '.env'),override=False)
