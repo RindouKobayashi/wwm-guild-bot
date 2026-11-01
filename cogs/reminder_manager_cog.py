@@ -1,3 +1,4 @@
+from control_panel.jobs import observe_job
 import discord
 import aiosqlite
 import asyncio
@@ -155,6 +156,7 @@ class ReminderCog(commands.Cog):
         return embed
 
     @tasks.loop(minutes=1)
+    @observe_job("reminder_manager_cog.daily_reminder_task")
     async def daily_reminder_task(self):
         try:
             now = int(datetime.datetime.now(datetime.timezone.utc).timestamp())

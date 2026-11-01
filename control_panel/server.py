@@ -11,11 +11,15 @@ import secrets
 import socket
 import time
 import uuid
+import tempfile
+import math
 from aiohttp import web
 import psutil
 from .privacy import redact
 from .storage import Store
 from .supervisor import BOT, Supervisor, FileLock
+from .incidents import Monitor
+from .version import versions
 
 PUBLIC = Path(__file__).parent/'public'
 
@@ -34,6 +38,9 @@ class Panel:
         self.created = time.time()
         self.legacy_offsets = {}
         self.operation_task = None
+        self.monitor = Monitor()
+        self.running_versions = versions()
+        self.disk_versions = self.running_versions
 
     async def db(self, method, *args, **kwargs):
         return await asyncio.get_running_loop().run_in_executor(self.executor,
@@ -61,7 +68,8 @@ class Panel:
                 tick += 1
                 if tick % 60 == 0:
                     await self.db('prune')
-                self.storage_error = None
+                if events or tick % 60 == 0:
+                    self.storage_error = None
             except Exception:
                 self.storage_error = 'History write failed. Check available disk space and directory permissions.'
 
@@ -91,12 +99,19 @@ class Panel:
                 host = {'cpu_percent': psutil.cpu_percent(), 'memory_percent': memory.percent,
                         'memory_used': memory.used, 'memory_total': memory.total, 'disk_free': disk.free,
                         'temperature_c': temperature}
+                if tick % 12 == 0:
+                    self.disk_versions = await asyncio.to_thread(versions)
+                await self.monitor.check(self,services,host)
+                incidents = await self.db('incidents')
                 self.status = {'environment': self.environment, 'hostname': self.hostname, 'host_label': socket.gethostname(),
                     'bot_id': self.supervisor.client, 'services': services, 'host': host, 'sampled_at': now,
                     'other_url': self.other_url, 'dropped': self.dropped, 'storage_error': self.storage_error,
                     'authentication': {'mode': self.auth_mode(), 'token_expiry': 'Unknown'},
                     'busy': self.busy, 'capabilities': ['start', 'stop', 'restart', 'diagnostics'],
                     'operations': await self.db('operations')}
+                self.status.update(incidents=incidents, progress=getattr(self.supervisor,'progress',[]),
+                    versions={'running':self.running_versions,'disk':self.disk_versions,
+                        'restart_required':self.running_versions['runtime_id']!=self.disk_versions['runtime_id']})
                 if tick % 12 == 0:
                     self.enqueue({'kind': 'metric', 'time': now, 'source': 'panel', 'environment': self.environment,
                                   'data': host})
@@ -164,6 +179,20 @@ class Panel:
             from activity.run_stack import configuration
             await asyncio.to_thread(configuration, self.environment)
             return 'Bot identity, environment, runtime files and tunnel executable validated.'
+        if check == 'storage':
+            directory = BOT/'control_panel'/'data'/self.environment
+            with tempfile.TemporaryFile(dir=directory) as probe:
+                probe.write(b'panel-write-check'); probe.flush()
+            if psutil.disk_usage(str(directory)).free < 300*1024*1024:
+                raise RuntimeError('Less than 300 MiB free disk space; free storage before continuing.')
+            return 'Panel data directory is writable and disk has space for the bounded history budget.'
+        if check == 'auth':
+            try:
+                from wwm_auth.context import load
+                await asyncio.to_thread(load)
+            except Exception:
+                raise RuntimeError('Saved-login context is unavailable or invalid. Check the host setup; no network request was made.') from None
+            return 'Saved-login context passed local validation. No login was attempted and expiry remains unknown.'
         if check == 'assets':
             required = [BOT/'activity/public/app.js', BOT/'activity/public/catalogue.json', PUBLIC/'index.html']
             if not all(path.is_file() and path.stat().st_size for path in required):
@@ -225,11 +254,46 @@ def create_app(panel):
         return web.json_response(dict(panel.status, csrf=panel.csrf, busy=panel.busy, storage_error=panel.storage_error))
 
     async def listing(request):
-        kind = {'requests': 'request', 'logs': 'log', 'metrics': 'metric'}[request.match_info['collection']]
+        kind = {'requests': 'request', 'logs': 'log', 'metrics': 'metric','commands':'command'}[request.match_info['collection']]
         result = await panel.db('query', kind, before=request.query.get('before'), limit=request.query.get('limit', 100),
             search=request.query.get('q', ''), source=request.query.get('source', ''), level=request.query.get('level', ''),
-            since=max(float(request.query.get('since', 0)), time.time()-(14*86400 if kind == 'metric' else 72*3600)))
+            since=max(float(request.query.get('since', 0)), time.time()-(14*86400 if kind == 'metric' else 72*3600)),
+            **request_filters(request))
         return web.json_response(result)
+
+    def request_filters(request):
+        return {key:request.query[key] for key in ('until','outcome','http_status','min_duration','retried','endpoint_name') if key in request.query}
+
+    async def analytics(request):
+        return web.json_response(await panel.db('analytics',since=float(request.query.get('since',0)),
+            search=request.query.get('q',''),source=request.query.get('source',''),**request_filters(request)))
+
+    async def command_summary(request):
+        return web.json_response(await panel.db('command_summary',since=float(request.query.get('since',0))))
+
+    async def investigation(request):
+        result = await panel.db('investigation',request.match_info['id'])
+        if result is None:
+            raise web.HTTPNotFound()
+        return web.json_response(result)
+
+    async def jobs(request):
+        beat = panel.heartbeats.get('bot')
+        return web.json_response({'items':(beat['data'].get('tasks',[]) if beat else []),
+            'fresh':bool(beat and time.time()-beat['time']<=15), 'history':await panel.db('jobs')})
+
+    async def incidents(request):
+        return web.json_response({'items':await panel.db('incidents')})
+
+    async def acknowledge(request):
+        body = await request.json()
+        note = body.get('note','')
+        if not isinstance(note,str) or len(note)>280:
+            raise web.HTTPBadRequest(text='Notes must be at most 280 characters.')
+        if not await panel.db('acknowledge',request.match_info['id'],redact(note)):
+            raise web.HTTPNotFound()
+        panel.publish('update')
+        return web.json_response({'acknowledged':True,'time':time.time(),'note':redact(note)})
 
     async def detail(request):
         item = await panel.db('request', request.match_info['id'])
@@ -245,9 +309,15 @@ def create_app(panel):
         for event in events:
             if not isinstance(event, dict) or event.get('environment') != panel.environment:
                 raise web.HTTPBadRequest()
-            if event.get('source') not in ('bot', 'activity', 'diagnostic') or event.get('kind') not in ('log', 'request', 'heartbeat'):
+            if event.get('version',1) not in (1,2):
+                raise web.HTTPBadRequest(text='Unsupported telemetry version')
+            if event.get('source') not in ('bot', 'activity', 'diagnostic') or event.get('kind') not in ('log', 'request', 'heartbeat','job','command'):
                 raise web.HTTPBadRequest()
             if not isinstance(event.get('data'), dict) or not isinstance(event.get('time'), (int, float)):
+                raise web.HTTPBadRequest()
+            if not math.isfinite(event['time']):
+                raise web.HTTPBadRequest()
+            if event['kind']=='job' and (not isinstance(event['data'].get('name'),str) or len(event['data']['name'])>100):
                 raise web.HTTPBadRequest()
             if len(json.dumps(event).encode()) > 64*1024:
                 raise web.HTTPRequestEntityTooLarge(max_size=65536, actual_size=len(json.dumps(event)))
@@ -276,7 +346,7 @@ def create_app(panel):
             target = service + '/' + action
         else:
             check = request.match_info['check']
-            if check not in ('configuration', 'assets', 'api'):
+            if check not in ('configuration', 'assets', 'api','storage','auth'):
                 raise web.HTTPNotFound()
             work = lambda: panel.diagnostic(check)
             target = 'diagnostic/' + check
@@ -300,7 +370,7 @@ def create_app(panel):
         data = {'status': panel.status, 'requests': await panel.db('query', 'request', limit=100),
                 'logs': await panel.db('query', 'log', limit=100)}
         # Identity and CSRF/ingestion secrets are not part of support exports.
-        data['status'] = {key: value for key, value in panel.status.items() if key != 'operations'}
+        data['status'] = {key: value for key, value in panel.status.items() if key not in ('operations','incidents')}
         return web.json_response(data, headers={'Content-Disposition':'attachment; filename="wwm-support.json"'})
 
     async def events(request):
@@ -332,7 +402,13 @@ def create_app(panel):
 
     app.router.add_post('/internal/ingest', ingest)
     app.router.add_get('/api/status', status)
-    app.router.add_get('/api/{collection:requests|logs|metrics}', listing)
+    app.router.add_get('/api/analytics',analytics)
+    app.router.add_get('/api/commands/summary',command_summary)
+    app.router.add_get('/api/jobs',jobs)
+    app.router.add_get('/api/incidents',incidents)
+    app.router.add_post('/api/incidents/{id}/acknowledge',acknowledge)
+    app.router.add_get('/api/{collection:requests|logs|metrics|commands}', listing)
+    app.router.add_get('/api/requests/{id}/investigation',investigation)
     app.router.add_get('/api/requests/{id}', detail)
     app.router.add_get('/api/events', events)
     app.router.add_post('/api/services/{service}/{action}', start_operation)

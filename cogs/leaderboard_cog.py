@@ -22,6 +22,7 @@ Breaking Army Leaderboard:
     - "active"      — within the 2-hour window → collect timings in real-time
     - "finalized"   — after 2 hours have elapsed → lock results, show final standings
 """
+from control_panel.jobs import observe_job
 import asyncio
 import datetime
 
@@ -1157,6 +1158,7 @@ class LeaderboardCog(commands.Cog):
 
     # ── background refresh loop ────────────────────────────────────────
     @tasks.loop(seconds=60)
+    @observe_job("leaderboard_cog.refresh_task")
     async def refresh_task(self):
         for inst in self.instances:
             try:

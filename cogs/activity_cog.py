@@ -1,3 +1,4 @@
+from control_panel.jobs import observe_job
 import discord
 import aiosqlite
 import time
@@ -275,6 +276,7 @@ class ActivityCog(commands.Cog):
                 logger.error(f"Cannot give role to {new_leader} - insufficient permissions")
     
     @tasks.loop(hours=1)
+    @observe_job("activity_cog.activity_check")
     async def activity_check(self):
         """Periodically check and update the activity leader."""
         logger.debug("Running periodic activity leader check...")
@@ -291,6 +293,7 @@ class ActivityCog(commands.Cog):
                 logger.debug(f"No eligible leader found for {guild.name}")
     
     @tasks.loop(minutes=5)
+    @observe_job("activity_cog.reset_check")
     async def reset_check(self):
         """Check if it's time to reset session points (5am GMT+8)."""
         now = datetime.now(GMT8)

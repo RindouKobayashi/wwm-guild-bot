@@ -3,6 +3,7 @@ import settings
 import asyncio
 from discord.ext import commands
 from settings import logger
+from control_panel.commands import ObservedTree, install as install_command_observers
 from context_menus import translate_context_menu
 
 # Discord Bot Permission
@@ -12,7 +13,9 @@ intents.members = True
 bot = commands.Bot(
     command_prefix=";",
     intents=intents,
+    tree_cls=ObservedTree,
 )
+install_command_observers(bot)
 
 @bot.event
 async def setup_hook():

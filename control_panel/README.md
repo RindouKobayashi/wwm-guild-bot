@@ -1,5 +1,27 @@
 # WWM Control Room
 
+## Expansion release
+
+The expanded panel adds complete-window API analytics (15m/1h/24h/72h), outcome/status/duration/retry filters, request investigations with correlated logs, command metrics, explicitly instrumented background jobs, dashboard-only incidents, runtime version reporting and startup progress. Filters and the selected page are bookmarkable; mobile navigation uses a drawer.
+
+Summary statistics are calculated from all retained matching requests, independently of the paginated table. Activity traffic is counted separately from WWM requests. Empty latency buckets are gaps, not zero-duration requests. Names/outcomes/timings are recorded for commands; arguments and user identities are not.
+
+Registered jobs report iteration start, completion, propagated exceptions, logged errors, consecutive failures and the next scheduled iteration. A completed iteration may have skipped work based on its own conditions; silent internally handled failures cannot be inferred. Job cancellation is not reported as success. This release deliberately provides read-only job monitoring; it does not introduce run-once or arbitrary cog controls.
+
+Incidents group unexpected managed process exits, Discord unhealthiness lasting 60 seconds, three consecutive WWM authorization failures, three failed job iterations, storage errors, dropped telemetry and sustained resource pressure. Acknowledgement and notes do not resolve an incident. Recovery is evaluated separately. A failed history disk cannot persist its own incident until writable again; the status error/stale indicator remains the immediate signal. No Discord messages or other external notifications are sent.
+
+Defaults for resource incidents are CPU ≥90%, RAM ≥90% or free disk <1024 MiB, sustained for 300 seconds. Optional ignored `local.json` configuration:
+
+```json
+"incident_thresholds": {"cpu_percent": 90, "memory_percent": 90, "disk_free_mb": 1024, "sustained_seconds": 300}
+```
+
+History migration is additive to SQLite schema version 2 and preserves existing requests, logs and audits. Telemetry versions 1 and 2 are accepted, so upgrade the panel before restarting bot/Activity processes. New fields are not reconstructed for old records. Incidents are kept for 30 days after recovery; job snapshots/command events use the existing 72-hour history policy and storage budget.
+
+After reviewing and deploying this release, stop the old combined launcher and restart using `bash run.sh`. Do not run a second launcher alongside it. The new command/job telemetry requires a bot restart. No production deploy, Git pull or bot restart is performed by the dashboard itself.
+
+New authenticated read interfaces: `/api/analytics`, `/api/requests/{id}/investigation`, `/api/jobs`, `/api/commands`, `/api/commands/summary`, `/api/incidents`. Incident acknowledgement uses `POST /api/incidents/{id}/acknowledge` with the existing same-origin/CSRF checks. Additional allowlisted diagnostics check storage and local auth-context readiness without network login.
+
 A manually launched private control panel for the test bot on Windows and the production bot on Raspberry Pi. The React bundle is committed under `public/`; the Pi does not need Node.js.
 
 ## Windows

@@ -1,3 +1,4 @@
+from control_panel.jobs import observe_job
 import discord
 import datetime
 import os
@@ -3856,6 +3857,7 @@ class WWMCog(commands.Cog):
             await interaction.edit_original_response(content=None, embed=embed)
 
     @tasks.loop(minutes=1)
+    @observe_job("wwm_cog.guild_monitor_task")
     async def guild_monitor_task(self):
         if not self.monitor_enabled or not self.monitor_channel:
             return
@@ -5666,6 +5668,7 @@ class WWMCog(commands.Cog):
             await interaction.followup.send(f"❌ Failed to load opponent data: `{e}`")
 
     @tasks.loop(time=datetime.time(hour=8, minute=0, tzinfo=GMT8_TZ))
+    @observe_job("wwm_cog.gvg_league_notice_task")
     async def gvg_league_notice_task(self):
         """Post the opponent-guild V2 view to GVG_LEAGUE_NOTICE_CHANNEL_ID, pinging
         GVG_PING_ROLE_ID. Fires daily at 8 AM GMT+8; only sends on Sunday and

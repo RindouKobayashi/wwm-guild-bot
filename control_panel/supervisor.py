@@ -51,6 +51,8 @@ class Supervisor:
         self.readers = {}
         self.process_metrics = {}
         self.identities = {}
+        self.expected_running = set()
+        self.progress = []
 
     def matches_process(self, name, pid, instance):
         """Windows venv launchers may forward to a child Python interpreter."""
@@ -87,6 +89,8 @@ class Supervisor:
             if not owned:
                 external = bot_external if name == 'bot' else activity != 'Offline' if name == 'activity' else False
             result[name] = {'state': 'Healthy' if owned else 'Unknown' if external else 'Stopped',
+                            'expected_running':name in self.expected_running,
+                            'exit_code':child.poll() if child else None,
                             'ownership': 'owned' if owned else 'external' if external else 'none',
                             'pid': child.pid if owned else None, 'local_health': activity if name == 'activity' else None}
             if owned:
@@ -130,6 +134,7 @@ class Supervisor:
             old.close()
         self.children[name], self.handles[name] = process, handle
         self.identities[name] = identity
+        self.expected_running.add(name)
         def drain():
             try:
                 while True:
@@ -187,6 +192,7 @@ class Supervisor:
             raise RuntimeError('Service exited during startup. Inspect local logs.')
 
     async def stop(self, name):
+        getattr(self,'expected_running',set()).discard(name)
         child = self.children.get(name)
         if not child or child.poll() is not None:
             if self.last.get(name, {}).get('ownership') == 'external':
@@ -236,6 +242,7 @@ class Supervisor:
 
     async def action(self, service, action):
         async with self.guard:
+            self.progress = []
             messages = []
             targets = ['activity', 'tunnel', 'bot'] if service == 'stack' else [service]
             states = await self.states()
@@ -248,16 +255,26 @@ class Supervisor:
                     if service == 'stack' and states[target]['ownership'] == 'external':
                         messages.append(target + ': external service left running')
                         continue
-                    messages.append(target + ': ' + await self.stop(target))
+                    self.progress.append({'service':target,'action':'stop','state':'running','time':time.time()})
+                    try:
+                        messages.append(target + ': ' + await self.stop(target))
+                    except BaseException:
+                        self.progress[-1]['state'] = 'failed'
+                        raise
+                    self.progress[-1]['state'] = 'completed'
             started = []
             try:
                 if action in ('start', 'restart'):
                     for target in targets:
+                        self.progress.append({'service':target,'action':'start','state':'running','time':time.time()})
                         await self.start(target)
+                        self.progress[-1]['state'] = 'completed'
                         if states[target]['ownership'] != 'owned' or action == 'restart':
                             started.append(target)
                         messages.append(target + ': process started; readiness shown separately')
             except BaseException:
+                if self.progress:
+                    self.progress[-1]['state'] = 'failed'
                 for target in reversed(started):
                     await self.stop(target)
                 raise

@@ -1,3 +1,4 @@
+from control_panel.jobs import observe_job
 import discord
 import aiosqlite
 import asyncio
@@ -177,6 +178,7 @@ class ScheduleCog(commands.Cog):
         return "\n".join(lines)
 
     @tasks.loop(minutes=1)
+    @observe_job("schedule_cog.refresh_schedule_task")
     async def refresh_schedule_task(self):
         """Background task to refresh schedule message every minute"""
         if not self.schedule_channel or not self.schedule_message:
@@ -250,6 +252,7 @@ class ScheduleCog(commands.Cog):
         logger.info("All events shifted forward one week")
 
     @tasks.loop(minutes=1)
+    @observe_job("schedule_cog.weekly_shift_task")
     async def weekly_shift_task(self):
         """Auto shift all events forward one week when conditions are met"""
         if await self.should_shift_week():

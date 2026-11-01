@@ -29,7 +29,7 @@ def emit(kind, data):
     if not enabled():
         return
     try:
-        event = {'kind': kind, 'time': time.time(), 'source': os.environ.get('WWM_PANEL_SOURCE', 'bot'),
+        event = {'version':2, 'kind': kind, 'time': time.time(), 'source': os.environ.get('WWM_PANEL_SOURCE', 'bot'),
                  'environment': os.environ.get('WWM_PANEL_ENV', 'test'), 'instance': os.environ.get('WWM_PANEL_PROCESS_ID', _boot),
                  'pid': os.getpid(), 'data': data}
         # Reject non-JSON values before they enter the transport thread.
@@ -83,6 +83,9 @@ def observe_wwm(function):
         if not enabled():
             return await function(url, payload, *args, **kwargs)
         started = time.time()
+        request_id = uuid.uuid4().hex
+        caller_id = parent_id.get()
+        context_token = parent_id.set(request_id)
         records = []
         token = attempts.set(records)
         result = None
@@ -94,6 +97,7 @@ def observe_wwm(function):
             error = type(exc).__name__
             raise
         finally:
+            parent_id.reset(context_token)
             attempts.reset(token)
             # Only exact configured WWM endpoints may supply decoded previews.
             import settings
@@ -101,12 +105,16 @@ def observe_wwm(function):
                      if key.endswith('_URL') and isinstance(getattr(settings, key), str)}
             known -= {getattr(settings, 'WWM_CLUB_CHAT_URL', '')}
             capture = url in known and kwargs.get('raw_payload') is None
+            labels = {'WWM_API_URL':'Player lookup','WWM_CLUB_HOSTNUMS_URL':'Player information',
+                      'WWM_FULL_GUILD_URL':'Guild information','RANK_GET_RANKLIST_URL':'Rankings',
+                      'WWM_HOMELAND_INFO_URL':'Homestead','WWM_GET_PLAYER_COMBAT_PLAN_URL':'Combat build'}
+            label = next((name for key,name in labels.items() if getattr(settings,key,None)==url),endpoint(url))
             status = records[-1].get('status') if records else None
             code = result.get('code') if isinstance(result, dict) else None
             outcome = ('error' if error or result is None or (status is not None and status != 200)
                        or (code is not None and code != 0) else 'success' if code == 0 else 'unknown')
-            emit('request', {'id': uuid.uuid4().hex, 'parent_id': parent_id.get(), 'endpoint': endpoint(url),
-                'method': 'POST', 'started': started, 'duration_ms': round((time.time()-started)*1000, 2),
+            emit('request', {'id': request_id, 'parent_id': caller_id, 'endpoint': endpoint(url),
+                'label':label, 'method': 'POST', 'started': started, 'duration_ms': round((time.time()-started)*1000, 2),
                 'status': status, 'application_code': code if isinstance(code, (int, str)) else None,
                 'outcome': outcome, 'error': error, 'attempts': records,
                 'request': preview(payload, REQUEST_FIELDS) if capture else {'omitted': 'Metadata-only endpoint'},
@@ -121,6 +129,9 @@ class StructuredHandler(logging.Handler):
         # templates, module, level and exception class leave this process.
         # Literal diagnostic templates are useful without interpolating args.
         # f-strings and other free-form messages are intentionally summarized.
+        if record.levelno >= logging.ERROR:
+            from .jobs import report_error
+            report_error()
         template = str(record.msg)
         safe = record.args and not re.search(r'chat|message|content|token|password|secret', template, re.I)
         message = template[:300] if safe else 'Application event in ' + record.module
@@ -145,9 +156,12 @@ def attach_logging():
 
 async def heartbeat(bot=None):
     import asyncio
+    from .version import versions
+    runtime = await asyncio.to_thread(versions)
     while True:
         data = {'connected': bool(bot and bot.is_ready()), 'gateway_latency_ms':
                 round(bot.latency*1000, 2) if bot and bot.is_ready() else None, 'dropped': _dropped}
+        data['version'] = runtime
         if bot:
             tasks = []
             from discord.ext.tasks import Loop
@@ -155,8 +169,11 @@ async def heartbeat(bot=None):
                 for name in dir(type(cog)):
                     value = getattr(cog, name, None)
                     if isinstance(value, Loop):
-                        tasks.append({'name': type(cog).__name__ + '.' + name,
-                                      'running': value.is_running(), 'failed': value.failed()})
+                        from .jobs import states
+                        job_name = getattr(value.coro,'panel_job_name',None)
+                        tasks.append(dict(states.get(job_name,{}), name=job_name or type(cog).__name__+'.'+name,
+                            instrumented=bool(job_name), running=value.is_running(), failed=value.failed(),
+                            next_run=value.next_iteration.timestamp() if value.next_iteration else None))
             data['tasks'] = tasks
         emit('heartbeat', data)
         await asyncio.sleep(5)

@@ -120,7 +120,7 @@ class SupervisorTests(unittest.IsolatedAsyncioTestCase):
         with tempfile.TemporaryDirectory() as temp:
             value=object.__new__(Supervisor)
             value.logs=Path(temp);value.env=dict(os.environ);value.children={};value.handles={}
-            value.readers={};value.process_metrics={};value.identities={};value.last={};value.lock=None
+            value.expected_running=set();value.readers={};value.process_metrics={};value.identities={};value.last={};value.lock=None
             code="import json,os,sys; print('fixture ready',flush=True); message=json.loads(sys.stdin.readline()); sys.exit(0 if message == {'action':'shutdown','instance':os.environ['WWM_PANEL_PROCESS_ID']} else 1)"
             value.spawn('bot',[sys.executable,'-u','-c',code])
             try:
@@ -236,7 +236,8 @@ class HTTPTests(unittest.IsolatedAsyncioTestCase):
         response=await self.client.post('/internal/ingest',json={'events':[event]},headers=headers)
         self.assertEqual(response.status,200)
     async def test_export_excludes_secrets(self):
-        self.panel.status={'environment':'test','operations':[{'identity':'private'}]}
+        self.panel.status={'environment':'test','operations':[{'identity':'private'}],
+                           'incidents':[{'note':'private-note-fixture'}]}
         response=await self.client.get('/api/export',headers=self.headers)
         body=await response.text()
         self.assertNotIn(self.panel.secret,body);self.assertNotIn(self.panel.csrf,body);self.assertNotIn('private',body)

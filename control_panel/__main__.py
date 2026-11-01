@@ -41,6 +41,8 @@ def main():
     with_lock = FileLock(BOT/'control_panel'/'data'/'panel.lock')
     try:
         panel = Panel(args.environment, config['owner'], hostname, config.get('other_url', ''))
+        from .incidents import Monitor
+        panel.monitor = Monitor(config.get('incident_thresholds'))
         panel.start_stack = args.start_stack
         print('Open https://' + hostname + ':8443 through Tailscale.', flush=True)
         print('Starting bot stack under panel ownership.' if args.start_stack else 'Panel only; start the bot from the dashboard when ready.', flush=True)

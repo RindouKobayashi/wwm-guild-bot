@@ -1,3 +1,4 @@
+from control_panel.jobs import observe_job
 import discord
 import datetime
 import aiosqlite
@@ -3411,6 +3412,7 @@ class MarketCog(commands.Cog):
 
     # -- Scheduled task ---------------------------------------------------
     @tasks.loop(minutes=1)
+    @observe_job("market_cog.daily_market_report")
     async def daily_market_report(self):
         """Market report refreshes every 1 minute."""
         logger.debug("Market cog: running report refresh")
@@ -3434,6 +3436,7 @@ class MarketCog(commands.Cog):
 
     # -- Daily guild name refresh -----------------------------------------
     @tasks.loop(hours=24)
+    @observe_job("market_cog.refresh_guild_names")
     async def refresh_guild_names(self):
         """Once a day, re-fetch all cached guild names to detect renames."""
         try:

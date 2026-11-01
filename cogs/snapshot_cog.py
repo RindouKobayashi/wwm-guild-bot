@@ -9,6 +9,7 @@ Architecture:
   - Each snapshot stores JSON with guild summary + per-player stats
   - /snapshot commands generate comparison reports between any two dates
 """
+from control_panel.jobs import observe_job
 
 import asyncio
 import concurrent.futures
@@ -747,6 +748,7 @@ class SnapshotCog(commands.Cog):
     # ── Snapshot task (5 AM GMT+8) ────────────────────────────────
 
     @tasks.loop(time=datetime.time(hour=5, minute=0, tzinfo=GMT8_TZ))
+    @observe_job("snapshot_cog.daily_snapshot_task")
     async def daily_snapshot_task(self):
         try:
             today = _today_gmt8_str()
