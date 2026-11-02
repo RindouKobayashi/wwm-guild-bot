@@ -1,5 +1,11 @@
 # WWM Control Room
 
+## API Tools and daily operations
+
+**API Tools** provides guided player, guild, combat-plan and ranking lookups, with local presets, sanitized results, comparisons and traffic correlation. **Advanced client** uses host-approved HTTPS profiles; it cannot call arbitrary destinations. **Bot Activity** can preview and explicitly confirm edits to existing leaderboard, schedule and market-report messages through the running managed bot. Manual edits suppress mentions and cannot assign roles or create replacement messages.
+
+Read [API-TOOLS-REVIEW.md](API-TOOLS-REVIEW.md) for usage, profile setup, limits, schema 4 migration, tests and rollout. Custom profiles belong in ignored `profiles.local.json`; the committed example contains no credentials. Restart the managed bot after upgrading to enable message actions. API Tools does not automatically log in when cached authentication is missing.
+
 ## Time-window performance update
 
 Live health, history tables and analytics now refresh independently. Health polls every five seconds; analytics refreshes at most every ten seconds. Window/filter changes cancel superseded requests and query work. A slow history request displays a history-specific message while live health remains responsive. Previous results retain their original selection label until replacement results arrive.

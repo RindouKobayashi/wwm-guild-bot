@@ -175,5 +175,6 @@ async def heartbeat(bot=None):
                             instrumented=bool(job_name), running=value.is_running(), failed=value.failed(),
                             next_run=value.next_iteration.timestamp() if value.next_iteration else None))
             data['tasks'] = tasks
+            data['action_port'] = getattr(getattr(bot, 'panel_bridge', None), 'port', None)
         emit('heartbeat', data)
         await asyncio.sleep(5)

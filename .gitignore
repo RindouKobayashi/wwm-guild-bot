@@ -17,3 +17,6 @@ assets/wwm/releases/
 control_panel/local.json
 control_panel/data/
 control_panel/node_modules/
+
+# Host-approved API profiles may reference private services
+control_panel/profiles.local.json

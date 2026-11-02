@@ -78,12 +78,13 @@ def percentile(db,where,args,count,fraction):
 
 def aggregate(db,**filters):
     where,args=conditions('request',**filters)
-    upstream=where+" AND m.source!='activity'"
+    upstream=where+" AND m.source NOT IN ('activity','api_tools_custom')"
     row=db.execute("SELECT count(*),coalesce(sum(m.outcome='success'),0),coalesce(sum(m.outcome='error'),0),"
         "coalesce(sum(m.outcome='unknown'),0),coalesce(sum(m.retries),0),coalesce(sum(m.timeouts),0) "
         'FROM event_meta m WHERE '+upstream,args).fetchone()
     counts=dict(zip(('total','success','error','unknown','retries','timeouts'),row))
     counts['activity_requests']=db.execute("SELECT count(*) FROM event_meta m WHERE "+where+" AND m.source='activity'",args).fetchone()[0]
+    counts['custom_requests']=db.execute("SELECT count(*) FROM event_meta m WHERE "+where+" AND m.source='api_tools_custom'",args).fetchone()[0]
     counts['median_ms']=percentile(db,upstream,args,counts['total'],.5)
     counts['p95_ms']=percentile(db,upstream,args,counts['total'],.95)
     for outcome in ('success','error','unknown'):

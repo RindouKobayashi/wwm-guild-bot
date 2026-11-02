@@ -5,8 +5,9 @@ import time
 import uuid
 from .analytics import conditions, failure_reason
 from . import metadata
+from .workspace import WorkspaceStore, SCHEMA as WORKSPACE_SCHEMA
 
-class Store:
+class Store(WorkspaceStore):
     def __init__(self, path, budget=250*1024*1024):
         self.path, self.budget = path, budget
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -16,7 +17,7 @@ class Store:
         self.db.execute('PRAGMA foreign_keys=ON')
         self.db.execute('PRAGMA busy_timeout=1000')
         version = self.db.execute('PRAGMA user_version').fetchone()[0]
-        if version > 3:
+        if version > 4:
             self.db.close()
             raise RuntimeError('History schema is newer than this panel; use the matching application version.')
         self.db.executescript('''
@@ -33,15 +34,16 @@ class Store:
             CREATE UNIQUE INDEX IF NOT EXISTS active_incident ON incidents(rule,target) WHERE state='active';
         ''')
         self.db.executescript(metadata.SCHEMA)
+        self.db.executescript(WORKSPACE_SCHEMA)
         if 'method' not in {row[1] for row in self.db.execute('PRAGMA table_info(event_meta)')}:
             self.db.execute('ALTER TABLE event_meta ADD COLUMN method TEXT')
         target=self.db.execute('SELECT coalesce(max(seq),0) FROM events').fetchone()[0]
         self.db.execute('INSERT OR IGNORE INTO metadata_progress VALUES(1,0,?)',(target,))
-        self.db.execute('PRAGMA user_version=3')
+        self.db.execute('PRAGMA user_version=4')
         for key, body in self.db.execute('SELECT id,body FROM operations').fetchall():
             item = json.loads(body)
             if item['state'] in ('queued', 'running'):
-                item.update(state='interrupted', finished=time.time(), message='Panel stopped before completion could be verified.')
+                item.update(state='unknown' if item.get('target','').startswith('action/') and item.get('target','').endswith('/execute') else 'interrupted', finished=time.time(), message='Panel stopped before completion could be verified. No automatic retry will run.')
                 self.db.execute('UPDATE operations SET body=? WHERE id=?', (json.dumps(item), key))
         self.db.commit()
 
@@ -146,7 +148,9 @@ class Store:
         ids.discard(None)
         placeholders = ','.join('?' for _ in ids)
         logs = self.db.execute("SELECT body FROM events WHERE kind='log' AND json_extract(body,'$.data.request_id') IN ("+placeholders+") ORDER BY time LIMIT 101", list(ids)).fetchall()
-        return {'root_id':root,'events':items,'logs':[json.loads(row[0]) for row in logs[:100]],
+        from .guidance import explain
+        successful=self.db.execute("SELECT time FROM event_meta WHERE kind='request' AND endpoint=? AND outcome='success' AND time<=? ORDER BY time DESC LIMIT 1",(request['data'].get('endpoint'),request['time'])).fetchone()
+        return {'guidance':dict(explain(request['data']),last_success=successful[0] if successful else None),'root_id':root,'events':items,'logs':[json.loads(row[0]) for row in logs[:100]],
                 'truncated':len(rows)>200 or len(logs)>100}
 
     def jobs(self):
@@ -191,7 +195,7 @@ class Store:
         return cursor.rowcount == 1
 
     def recent_auth(self):
-        rows = self.db.execute("SELECT status,request_id FROM event_meta WHERE kind='request' AND source!='activity' "
+        rows = self.db.execute("SELECT status,request_id FROM event_meta WHERE kind='request' AND source NOT IN ('activity','api_tools_custom') "
                                'AND time>? ORDER BY time DESC,seq DESC LIMIT 3',(time.time()-3600,)).fetchall()
         return {'rejected':len(rows)==3 and all(row[0] in (401,403) for row in rows),'latest':rows[0][1] if rows else None,
                 'recovered':bool(rows and rows[0][0] == 200)}
@@ -210,6 +214,7 @@ class Store:
 
     def prune(self):
         now = time.time()
+        self.prune_workspace()
         self.db.execute("DELETE FROM events WHERE seq IN (SELECT seq FROM events WHERE "
                         "kind!='metric' AND time<? ORDER BY time LIMIT 1000)",(now-72*3600,))
         self.db.execute("DELETE FROM events WHERE seq IN (SELECT seq FROM events WHERE "

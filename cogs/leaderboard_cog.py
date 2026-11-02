@@ -22,6 +22,7 @@ Breaking Army Leaderboard:
     - "active"      — within the 2-hour window → collect timings in real-time
     - "finalized"   — after 2 hours have elapsed → lock results, show final standings
 """
+from control_panel.action_bridge import serialized
 from control_panel.jobs import observe_job
 import asyncio
 import datetime
@@ -1121,6 +1122,18 @@ class LeaderboardCog(commands.Cog):
                             logger.error(f"Failed to remove elegance role from {member}: {e}")
 
     # ── publish / refresh a single instance ────────────────────────────
+    async def panel_prepare(self, inst, data=None):
+        entries, total = data if data is not None else await self._fetch_data(inst.lb_type)
+        now_ts = int(discord.utils.utcnow().timestamp())
+        if inst.lb_type == "breaking_army":
+            session_state = getattr(self, '_ba_session_state', {"sessions": {}})
+            view = BreakingArmyView(self, entries, total, now_ts, session_state)
+        else:
+            view = LeaderboardView(self, inst.lb_type, entries, total, now_ts)
+
+        return dict(content=None, embeds=[], attachments=[], view=view)
+
+    @serialized
     async def _publish_one(self, inst: _LeaderboardInstance):
         entries, total = await self._fetch_data(inst.lb_type)
         now_ts = int(discord.utils.utcnow().timestamp())
@@ -1132,11 +1145,8 @@ class LeaderboardCog(commands.Cog):
             except Exception as e:
                 logger.error(f"Failed to assign elegance roles: {e}")
 
-        if inst.lb_type == "breaking_army":
-            session_state = getattr(self, '_ba_session_state', {"sessions": {}})
-            view = BreakingArmyView(self, entries, total, now_ts, session_state)
-        else:
-            view = LeaderboardView(self, inst.lb_type, entries, total, now_ts)
+        payload = await self.panel_prepare(inst, (entries, total))
+        view = payload["view"]
 
         if inst.message:
             try:

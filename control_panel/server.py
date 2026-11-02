@@ -97,6 +97,8 @@ class Panel:
                 except asyncio.TimeoutError:
                     services={name:dict(value,state='Unknown') for name,value in self.supervisor.last.items()}
                 now = time.time()
+                for record in self.operation_records.values():
+                    if record.get('preview',{}).get('expires',now+1)<=now:record.pop('preview',None)
                 for name, service in services.items():
                     beat = self.heartbeats.get(name)
                     service['heartbeat'] = beat['data'] if beat else None
@@ -217,6 +219,16 @@ class Panel:
             self.publish('operation')
 
     async def diagnostic(self, check):
+        if check == 'checklist':
+            outcomes=[]
+            for name in ('configuration','assets','storage'):
+                try:
+                    await self.diagnostic(name); outcomes.append(name+': passed')
+                except Exception:
+                    outcomes.append(name+': needs attention')
+            beat=self.heartbeats.get('bot')
+            outcomes.append('bot heartbeat: '+('fresh' if beat and time.time()-beat['time']<=15 else 'missing or stale'))
+            return '; '.join(outcomes)+'. No network login was attempted.'
         if check == 'configuration':
             from activity.run_stack import configuration
             await asyncio.to_thread(configuration, self.environment)
@@ -294,6 +306,8 @@ def create_app(panel):
         return response
 
     app = web.Application(middlewares=[security], client_max_size=1024*1024)
+    from .operations import install
+    panel.workspace = install(app, panel)
     async def status(request):
         return web.json_response(dict(panel.status, csrf=panel.csrf, busy=panel.busy, storage_error=panel.storage_error,
             performance=dict(panel.history.performance(),writer_queue=panel.pending.qsize(),health_sample_delay_ms=panel.health_delay_ms),
@@ -400,7 +414,7 @@ def create_app(panel):
         return web.json_response({'accepted': len(events)})
 
     async def start_operation(request):
-        if panel.busy:
+        if panel.busy or panel.workspace.action_active:
             raise web.HTTPConflict(text='Another operation is in progress.')
         body = await request.json()
         if request.match_info.get('service'):
@@ -413,7 +427,7 @@ def create_app(panel):
             target = service + '/' + action
         else:
             check = request.match_info['check']
-            if check not in ('configuration', 'assets', 'api','storage','auth'):
+            if check not in ('configuration', 'assets', 'api','storage','auth','checklist'):
                 raise web.HTTPNotFound()
             work = lambda: panel.diagnostic(check)
             target = 'diagnostic/' + check

@@ -1,3 +1,4 @@
+from control_panel.action_bridge import serialized
 from control_panel.jobs import observe_job
 import discord
 import datetime
@@ -3237,7 +3238,7 @@ class MarketCog(commands.Cog):
             }
 
     # -- Build and send report --------------------------------------------
-    async def _build_and_send_report(self):
+    async def panel_prepare(self):
         """Fetch data, determine mode, build appropriate view, send/edit to channel."""
         if not self.market_channel:
             logger.warning("Market cog: no channel configured, cannot send report")
@@ -3300,6 +3301,14 @@ class MarketCog(commands.Cog):
                 pending_report_pids=pending_report_pids,
             )
 
+        return dict(content=None, embeds=[], attachments=[], view=view)
+
+    @serialized
+    async def _build_and_send_report(self):
+        payload = await self.panel_prepare()
+        if not payload:
+            return
+        view = payload["view"]
         try:
             if self.last_report_message:
                 await self.last_report_message.edit(content=None, embeds=[], attachments=[], view=view)

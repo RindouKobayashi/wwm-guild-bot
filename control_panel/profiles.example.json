@@ -1,0 +1,16 @@
+[
+  {
+    "id": "example",
+    "name": "Example read-only service",
+    "description": "Replace this example with an API you administer before enabling it.",
+    "origin": "https://example.com",
+    "paths": ["/api/status"],
+    "methods": ["GET"],
+    "query_fields": [],
+    "body_fields": [],
+    "header_fields": [],
+    "credential_headers": {"Authorization": "EXAMPLE_API_AUTHORIZATION"},
+    "response_format": "json",
+    "response_fields": ["status", "version", "count", "data"]
+  }
+]

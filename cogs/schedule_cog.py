@@ -1,3 +1,4 @@
+from control_panel.action_bridge import serialized
 from control_panel.jobs import observe_job
 import discord
 import aiosqlite
@@ -177,16 +178,20 @@ class ScheduleCog(commands.Cog):
         
         return "\n".join(lines)
 
+    async def panel_prepare(self):
+        return dict(content=await self.build_schedule_message())
+
     @tasks.loop(minutes=1)
     @observe_job("schedule_cog.refresh_schedule_task")
+    @serialized
     async def refresh_schedule_task(self):
         """Background task to refresh schedule message every minute"""
         if not self.schedule_channel or not self.schedule_message:
             return
             
         try:
-            content = await self.build_schedule_message()
-            await self.schedule_message.edit(content=content)
+            payload = await self.panel_prepare()
+            await self.schedule_message.edit(**payload)
             logger.debug("Schedule message updated successfully")
         except Exception as e:
             logger.error(f"Failed to update schedule message: {e}")

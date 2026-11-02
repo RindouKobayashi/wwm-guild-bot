@@ -21,6 +21,9 @@ install_command_observers(bot)
 async def setup_hook():
     from control_panel.telemetry import enabled, heartbeat
     if enabled():
+        from control_panel.action_bridge import Bridge
+        bot.panel_bridge = Bridge(bot)
+        await bot.panel_bridge.start()
         bot.panel_heartbeat = asyncio.create_task(heartbeat(bot))
     # Import cog modules that have persistent views so their module-level
     # register() calls execute BEFORE register_all_views is called.
@@ -77,6 +80,9 @@ async def main():
         task = getattr(bot, 'panel_heartbeat', None)
         if task:
             task.cancel()
+        bridge = getattr(bot, "panel_bridge", None)
+        if bridge:
+            await bridge.close()
         logger.info("Closing bot...")
         await bot.close()
         from utility.wwm import close_session
