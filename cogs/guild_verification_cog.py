@@ -279,6 +279,8 @@ class GuildVerificationCog(commands.Cog):
     async def guild_member_sync_task(self):
         """Background task to sync verified members guild membership status every minute"""
         
+        from control_panel.energy_observer import cycle_state
+        cycle_state('Fetching membership and energy data')
         if not hasattr(settings, 'GUILD_MEMBER_ROLE_ID') or not hasattr(settings, 'COMMUNITY_MEMBER_ROLE_ID') or not hasattr(settings, 'DISCORD_SERVER_ID'):
             return
             
@@ -313,6 +315,7 @@ class GuildVerificationCog(commands.Cog):
             bulk_data = await get_bulk_players_info(all_pids, fields=["club", "base", "gameplay_resources"])
             
             if not bulk_data or bulk_data.get('code') != 0:
+                cycle_state('Bulk player API unavailable; energy evaluation skipped')
                 logger.warning("Failed to get bulk player data for membership sync")
                 return
                 
@@ -327,6 +330,7 @@ class GuildVerificationCog(commands.Cog):
             community_role = guild.get_role(settings.COMMUNITY_MEMBER_ROLE_ID)
                 
             if not guild_role or not community_role:
+                cycle_state('Required guild roles missing; energy evaluation skipped')
                 logger.warning("Guild or community role not found for membership sync")
                 return
                 
@@ -371,10 +375,13 @@ class GuildVerificationCog(commands.Cog):
             # role sync, hence the guard.
             try:
                 await self._check_energy_alerts(players, pid_to_userid_map)
+                cycle_state('Energy evaluation completed')
             except Exception as alert_err:
+                cycle_state('Energy evaluation failed; inspect logs')
                 logger.error(f"Energy alert check failed: {alert_err}", exc_info=True)
 
         except Exception as e:
+            cycle_state('Membership sync failed before energy evaluation completed')
             logger.error(f"Guild member sync task failed: {str(e)}", exc_info=True)
 
     async def _check_energy_alerts(self, players: dict, pid_to_userid_map: dict):
@@ -384,6 +391,7 @@ class GuildVerificationCog(commands.Cog):
         Runs on the 1-minute sync loop using the same bulk payload, so this
         costs no extra API call. Returns quietly when nobody has opted in.
         """
+        from control_panel.energy_observer import report
         now_ts = int(time.time())
 
         async with aiosqlite.connect(DB_PATH) as conn:
@@ -405,6 +413,7 @@ class GuildVerificationCog(commands.Cog):
             pid = userid_to_pid.get(user_id)
             player_data = players.get(pid) if pid else None
             if not player_data:
+                report(user_id,'Player missing from API response')
                 continue
 
             base = player_data.get('base', {}) or {}
@@ -416,10 +425,12 @@ class GuildVerificationCog(commands.Cog):
 
             # Online alerts require fresh data: spending makes old estimates unsafe.
             if is_online and not has_data:
+                report(user_id,'Online but energy missing; cache invalidated',presence='online')
                 updates.append((user_id, 0, 0, int(was_above), last_alert_ts))
                 continue
             # Unknown presence must not be treated as confirmed offline.
             if base.get('is_online') not in (0, 1):
+                report(user_id,'Presence unknown; alert evaluation skipped')
                 continue
 
             if not has_data:
@@ -427,6 +438,7 @@ class GuildVerificationCog(commands.Cog):
                 # from our own last sighting instead of going blind.
                 energy, extrapolated = extrapolate_energy(cached_energy, cached_ts, now_ts)
                 if energy is None:
+                    report(user_id,'No usable cached energy',presence='offline',cache_time=cached_ts)
                     logger.debug(f"Energy alert: no live or cached energy for {user_id}, skipping")
                     continue
             else:
@@ -446,6 +458,8 @@ class GuildVerificationCog(commands.Cog):
                 else:
                     # Keep this crossing eligible for another delivery attempt.
                     new_was_above = False
+            reason=('Alert delivered' if delivered else 'Delivery unavailable; eligible for retry') if alert else ('Already notified for this recharge' if was_above and new_was_above else 'Cooldown active' if energy>=threshold and last_alert_ts and now_ts-last_alert_ts<ALERT_COOLDOWN else 'Waiting for threshold')
+            report(user_id,reason,energy=energy,source='cache_estimate' if extrapolated else 'api_plus_offline_regeneration' if _regen else 'api',presence='online' if is_online else 'offline',cache_time=cached_ts,threshold_time=now_ts+max(0,threshold-energy)*ENERGY_REGEN_SECONDS if not is_online else None)
             updates.append((user_id, cached_energy, cached_ts, int(new_was_above),
                             now_ts if delivered else last_alert_ts))
 

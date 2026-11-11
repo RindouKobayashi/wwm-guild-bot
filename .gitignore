@@ -20,3 +20,4 @@ control_panel/node_modules/
 
 # Host-approved API profiles may reference private services
 control_panel/profiles.local.json
+control_panel/devices.local.json

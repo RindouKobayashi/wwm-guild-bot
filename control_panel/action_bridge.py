@@ -55,6 +55,9 @@ class Bridge:
         secret=os.environ.get('WWM_PANEL_INGEST_SECRET','')
         if request.remote not in ('127.0.0.1','::1') or not secret or not secrets.compare_digest(request.headers.get('Authorization',''),'Bearer '+secret):raise web.HTTPForbidden()
         if request.method not in ('GET','POST'):raise web.HTTPMethodNotAllowed(request.method,['GET','POST'])
+        if request.path=='/energy' and request.method=='GET':
+            from .energy_observer import snapshot as energy_snapshot
+            return web.json_response(energy_snapshot())
         if not self.bot.is_ready():return web.json_response({'error':'Bot is disconnected.'},status=409)
         # Bounded in-memory state; no arbitrary message content is stored on disk.
         now=time.time()
@@ -106,7 +109,7 @@ class Bridge:
         async def bounded(request):
             try:return await asyncio.wait_for(self.handle(request),30)
             except asyncio.TimeoutError:return web.json_response({'error':'Bot action exceeded 30 seconds. Its outcome must be checked; it will not be retried.'},status=504)
-        app=web.Application(client_max_size=65536);app.router.add_route('*','/actions',bounded)
+        app=web.Application(client_max_size=65536);app.router.add_route('*','/actions',bounded);app.router.add_get('/energy',bounded)
         self.runner=web.AppRunner(app,access_log=None,shutdown_timeout=2);await self.runner.setup()
         site=web.TCPSite(self.runner,'127.0.0.1',0);await site.start()
         self.port=site._server.sockets[0].getsockname()[1]

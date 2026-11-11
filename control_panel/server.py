@@ -308,6 +308,8 @@ def create_app(panel):
     app = web.Application(middlewares=[security], client_max_size=1024*1024)
     from .operations import install
     panel.workspace = install(app, panel)
+    from .device import install as install_devices
+    panel.devices = install_devices(app, panel)
     async def status(request):
         return web.json_response(dict(panel.status, csrf=panel.csrf, busy=panel.busy, storage_error=panel.storage_error,
             performance=dict(panel.history.performance(),writer_queue=panel.pending.qsize(),health_sample_delay_ms=panel.health_delay_ms),

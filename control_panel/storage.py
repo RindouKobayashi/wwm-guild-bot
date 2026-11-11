@@ -17,7 +17,7 @@ class Store(WorkspaceStore):
         self.db.execute('PRAGMA foreign_keys=ON')
         self.db.execute('PRAGMA busy_timeout=1000')
         version = self.db.execute('PRAGMA user_version').fetchone()[0]
-        if version > 4:
+        if version > 5:
             self.db.close()
             raise RuntimeError('History schema is newer than this panel; use the matching application version.')
         self.db.executescript('''
@@ -35,11 +35,12 @@ class Store(WorkspaceStore):
         ''')
         self.db.executescript(metadata.SCHEMA)
         self.db.executescript(WORKSPACE_SCHEMA)
+        self.db.executescript('CREATE TABLE IF NOT EXISTS device_audit(id TEXT PRIMARY KEY,time REAL,body TEXT); CREATE INDEX IF NOT EXISTS device_audit_time ON device_audit(time);')
         if 'method' not in {row[1] for row in self.db.execute('PRAGMA table_info(event_meta)')}:
             self.db.execute('ALTER TABLE event_meta ADD COLUMN method TEXT')
         target=self.db.execute('SELECT coalesce(max(seq),0) FROM events').fetchone()[0]
         self.db.execute('INSERT OR IGNORE INTO metadata_progress VALUES(1,0,?)',(target,))
-        self.db.execute('PRAGMA user_version=4')
+        self.db.execute('PRAGMA user_version=5')
         for key, body in self.db.execute('SELECT id,body FROM operations').fetchall():
             item = json.loads(body)
             if item['state'] in ('queued', 'running'):
@@ -214,6 +215,7 @@ class Store(WorkspaceStore):
 
     def prune(self):
         now = time.time()
+        self.db.execute('DELETE FROM device_audit WHERE id IN (SELECT id FROM device_audit WHERE time<? ORDER BY time LIMIT 1000)',(now-30*86400,))
         self.prune_workspace()
         self.db.execute("DELETE FROM events WHERE seq IN (SELECT seq FROM events WHERE "
                         "kind!='metric' AND time<? ORDER BY time LIMIT 1000)",(now-72*3600,))
@@ -249,3 +251,10 @@ class Store(WorkspaceStore):
 
     def close(self):
         self.db.close()
+
+    def device_audit(self,item):
+        with self.db:self.db.execute('INSERT INTO device_audit VALUES(?,?,?)',(item['id'],item['time'],json.dumps(item)))
+        return item
+
+    def device_audits(self):
+        return [json.loads(row[0]) for row in self.db.execute('SELECT body FROM device_audit ORDER BY time DESC LIMIT 100')]

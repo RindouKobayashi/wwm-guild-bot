@@ -1,0 +1,12 @@
+[
+  {
+    "id": "pi",
+    "name": "Raspberry Pi",
+    "hostname": "wwm-production.tail265e5f.ts.net",
+    "username": "smolsus",
+    "environment": "production",
+    "confirmation": "wwm-production",
+    "host_key_alias": "wwm-production",
+    "repository": "/home/smolsus/Desktop/wwm-guild-bot"
+  }
+]

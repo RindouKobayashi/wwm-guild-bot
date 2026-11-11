@@ -1,5 +1,10 @@
 # WWM Control Room
 
+## Device workspace
+
+The Device page provides local and approved SSH terminals, full logs, approved files, host processes, energy-alert observations and verified backups. Read [DEVICE-WORKSPACE-REVIEW.md](DEVICE-WORKSPACE-REVIEW.md) for usage, setup, limits and reviewed rollout.
+
+
 ## API Tools and daily operations
 
 **API Tools** provides guided player, guild, combat-plan and ranking lookups, with local presets, sanitized results, comparisons and traffic correlation. **Advanced client** uses host-approved HTTPS profiles; it cannot call arbitrary destinations. **Bot Activity** can preview and explicitly confirm edits to existing leaderboard, schedule and market-report messages through the running managed bot. Manual edits suppress mentions and cannot assign roles or create replacement messages.
