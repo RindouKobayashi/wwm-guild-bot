@@ -14,6 +14,7 @@ import msgpack
 from .protocol import (TOKEN, fields, created_owner, account_rpc, incoming_calls,
                        token_properties, creation_token_values, only_existing_avatar)
 from .session import Session
+from .diagnostics import stage
 
 API_URL = 'https://h72naxx2gb-ms-prod.easebar.com/flk/redis_player/get_players_info'
 
@@ -41,7 +42,7 @@ def validate_token(token, context):
     client = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
                                         urllib.request.HTTPSHandler(context=tls))
     try:
-        with client.open(request, timeout=10) as response:
+        with stage('protected_api'), client.open(request, timeout=10) as response:
             status = response.status
             raw = response.read(1024 * 1024 + 1)
     except urllib.error.HTTPError as exc:
@@ -77,7 +78,9 @@ def retrieve_token(context):
         info['authjson'] = json.dumps(auth, separators=(',', ':'))
         device = copy.deepcopy(context['device'])
         device['server'] = context['logical_hostnum']
-        session.send(account_rpc(owner, 'sdk_login', [info, device, context['logical_hostnum']]))
+        session.stage = 'sdk_login_reply'
+        with stage('sdk_login_reply'):
+            session.send(account_rpc(owner, 'sdk_login', [info, device, context['logical_hostnum']]))
         verified = selected = confirmed = redirected = False
         owners, pending, checked = set(), {}, set()
         while time.monotonic() < session.deadline:
@@ -115,6 +118,7 @@ def retrieve_token(context):
                         if not verified or not confirmed or redirected:
                             raise ValueError('Unexpected avatar relay')
                         session.reconnect_avatar(args)
+                        session.stage = 'avatar_token'
                         selected = redirected = True
                         owners.clear()
                         pending.clear()
@@ -123,6 +127,7 @@ def retrieve_token(context):
                         if not verified or only_existing_avatar(args) != context['character_id']:
                             raise ValueError('Test character selection mismatch')
                         session.send(account_rpc(owner, 'player_login', [context['character_id']]))
+                        session.stage = 'avatar_token'
                         selected = True
             for token in (value for guid in owners for value in pending.get(guid, ())):
                 if token in checked:

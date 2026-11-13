@@ -6,6 +6,7 @@ import zlib
 from cryptography.hazmat.primitives.serialization import load_pem_public_key
 from .protocol import (LegacyFrameDecoder, envelope, fields, build_fresh_session,
                        validate_session_key_ok, new_connection, avatar_reconnection)
+from .diagnostics import stage
 
 
 def read_exact(sock, size):
@@ -26,6 +27,7 @@ class Session:
         self.redirect_target = None
         self.deadline = time.monotonic() + 45
         self.frames = 0
+        self.stage = 'game_tcp_connect'
         self.reset_stream()
 
     def reset_stream(self):
@@ -38,14 +40,18 @@ class Session:
             redirect = self.redirect_target
             host, port = redirect[:2] if redirect else (self.context['peer_host'], self.context['peer_port'])
             public = load_pem_public_key(self.context['public_key_pem'].encode('ascii'))
-            self.sock = socket.create_connection((host, port), timeout=5)
-            self.sock.settimeout(5)
-            self.sock.sendall(envelope(0))
-            header = read_exact(self.sock, 4)
-            size = struct.unpack('<I', header)[0]
-            if not 2 <= size <= 124:
-                raise ValueError('Invalid seed size')
-            frame = read_exact(self.sock, size)
+            self.stage = 'game_tcp_connect'
+            with stage(self.stage):
+                self.sock = socket.create_connection((host, port), timeout=5)
+            self.stage = 'game_seed'
+            with stage(self.stage):
+                self.sock.settimeout(5)
+                self.sock.sendall(envelope(0))
+                header = read_exact(self.sock, 4)
+                size = struct.unpack('<I', header)[0]
+                if not 2 <= size <= 124:
+                    raise ValueError('Invalid seed size')
+                frame = read_exact(self.sock, size)
             if frame[:2] != b'\x00\x00':
                 raise ValueError('Invalid seed method')
             rows, _ = fields(frame[2:])
@@ -59,21 +65,30 @@ class Session:
             seed = values[1]
             seed = seed - (1 << 64) if seed >= 1 << 63 else seed
             self.state = build_fresh_session(public, seed, enable_zstd=False)
-            self.sock.sendall(self.state['session_key_request'])
-            validate_session_key_ok(self.state['receive_cipher'].apply(read_exact(self.sock, 6)))
+            self.stage = 'game_session_key'
+            with stage(self.stage):
+                self.sock.sendall(self.state['session_key_request'])
+                validate_session_key_ok(self.state['receive_cipher'].apply(read_exact(self.sock, 6)))
             request = avatar_reconnection(*redirect[2:]) if redirect else new_connection(self.context['logical_hostnum'])
-            self.sock.sendall(self.state['send_cipher'].apply(request))
-            method, body = self.receive()
+            self.stage = 'game_connect_reply'
+            with stage(self.stage):
+                self.sock.sendall(self.state['send_cipher'].apply(request))
+                method, body = self.receive()
             rows, _ = fields(body)
             if method != 2 or [v for n, w, v in rows if (n, w) == (2, 0)] != [2 if redirect else 1]:
                 raise ValueError('Game connection rejected')
             self.redirect_target = None
+            self.stage = 'avatar_token' if redirect else 'account_entity'
             return self
         except BaseException:
             self.close()
             raise
 
     def receive(self):
+        with stage(self.stage):
+            return self._receive()
+
+    def _receive(self):
         while time.monotonic() < self.deadline:
             if self.frames >= 512:
                 raise ValueError('Session frame budget reached')

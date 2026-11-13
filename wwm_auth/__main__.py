@@ -11,8 +11,10 @@ def main():
     from dotenv import load_dotenv
     load_dotenv(ROOT / '.env')
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--fetch', action='store_true')
-    parser.add_argument('--renew-login', action='store_true', help='Renew the configured TEST SDK login through headless Steam and validate it')
+    actions = parser.add_mutually_exclusive_group()
+    actions.add_argument('--fetch', action='store_true')
+    actions.add_argument('--renew-login', action='store_true', help='Renew the configured TEST SDK login through headless Steam and validate it')
+    actions.add_argument('--refresh-routing', action='store_true', help='Read both public server lists and back up/update production connection addresses; no account login')
     args = parser.parse_args()
     try:
         mode = os.environ.get('WWM_AUTH_MODE', 'legacy').strip().lower()
@@ -34,7 +36,14 @@ def main():
             configuration(context)
             print('Automatic headless renewal configured.' if HELPER.is_file() else
                   'Headless renewal configured, but helper needs building on this device.')
-        if args.fetch or args.renew_login:
+        if args.refresh_routing:
+            from .routing import fetch_public_lists, install
+            result = install(fetch_public_lists())
+            print('Production routing refreshed; previous context backed up.' if result['context_changed'] else
+                  'Production routing is already current.')
+            print('Account/server identity preserved. No Steam, SDK, game login or player API requests sent.')
+            print('Run --fetch separately to test authenticated retrieval.')
+        elif args.fetch or args.renew_login:
             from .service import get_token
             get_token(force=True, renew_login=args.renew_login)
             print('Token retrieved and protected own-character lookup passed. Token text not printed.')

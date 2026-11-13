@@ -10,6 +10,7 @@ import secrets
 import struct
 import time
 from .context import context_path, load, write_private
+from .diagnostics import STAGES, label
 
 _mutex = threading.Lock()
 
@@ -27,12 +28,24 @@ _SAFE_REASONS = frozenset({
 def failure_reason(error):
     message = str(error)
     if message in _SAFE_REASONS:
-        return message
-    if isinstance(error, TimeoutError):
-        return 'Connection or token retrieval timed out'
-    if isinstance(error, OSError):
-        return 'Network connection failed'
-    return 'Saved-login protocol or response could not be validated'
+        reason = message
+    elif isinstance(error, TimeoutError):
+        reason = 'Connection or token retrieval timed out'
+    elif isinstance(error, OSError):
+        reason = 'Network connection failed'
+    else:
+        reason = 'Saved-login protocol or response could not be validated'
+    step = label(error)
+    return reason + (f' [stage: {step}]' if step else '')
+
+
+def safe_failure_reason(reason):
+    if not isinstance(reason, str):
+        return False
+    base, separator, suffix = reason.partition(' [stage: ')
+    bases = _SAFE_REASONS | {'Connection or token retrieval timed out', 'Network connection failed',
+                             'Saved-login protocol or response could not be validated'}
+    return base in bases and (not separator or suffix in {step + ']' for step in STAGES})
 
 
 def request_identity():
@@ -99,7 +112,7 @@ def get_token(force=False, rejected_token=None, renew_login=False):
                 if last.get('context_sha256') == identity and time.time() < last.get('retry_after', 0):
                     remaining = max(1, int(last['retry_after'] - time.time()) + 1)
                     reason = last.get('reason')
-                    if reason not in _SAFE_REASONS | {'Connection or token retrieval timed out', 'Network connection failed', 'Saved-login protocol or response could not be validated'}:
+                    if not safe_failure_reason(reason):
                         reason = 'Earlier failure reason was not recorded'
                     raise RuntimeError(f'Saved-login retry available in {remaining}s. {reason}')
             try:
@@ -127,7 +140,7 @@ def get_token(force=False, rejected_token=None, renew_login=False):
             except Exception as error:
                 reason = failure_reason(error)
                 write_private(failure, {'context_sha256': identity, 'retry_after': time.time() + 60,
-                                        'reason': reason})
+                                        'reason': reason, 'stage': label(error)})
                 raise RuntimeError(f'Saved-login token retrieval failed: {reason}. Retry in 60s.') from None
             write_private(cache, {'context_sha256': identity, 'obtained_at': time.time(), 'token': token})
             write_private(path.parent / 'last-result.json', report)

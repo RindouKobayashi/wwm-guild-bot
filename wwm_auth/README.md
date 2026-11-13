@@ -6,6 +6,32 @@ research-output or Windows DPAPI runtime dependency. The saved context is still
 a private TEST-account game login, not anonymous access or a locally generated
 API signature. It may replace a lingering session of that configured test account.
 
+## After the November 13 update: connection timeout
+
+The old saved connection address can time out before any Steam/SDK login. The
+public A/B routing slots rotated: the old A addresses now belong to preonline,
+while production B retains the original logical server IDs on different addresses.
+Do not add 5000 to account/server IDs or change the player API host to preonline.
+
+From the bot folder, refresh only the published production addresses:
+
+```sh
+.venv/bin/python -m wwm_auth --refresh-routing
+```
+
+Windows uses `.venv\Scripts\python.exe` instead. This command reads two public
+CDN files, preserves the account/login/server identity, and backs up the exact old
+context before updating the connection address and relay allowlist. It makes no
+Steam, SDK, game login or player API request. Stop if it reports ambiguous routing.
+No saved credentials or caches need deleting. Other devices need the updated
+`wwm_auth` sources before this command is available.
+
+Then explicitly test authenticated retrieval with `python -m wwm_auth --fetch`.
+That test may take over the configured TEST session and renew its Steam/SDK login
+if rejected. A routing refresh alone does not prove current token acceptance.
+Timeout errors now carry a fixed stage label such as `game_tcp_connect`,
+`steam_ticket`, `sdk_exchange` or `avatar_token`, without including credentials.
+
 Automatic SDK-login renewal is now available through the headless Steam helper.
 See [headless setup and Pi transfer](headless_steam/README.md). It needs .NET 8
 and two additional private files; it authenticates directly with Steam servers.

@@ -14,6 +14,7 @@ import ssl
 import subprocess
 import urllib.request
 from .context import ROOT, context_path, validate
+from .diagnostics import stage
 
 SDK_URL = 'https://mgbjp-h72na.unisdk.easebar.com/h72naxx2gb/sdk/uni_sauth'
 HELPER = ROOT / 'wwm_auth/headless_steam/bin/Release/net8.0/HeadlessSteam.dll'
@@ -52,15 +53,16 @@ def steam_ticket(context):
         text=True, encoding='utf-8', cwd=ROOT)
     pool = ThreadPoolExecutor(max_workers=1)
     try:
-        line = pool.submit(process.stdout.readline, 32769).result(timeout=65)
-        if len(line) > 32768:
-            raise ValueError('Headless response too large')
-        value = json.loads(line)
-        if value.get('expected_steamid_sha256') != context['expected_steamid_sha256']:
-            raise ValueError('Headless Steam identity mismatch')
-        ticket = base64.b64decode(value['ticket'], validate=True)
-        if not 1 <= len(ticket) <= 8192:
-            raise ValueError('Headless ticket size invalid')
+        with stage('steam_ticket'):
+            line = pool.submit(process.stdout.readline, 32769).result(timeout=65)
+            if len(line) > 32768:
+                raise ValueError('Headless response too large')
+            value = json.loads(line)
+            if value.get('expected_steamid_sha256') != context['expected_steamid_sha256']:
+                raise ValueError('Headless Steam identity mismatch')
+            ticket = base64.b64decode(value['ticket'], validate=True)
+            if not 1 <= len(ticket) <= 8192:
+                raise ValueError('Headless ticket size invalid')
         yield ticket
     finally:
         try:
@@ -87,11 +89,15 @@ def candidate_context(context, config, key, ticket, client=None):
         def redirect_request(self, *args, **kwargs):
             return None
     if client is None:
+        # Match the protected API: verify TLS without inheriting SSLKEYLOGFILE.
+        # Antivirus can set that variable to an inaccessible device path.
+        tls = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        tls.load_default_certs()
         client = urllib.request.build_opener(urllib.request.ProxyHandler({}), NoRedirect(),
-            urllib.request.HTTPSHandler(context=ssl.create_default_context()))
+            urllib.request.HTTPSHandler(context=tls))
     req = urllib.request.Request(SDK_URL, body, {'Content-Type': 'application/json',
         'Accept-Encoding': 'identity', 'x-client-sign': signature}, method='POST')
-    with client.open(req, timeout=15) as response:
+    with stage('sdk_exchange'), client.open(req, timeout=15) as response:
         raw = response.read(1024 * 1024 + 1)
         if response.status != 200 or len(raw) > 1024 * 1024:
             raise ValueError('SDK response bounds invalid')
