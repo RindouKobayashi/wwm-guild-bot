@@ -186,6 +186,7 @@ def main():
             if selected & {'affixes', 'equipment', 'items', 'dungeons'}:
                 run_step(python, toolkit / 'app/update_game_data.py', ['--game-root', game], work, 'game-data')
                 run = pointer(toolkit / 'output/game_data')
+                provenance['warnings'].extend(read(run / 'coverage.json').get('warnings', []))
                 metadata = work / 'equipment_metadata.json'
                 if 'equipment' in selected:
                     run_step(python, BOT / 'activity/maintenance/extract_equipment_metadata.py',

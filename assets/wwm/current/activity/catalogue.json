@@ -1897,7 +1897,7 @@
     },
     {
       "id": 109,
-      "name": "Yelu A'buli",
+      "name": "Yelu Abuli",
       "boss_recall_id": 110,
       "rank_tag2": "recall_tag2_110",
       "trial_plan_ids": [
@@ -1920,7 +1920,7 @@
       "sha256": "08d07a31c0482333ad0d3b3a2bf064751d3181c39cc141ae367f134707bb0a84",
       "key": "abyss:109",
       "family": "abyss",
-      "title": "Yelu A'buli"
+      "title": "Yelu Abuli"
     },
     {
       "id": 111,
