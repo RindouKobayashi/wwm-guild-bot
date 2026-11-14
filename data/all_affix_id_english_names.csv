@@ -4539,6 +4539,21 @@
 10113012,Max Silkbind Attack,139,7886272334969262047,translate_words_map_en_diff,{0:.1f},25.7,51.4,100130,14580,0500d70628001400
 10113013,Min Bamboocut Attack,142,-8633882338702859644,translate_words_map_en_diff,{0:.1f},25.7,51.4,100130,14596,0500d7063c001400
 10113014,Max Bamboocut Attack,143,468895205219495806,translate_words_map_en_diff,{0:.1f},25.7,51.4,100130,14594,0500d70650001400
+10122001,Min Physical Attack,15,3328313099032331136,translate_words_map_en_diff,{0:.1f},45.3,90.6,100220,3704,ea03420198021500
+10122002,Max Physical Attack,16,817556196494451576,translate_words_map_en_diff,{0:.1f},45.3,90.6,100220,3706,ea034201ad021500
+10122003,Min Formless Attack,397,3116832272679033056,translate_words_map_en_diff,{0:.1f},25.7,51.4,100220,3695,ea034201c2021500
+10122004,Max Formless Attack,398,8532047789959272536,translate_words_map_en_diff,{0:.1f},25.7,51.4,100220,3707,ea034201d7021500
+10122005,Agility,4,6041420663592390250,translate_words_map_en_diff,{0:.1f},28.7,57.4,100220,3711,ea034201ec021400
+10122006,Momentum,5,-6642183938156080677,translate_words_map_en_diff,{0:.1f},28.7,57.4,100220,3710,ea03420100031200
+10122007,Provides increased EXP as a Tuning Material,323,2079181225131734274,translate_words_map_en_diff,,20.0,50.0,100220,3700,ea03420112030f00
+10122008,"When used as tuning material, the next tuned affix is guaranteed to be {} or above",356,1183046949818666252,translate_words_map_en_diff,,2.0,3.0,100220,3693,ea03420121030f00
+10122009,"When used as tuning material, the next tuned affix is guaranteed to have max value",324,3288911125795858486,translate_words_map_en_diff,,1.0,1.0,100220,3710,ea03420130030f00
+10123001,Min Physical Attack,15,7356853891443166914,translate_words_map_en_diff,{0:.1f},45.3,90.6,100230,3701,ea0342013f031500
+10123002,Max Physical Attack,16,8794572275224912353,translate_words_map_en_diff,{0:.1f},45.3,90.6,100230,3697,ea03420154031500
+10123003,Min Formless Attack,397,3931081875052851510,translate_words_map_en_diff,{0:.1f},25.7,51.4,100230,3710,ea03420169031500
+10123004,Max Formless Attack,398,1594678166610858516,translate_words_map_en_diff,{0:.1f},25.7,51.4,100230,3697,ea0342017e031500
+10123005,Agility,4,-7552005575123816827,translate_words_map_en_diff,{0:.1f},28.7,57.4,100230,3712,ea03420193031400
+10123006,Momentum,5,-8522664237723162422,translate_words_map_en_diff,{0:.1f},28.7,57.4,100230,3699,ea034201a7031200
 10131001,Min Physical Attack,15,7931148694109936352,translate_words_map_en,{0:.1f},45.3,90.6,100310,14578,0500d70664001500
 10131002,Max Physical Attack,16,824111821168399414,translate_words_map_en,{0:.1f},45.3,90.6,100310,14594,0500d70679001500
 10131003,Provides increased EXP as a Tuning Material,323,-1789972707706070705,translate_words_map_en,,20.0,50.0,100310,14589,0500d7068e000f00
@@ -4549,6 +4564,7 @@
 10132002,Max Physical Attack,16,-335188471567975175,translate_words_map_en,{0:.1f},45.3,90.6,100320,14595,0500d706df001500
 10132003,"When used as tuning material, the next tuned affix is guaranteed to be {} or above",356,-6823786060686337239,translate_words_map_en_diff,,2.0,3.0,100320,14594,0500d706f4000f00
 10132004,"When used as tuning material, the next tuned affix is guaranteed to have max value",324,7501219021819064982,translate_words_map_en_diff,,1.0,1.0,100320,14596,0500d70603010f00
+10132005,Provides increased EXP as a Tuning Material,323,-5441676951400008150,translate_words_map_en_diff,,20.0,50.0,100320,3694,ea0342011c040f00
 10133001,Min Physical Attack,15,1443949942993384335,translate_words_map_en,{0:.1f},45.3,90.6,100330,14584,0500d70612011500
 10133002,Max Physical Attack,16,-836594733537563834,translate_words_map_en,{0:.1f},45.3,90.6,100330,14592,0500d70627011500
 10141001,Max HP,9,8689798701293179527,translate_words_map_en,{0:.0f},1722.0,3444.0,100410,14587,0500d7063c011200
@@ -4805,6 +4821,21 @@
 10613012,Max Silkbind Attack,139,-3550440637364724412,translate_words_map_en_diff,{0:.1f},29.9,59.8,105130,14593,0500d90623041400
 10613013,Min Bamboocut Attack,142,2354153977966157656,translate_words_map_en_diff,{0:.1f},29.9,59.8,105130,14592,0500d90637041400
 10613014,Max Bamboocut Attack,143,8531440216682443430,translate_words_map_en_diff,{0:.1f},29.9,59.8,105130,14582,0500d9064b041400
+10622001,Min Physical Attack,15,73541334642721351,translate_words_map_en_diff,{0:.1f},52.8,105.6,105220,3707,ea0343013b051500
+10622002,Max Physical Attack,16,-8872429692070674704,translate_words_map_en_diff,{0:.1f},52.8,105.6,105220,3706,ea03430150051500
+10622003,Min Formless Attack,397,-5598545047188627361,translate_words_map_en_diff,{0:.1f},29.9,59.8,105220,3709,ea03430165051500
+10622004,Max Formless Attack,398,-4384197429311441668,translate_words_map_en_diff,{0:.1f},29.9,59.8,105220,3711,ea0343017a051500
+10622005,Agility,4,-5750725044865795185,translate_words_map_en_diff,{0:.1f},33.4,66.8,105220,3704,ea0343018f051400
+10622006,Momentum,5,-4539855296136820146,translate_words_map_en_diff,{0:.1f},33.4,66.8,105220,3706,ea034301a3051200
+10622007,Provides increased EXP as a Tuning Material,323,-3487921996318272405,translate_words_map_en_diff,,20.0,50.0,105220,3707,ea034301b5050f00
+10622008,"When used as tuning material, the next tuned affix is guaranteed to be {} or above",356,1265152958427657953,translate_words_map_en_diff,,2.0,3.0,105220,3705,ea034301c4050f00
+10622009,"When used as tuning material, the next tuned affix is guaranteed to have max value",324,-2314347750195319144,translate_words_map_en_diff,,1.0,1.0,105220,3695,ea034301d3050f00
+10623001,Min Physical Attack,15,2835376170008253572,translate_words_map_en_diff,{0:.1f},52.8,105.6,105230,3709,ea034301e2051500
+10623002,Max Physical Attack,16,1480495211806023540,translate_words_map_en_diff,{0:.1f},52.8,105.6,105230,3698,ea034301f7051500
+10623003,Min Formless Attack,397,-7913654614960807853,translate_words_map_en_diff,{0:.1f},29.9,59.8,105230,3707,ea0343010c061500
+10623004,Max Formless Attack,398,-2939489147243865903,translate_words_map_en_diff,{0:.1f},29.9,59.8,105230,3712,ea03430121061500
+10623005,Agility,4,-6366699585666935352,translate_words_map_en_diff,{0:.1f},33.4,66.8,105230,3706,ea03430136061400
+10623006,Momentum,5,519985738921747475,translate_words_map_en_diff,{0:.1f},33.4,66.8,105230,3697,ea0343014a061200
 10631001,Min Physical Attack,15,7348327701865494172,translate_words_map_en,{0:.1f},52.8,105.6,105310,14584,0500d9065f041500
 10631002,Max Physical Attack,16,6672777979158551819,translate_words_map_en,{0:.1f},52.8,105.6,105310,14579,0500d90674041500
 10631003,Provides increased EXP as a Tuning Material,323,-7869800204279639345,translate_words_map_en,,20.0,50.0,105310,14584,0500d90689040f00
@@ -4815,6 +4846,7 @@
 10632002,Max Physical Attack,16,-7507565872875568709,translate_words_map_en,{0:.1f},52.8,105.6,105320,14598,0500d906da041500
 10632003,"When used as tuning material, the next tuned affix is guaranteed to be {} or above",356,-2311129806688404400,translate_words_map_en_diff,,2.0,3.0,105320,14579,0500d906ef040f00
 10632004,"When used as tuning material, the next tuned affix is guaranteed to have max value",324,1936811474048236328,translate_words_map_en_diff,,1.0,1.0,105320,14591,0500d906fe040f00
+10632005,Provides increased EXP as a Tuning Material,323,-3669130007528514053,translate_words_map_en_diff,,20.0,50.0,105320,3694,ea034301bf060f00
 10633001,Min Physical Attack,15,-1098420635501702785,translate_words_map_en,{0:.1f},52.8,105.6,105330,14591,0500d9060d051500
 10633002,Max Physical Attack,16,2493755845117331190,translate_words_map_en,{0:.1f},52.8,105.6,105330,14579,0500d90622051500
 10641001,Max HP,9,9215711897236522045,translate_words_map_en,{0:.0f},2005.0,4010.0,105410,14593,0500d90637051200
@@ -5071,6 +5103,21 @@
 11113012,Max Silkbind Attack,139,-4548237210710297509,translate_words_map_en_diff,{0:.1f},34.4,68.8,110130,14589,0500dc0640011400
 11113013,Min Bamboocut Attack,142,-3199004765935347679,translate_words_map_en_diff,{0:.1f},34.4,68.8,110130,14583,0500dc0654011400
 11113014,Max Bamboocut Attack,143,927533257509870277,translate_words_map_en_diff,{0:.1f},34.4,68.8,110130,14587,0500dc0668011400
+11122001,Min Physical Attack,15,-5454444798905645201,translate_words_map_en_diff,{0:.1f},60.7,121.4,110220,3711,ea0345017a001500
+11122002,Max Physical Attack,16,6909215453995403343,translate_words_map_en_diff,{0:.1f},60.7,121.4,110220,3707,ea0345018f001500
+11122003,Min Formless Attack,397,-406408433895246082,translate_words_map_en_diff,{0:.1f},34.4,68.8,110220,3693,ea034501a4001500
+11122004,Max Formless Attack,398,8504698105148452097,translate_words_map_en_diff,{0:.1f},34.4,68.8,110220,3704,ea034501b9001500
+11122005,Agility,4,5478567415834622335,translate_words_map_en_diff,{0:.1f},38.4,76.8,110220,3693,ea034501ce001400
+11122006,Momentum,5,-4653131868326007814,translate_words_map_en_diff,{0:.1f},38.4,76.8,110220,3696,ea034501e2001200
+11122007,Provides increased EXP as a Tuning Material,323,-1005339708865531919,translate_words_map_en_diff,,20.0,50.0,110220,3695,ea034501f4000f00
+11122008,"When used as tuning material, the next tuned affix is guaranteed to be {} or above",356,-4237540514456198903,translate_words_map_en_diff,,2.0,3.0,110220,3709,ea03450103010f00
+11122009,"When used as tuning material, the next tuned affix is guaranteed to have max value",324,5760048188506196707,translate_words_map_en_diff,,1.0,1.0,110220,3705,ea03450112010f00
+11123001,Min Physical Attack,15,-5555355037231183992,translate_words_map_en_diff,{0:.1f},60.7,121.4,110230,3699,ea03450121011500
+11123002,Max Physical Attack,16,5168809208695002605,translate_words_map_en_diff,{0:.1f},60.7,121.4,110230,3699,ea03450136011500
+11123003,Min Formless Attack,397,1928366526569012856,translate_words_map_en_diff,{0:.1f},34.4,68.8,110230,3695,ea0345014b011500
+11123004,Max Formless Attack,398,-4213660007586460523,translate_words_map_en_diff,{0:.1f},34.4,68.8,110230,3699,ea03450160011500
+11123005,Agility,4,-8429300401957940492,translate_words_map_en_diff,{0:.1f},38.4,76.8,110230,3706,ea03450175011400
+11123006,Momentum,5,-6859604404814891637,translate_words_map_en_diff,{0:.1f},38.4,76.8,110230,3698,ea03450189011200
 11131001,Min Physical Attack,15,3484900077925669855,translate_words_map_en,{0:.1f},60.7,121.4,110310,14580,0500dc067c011500
 11131002,Max Physical Attack,16,-2349281664847209744,translate_words_map_en,{0:.1f},60.7,121.4,110310,14582,0500dc0691011500
 11131003,Provides increased EXP as a Tuning Material,323,-8806919210256670947,translate_words_map_en,,20.0,50.0,110310,14582,0500dc06a6010f00
@@ -5081,6 +5128,7 @@
 11132002,Max Physical Attack,16,-1194809688698224879,translate_words_map_en,{0:.1f},60.7,121.4,110320,14583,0500dc06f7011500
 11132003,"When used as tuning material, the next tuned affix is guaranteed to be {} or above",356,-3807456761517008479,translate_words_map_en_diff,,2.0,3.0,110320,14597,0500dc060c020f00
 11132004,"When used as tuning material, the next tuned affix is guaranteed to have max value",324,3313449759179897027,translate_words_map_en_diff,,1.0,1.0,110320,14592,0500dc061b020f00
+11132005,Provides increased EXP as a Tuning Material,323,8295347405790026542,translate_words_map_en_diff,,20.0,50.0,110320,3705,ea034501fe010f00
 11133001,Min Physical Attack,15,-9053059527512046795,translate_words_map_en,{0:.1f},60.7,121.4,110330,14579,0500dc062a021500
 11133002,Max Physical Attack,16,-2535867166980923229,translate_words_map_en,{0:.1f},60.7,121.4,110330,14591,0500dc063f021500
 11141001,Max HP,9,7305194095571931923,translate_words_map_en,{0:.0f},2305.0,4610.0,110410,14578,0500dc0654021200
@@ -5289,3 +5337,9 @@
 11194125,Combat Boost on Players,372,2083433200610234793,translate_words_map_en_diff,{0:.1%},0.026,0.051,110941,14593,0500de06a7021700
 11194126,Min Formless Attack,397,-4138668490340333390,translate_words_map_en_diff,{0:.1f},34.4,68.8,110941,14588,0500de06be021900
 11194127,Max Formless Attack,398,-3347914282426260122,translate_words_map_en_diff,{0:.1f},34.4,68.8,110941,14581,0500de06d7021900
+100931001,All Mystic Skill DMG Boost,476,-5714320586604265771,translate_words_map_en_diff,{0:.1%},0.057,0.114,100931,3711,ea0346013f021500
+100941001,All Mystic Skill DMG Boost,476,2071544731422201957,translate_words_map_en_diff,{0:.1%},0.057,0.114,100941,3698,ea03460154021500
+105931001,All Mystic Skill DMG Boost,476,-5552562029215938234,translate_words_map_en_diff,{0:.1%},0.067,0.134,105931,3709,ea03460169021700
+105941001,All Mystic Skill DMG Boost,476,-885302958823067634,translate_words_map_en_diff,{0:.1%},0.067,0.134,105941,3705,ea03460180021700
+110931001,All Mystic Skill DMG Boost,476,174569698693540434,translate_words_map_en_diff,{0:.1%},0.077,0.154,110931,3710,ea03460197021700
+110941001,All Mystic Skill DMG Boost,476,7201874723910286526,translate_words_map_en_diff,{0:.1%},0.077,0.154,110941,3696,ea034601ae021700

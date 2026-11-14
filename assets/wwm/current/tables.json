@@ -39732,6 +39732,81 @@
           "Max Bamboocut Attack"
         ]
       },
+      "10122001": {
+        "affix": [
+          "Min Physical Attack"
+        ]
+      },
+      "10122002": {
+        "affix": [
+          "Max Physical Attack"
+        ]
+      },
+      "10122003": {
+        "affix": [
+          "Min Formless Attack"
+        ]
+      },
+      "10122004": {
+        "affix": [
+          "Max Formless Attack"
+        ]
+      },
+      "10122005": {
+        "affix": [
+          "Agility"
+        ]
+      },
+      "10122006": {
+        "affix": [
+          "Momentum"
+        ]
+      },
+      "10122007": {
+        "affix": [
+          "Provides increased EXP as a Tuning Material"
+        ]
+      },
+      "10122008": {
+        "affix": [
+          "When used as tuning material, the next tuned affix is guaranteed to be {} or above"
+        ]
+      },
+      "10122009": {
+        "affix": [
+          "When used as tuning material, the next tuned affix is guaranteed to have max value"
+        ]
+      },
+      "10123001": {
+        "affix": [
+          "Min Physical Attack"
+        ]
+      },
+      "10123002": {
+        "affix": [
+          "Max Physical Attack"
+        ]
+      },
+      "10123003": {
+        "affix": [
+          "Min Formless Attack"
+        ]
+      },
+      "10123004": {
+        "affix": [
+          "Max Formless Attack"
+        ]
+      },
+      "10123005": {
+        "affix": [
+          "Agility"
+        ]
+      },
+      "10123006": {
+        "affix": [
+          "Momentum"
+        ]
+      },
       "10131001": {
         "affix": [
           "Min Physical Attack"
@@ -39780,6 +39855,11 @@
       "10132004": {
         "affix": [
           "When used as tuning material, the next tuned affix is guaranteed to have max value"
+        ]
+      },
+      "10132005": {
+        "affix": [
+          "Provides increased EXP as a Tuning Material"
         ]
       },
       "10133001": {
@@ -41062,6 +41142,81 @@
           "Max Bamboocut Attack"
         ]
       },
+      "10622001": {
+        "affix": [
+          "Min Physical Attack"
+        ]
+      },
+      "10622002": {
+        "affix": [
+          "Max Physical Attack"
+        ]
+      },
+      "10622003": {
+        "affix": [
+          "Min Formless Attack"
+        ]
+      },
+      "10622004": {
+        "affix": [
+          "Max Formless Attack"
+        ]
+      },
+      "10622005": {
+        "affix": [
+          "Agility"
+        ]
+      },
+      "10622006": {
+        "affix": [
+          "Momentum"
+        ]
+      },
+      "10622007": {
+        "affix": [
+          "Provides increased EXP as a Tuning Material"
+        ]
+      },
+      "10622008": {
+        "affix": [
+          "When used as tuning material, the next tuned affix is guaranteed to be {} or above"
+        ]
+      },
+      "10622009": {
+        "affix": [
+          "When used as tuning material, the next tuned affix is guaranteed to have max value"
+        ]
+      },
+      "10623001": {
+        "affix": [
+          "Min Physical Attack"
+        ]
+      },
+      "10623002": {
+        "affix": [
+          "Max Physical Attack"
+        ]
+      },
+      "10623003": {
+        "affix": [
+          "Min Formless Attack"
+        ]
+      },
+      "10623004": {
+        "affix": [
+          "Max Formless Attack"
+        ]
+      },
+      "10623005": {
+        "affix": [
+          "Agility"
+        ]
+      },
+      "10623006": {
+        "affix": [
+          "Momentum"
+        ]
+      },
       "10631001": {
         "affix": [
           "Min Physical Attack"
@@ -41110,6 +41265,11 @@
       "10632004": {
         "affix": [
           "When used as tuning material, the next tuned affix is guaranteed to have max value"
+        ]
+      },
+      "10632005": {
+        "affix": [
+          "Provides increased EXP as a Tuning Material"
         ]
       },
       "10633001": {
@@ -42392,6 +42552,81 @@
           "Max Bamboocut Attack"
         ]
       },
+      "11122001": {
+        "affix": [
+          "Min Physical Attack"
+        ]
+      },
+      "11122002": {
+        "affix": [
+          "Max Physical Attack"
+        ]
+      },
+      "11122003": {
+        "affix": [
+          "Min Formless Attack"
+        ]
+      },
+      "11122004": {
+        "affix": [
+          "Max Formless Attack"
+        ]
+      },
+      "11122005": {
+        "affix": [
+          "Agility"
+        ]
+      },
+      "11122006": {
+        "affix": [
+          "Momentum"
+        ]
+      },
+      "11122007": {
+        "affix": [
+          "Provides increased EXP as a Tuning Material"
+        ]
+      },
+      "11122008": {
+        "affix": [
+          "When used as tuning material, the next tuned affix is guaranteed to be {} or above"
+        ]
+      },
+      "11122009": {
+        "affix": [
+          "When used as tuning material, the next tuned affix is guaranteed to have max value"
+        ]
+      },
+      "11123001": {
+        "affix": [
+          "Min Physical Attack"
+        ]
+      },
+      "11123002": {
+        "affix": [
+          "Max Physical Attack"
+        ]
+      },
+      "11123003": {
+        "affix": [
+          "Min Formless Attack"
+        ]
+      },
+      "11123004": {
+        "affix": [
+          "Max Formless Attack"
+        ]
+      },
+      "11123005": {
+        "affix": [
+          "Agility"
+        ]
+      },
+      "11123006": {
+        "affix": [
+          "Momentum"
+        ]
+      },
       "11131001": {
         "affix": [
           "Min Physical Attack"
@@ -42440,6 +42675,11 @@
       "11132004": {
         "affix": [
           "When used as tuning material, the next tuned affix is guaranteed to have max value"
+        ]
+      },
+      "11132005": {
+        "affix": [
+          "Provides increased EXP as a Tuning Material"
         ]
       },
       "11133001": {
@@ -43480,6 +43720,36 @@
       "11194127": {
         "affix": [
           "Max Formless Attack"
+        ]
+      },
+      "100931001": {
+        "affix": [
+          "All Mystic Skill DMG Boost"
+        ]
+      },
+      "100941001": {
+        "affix": [
+          "All Mystic Skill DMG Boost"
+        ]
+      },
+      "105931001": {
+        "affix": [
+          "All Mystic Skill DMG Boost"
+        ]
+      },
+      "105941001": {
+        "affix": [
+          "All Mystic Skill DMG Boost"
+        ]
+      },
+      "110931001": {
+        "affix": [
+          "All Mystic Skill DMG Boost"
+        ]
+      },
+      "110941001": {
+        "affix": [
+          "All Mystic Skill DMG Boost"
         ]
       },
       "101": {
@@ -222667,6 +222937,111 @@
         "minimum": "25.7",
         "maximum": "51.4"
       },
+      "10122001": {
+        "name": "Min Physical Attack",
+        "attribute_id": "15",
+        "format": "{0:.1f}",
+        "minimum": "45.3",
+        "maximum": "90.6"
+      },
+      "10122002": {
+        "name": "Max Physical Attack",
+        "attribute_id": "16",
+        "format": "{0:.1f}",
+        "minimum": "45.3",
+        "maximum": "90.6"
+      },
+      "10122003": {
+        "name": "Min Formless Attack",
+        "attribute_id": "397",
+        "format": "{0:.1f}",
+        "minimum": "25.7",
+        "maximum": "51.4"
+      },
+      "10122004": {
+        "name": "Max Formless Attack",
+        "attribute_id": "398",
+        "format": "{0:.1f}",
+        "minimum": "25.7",
+        "maximum": "51.4"
+      },
+      "10122005": {
+        "name": "Agility",
+        "attribute_id": "4",
+        "format": "{0:.1f}",
+        "minimum": "28.7",
+        "maximum": "57.4"
+      },
+      "10122006": {
+        "name": "Momentum",
+        "attribute_id": "5",
+        "format": "{0:.1f}",
+        "minimum": "28.7",
+        "maximum": "57.4"
+      },
+      "10122007": {
+        "name": "Provides increased EXP as a Tuning Material",
+        "attribute_id": "323",
+        "format": "",
+        "minimum": "20.0",
+        "maximum": "50.0"
+      },
+      "10122008": {
+        "name": "When used as tuning material, the next tuned affix is guaranteed to be {} or above",
+        "attribute_id": "356",
+        "format": "",
+        "minimum": "2.0",
+        "maximum": "3.0"
+      },
+      "10122009": {
+        "name": "When used as tuning material, the next tuned affix is guaranteed to have max value",
+        "attribute_id": "324",
+        "format": "",
+        "minimum": "1.0",
+        "maximum": "1.0"
+      },
+      "10123001": {
+        "name": "Min Physical Attack",
+        "attribute_id": "15",
+        "format": "{0:.1f}",
+        "minimum": "45.3",
+        "maximum": "90.6"
+      },
+      "10123002": {
+        "name": "Max Physical Attack",
+        "attribute_id": "16",
+        "format": "{0:.1f}",
+        "minimum": "45.3",
+        "maximum": "90.6"
+      },
+      "10123003": {
+        "name": "Min Formless Attack",
+        "attribute_id": "397",
+        "format": "{0:.1f}",
+        "minimum": "25.7",
+        "maximum": "51.4"
+      },
+      "10123004": {
+        "name": "Max Formless Attack",
+        "attribute_id": "398",
+        "format": "{0:.1f}",
+        "minimum": "25.7",
+        "maximum": "51.4"
+      },
+      "10123005": {
+        "name": "Agility",
+        "attribute_id": "4",
+        "format": "{0:.1f}",
+        "minimum": "28.7",
+        "maximum": "57.4"
+      },
+      "10123006": {
+        "name": "Momentum",
+        "attribute_id": "5",
+        "format": "{0:.1f}",
+        "minimum": "28.7",
+        "maximum": "57.4"
+      },
       "10131001": {
         "name": "Min Physical Attack",
         "attribute_id": "15",
@@ -222736,6 +223111,13 @@
         "format": "",
         "minimum": "1.0",
         "maximum": "1.0"
+      },
+      "10132005": {
+        "name": "Provides increased EXP as a Tuning Material",
+        "attribute_id": "323",
+        "format": "",
+        "minimum": "20.0",
+        "maximum": "50.0"
       },
       "10133001": {
         "name": "Min Physical Attack",
@@ -224529,6 +224911,111 @@
         "minimum": "29.9",
         "maximum": "59.8"
       },
+      "10622001": {
+        "name": "Min Physical Attack",
+        "attribute_id": "15",
+        "format": "{0:.1f}",
+        "minimum": "52.8",
+        "maximum": "105.6"
+      },
+      "10622002": {
+        "name": "Max Physical Attack",
+        "attribute_id": "16",
+        "format": "{0:.1f}",
+        "minimum": "52.8",
+        "maximum": "105.6"
+      },
+      "10622003": {
+        "name": "Min Formless Attack",
+        "attribute_id": "397",
+        "format": "{0:.1f}",
+        "minimum": "29.9",
+        "maximum": "59.8"
+      },
+      "10622004": {
+        "name": "Max Formless Attack",
+        "attribute_id": "398",
+        "format": "{0:.1f}",
+        "minimum": "29.9",
+        "maximum": "59.8"
+      },
+      "10622005": {
+        "name": "Agility",
+        "attribute_id": "4",
+        "format": "{0:.1f}",
+        "minimum": "33.4",
+        "maximum": "66.8"
+      },
+      "10622006": {
+        "name": "Momentum",
+        "attribute_id": "5",
+        "format": "{0:.1f}",
+        "minimum": "33.4",
+        "maximum": "66.8"
+      },
+      "10622007": {
+        "name": "Provides increased EXP as a Tuning Material",
+        "attribute_id": "323",
+        "format": "",
+        "minimum": "20.0",
+        "maximum": "50.0"
+      },
+      "10622008": {
+        "name": "When used as tuning material, the next tuned affix is guaranteed to be {} or above",
+        "attribute_id": "356",
+        "format": "",
+        "minimum": "2.0",
+        "maximum": "3.0"
+      },
+      "10622009": {
+        "name": "When used as tuning material, the next tuned affix is guaranteed to have max value",
+        "attribute_id": "324",
+        "format": "",
+        "minimum": "1.0",
+        "maximum": "1.0"
+      },
+      "10623001": {
+        "name": "Min Physical Attack",
+        "attribute_id": "15",
+        "format": "{0:.1f}",
+        "minimum": "52.8",
+        "maximum": "105.6"
+      },
+      "10623002": {
+        "name": "Max Physical Attack",
+        "attribute_id": "16",
+        "format": "{0:.1f}",
+        "minimum": "52.8",
+        "maximum": "105.6"
+      },
+      "10623003": {
+        "name": "Min Formless Attack",
+        "attribute_id": "397",
+        "format": "{0:.1f}",
+        "minimum": "29.9",
+        "maximum": "59.8"
+      },
+      "10623004": {
+        "name": "Max Formless Attack",
+        "attribute_id": "398",
+        "format": "{0:.1f}",
+        "minimum": "29.9",
+        "maximum": "59.8"
+      },
+      "10623005": {
+        "name": "Agility",
+        "attribute_id": "4",
+        "format": "{0:.1f}",
+        "minimum": "33.4",
+        "maximum": "66.8"
+      },
+      "10623006": {
+        "name": "Momentum",
+        "attribute_id": "5",
+        "format": "{0:.1f}",
+        "minimum": "33.4",
+        "maximum": "66.8"
+      },
       "10631001": {
         "name": "Min Physical Attack",
         "attribute_id": "15",
@@ -224598,6 +225085,13 @@
         "format": "",
         "minimum": "1.0",
         "maximum": "1.0"
+      },
+      "10632005": {
+        "name": "Provides increased EXP as a Tuning Material",
+        "attribute_id": "323",
+        "format": "",
+        "minimum": "20.0",
+        "maximum": "50.0"
       },
       "10633001": {
         "name": "Min Physical Attack",
@@ -226391,6 +226885,111 @@
         "minimum": "34.4",
         "maximum": "68.8"
       },
+      "11122001": {
+        "name": "Min Physical Attack",
+        "attribute_id": "15",
+        "format": "{0:.1f}",
+        "minimum": "60.7",
+        "maximum": "121.4"
+      },
+      "11122002": {
+        "name": "Max Physical Attack",
+        "attribute_id": "16",
+        "format": "{0:.1f}",
+        "minimum": "60.7",
+        "maximum": "121.4"
+      },
+      "11122003": {
+        "name": "Min Formless Attack",
+        "attribute_id": "397",
+        "format": "{0:.1f}",
+        "minimum": "34.4",
+        "maximum": "68.8"
+      },
+      "11122004": {
+        "name": "Max Formless Attack",
+        "attribute_id": "398",
+        "format": "{0:.1f}",
+        "minimum": "34.4",
+        "maximum": "68.8"
+      },
+      "11122005": {
+        "name": "Agility",
+        "attribute_id": "4",
+        "format": "{0:.1f}",
+        "minimum": "38.4",
+        "maximum": "76.8"
+      },
+      "11122006": {
+        "name": "Momentum",
+        "attribute_id": "5",
+        "format": "{0:.1f}",
+        "minimum": "38.4",
+        "maximum": "76.8"
+      },
+      "11122007": {
+        "name": "Provides increased EXP as a Tuning Material",
+        "attribute_id": "323",
+        "format": "",
+        "minimum": "20.0",
+        "maximum": "50.0"
+      },
+      "11122008": {
+        "name": "When used as tuning material, the next tuned affix is guaranteed to be {} or above",
+        "attribute_id": "356",
+        "format": "",
+        "minimum": "2.0",
+        "maximum": "3.0"
+      },
+      "11122009": {
+        "name": "When used as tuning material, the next tuned affix is guaranteed to have max value",
+        "attribute_id": "324",
+        "format": "",
+        "minimum": "1.0",
+        "maximum": "1.0"
+      },
+      "11123001": {
+        "name": "Min Physical Attack",
+        "attribute_id": "15",
+        "format": "{0:.1f}",
+        "minimum": "60.7",
+        "maximum": "121.4"
+      },
+      "11123002": {
+        "name": "Max Physical Attack",
+        "attribute_id": "16",
+        "format": "{0:.1f}",
+        "minimum": "60.7",
+        "maximum": "121.4"
+      },
+      "11123003": {
+        "name": "Min Formless Attack",
+        "attribute_id": "397",
+        "format": "{0:.1f}",
+        "minimum": "34.4",
+        "maximum": "68.8"
+      },
+      "11123004": {
+        "name": "Max Formless Attack",
+        "attribute_id": "398",
+        "format": "{0:.1f}",
+        "minimum": "34.4",
+        "maximum": "68.8"
+      },
+      "11123005": {
+        "name": "Agility",
+        "attribute_id": "4",
+        "format": "{0:.1f}",
+        "minimum": "38.4",
+        "maximum": "76.8"
+      },
+      "11123006": {
+        "name": "Momentum",
+        "attribute_id": "5",
+        "format": "{0:.1f}",
+        "minimum": "38.4",
+        "maximum": "76.8"
+      },
       "11131001": {
         "name": "Min Physical Attack",
         "attribute_id": "15",
@@ -226460,6 +227059,13 @@
         "format": "",
         "minimum": "1.0",
         "maximum": "1.0"
+      },
+      "11132005": {
+        "name": "Provides increased EXP as a Tuning Material",
+        "attribute_id": "323",
+        "format": "",
+        "minimum": "20.0",
+        "maximum": "50.0"
       },
       "11133001": {
         "name": "Min Physical Attack",
@@ -227916,6 +228522,48 @@
         "format": "{0:.1f}",
         "minimum": "34.4",
         "maximum": "68.8"
+      },
+      "100931001": {
+        "name": "All Mystic Skill DMG Boost",
+        "attribute_id": "476",
+        "format": "{0:.1%}",
+        "minimum": "0.057",
+        "maximum": "0.114"
+      },
+      "100941001": {
+        "name": "All Mystic Skill DMG Boost",
+        "attribute_id": "476",
+        "format": "{0:.1%}",
+        "minimum": "0.057",
+        "maximum": "0.114"
+      },
+      "105931001": {
+        "name": "All Mystic Skill DMG Boost",
+        "attribute_id": "476",
+        "format": "{0:.1%}",
+        "minimum": "0.067",
+        "maximum": "0.134"
+      },
+      "105941001": {
+        "name": "All Mystic Skill DMG Boost",
+        "attribute_id": "476",
+        "format": "{0:.1%}",
+        "minimum": "0.067",
+        "maximum": "0.134"
+      },
+      "110931001": {
+        "name": "All Mystic Skill DMG Boost",
+        "attribute_id": "476",
+        "format": "{0:.1%}",
+        "minimum": "0.077",
+        "maximum": "0.154"
+      },
+      "110941001": {
+        "name": "All Mystic Skill DMG Boost",
+        "attribute_id": "476",
+        "format": "{0:.1%}",
+        "minimum": "0.077",
+        "maximum": "0.154"
       }
     }
   },
@@ -261464,6 +262112,111 @@
         "official_english_localization"
       ]
     ],
+    "10122001": [
+      [
+        "affix",
+        "Min Physical Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10122002": [
+      [
+        "affix",
+        "Max Physical Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10122003": [
+      [
+        "affix",
+        "Min Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10122004": [
+      [
+        "affix",
+        "Max Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10122005": [
+      [
+        "affix",
+        "Agility",
+        "official_english_localization"
+      ]
+    ],
+    "10122006": [
+      [
+        "affix",
+        "Momentum",
+        "official_english_localization"
+      ]
+    ],
+    "10122007": [
+      [
+        "affix",
+        "Provides increased EXP as a Tuning Material",
+        "official_english_localization"
+      ]
+    ],
+    "10122008": [
+      [
+        "affix",
+        "When used as tuning material, the next tuned affix is guaranteed to be {} or above",
+        "official_english_localization"
+      ]
+    ],
+    "10122009": [
+      [
+        "affix",
+        "When used as tuning material, the next tuned affix is guaranteed to have max value",
+        "official_english_localization"
+      ]
+    ],
+    "10123001": [
+      [
+        "affix",
+        "Min Physical Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10123002": [
+      [
+        "affix",
+        "Max Physical Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10123003": [
+      [
+        "affix",
+        "Min Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10123004": [
+      [
+        "affix",
+        "Max Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10123005": [
+      [
+        "affix",
+        "Agility",
+        "official_english_localization"
+      ]
+    ],
+    "10123006": [
+      [
+        "affix",
+        "Momentum",
+        "official_english_localization"
+      ]
+    ],
     "10131001": [
       [
         "affix",
@@ -261531,6 +262284,13 @@
       [
         "affix",
         "When used as tuning material, the next tuned affix is guaranteed to have max value",
+        "official_english_localization"
+      ]
+    ],
+    "10132005": [
+      [
+        "affix",
+        "Provides increased EXP as a Tuning Material",
         "official_english_localization"
       ]
     ],
@@ -263326,6 +264086,111 @@
         "official_english_localization"
       ]
     ],
+    "10622001": [
+      [
+        "affix",
+        "Min Physical Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10622002": [
+      [
+        "affix",
+        "Max Physical Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10622003": [
+      [
+        "affix",
+        "Min Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10622004": [
+      [
+        "affix",
+        "Max Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10622005": [
+      [
+        "affix",
+        "Agility",
+        "official_english_localization"
+      ]
+    ],
+    "10622006": [
+      [
+        "affix",
+        "Momentum",
+        "official_english_localization"
+      ]
+    ],
+    "10622007": [
+      [
+        "affix",
+        "Provides increased EXP as a Tuning Material",
+        "official_english_localization"
+      ]
+    ],
+    "10622008": [
+      [
+        "affix",
+        "When used as tuning material, the next tuned affix is guaranteed to be {} or above",
+        "official_english_localization"
+      ]
+    ],
+    "10622009": [
+      [
+        "affix",
+        "When used as tuning material, the next tuned affix is guaranteed to have max value",
+        "official_english_localization"
+      ]
+    ],
+    "10623001": [
+      [
+        "affix",
+        "Min Physical Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10623002": [
+      [
+        "affix",
+        "Max Physical Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10623003": [
+      [
+        "affix",
+        "Min Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10623004": [
+      [
+        "affix",
+        "Max Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "10623005": [
+      [
+        "affix",
+        "Agility",
+        "official_english_localization"
+      ]
+    ],
+    "10623006": [
+      [
+        "affix",
+        "Momentum",
+        "official_english_localization"
+      ]
+    ],
     "10631001": [
       [
         "affix",
@@ -263393,6 +264258,13 @@
       [
         "affix",
         "When used as tuning material, the next tuned affix is guaranteed to have max value",
+        "official_english_localization"
+      ]
+    ],
+    "10632005": [
+      [
+        "affix",
+        "Provides increased EXP as a Tuning Material",
         "official_english_localization"
       ]
     ],
@@ -265188,6 +266060,111 @@
         "official_english_localization"
       ]
     ],
+    "11122001": [
+      [
+        "affix",
+        "Min Physical Attack",
+        "official_english_localization"
+      ]
+    ],
+    "11122002": [
+      [
+        "affix",
+        "Max Physical Attack",
+        "official_english_localization"
+      ]
+    ],
+    "11122003": [
+      [
+        "affix",
+        "Min Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "11122004": [
+      [
+        "affix",
+        "Max Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "11122005": [
+      [
+        "affix",
+        "Agility",
+        "official_english_localization"
+      ]
+    ],
+    "11122006": [
+      [
+        "affix",
+        "Momentum",
+        "official_english_localization"
+      ]
+    ],
+    "11122007": [
+      [
+        "affix",
+        "Provides increased EXP as a Tuning Material",
+        "official_english_localization"
+      ]
+    ],
+    "11122008": [
+      [
+        "affix",
+        "When used as tuning material, the next tuned affix is guaranteed to be {} or above",
+        "official_english_localization"
+      ]
+    ],
+    "11122009": [
+      [
+        "affix",
+        "When used as tuning material, the next tuned affix is guaranteed to have max value",
+        "official_english_localization"
+      ]
+    ],
+    "11123001": [
+      [
+        "affix",
+        "Min Physical Attack",
+        "official_english_localization"
+      ]
+    ],
+    "11123002": [
+      [
+        "affix",
+        "Max Physical Attack",
+        "official_english_localization"
+      ]
+    ],
+    "11123003": [
+      [
+        "affix",
+        "Min Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "11123004": [
+      [
+        "affix",
+        "Max Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "11123005": [
+      [
+        "affix",
+        "Agility",
+        "official_english_localization"
+      ]
+    ],
+    "11123006": [
+      [
+        "affix",
+        "Momentum",
+        "official_english_localization"
+      ]
+    ],
     "11131001": [
       [
         "affix",
@@ -265255,6 +266232,13 @@
       [
         "affix",
         "When used as tuning material, the next tuned affix is guaranteed to have max value",
+        "official_english_localization"
+      ]
+    ],
+    "11132005": [
+      [
+        "affix",
+        "Provides increased EXP as a Tuning Material",
         "official_english_localization"
       ]
     ],
@@ -266711,6 +267695,48 @@
       [
         "affix",
         "Max Formless Attack",
+        "official_english_localization"
+      ]
+    ],
+    "100931001": [
+      [
+        "affix",
+        "All Mystic Skill DMG Boost",
+        "official_english_localization"
+      ]
+    ],
+    "100941001": [
+      [
+        "affix",
+        "All Mystic Skill DMG Boost",
+        "official_english_localization"
+      ]
+    ],
+    "105931001": [
+      [
+        "affix",
+        "All Mystic Skill DMG Boost",
+        "official_english_localization"
+      ]
+    ],
+    "105941001": [
+      [
+        "affix",
+        "All Mystic Skill DMG Boost",
+        "official_english_localization"
+      ]
+    ],
+    "110931001": [
+      [
+        "affix",
+        "All Mystic Skill DMG Boost",
+        "official_english_localization"
+      ]
+    ],
+    "110941001": [
+      [
+        "affix",
+        "All Mystic Skill DMG Boost",
         "official_english_localization"
       ]
     ],

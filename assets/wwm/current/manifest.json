@@ -1,14 +1,10 @@
 {
   "format": 1,
-  "created_utc": "2026-11-14T00:17:59.515557+00:00",
+  "created_utc": "2026-11-14T06:49:25.342801+00:00",
   "provenance": {
     "mode": "fresh_game_extraction",
     "sections_requested": [
-      "abyss",
       "affixes",
-      "constants",
-      "dungeons",
-      "equipment",
       "items"
     ],
     "warnings": [
@@ -16,6 +12,7 @@
       "Abyss loadout display names reuse the existing reviewed loadout_name_tables.json; this updater does not yet regenerate those auxiliary names.",
       "Coverage is limited to recognized tables and supported formats; this does not prove every game item exists in these lists.",
       "Equipment shards use an inferred ID range; affix shards use overlap with known IDs. Entirely new table families need review.",
+      "Affixes: 54 original ranged-affix references recovered from validated small shards. Existing core rows take precedence. These references do not establish runtime table selection; entirely disjoint or unsupported layouts remain outside coverage.",
       "Equipment scan: 36 null candidate locators have no physical row. They are included in undecoded coverage, not treated as confirmed deletions; earlier decoded rows are retained.",
       "2200 candidate item index entries excluded; reasons are in items/item_coverage.json. Some are blank names or non-row lookup values.",
       "Items: unresolved_names = 36. Embedded labels are original text, not confirmed English localization.",
@@ -24,55 +21,10 @@
       "Dungeons: leaderboard_titles_unmatched = 26.",
       "Expanded dungeon catalogue: {'boss_challenges': 30, 'boss_profiles': 138, 'instances': 218, 'replay_encounters': 120, 'world_bosses': 39, 'tower_stages': 11, 'combat_trials': 6, 'strongholds': 33, 'trial_displays': 69}. Counts include related encounters and level/mode variants.",
       "Dungeon artwork: 11 referenced resource names were not resolved in the installed registry; see dungeon_library/coverage.json.",
-      "Dungeon artwork: 20 registered textures have no installed base/LT/patch physical source. They are explicitly missing, with no placeholder or previous-version substitution; see dungeon_library/art_manifest.json."
+      "Dungeon artwork: 20 registered textures have no installed base/LT/patch physical source. They are explicitly missing, with no placeholder or previous-version substitution; see dungeon_library/art_manifest.json.",
+      "Partial update: unselected sections retain their previous release data."
     ],
-    "source_sha256": {
-      "data1": "7d0d15dfcc6d7d9000071ec29a6125b934a955519b3b23fb8221a95c263bea3d",
-      "data10": "2cf77ecc0565dfe15cc3e952c121c91964dba4f7ee9d2f466b2ee9d9f90e3d76",
-      "data1001": "0506e743fb2710f962f559eae205fb45be5024d5124922f980416c723c6c1760",
-      "data1002": "102f51c907f926aa48fee532187d164d745cb09aa90a350a6f6b70ec84fb0591",
-      "data1003": "a28671c4d50b71bbbfdf0322643a20660b2e952552ba3b5893943de5b54c92a1",
-      "data1004": "9a30379f3e5ec2c552867d4c05eafe63b1255a15ef538b72f19147ff632f1e79",
-      "data1005": "7a209a446e8cad5ad2b016f7f1bff9c818e2e1cf56060dcc3c175e26dcbe0884",
-      "data11": "18bea14b2602fbd6fbe97683e841c2cc070bb9886106497e3d15fdcb6dc54e70",
-      "data1200": "1ec8f8c79e44f91ce76145cd62a085f4d834be03aadc586e709e71c6bc46adf9",
-      "data1201": "383a548b6786b45f6fc5668d93c42c284a2244a2545a6062681059669fb7693c",
-      "data2": "d78d4c2957245575c78d483ded9a6be040e36f9c6a0e101e194e8bfbe4be22de",
-      "data200": "be92bfb47f8145d8023faa3cd11dd1f4744182aa853e54def01a6b6a3d19d2fc",
-      "data201": "1528c972573e296aaf1cf6d9fc4ae9cef581e9f709009e661e9f49983906db53",
-      "data202": "ce95526d22a581210e55489bb4098d53f24f72bde6d3ebffaa7997507955629d",
-      "data203": "96aa3b7c6a9c894a20f07bc560b9253ea91129919e7c56472bc7083d485f1791",
-      "data204": "516b2c3492df38ee2977f2362521492b5a5bcd107eba8a60c678313f59feaa72",
-      "data205": "23ea65f2644b11132f35d8ce8736d2ef2d0ce402638c1b48e92c92560968229b",
-      "data206": "9542ecb458262b0f9e6600ef84d1e05294fc0151133641f2f1b3b67f342aa0fd",
-      "data207": "d924f5133e47cb1d5ae73f46ef24926ebef27dbf887cef96ff8f75f53b5a0528",
-      "data208": "6819052910da3931faf4ec669995cade11b77aeaae45c931022a4e3a691caec4",
-      "data209": "a9e628220640166feb1e50d978e3790f1524361ae505ba91a9b8c7dfa43d7e2c",
-      "data210": "59ad416595ffb05a1dca91ce1de2c1f8b6125a04bc7efd72105543cf7e6481d3",
-      "data211": "700450aaaf26412ff2b488116708a19dfcc5d88b0fbe33c4da7771fc7f10f42f",
-      "data212": "3d3ec5809f690cfada1bad28e29aa74e8770662ab28fd460b90770a7628ff67c",
-      "data3": "3ed779e7da5db975ccef897b1e800db6799a6e393157cce8c289b19bb1319c4a",
-      "data4": "c11dae04d4cbe87d01ee617faa46c903319cb6e606d378529545b0d306cb9d41",
-      "data5": "17f9121fc60ada9af7717b30ae1c22d1631be6a91cccf03b59734809384365cd",
-      "data6": "214bd64adadd3aed9fb23c0aa9ff90bd4880876821dbf232435babf9a3e3cb3b",
-      "data7": "ab3d0f49f2037e0aea49d9d00094ddc605b23e9e80bc81f40e4588be81e91f2b",
-      "data8": "545d300a0ee78f0a1e14571842e16cbfc722012dd49378a5fe18977a619100a5",
-      "data9": "68055d97b41f2301e1bdf0321b5ad0e9b20f8350a107165a7f384f6ac6aeedd5",
-      "index1": "94945b5353fb28f8342e95c80d9dde825f685abb38276003cee8e850ca44856d",
-      "index1001": "1264ebf5dffd46c121cfc03fd991e11a97cb9a5bd4f2c1f394cb4e6a7b6d0a4c",
-      "index1200": "8b323da7d12d2d46024088f138370c8bebf6d7c0a1192048e3106f44d27abe4b",
-      "index2": "c2d33e0a165fb331a0cf6881d4ed6fbbe6c1fc190387d795b7b3cdff94a881df",
-      "index200": "14c48d7a0b3965df9d1be62ca178f276e334b81158c4fb88bb9960edfedd42c3",
-      "index201": "fd7fccfb642af004d8c7d621ea5babde702b7f52edee60b303e3af0181fa5323",
-      "index202": "8937aca7044ac84da44b53d862cb5d81f03c745eeae945e502b34812b7f2436f",
-      "index203": "a03212dc68680f593f63fb04a51643817f07062e68dd5525384d3694bc83379c",
-      "index204": "51ddf021fe062e29ad36102224e1b29ef33e36fc914471d9df831b58425c1e85",
-      "index3": "82666901fe9377e6a1a8033a30ba42b79ad1f714b972ad5b17cfebec44aef92a",
-      "index4": "d4be1a69f409bed2137cba2632468bb2d651554a4df1e07e94499b5e0bbfd75f",
-      "locale\\translate_words_map_en": "9a2bb446dc2dcc1e2bb4b1bb3207e2990ef7533341a9035ef376c545c3bbdbef",
-      "locale\\translate_words_map_en_diff": "d39d74f85c7e6f1616890d36e37c8d52aad7c9578f4b73331edafd7cd96a75c0",
-      "Resources.mpkinfo": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
-    },
+    "source_sha256": {},
     "unresolved_artwork": [],
     "api_mapping_sources": {
       "sects": {
@@ -234,8 +186,8 @@
     "legacy_limits": 5,
     "constants": 6,
     "equipment": 2624,
-    "items": 30856,
-    "affixes": 5290
+    "items": 30910,
+    "affixes": 5344
   },
   "files": {
     "abyss/art/trial_1.png": "1a211e82de50fa6e888f1cc48bcf6cfff8d62d17409f68808d5ce9a7bc5b392f",
@@ -472,8 +424,8 @@
     "dungeons/cards/artwork/sword-trial/serpents-fang.png": "4d82a85d196468ceb24d1a616d8e0eca27134507323d2137de7dc7b6a6ed8a40",
     "dungeons/cards/manifest.json": "4086f99501ef7aedda502413c57149cf72a7a2fbc720c4c8a8076db028515f2b",
     "dungeons/latest.json": "7a7899d74466f912f11543da446b2b6e014057fec0d7a2a31341432e738b90b5",
-    "report.html": "17b18b0562f6d98d1c840272a7794fffbcc98f1c14ffcdae4fc2ea071f24258a",
-    "report.json": "4042f3b6a2ff8d79ee1f42be6650161468ebd6120331ba6999e172d5a28708a3",
-    "tables.json": "8745d2e9328aa16bc5aa77c0dc87b6ff6034d472bbe182c528d8f22ccbb3f278"
+    "report.html": "243ba006b752b8d7cd7450ca5ec2d153b390c7f2c63e1549308a96e7a34106c7",
+    "report.json": "acab91c7d6b26f71a5d20d06d874a234d3aba68c87fd4e98918650333484bbca",
+    "tables.json": "89b8efe45f67b60a7579fda0b1c815345a20d453b61d90640c0fa5b847d16f77"
   }
 }
