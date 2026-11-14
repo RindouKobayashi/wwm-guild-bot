@@ -1,3 +1,8 @@
 # Launchers must remain runnable after Windows development / Linux git pulls.
 *.sh text eol=lf
 assets/wwm/** -text
+# Preserve generated fallback export bytes on Windows and Raspberry Pi.
+/data/all_affix_id_english_names.csv -text
+/data/All_Equipment_Item_Names.xlsx -text
+/data/All_Item_Names.xlsx -text
+/data/equipment_metadata.json -text

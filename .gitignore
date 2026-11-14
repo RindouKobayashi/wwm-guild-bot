@@ -3,7 +3,16 @@
 logs/
 __pycache__/
 *.db
+# Local databases, player files, uploads and caches stay private.
 data/
+!/data/
+/data/*
+# Public game-data fallback exports; the runtime prefers assets/wwm/current.
+!/data/README.md
+!/data/all_affix_id_english_names.csv
+!/data/All_Equipment_Item_Names.xlsx
+!/data/All_Item_Names.xlsx
+!/data/equipment_metadata.json
 .env-backup
 test/
 wwm_extract/
