@@ -193,6 +193,13 @@ def finish(stage, tables, provenance, old, allow_removals=False, old_directory=N
         # the old runtime. Parse only public named dictionaries, never settings.
         review_old = {**old, 'api_constants': fallback}
         report['provenance']['api_mapping_baseline'] = 'Public literal defaults from utility/api_constants.py before first bundle migration'
+    if tables.get('martial') and not old.get('martial'):
+        legacy={}
+        for node in ast.parse((BOT/'utility/api_constants.py').read_text(encoding='utf-8')).body:
+            if isinstance(node,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='KONGFU_WEAPON_MAP' for t in node.targets):
+                try:legacy={str(k):{'name':v['name'],'source':'legacy_compatibility'} for k,v in ast.literal_eval(node.value).items()}
+                except (ValueError,TypeError):continue
+        review_old={**review_old,'martial':{'kungfu':legacy}}
     report['review'] = review(review_old, tables, old_directory, stage)
     write(stage / 'report.json', report)
     (stage / 'report.html').write_text(render(report), encoding='utf-8')

@@ -41,12 +41,27 @@ def validate_release(directory):
         fixed = {'tables.json', 'report.json', 'report.html', 'activity/catalogue.json',
                  'dungeons/latest.json', 'dungeons/cards/manifest.json', 'abyss/catalogue.json'}
         artwork = name.endswith('.png') and name.startswith(('activity/art/', 'abyss/art/', 'dungeons/cards/artwork/'))
-        if name not in fixed and not artwork:
+        martial_file = name in ('martial/catalogue.json','martial/startup-approval.json','martial/upload-pack/contact-sheet.html','martial/upload-pack/upload-manifest.json','martial/upload-pack/UPLOAD-GUIDE.md') or (name.startswith(('martial/art/','martial/upload-pack/icons/')) and name.endswith('.png'))
+        if name not in fixed and not artwork and not martial_file:
             raise ValueError('Unexpected/private file in public bundle: ' + name)
         path = inside(directory, name)
         if not path.is_file() or digest(path) != expected:
             raise ValueError('Asset checksum mismatch: ' + name)
     tables = json.loads((directory / 'tables.json').read_text(encoding='utf-8'))
+    if 'martial' in tables:
+        from utility.martial_data import validate
+        validate(tables['martial'])
+        if 'martial/startup-approval.json' in manifest['files']:
+            from utility.martial_data import validate_approval
+            validate_approval(directory/'martial')
+        catalogue=json.loads((directory / 'martial/catalogue.json').read_text(encoding='utf-8'))
+        if catalogue!=tables['martial']:raise ValueError('Martial catalogue differs from tables')
+        uploads=json.loads((directory/'martial/upload-pack/upload-manifest.json').read_text(encoding='utf-8'))
+        uploads={r['key']:r for r in uploads['icons']}
+        for row in catalogue['paths'].values():
+            if 'martial/'+row['file'] not in manifest['files'] or digest(inside(directory,'martial/'+row['file']))!=row['original_sha256']:raise ValueError('Missing martial artwork')
+            upload=uploads.get(row['icon_key'])
+            if not upload or upload['sha256']!=row['icon_sha256'] or digest(inside(directory,'martial/upload-pack/'+upload['file']))!=row['icon_sha256']:raise ValueError('Martial upload art mismatch')
     mappings = tables.get('player_mappings', {})
     if 'api_constants' in tables:
         from utility.api_mapping_data import validate

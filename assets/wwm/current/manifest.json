@@ -1,10 +1,9 @@
 {
   "format": 1,
-  "created_utc": "2026-11-14T06:49:25.342801+00:00",
+  "created_utc": "2026-11-16T13:47:06.963492+00:00",
   "provenance": {
     "mode": "fresh_game_extraction",
     "sections_requested": [
-      "affixes",
       "items"
     ],
     "warnings": [
@@ -14,7 +13,7 @@
       "Equipment shards use an inferred ID range; affix shards use overlap with known IDs. Entirely new table families need review.",
       "Affixes: 54 original ranged-affix references recovered from validated small shards. Existing core rows take precedence. These references do not establish runtime table selection; entirely disjoint or unsupported layouts remain outside coverage.",
       "Equipment scan: 36 null candidate locators have no physical row. They are included in undecoded coverage, not treated as confirmed deletions; earlier decoded rows are retained.",
-      "2200 candidate item index entries excluded; reasons are in items/item_coverage.json. Some are blank names or non-row lookup values.",
+      "2029 candidate item index entries excluded; reasons are in items/item_coverage.json. Some are blank names or non-row lookup values.",
       "Items: unresolved_names = 36. Embedded labels are original text, not confirmed English localization.",
       "Items: embedded_names = 195. Embedded labels are original text, not confirmed English localization.",
       "Dungeons: leaderboard_titles_ambiguous = 34.",
@@ -177,7 +176,8 @@
       "UI like groups do not include every server topic. Legacy Market/Kitty/Pet labels remain compatibility fallbacks.",
       "Shipped sect definitions do not prove that a sect is currently available to players.",
       "Vote allowance is configuration, not remaining votes or proof that an election is open."
-    ]
+    ],
+    "martial_startup_sync": "Reviewed icon manifest; explicit environment application bindings"
   },
   "counts": {
     "equipment_metadata": 2634,
@@ -186,7 +186,7 @@
     "legacy_limits": 5,
     "constants": 6,
     "equipment": 2624,
-    "items": 30910,
+    "items": 31081,
     "affixes": 5344
   },
   "files": {
@@ -424,8 +424,35 @@
     "dungeons/cards/artwork/sword-trial/serpents-fang.png": "4d82a85d196468ceb24d1a616d8e0eca27134507323d2137de7dc7b6a6ed8a40",
     "dungeons/cards/manifest.json": "4086f99501ef7aedda502413c57149cf72a7a2fbc720c4c8a8076db028515f2b",
     "dungeons/latest.json": "7a7899d74466f912f11543da446b2b6e014057fec0d7a2a31341432e738b90b5",
-    "report.html": "243ba006b752b8d7cd7450ca5ec2d153b390c7f2c63e1549308a96e7a34106c7",
-    "report.json": "acab91c7d6b26f71a5d20d06d874a234d3aba68c87fd4e98918650333484bbca",
-    "tables.json": "89b8efe45f67b60a7579fda0b1c815345a20d453b61d90640c0fa5b847d16f77"
+    "martial/art/path_1.png": "4ae3f5d91f6972fde131c74ba599ff15523233351950a46631f96ffaed5d44a2",
+    "martial/art/path_10.png": "51ab8b6aa8a2171fb45d2b8ac867f3b25fef8af9ad4753de7d64908eb7b3d26a",
+    "martial/art/path_12.png": "9ad4908fbec5aeb881fc74ac28315f619f09ce8199e4b760ed531d8c7e9562f6",
+    "martial/art/path_13.png": "c5677ed12b2852c90620b79ad2db0b8403819d57b2a16db7c4146bb9a6afdbc9",
+    "martial/art/path_14.png": "5440afab7cc8a1a53d9d42e134018a7c97111f2ce67827cc1ac2aa26e3633324",
+    "martial/art/path_2.png": "2f05e7242aca1fd1c0e0d49efe9d31f179d188c9e50aabb46b51e9e48ad160ae",
+    "martial/art/path_3.png": "90587db1879683a84f5ed8209a6a3210279edd25b9f59a9bf999487a20f0f7d6",
+    "martial/art/path_5.png": "5afea417e7759b68688ef3a644bd9cd71f882858d711c9b6f392f18139eb8a98",
+    "martial/art/path_6.png": "da4dd9b48e245362b981e88c322dff086c113a506fa5e9f7627df8b9a48decbe",
+    "martial/art/path_7.png": "b93b5be2c27caceb32c243d6ba74248d605c56ba275cc776c968dfc66fbc46b4",
+    "martial/art/path_8.png": "c94895a5de02a75c061f1751e2da24d80007e81f22e0e769110678e9f84ecc17",
+    "martial/catalogue.json": "021abd3ec90f737d69af6d2855382c026e127f1e26c3c0e55dabfe99a9f9ff25",
+    "martial/startup-approval.json": "29de5b58c96b0d6d285299438b56b511a688793ff78e24862d9a07a3a9119515",
+    "martial/upload-pack/contact-sheet.html": "a29b1388f4746f6578592929f69a0e9aaf5cab676f05c2f338c7304fc384e88c",
+    "martial/upload-pack/icons/path_1.png": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+    "martial/upload-pack/icons/path_10.png": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+    "martial/upload-pack/icons/path_12.png": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+    "martial/upload-pack/icons/path_13.png": "2cada8fbb7aeb4fef37153e66a07bbbeb589f30f349a5419828e66b9dee3bb81",
+    "martial/upload-pack/icons/path_14.png": "c60b8855414512354cb3bcd3e36aefc99e8ac7ba8c8882fd751c9819b4b6997f",
+    "martial/upload-pack/icons/path_2.png": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+    "martial/upload-pack/icons/path_3.png": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+    "martial/upload-pack/icons/path_5.png": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+    "martial/upload-pack/icons/path_6.png": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+    "martial/upload-pack/icons/path_7.png": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+    "martial/upload-pack/icons/path_8.png": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+    "martial/upload-pack/UPLOAD-GUIDE.md": "cf677352f5dd1f2934ae5c9166bfa58949b17227566af1e0cbf89c52690ccb18",
+    "martial/upload-pack/upload-manifest.json": "1e44eacb55508584b8ce49cda86cd2b693098574a9b8ffaa13f5eeac98c62d11",
+    "report.html": "714c3be6ba58bbbc92d8a7888f5065c4dc812c194b25e60af55bfd0a077cf4fb",
+    "report.json": "63b27c490a0305fb5421f8418e414db8e3a9b6d0814d2c83e89b17142d683d3e",
+    "tables.json": "86600df0a1b1ad304dfa2d9309ab808e0bba93636b81d410bbabf7a744ec1d79"
   }
 }

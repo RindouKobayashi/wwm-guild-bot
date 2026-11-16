@@ -1,0 +1,3120 @@
+{
+  "date": "2026-11-14",
+  "all_game_content_proven": false,
+  "published_manifest_sha256": "9d79a9cd68e33d4ec149286533136a92b331988a8cd830a8a60f6da1a91e91f7",
+  "repaired": {
+    "issue": "Packed upper column bits in the 273-column crafting table",
+    "added_item_ids": 171,
+    "changed_existing": 0,
+    "removed_existing": 0,
+    "item_ids_before": 30910,
+    "item_ids_after": 31081,
+    "affixes": 5344,
+    "parser_regressions_passed": 8,
+    "existing_data_repair_tests_passed": 7
+  },
+  "recovered_items": [
+    {
+      "id": 662092,
+      "name": "Chirrup",
+      "name_hash": "3324890829943780505",
+      "locator_hex": "0a00e508ef050d00",
+      "used_bytes": 98,
+      "reserved_bytes": 104,
+      "high_columns": [
+        {
+          "field": 256,
+          "name": "auto_decompose",
+          "packed_tag": 13,
+          "value_type": 12
+        }
+      ]
+    },
+    {
+      "id": 663000,
+      "name": "Message Horn: Near",
+      "name_hash": "1502380957310371319",
+      "locator_hex": "0a00e50806070900",
+      "used_bytes": 72,
+      "reserved_bytes": 72,
+      "high_columns": [
+        {
+          "field": 257,
+          "name": "chuanyin_num",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 663001,
+      "name": "Message Horn: Far",
+      "name_hash": "523992094922588892",
+      "locator_hex": "0a00e5080f070900",
+      "used_bytes": 72,
+      "reserved_bytes": 72,
+      "high_columns": [
+        {
+          "field": 257,
+          "name": "chuanyin_num",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 663002,
+      "name": "Message Horn: Wide",
+      "name_hash": "2618197085610614666",
+      "locator_hex": "0a00e50818070900",
+      "used_bytes": 72,
+      "reserved_bytes": 72,
+      "high_columns": [
+        {
+          "field": 257,
+          "name": "chuanyin_num",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 663003,
+      "name": "Message Horn: Guild",
+      "name_hash": "5093850127241230817",
+      "locator_hex": "0a00e50821070900",
+      "used_bytes": 72,
+      "reserved_bytes": 72,
+      "high_columns": [
+        {
+          "field": 257,
+          "name": "chuanyin_num",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 668001,
+      "name": "Test 1",
+      "name_hash": "756353747384634840",
+      "locator_hex": "0a00e60843021000",
+      "used_bytes": 122,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 258,
+          "name": "frame_unlock_no",
+          "packed_tag": 13,
+          "value_type": 12
+        }
+      ]
+    },
+    {
+      "id": 668002,
+      "name": "Test 2 (Soft Time Limit)",
+      "name_hash": "-1727271026072019300",
+      "locator_hex": "0a00e60853020f00",
+      "used_bytes": 117,
+      "reserved_bytes": 120,
+      "high_columns": [
+        {
+          "field": 259,
+          "name": "frame_time_rlt",
+          "packed_tag": 9,
+          "value_type": 8
+        },
+        {
+          "field": 258,
+          "name": "frame_unlock_no",
+          "packed_tag": 13,
+          "value_type": 12
+        }
+      ]
+    },
+    {
+      "id": 668003,
+      "name": "Test 3 (Hard Time Limit)",
+      "name_hash": "-7040633457470997684",
+      "locator_hex": "0a00e60862021100",
+      "used_bytes": 130,
+      "reserved_bytes": 136,
+      "high_columns": [
+        {
+          "field": 260,
+          "name": "frame_time_abs",
+          "packed_tag": 37,
+          "value_type": 36
+        },
+        {
+          "field": 258,
+          "name": "frame_unlock_no",
+          "packed_tag": 13,
+          "value_type": 12
+        }
+      ]
+    },
+    {
+      "id": 668004,
+      "name": "Test 4",
+      "name_hash": "-4273659339585193724",
+      "locator_hex": "0a00e60873021000",
+      "used_bytes": 122,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 258,
+          "name": "frame_unlock_no",
+          "packed_tag": 13,
+          "value_type": 12
+        }
+      ]
+    },
+    {
+      "id": 668005,
+      "name": "Test 5",
+      "name_hash": "-6926778312206954169",
+      "locator_hex": "0a00e60883020f00",
+      "used_bytes": 120,
+      "reserved_bytes": 120,
+      "high_columns": [
+        {
+          "field": 258,
+          "name": "frame_unlock_no",
+          "packed_tag": 13,
+          "value_type": 12
+        }
+      ]
+    },
+    {
+      "id": 668006,
+      "name": "Budding Lotus",
+      "name_hash": "-8836992569073908970",
+      "locator_hex": "0a00e60892020f00",
+      "used_bytes": 117,
+      "reserved_bytes": 120,
+      "high_columns": [
+        {
+          "field": 258,
+          "name": "frame_unlock_no",
+          "packed_tag": 13,
+          "value_type": 12
+        }
+      ]
+    },
+    {
+      "id": 668007,
+      "name": "Ancient Wood",
+      "name_hash": "-1565865447645244153",
+      "locator_hex": "0a00e608a1020f00",
+      "used_bytes": 117,
+      "reserved_bytes": 120,
+      "high_columns": [
+        {
+          "field": 258,
+          "name": "frame_unlock_no",
+          "packed_tag": 13,
+          "value_type": 12
+        }
+      ]
+    },
+    {
+      "id": 668008,
+      "name": "Ink Wash",
+      "name_hash": "-1024730387796393887",
+      "locator_hex": "0a00e608b0020f00",
+      "used_bytes": 117,
+      "reserved_bytes": 120,
+      "high_columns": [
+        {
+          "field": 258,
+          "name": "frame_unlock_no",
+          "packed_tag": 13,
+          "value_type": 12
+        }
+      ]
+    },
+    {
+      "id": 669001,
+      "name": "Fade In and Fade Out",
+      "name_hash": "-3038786508351080122",
+      "locator_hex": "0a00e608bf020e00",
+      "used_bytes": 109,
+      "reserved_bytes": 112,
+      "high_columns": [
+        {
+          "field": 261,
+          "name": "frame_vx_frame_rlt",
+          "packed_tag": 9,
+          "value_type": 8
+        },
+        {
+          "field": 262,
+          "name": "frame_vx_unlock_no",
+          "packed_tag": 9,
+          "value_type": 8
+        }
+      ]
+    },
+    {
+      "id": 669002,
+      "name": "Test Effect 2",
+      "name_hash": "4557495376207041914",
+      "locator_hex": "0a00e608cd021000",
+      "used_bytes": 122,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 263,
+          "name": "frame_vx_abs",
+          "packed_tag": 37,
+          "value_type": 36
+        },
+        {
+          "field": 262,
+          "name": "frame_vx_unlock_no",
+          "packed_tag": 9,
+          "value_type": 8
+        }
+      ]
+    },
+    {
+      "id": 669007,
+      "name": "Permanently Unlocked Effect",
+      "name_hash": "-3071873944985958488",
+      "locator_hex": "0a00e60801030d00",
+      "used_bytes": 104,
+      "reserved_bytes": 104,
+      "high_columns": [
+        {
+          "field": 262,
+          "name": "frame_vx_unlock_no",
+          "packed_tag": 9,
+          "value_type": 8
+        }
+      ]
+    },
+    {
+      "id": 901039,
+      "name": "String of Coins",
+      "name_hash": "-4892104392963388274",
+      "locator_hex": "0a00e808ac050b00",
+      "used_bytes": 88,
+      "reserved_bytes": 88,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 901047,
+      "name": "Warm Money Bag",
+      "name_hash": "-1099614506258112169",
+      "locator_hex": "0a00e808b7050d00",
+      "used_bytes": 98,
+      "reserved_bytes": 104,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 901049,
+      "name": "String of Coins",
+      "name_hash": "-3584238226937094535",
+      "locator_hex": "0a00e808d1050b00",
+      "used_bytes": 88,
+      "reserved_bytes": 88,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 901050,
+      "name": "Money Bag",
+      "name_hash": "-8524189773810542228",
+      "locator_hex": "0a00e808dc050d00",
+      "used_bytes": 98,
+      "reserved_bytes": 104,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 901051,
+      "name": "Money Bag",
+      "name_hash": "-1379304012482161912",
+      "locator_hex": "0a00e808e9050d00",
+      "used_bytes": 98,
+      "reserved_bytes": 104,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 901052,
+      "name": "Small String of Coins",
+      "name_hash": "5868221161992278616",
+      "locator_hex": "0a00e808f6050b00",
+      "used_bytes": 86,
+      "reserved_bytes": 88,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 901053,
+      "name": "Money Bag",
+      "name_hash": "-6690087980538880694",
+      "locator_hex": "0a00e80801060d00",
+      "used_bytes": 98,
+      "reserved_bytes": 104,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 901091,
+      "name": "Bag of Coins",
+      "name_hash": "-3674302093723127800",
+      "locator_hex": "0a00e80856070c00",
+      "used_bytes": 91,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 901097,
+      "name": "Custom Swap: Chest",
+      "name_hash": "3185065429384204475",
+      "locator_hex": "0a00e80899070c00",
+      "used_bytes": 95,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 265,
+          "name": "unselected_tips",
+          "packed_tag": 13,
+          "value_type": 12
+        }
+      ]
+    },
+    {
+      "id": 901105,
+      "name": "Small Bag of Coins",
+      "name_hash": "-1908126176652303849",
+      "locator_hex": "0a00e9080b000c00",
+      "used_bytes": 91,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 901106,
+      "name": "Small String of Coins",
+      "name_hash": "-4337178075404367179",
+      "locator_hex": "0a00e90817000b00",
+      "used_bytes": 88,
+      "reserved_bytes": 88,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 901107,
+      "name": "Small String of Coins",
+      "name_hash": "906068707017203428",
+      "locator_hex": "0a00e90822000b00",
+      "used_bytes": 88,
+      "reserved_bytes": 88,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 901109,
+      "name": "Bag of Coins",
+      "name_hash": "-2928803226085196895",
+      "locator_hex": "0a00e90837000c00",
+      "used_bytes": 91,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 901111,
+      "name": "Bag of Coins",
+      "name_hash": "-9107533097637588958",
+      "locator_hex": "0a00e9084f000b00",
+      "used_bytes": 88,
+      "reserved_bytes": 88,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 902007,
+      "name": "Bag of Coins",
+      "name_hash": "8811734580199665710",
+      "locator_hex": "0a00e908cc010c00",
+      "used_bytes": 91,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 904017,
+      "name": "Custom Swap: Chest",
+      "name_hash": "-6649636069813997539",
+      "locator_hex": "0a00ef0846070c00",
+      "used_bytes": 92,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 265,
+          "name": "unselected_tips",
+          "packed_tag": 13,
+          "value_type": 12
+        }
+      ]
+    },
+    {
+      "id": 904500,
+      "name": "Tier 71 Weapon Chest",
+      "name_hash": "1538285637427539036",
+      "locator_hex": "0a00f108a4020c00",
+      "used_bytes": 89,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904501,
+      "name": "Tier 71 Jadeware Weapon Chest",
+      "name_hash": "3960672925271781925",
+      "locator_hex": "0a00f108b0021000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904502,
+      "name": "Tier 71 Hawkwing Weapon Chest",
+      "name_hash": "-952636199571221002",
+      "locator_hex": "0a00f108c0021000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904503,
+      "name": "Tier 71 Rainwhisper Weapon Chest",
+      "name_hash": "-8812563209199979109",
+      "locator_hex": "0a00f108d0021000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904504,
+      "name": "Tier 71 Swallowcall Weapon Chest",
+      "name_hash": "-726025358042338717",
+      "locator_hex": "0a00f108e0021000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904505,
+      "name": "Tier 71 Mistwillow Weapon Chest",
+      "name_hash": "-5499236519299393301",
+      "locator_hex": "0a00f108f0021000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904506,
+      "name": "Tier 71 Ivorybloom Weapon Chest",
+      "name_hash": "-1998731345059274978",
+      "locator_hex": "0a00f10800031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904507,
+      "name": "Tier 71 Swift Gale Weapon Chest",
+      "name_hash": "3264591451028558276",
+      "locator_hex": "0a00f10810031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904508,
+      "name": "Tier 71 Swaying Heights Weapon Chest",
+      "name_hash": "438815916673842511",
+      "locator_hex": "0a00f10820031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904513,
+      "name": "Tier 71 Starweave Weapon Chest",
+      "name_hash": "-3398011344652274645",
+      "locator_hex": "0a00f1086f031200",
+      "used_bytes": 144,
+      "reserved_bytes": 144,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904514,
+      "name": "Tier 81 Weapon Chest",
+      "name_hash": "-9103525742384820547",
+      "locator_hex": "0a00f10881030c00",
+      "used_bytes": 89,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904515,
+      "name": "Tier 81 Jadeware Weapon Chest",
+      "name_hash": "1218503425416752183",
+      "locator_hex": "0a00f1088d031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904516,
+      "name": "Tier 81 Hawkwing Weapon Chest",
+      "name_hash": "8790463368494128621",
+      "locator_hex": "0a00f1089d031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904517,
+      "name": "Tier 81 Rainwhisper Weapon Chest",
+      "name_hash": "2934245671355113278",
+      "locator_hex": "0a00f108ad031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904518,
+      "name": "Tier 81 Swallowcall Weapon Chest",
+      "name_hash": "-4526942839987336508",
+      "locator_hex": "0a00f108bd031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904519,
+      "name": "Tier 81 Mistwillow Weapon Chest",
+      "name_hash": "7747641023915865832",
+      "locator_hex": "0a00f108cd031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904520,
+      "name": "Tier 81 Ivorybloom Weapon Chest",
+      "name_hash": "3489144401602829635",
+      "locator_hex": "0a00f108dd031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904521,
+      "name": "Tier 81 Starweave Weapon Chest",
+      "name_hash": "-4323782083392554221",
+      "locator_hex": "0a00f108ed031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904522,
+      "name": "Tier 81 Swift Gale Weapon Chest",
+      "name_hash": "-8543169392003555808",
+      "locator_hex": "0a00f108fd031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904523,
+      "name": "Tier 81 Swaying Heights Weapon Chest",
+      "name_hash": "2828834933223601725",
+      "locator_hex": "0a00f1080d041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904526,
+      "name": "Money Bag",
+      "name_hash": "-5346707339420202447",
+      "locator_hex": "0a00f10835040d00",
+      "used_bytes": 98,
+      "reserved_bytes": 104,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 904532,
+      "name": "Tier 71 Cleftpeak Weapon Chest",
+      "name_hash": "376025007928858322",
+      "locator_hex": "0a00f10887041200",
+      "used_bytes": 143,
+      "reserved_bytes": 144,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904533,
+      "name": "Tier 81 Cleftpeak Weapon Chest",
+      "name_hash": "-592436375868854445",
+      "locator_hex": "0a00f10899041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904534,
+      "name": "Tier 86 Cleftpeak Weapon Chest",
+      "name_hash": "5852415675793093335",
+      "locator_hex": "0a00f108a9041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904535,
+      "name": "Tier 91 Cleftpeak Weapon Chest",
+      "name_hash": "3194104290748073922",
+      "locator_hex": "0a00f108b9041200",
+      "used_bytes": 143,
+      "reserved_bytes": 144,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904536,
+      "name": "Tier 96 Cleftpeak Weapon Chest",
+      "name_hash": "2587953944994037082",
+      "locator_hex": "0a00f108cb041200",
+      "used_bytes": 143,
+      "reserved_bytes": 144,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904537,
+      "name": "Tier 71 Etherwrath Weapon Chest",
+      "name_hash": "-9186798302080922144",
+      "locator_hex": "0a00f108dd041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904538,
+      "name": "Tier 81 Etherwrath Weapon Chest",
+      "name_hash": "5005634057463300377",
+      "locator_hex": "0a00f108ed041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904539,
+      "name": "Tier 86 Etherwrath Weapon Chest",
+      "name_hash": "-3606861925466941489",
+      "locator_hex": "0a00f108fd041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904540,
+      "name": "Tier 91 Etherwrath Weapon Chest",
+      "name_hash": "2101462362830468865",
+      "locator_hex": "0a00f1080d051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904541,
+      "name": "Tier 96 Etherwrath Weapon Chest",
+      "name_hash": "7207727246987646012",
+      "locator_hex": "0a00f1081d051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904544,
+      "name": "Tier 86 Weapon Chest",
+      "name_hash": "491507346639845090",
+      "locator_hex": "0a00f1082d050c00",
+      "used_bytes": 89,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904545,
+      "name": "Tier 86 Jadeware Weapon Chest",
+      "name_hash": "-6789364356611357064",
+      "locator_hex": "0a00f10839051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904546,
+      "name": "Tier 86 Hawkwing Weapon Chest",
+      "name_hash": "8614539484313978718",
+      "locator_hex": "0a00f10849051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904547,
+      "name": "Tier 86 Rainwhisper Weapon Chest",
+      "name_hash": "5486299409548476293",
+      "locator_hex": "0a00f10859051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904548,
+      "name": "Tier 86 Swallowcall Weapon Chest",
+      "name_hash": "935221943615335415",
+      "locator_hex": "0a00f10869051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904549,
+      "name": "Tier 86 Mistwillow Weapon Chest",
+      "name_hash": "-1940157288743921496",
+      "locator_hex": "0a00f10879051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904550,
+      "name": "Tier 86 Ivorybloom Weapon Chest",
+      "name_hash": "759941345658923738",
+      "locator_hex": "0a00f10889051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904551,
+      "name": "Tier 86 Starweave Weapon Chest",
+      "name_hash": "5299679811506093070",
+      "locator_hex": "0a00f10899051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904552,
+      "name": "Tier 86 Swift Gale Weapon Chest",
+      "name_hash": "-4178938579954520636",
+      "locator_hex": "0a00f108a9051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904553,
+      "name": "Tier 86 Swaying Heights Weapon Chest",
+      "name_hash": "4650996873537451828",
+      "locator_hex": "0a00f108b9051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904574,
+      "name": "Tier 91 Weapon Chest",
+      "name_hash": "3044042913248582846",
+      "locator_hex": "0a00f108c9050c00",
+      "used_bytes": 89,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904575,
+      "name": "Tier 91 Jadeware Weapon Chest",
+      "name_hash": "4710085051907941871",
+      "locator_hex": "0a00f108d5051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904576,
+      "name": "Tier 91 Hawkwing Weapon Chest",
+      "name_hash": "3262920274169265442",
+      "locator_hex": "0a00f108e5051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904577,
+      "name": "Tier 91 Rainwhisper Weapon Chest",
+      "name_hash": "-3678835806207856520",
+      "locator_hex": "0a00f108f5051000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904578,
+      "name": "Tier 91 Swallowcall Weapon Chest",
+      "name_hash": "5731069084537547832",
+      "locator_hex": "0a00f10805061000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904579,
+      "name": "Tier 91 Mistwillow Weapon Chest",
+      "name_hash": "4021025722155467612",
+      "locator_hex": "0a00f10815061000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904580,
+      "name": "Tier 91 Ivorybloom Weapon Chest",
+      "name_hash": "8687954473128419564",
+      "locator_hex": "0a00f10825061000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904581,
+      "name": "Tier 91 Starweave Weapon Chest",
+      "name_hash": "-3194586953310905656",
+      "locator_hex": "0a00f10835061000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904582,
+      "name": "Tier 91 Swift Gale Weapon Chest",
+      "name_hash": "7880933699532107727",
+      "locator_hex": "0a00f10845061000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904583,
+      "name": "Tier 91 Swaying Heights Weapon Chest",
+      "name_hash": "-3918323058247658585",
+      "locator_hex": "0a00f10855061000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904604,
+      "name": "Tier 96 Weapon Chest",
+      "name_hash": "-7576846704004249396",
+      "locator_hex": "0a00f10865060e00",
+      "used_bytes": 110,
+      "reserved_bytes": 112,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904605,
+      "name": "Tier 96 Jadeware Weapon Chest",
+      "name_hash": "-8491416041278707314",
+      "locator_hex": "0a00f10873061300",
+      "used_bytes": 149,
+      "reserved_bytes": 152,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904606,
+      "name": "Tier 96 Hawkwing Weapon Chest",
+      "name_hash": "8218625046829171439",
+      "locator_hex": "0a00f10886061300",
+      "used_bytes": 149,
+      "reserved_bytes": 152,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904607,
+      "name": "Tier 96 Rainwhisper Weapon Chest",
+      "name_hash": "8780832866267617334",
+      "locator_hex": "0a00f10899061300",
+      "used_bytes": 149,
+      "reserved_bytes": 152,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904608,
+      "name": "Tier 96 Swallowcall Weapon Chest",
+      "name_hash": "-1585322413081524795",
+      "locator_hex": "0a00f108ac061300",
+      "used_bytes": 149,
+      "reserved_bytes": 152,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904609,
+      "name": "Tier 96 Mistwillow Weapon Chest",
+      "name_hash": "-2621700891319476868",
+      "locator_hex": "0a00f108bf061300",
+      "used_bytes": 149,
+      "reserved_bytes": 152,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904610,
+      "name": "Tier 96 Ivorybloom Weapon Chest",
+      "name_hash": "7431336538530961039",
+      "locator_hex": "0a00f108d2061300",
+      "used_bytes": 149,
+      "reserved_bytes": 152,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904611,
+      "name": "Tier 96 Starweave Weapon Chest",
+      "name_hash": "3262818390743571830",
+      "locator_hex": "0a00f108e5061300",
+      "used_bytes": 149,
+      "reserved_bytes": 152,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904612,
+      "name": "Tier 96 Swift Gale Weapon Chest",
+      "name_hash": "-9030850528351229527",
+      "locator_hex": "0a00f108f8061300",
+      "used_bytes": 149,
+      "reserved_bytes": 152,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904613,
+      "name": "Tier 96 Swaying Heights Weapon Chest",
+      "name_hash": "-1962237917997703950",
+      "locator_hex": "0a00f1080b071300",
+      "used_bytes": 149,
+      "reserved_bytes": 152,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904616,
+      "name": "Lucky Lantern",
+      "name_hash": "-4967380891440571302",
+      "locator_hex": "0a00f10838071100",
+      "used_bytes": 129,
+      "reserved_bytes": 136,
+      "high_columns": [
+        {
+          "field": 267,
+          "name": "blind_box_id",
+          "packed_tag": 9,
+          "value_type": 8
+        }
+      ]
+    },
+    {
+      "id": 904617,
+      "name": "Year-End Bounty",
+      "name_hash": "5270883629951237450",
+      "locator_hex": "0a00f10849071000",
+      "used_bytes": 127,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 267,
+          "name": "blind_box_id",
+          "packed_tag": 9,
+          "value_type": 8
+        }
+      ]
+    },
+    {
+      "id": 904618,
+      "name": "Fried Chicken Bucket",
+      "name_hash": "-2411098486259516735",
+      "locator_hex": "0a00f10859071000",
+      "used_bytes": 124,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 267,
+          "name": "blind_box_id",
+          "packed_tag": 9,
+          "value_type": 8
+        }
+      ]
+    },
+    {
+      "id": 904619,
+      "name": "Shangsi Festival Box",
+      "name_hash": "1373715117257274700",
+      "locator_hex": "0a00f10869071000",
+      "used_bytes": 127,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 267,
+          "name": "blind_box_id",
+          "packed_tag": 9,
+          "value_type": 8
+        }
+      ]
+    },
+    {
+      "id": 904638,
+      "name": "Lotus Casket: Custom Giftbox",
+      "name_hash": "1618733617891865277",
+      "locator_hex": "0a00f20842000e00",
+      "used_bytes": 109,
+      "reserved_bytes": 112,
+      "high_columns": [
+        {
+          "field": 268,
+          "name": "chest_use_tip",
+          "packed_tag": 13,
+          "value_type": 12
+        }
+      ]
+    },
+    {
+      "id": 904639,
+      "name": "Bamboo Leaf Pouch",
+      "name_hash": "-7146838756571338318",
+      "locator_hex": "0a00f20850001000",
+      "used_bytes": 127,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 267,
+          "name": "blind_box_id",
+          "packed_tag": 9,
+          "value_type": 8
+        }
+      ]
+    },
+    {
+      "id": 904640,
+      "name": "Bag of Custom Coins",
+      "name_hash": "2636830014443225611",
+      "locator_hex": "0a00f20860000c00",
+      "used_bytes": 94,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 904641,
+      "name": "Mystery Pouch: Pastoral Tides",
+      "name_hash": "2656743904488261895",
+      "locator_hex": "0a00f2086c001000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 267,
+          "name": "blind_box_id",
+          "packed_tag": 9,
+          "value_type": 8
+        }
+      ]
+    },
+    {
+      "id": 904642,
+      "name": "Mystery Pouch: Floral Whimsy",
+      "name_hash": "-871138509104340893",
+      "locator_hex": "0a00f2087c000f00",
+      "used_bytes": 120,
+      "reserved_bytes": 120,
+      "high_columns": [
+        {
+          "field": 267,
+          "name": "blind_box_id",
+          "packed_tag": 9,
+          "value_type": 8
+        }
+      ]
+    },
+    {
+      "id": 904643,
+      "name": "Mystery Pouch: Downy Feathers",
+      "name_hash": "-7125617713079905590",
+      "locator_hex": "0a00f2088b000f00",
+      "used_bytes": 120,
+      "reserved_bytes": 120,
+      "high_columns": [
+        {
+          "field": 267,
+          "name": "blind_box_id",
+          "packed_tag": 9,
+          "value_type": 8
+        }
+      ]
+    },
+    {
+      "id": 904644,
+      "name": "Music in the Clouds",
+      "name_hash": "253333628331621476",
+      "locator_hex": "0a00f2089a001000",
+      "used_bytes": 127,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 267,
+          "name": "blind_box_id",
+          "packed_tag": 9,
+          "value_type": 8
+        }
+      ]
+    },
+    {
+      "id": 904664,
+      "name": "Tier 100 Weapon Chest",
+      "name_hash": "2468214420989199411",
+      "locator_hex": "0a00f208aa000c00",
+      "used_bytes": 89,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904665,
+      "name": "Tier 100 Jadeware Weapon Chest",
+      "name_hash": "-2948536312788984721",
+      "locator_hex": "0a00f208b6001000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904666,
+      "name": "Tier 100 Hawkwing Weapon Chest",
+      "name_hash": "-3907870979050281443",
+      "locator_hex": "0a00f208c6001000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904667,
+      "name": "Tier 100 Rainwhisper Weapon Chest",
+      "name_hash": "-8705982928457651271",
+      "locator_hex": "0a00f208d6001000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904668,
+      "name": "Tier 100 Swallowcall Weapon Chest",
+      "name_hash": "-3066129146836742195",
+      "locator_hex": "0a00f208e6001000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904669,
+      "name": "Tier 100 Mistwillow Weapon Chest",
+      "name_hash": "4705675060337732581",
+      "locator_hex": "0a00f208f6001000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904670,
+      "name": "Tier 100 Ivorybloom Weapon Chest",
+      "name_hash": "-2541834256302574169",
+      "locator_hex": "0a00f20806011000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904671,
+      "name": "Tier 100 Starweave Weapon Chest",
+      "name_hash": "6651545565853631315",
+      "locator_hex": "0a00f20816011200",
+      "used_bytes": 144,
+      "reserved_bytes": 144,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904672,
+      "name": "Tier 100 Swift Gale Weapon Chest",
+      "name_hash": "3950763782569096034",
+      "locator_hex": "0a00f20828011000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904673,
+      "name": "Tier 100 Swaying Heights Weapon Chest",
+      "name_hash": "-5825119225637027534",
+      "locator_hex": "0a00f20838011000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904674,
+      "name": "Tier 100 Cleftpeak Weapon Chest",
+      "name_hash": "-5276102827583220060",
+      "locator_hex": "0a00f20848011200",
+      "used_bytes": 143,
+      "reserved_bytes": 144,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904675,
+      "name": "Tier 100 Etherwrath Weapon Chest",
+      "name_hash": "-7582817245828224345",
+      "locator_hex": "0a00f2085a011200",
+      "used_bytes": 144,
+      "reserved_bytes": 144,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904676,
+      "name": "Tier 100 Cloudshear Set Weapon Chest",
+      "name_hash": "1102277179547900477",
+      "locator_hex": "0a00f2086c011000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904677,
+      "name": "Tier 100 Tiltrim: Weapon Chest",
+      "name_hash": "1964883187162614895",
+      "locator_hex": "0a00f2087c011000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904680,
+      "name": "Tier 105 Weapon Chest",
+      "name_hash": "-4399196138746843832",
+      "locator_hex": "0a00f2088c010c00",
+      "used_bytes": 89,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904681,
+      "name": "Tier 105 Jadeware Weapon Chest",
+      "name_hash": "8404387744715998009",
+      "locator_hex": "0a00f20898011000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904682,
+      "name": "Tier 105 Hawkwing Weapon Chest",
+      "name_hash": "710431528627792859",
+      "locator_hex": "0a00f208a8011000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904683,
+      "name": "Tier 105 Rainwhisper Weapon Chest",
+      "name_hash": "-1811407514254132303",
+      "locator_hex": "0a00f208b8011000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904684,
+      "name": "Tier 105 Swallowcall Weapon Chest",
+      "name_hash": "1766491790730183277",
+      "locator_hex": "0a00f208c8011000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904685,
+      "name": "Tier 105 Mistwillow Weapon Chest",
+      "name_hash": "-7237086380523965025",
+      "locator_hex": "0a00f208d8011000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904686,
+      "name": "Tier 105 Ivorybloom Weapon Chest",
+      "name_hash": "-5330927717099855719",
+      "locator_hex": "0a00f208e8011000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904687,
+      "name": "Tier 105 Starweave Weapon Chest",
+      "name_hash": "-4322893225572153819",
+      "locator_hex": "0a00f208f8011200",
+      "used_bytes": 144,
+      "reserved_bytes": 144,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904688,
+      "name": "Tier 105 Swift Gale Weapon Chest",
+      "name_hash": "8099950566556999180",
+      "locator_hex": "0a00f2080a021000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904689,
+      "name": "Tier 105 Swaying Heights Weapon Chest",
+      "name_hash": "4507216248034924489",
+      "locator_hex": "0a00f2081a021000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904690,
+      "name": "Tier 105 Cleftpeak Weapon Chest",
+      "name_hash": "1480083432895718742",
+      "locator_hex": "0a00f2082a021200",
+      "used_bytes": 143,
+      "reserved_bytes": 144,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904691,
+      "name": "Tier 105 Etherwrath Weapon Chest",
+      "name_hash": "-2029028880031954511",
+      "locator_hex": "0a00f2083c021300",
+      "used_bytes": 149,
+      "reserved_bytes": 152,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904692,
+      "name": "Tier 105 Cloudshear Set Weapon Chest",
+      "name_hash": "1128772109334326382",
+      "locator_hex": "0a00f2084f021000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904693,
+      "name": "Tier 105 Tiltrim: Weapon Chest",
+      "name_hash": "-4052061915400780834",
+      "locator_hex": "0a00f2085f021000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904800,
+      "name": "Tier 110 Weapon Chest",
+      "name_hash": "5043039383083891703",
+      "locator_hex": "0a00f2085d030c00",
+      "used_bytes": 89,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904801,
+      "name": "Tier 110 Jadeware Weapon Chest",
+      "name_hash": "5532924798100591502",
+      "locator_hex": "0a00f20869031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904802,
+      "name": "Tier 110 Hawkwing Weapon Chest",
+      "name_hash": "6785860629067816990",
+      "locator_hex": "0a00f20879031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904803,
+      "name": "Tier 110 Rainwhisper Weapon Chest",
+      "name_hash": "4810367976859180476",
+      "locator_hex": "0a00f20889031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904804,
+      "name": "Tier 110 Swallowcall Weapon Chest",
+      "name_hash": "5477511599906865265",
+      "locator_hex": "0a00f20899031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904805,
+      "name": "Tier 110 Mistwillow Weapon Chest",
+      "name_hash": "-4231195440972444504",
+      "locator_hex": "0a00f208a9031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904806,
+      "name": "Tier 110 Ivorybloom Weapon Chest",
+      "name_hash": "2892189199649934045",
+      "locator_hex": "0a00f208b9031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904807,
+      "name": "Tier 110 Swift Gale Weapon Chest",
+      "name_hash": "6732930312683836233",
+      "locator_hex": "0a00f208c9031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904808,
+      "name": "Tier 110 Swaying Heights Weapon Chest",
+      "name_hash": "-125700290059443631",
+      "locator_hex": "0a00f208d9031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904809,
+      "name": "Tier 110 Starweave Weapon Chest",
+      "name_hash": "-7425801977239411268",
+      "locator_hex": "0a00f208e9031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904810,
+      "name": "Tier 110 Cleftpeak Weapon Chest",
+      "name_hash": "6215256852382847639",
+      "locator_hex": "0a00f208f9031000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904811,
+      "name": "Tier 110 Etherwrath Weapon Chest",
+      "name_hash": "-6332215717221834039",
+      "locator_hex": "0a00f20809041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904812,
+      "name": "Tier 110 Cloudshear Set Weapon Chest",
+      "name_hash": "-6399857761754518551",
+      "locator_hex": "0a00f20819041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904813,
+      "name": "Tier 110 Tiltrim: Weapon Chest",
+      "name_hash": "2356228735868581736",
+      "locator_hex": "0a00f20829041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904951,
+      "name": "Tier 71 Cloudshear Set Weapon Chest",
+      "name_hash": "-8613884202768678272",
+      "locator_hex": "0a00f20839041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904952,
+      "name": "Tier 81 Cloudshear Set Weapon Chest",
+      "name_hash": "7927801882288372743",
+      "locator_hex": "0a00f20849041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904953,
+      "name": "Tier 86 Cloudshear Set Weapon Chest",
+      "name_hash": "-9152215277141970508",
+      "locator_hex": "0a00f20859041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904954,
+      "name": "Tier 91 Cloudshear Set Weapon Chest",
+      "name_hash": "6268299447118430456",
+      "locator_hex": "0a00f20869041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904955,
+      "name": "Tier 96 Cloudshear Set Weapon Chest",
+      "name_hash": "1289925339884282304",
+      "locator_hex": "0a00f20879041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904956,
+      "name": "Tier 71 Tiltrim: Weapon Chest",
+      "name_hash": "-5541845219146699382",
+      "locator_hex": "0a00f20889041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904957,
+      "name": "Tier 81 Tiltrim: Weapon Chest",
+      "name_hash": "-1778315242803806112",
+      "locator_hex": "0a00f20899041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904958,
+      "name": "Tier 86 Tiltrim: Weapon Chest",
+      "name_hash": "-5255466574225697455",
+      "locator_hex": "0a00f208a9041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904959,
+      "name": "Tier 91 Tiltrim: Weapon Chest",
+      "name_hash": "-299122537189369555",
+      "locator_hex": "0a00f208b9041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 904960,
+      "name": "Tier 96 Tiltrim: Weapon Chest",
+      "name_hash": "-5064472504821219015",
+      "locator_hex": "0a00f208c9041000",
+      "used_bytes": 128,
+      "reserved_bytes": 128,
+      "high_columns": [
+        {
+          "field": 266,
+          "name": "is_equip",
+          "packed_tag": 5,
+          "value_type": 4
+        }
+      ]
+    },
+    {
+      "id": 908155,
+      "name": "Money Bag",
+      "name_hash": "-2264260073477490713",
+      "locator_hex": "0a00fa083b070b00",
+      "used_bytes": 88,
+      "reserved_bytes": 88,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 908163,
+      "name": "Money Bag",
+      "name_hash": "-1896864578617370421",
+      "locator_hex": "0a00fa0893070b00",
+      "used_bytes": 88,
+      "reserved_bytes": 88,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 908164,
+      "name": "Next Week's Rewards",
+      "name_hash": "-6249987086419418634",
+      "locator_hex": "0a00fa089e070c00",
+      "used_bytes": 91,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 908179,
+      "name": "Money Bag",
+      "name_hash": "-2059831149202853606",
+      "locator_hex": "0a00fb0853000d00",
+      "used_bytes": 98,
+      "reserved_bytes": 104,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 908180,
+      "name": "Money Bag",
+      "name_hash": "-6146198030093911676",
+      "locator_hex": "0a00fb0860000d00",
+      "used_bytes": 98,
+      "reserved_bytes": 104,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 908181,
+      "name": "Next Week's Rewards",
+      "name_hash": "-8252939122901805977",
+      "locator_hex": "0a00fb086d000c00",
+      "used_bytes": 91,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 908188,
+      "name": "Next Week's Rewards",
+      "name_hash": "-3728719816097526894",
+      "locator_hex": "0a00fb08c3000c00",
+      "used_bytes": 91,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 908201,
+      "name": "Next Week's Rewards",
+      "name_hash": "3845015494468682138",
+      "locator_hex": "0a00fb0856010c00",
+      "used_bytes": 91,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 908213,
+      "name": "Next Week's Rewards",
+      "name_hash": "-263738972718716009",
+      "locator_hex": "0a00fb08dd010c00",
+      "used_bytes": 91,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 908276,
+      "name": "String of Coins",
+      "name_hash": "-3456279853879437914",
+      "locator_hex": "0a00fb08b1040b00",
+      "used_bytes": 88,
+      "reserved_bytes": 88,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 908364,
+      "name": "Money Bag",
+      "name_hash": "-8426377396195497950",
+      "locator_hex": "0a00fc0890000d00",
+      "used_bytes": 98,
+      "reserved_bytes": 104,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 908378,
+      "name": "Plumed Opulence Pack",
+      "name_hash": "2509795733929300095",
+      "locator_hex": "0a00fc083c011f00",
+      "used_bytes": 246,
+      "reserved_bytes": 248,
+      "high_columns": [
+        {
+          "field": 269,
+          "name": "cbg_trade",
+          "packed_tag": 5,
+          "value_type": 4
+        },
+        {
+          "field": 270,
+          "name": "gift_binding",
+          "packed_tag": 13,
+          "value_type": 12
+        },
+        {
+          "field": 271,
+          "name": "gift_tips",
+          "packed_tag": 33,
+          "value_type": 32
+        }
+      ]
+    },
+    {
+      "id": 910178,
+      "name": "Event Emote Fragment Treasure Chest",
+      "name_hash": "-1460717894002692993",
+      "locator_hex": "0a000209e8020c00",
+      "used_bytes": 95,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 910179,
+      "name": "Event Emote Fragment Treasure Chest",
+      "name_hash": "928423291550448307",
+      "locator_hex": "0a000209f4020c00",
+      "used_bytes": 95,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    },
+    {
+      "id": 910180,
+      "name": "Event Emote Fragment Treasure Chest",
+      "name_hash": "7306891168002940791",
+      "locator_hex": "0a00020900030c00",
+      "used_bytes": 95,
+      "reserved_bytes": 96,
+      "high_columns": [
+        {
+          "field": 264,
+          "name": "chest_token_no",
+          "packed_tag": 37,
+          "value_type": 36
+        }
+      ]
+    }
+  ],
+  "declared_affix_layouts": [
+    {
+      "archive": "index1",
+      "frame": 14577,
+      "primary_rows": 5290,
+      "missing_ids": 0,
+      "conflicting_existing": 0
+    },
+    {
+      "archive": "index202",
+      "frame": 10747,
+      "primary_rows": 4441,
+      "missing_ids": 0,
+      "conflicting_existing": 571
+    }
+  ],
+  "orphan_audit": {
+    "compact_record_frames": 160763,
+    "affix_sampled_frames": 160721,
+    "additional_affix_ids_verified": 0,
+    "equipment_mixed_band_frames": 15776,
+    "unknown_in_band_entries_checked": 173777,
+    "all_band_equipment_frames_sampled": 160763,
+    "weak_equipment_observations": 742,
+    "weak_unique_ids": 180,
+    "candidate_context_counts": {
+      "full_foreign_schema_context": 736,
+      "truncated_or_missing_context": 6
+    },
+    "additional_equipment_mappings_verified": 0
+  },
+  "failed_row_pointer_classification": {
+    "complete_integer_payload_matching_category_ids": 58,
+    "complete_integer_payload_namespace_unverified": 1136,
+    "complete_nonrow_value": 257,
+    "unclassified_nonrow_pointer": 171
+  },
+  "remaining": {
+    "equipment_without_english_names": [
+      1170221,
+      1170222,
+      1170223,
+      1170224,
+      1170225,
+      1170226,
+      1170227,
+      1170228,
+      1170229,
+      1170230
+    ],
+    "equipment_null_locators": 36,
+    "avatar_files_tracked_in_data": 0,
+    "avatar_pack_in_portable_bundle": false,
+    "compatibility_policy": [
+      "energy constants",
+      "PvP grade labels",
+      "quality labels",
+      "martial role classification",
+      "UI slot labels"
+    ]
+  },
+  "limits": [
+    "First/middle/last orphan sampling can miss heterogeneous frames. Declared table audits are separate complete primary-key/layout passes.",
+    "Foreign or truncated schema context and English labels alone do not prove equipment ownership or runtime authority.",
+    "Integer payloads are not automatically item references. Remaining unnamed records and unsupported namespaces are not assigned invented names.",
+    "Local avatar/upload stores, unlocalized equipment names, null locators and manual policy remain explicit gaps.",
+    "Source tools are repaired in the Windows Toolkit; Pi consumes the generated bundle. Original native/game code was never executed."
+  ],
+  "local_receipts": [
+    {
+      "path": ".asset-builds\\coverage-audit-20261114-r1\\declared-affix-layouts.json",
+      "sha256": "3793980d3d9ebcf798a7050401c331c07c242df1b2408865ec00d8de4950b765",
+      "availability": "Windows build folder; not shipped"
+    },
+    {
+      "path": ".asset-builds\\coverage-audit-20261114-r1\\orphan-shards\\audit.json",
+      "sha256": "1db903b6f46dd3812ca5d07c87cf25fb50fdfc244dfd9844244e0056d351e8b2",
+      "availability": "Windows build folder; not shipped"
+    },
+    {
+      "path": ".asset-builds\\coverage-audit-20261114-r1\\orphan-equipment\\audit.json",
+      "sha256": "c557ba18b186ec007d7920a48cc142b276d743b7cda2b9ecf5bc7bc5dfa69796",
+      "availability": "Windows build folder; not shipped"
+    },
+    {
+      "path": ".asset-builds\\coverage-audit-20261114-r1\\item-rejections\\item-rejections.json",
+      "sha256": "f4f45b0a028947aa2701b320256f93d733a5b3c39a02dba9ff279a2f2af8ad91",
+      "availability": "Windows build folder; not shipped"
+    },
+    {
+      "path": ".asset-builds\\coverage-audit-20261114-r1\\item-rejections\\nonrow-values-r2.json",
+      "sha256": "e97d27f8c2def9a439ba5cce4f6350c5d47b182dbc50d5e4d9fb1c24617af345",
+      "availability": "Windows build folder; not shipped"
+    },
+    {
+      "path": ".asset-builds\\coverage-audit-20261114-r1\\item-rejections\\packed-field-trial.json",
+      "sha256": "a7f143ac81c61b169eb840fccbe10b1e5de63794b0bc781536f94535b1268f93",
+      "availability": "Windows build folder; not shipped"
+    },
+    {
+      "path": ".asset-builds\\20261114T071807Z-8e5db9\\review.json",
+      "sha256": "a4ae032ce0f30c8c2fb040686c2ff6d5376a65b6b683dec3eaa444cfb3e143f6",
+      "availability": "Windows build folder; not shipped"
+    },
+    {
+      "path": ".asset-builds\\20261114T071807Z-8e5db9\\release\\report.json",
+      "sha256": "8fb4a220ea7263c6e89fa1480e3a39af297e41aab72ce3bea324239a6a1dfdbe",
+      "availability": "Windows build folder; not shipped"
+    }
+  ],
+  "extractor_source_hashes": [
+    {
+      "path": "WWM-Toolkit\\app\\lib\\item_codec.py",
+      "sha256": "b0c274bbef14bb809458707ae7fbce235bf739c0e49394056380b1aea03490b4"
+    },
+    {
+      "path": "WWM-Toolkit\\app\\update_item_names.py",
+      "sha256": "4aba25b858e81a426db2b10896c37deddc2bac017014317190ea38185328351f"
+    },
+    {
+      "path": "WWM-Toolkit\\tests\\test_packed_item_fields.py",
+      "sha256": "2818fe7b2d95a97e76dd0a213795bda1c5eb4f91bbc9c3b8888f45d2e54df4d9"
+    }
+  ],
+  "original_source_inputs": [
+    {
+      "path": "index1",
+      "sha256": "94945b5353fb28f8342e95c80d9dde825f685abb38276003cee8e850ca44856d"
+    },
+    {
+      "path": "index1001",
+      "sha256": "1264ebf5dffd46c121cfc03fd991e11a97cb9a5bd4f2c1f394cb4e6a7b6d0a4c"
+    },
+    {
+      "path": "index1200",
+      "sha256": "8b323da7d12d2d46024088f138370c8bebf6d7c0a1192048e3106f44d27abe4b"
+    },
+    {
+      "path": "index2",
+      "sha256": "c2d33e0a165fb331a0cf6881d4ed6fbbe6c1fc190387d795b7b3cdff94a881df"
+    },
+    {
+      "path": "index200",
+      "sha256": "14c48d7a0b3965df9d1be62ca178f276e334b81158c4fb88bb9960edfedd42c3"
+    },
+    {
+      "path": "index201",
+      "sha256": "fd7fccfb642af004d8c7d621ea5babde702b7f52edee60b303e3af0181fa5323"
+    },
+    {
+      "path": "index202",
+      "sha256": "8937aca7044ac84da44b53d862cb5d81f03c745eeae945e502b34812b7f2436f"
+    },
+    {
+      "path": "index203",
+      "sha256": "a03212dc68680f593f63fb04a51643817f07062e68dd5525384d3694bc83379c"
+    },
+    {
+      "path": "index204",
+      "sha256": "51ddf021fe062e29ad36102224e1b29ef33e36fc914471d9df831b58425c1e85"
+    },
+    {
+      "path": "index3",
+      "sha256": "82666901fe9377e6a1a8033a30ba42b79ad1f714b972ad5b17cfebec44aef92a"
+    },
+    {
+      "path": "index4",
+      "sha256": "d4be1a69f409bed2137cba2632468bb2d651554a4df1e07e94499b5e0bbfd75f"
+    },
+    {
+      "path": "data1",
+      "sha256": "7d0d15dfcc6d7d9000071ec29a6125b934a955519b3b23fb8221a95c263bea3d",
+      "bytes": 9686870
+    },
+    {
+      "path": "data2",
+      "sha256": "d78d4c2957245575c78d483ded9a6be040e36f9c6a0e101e194e8bfbe4be22de",
+      "bytes": 11729107
+    },
+    {
+      "path": "data3",
+      "sha256": "3ed779e7da5db975ccef897b1e800db6799a6e393157cce8c289b19bb1319c4a",
+      "bytes": 10456267
+    },
+    {
+      "path": "data4",
+      "sha256": "c11dae04d4cbe87d01ee617faa46c903319cb6e606d378529545b0d306cb9d41",
+      "bytes": 6444096
+    },
+    {
+      "path": "data5",
+      "sha256": "17f9121fc60ada9af7717b30ae1c22d1631be6a91cccf03b59734809384365cd",
+      "bytes": 7972689
+    },
+    {
+      "path": "data1003",
+      "sha256": "a28671c4d50b71bbbfdf0322643a20660b2e952552ba3b5893943de5b54c92a1",
+      "bytes": 5246809
+    },
+    {
+      "path": "data1001",
+      "sha256": "0506e743fb2710f962f559eae205fb45be5024d5124922f980416c723c6c1760",
+      "bytes": 2109440
+    },
+    {
+      "path": "data1002",
+      "sha256": "102f51c907f926aa48fee532187d164d745cb09aa90a350a6f6b70ec84fb0591",
+      "bytes": 2097923
+    },
+    {
+      "path": "data1005",
+      "sha256": "7a209a446e8cad5ad2b016f7f1bff9c818e2e1cf56060dcc3c175e26dcbe0884",
+      "bytes": 47050
+    },
+    {
+      "path": "data1004",
+      "sha256": "9a30379f3e5ec2c552867d4c05eafe63b1255a15ef538b72f19147ff632f1e79",
+      "bytes": 3151482
+    },
+    {
+      "path": "data1200",
+      "sha256": "1ec8f8c79e44f91ce76145cd62a085f4d834be03aadc586e709e71c6bc46adf9",
+      "bytes": 2147399
+    },
+    {
+      "path": "data1201",
+      "sha256": "383a548b6786b45f6fc5668d93c42c284a2244a2545a6062681059669fb7693c",
+      "bytes": 540173
+    },
+    {
+      "path": "data6",
+      "sha256": "214bd64adadd3aed9fb23c0aa9ff90bd4880876821dbf232435babf9a3e3cb3b",
+      "bytes": 2500594
+    },
+    {
+      "path": "data7",
+      "sha256": "ab3d0f49f2037e0aea49d9d00094ddc605b23e9e80bc81f40e4588be81e91f2b",
+      "bytes": 9571489
+    },
+    {
+      "path": "data8",
+      "sha256": "545d300a0ee78f0a1e14571842e16cbfc722012dd49378a5fe18977a619100a5",
+      "bytes": 11049524
+    },
+    {
+      "path": "data200",
+      "sha256": "be92bfb47f8145d8023faa3cd11dd1f4744182aa853e54def01a6b6a3d19d2fc",
+      "bytes": 9803126
+    },
+    {
+      "path": "data201",
+      "sha256": "1528c972573e296aaf1cf6d9fc4ae9cef581e9f709009e661e9f49983906db53",
+      "bytes": 10363520
+    },
+    {
+      "path": "data202",
+      "sha256": "ce95526d22a581210e55489bb4098d53f24f72bde6d3ebffaa7997507955629d",
+      "bytes": 10997047
+    },
+    {
+      "path": "data203",
+      "sha256": "96aa3b7c6a9c894a20f07bc560b9253ea91129919e7c56472bc7083d485f1791",
+      "bytes": 10430273
+    },
+    {
+      "path": "data204",
+      "sha256": "516b2c3492df38ee2977f2362521492b5a5bcd107eba8a60c678313f59feaa72",
+      "bytes": 10226957
+    },
+    {
+      "path": "data205",
+      "sha256": "23ea65f2644b11132f35d8ce8736d2ef2d0ce402638c1b48e92c92560968229b",
+      "bytes": 7428829
+    },
+    {
+      "path": "data206",
+      "sha256": "9542ecb458262b0f9e6600ef84d1e05294fc0151133641f2f1b3b67f342aa0fd",
+      "bytes": 10494169
+    },
+    {
+      "path": "data207",
+      "sha256": "d924f5133e47cb1d5ae73f46ef24926ebef27dbf887cef96ff8f75f53b5a0528",
+      "bytes": 11022172
+    },
+    {
+      "path": "data208",
+      "sha256": "6819052910da3931faf4ec669995cade11b77aeaae45c931022a4e3a691caec4",
+      "bytes": 11674686
+    },
+    {
+      "path": "data209",
+      "sha256": "a9e628220640166feb1e50d978e3790f1524361ae505ba91a9b8c7dfa43d7e2c",
+      "bytes": 13363208
+    },
+    {
+      "path": "data210",
+      "sha256": "59ad416595ffb05a1dca91ce1de2c1f8b6125a04bc7efd72105543cf7e6481d3",
+      "bytes": 15205158
+    },
+    {
+      "path": "data211",
+      "sha256": "700450aaaf26412ff2b488116708a19dfcc5d88b0fbe33c4da7771fc7f10f42f",
+      "bytes": 13041230
+    },
+    {
+      "path": "data212",
+      "sha256": "3d3ec5809f690cfada1bad28e29aa74e8770662ab28fd460b90770a7628ff67c",
+      "bytes": 6423280
+    },
+    {
+      "path": "data9",
+      "sha256": "68055d97b41f2301e1bdf0321b5ad0e9b20f8350a107165a7f384f6ac6aeedd5",
+      "bytes": 12228156
+    },
+    {
+      "path": "data10",
+      "sha256": "2cf77ecc0565dfe15cc3e952c121c91964dba4f7ee9d2f466b2ee9d9f90e3d76",
+      "bytes": 15919912
+    },
+    {
+      "path": "data11",
+      "sha256": "18bea14b2602fbd6fbe97683e841c2cc070bb9886106497e3d15fdcb6dc54e70",
+      "bytes": 978506
+    }
+  ],
+  "network_requests": 0,
+  "game_writes": 0,
+  "live_memory_reads": 0,
+  "commits": 0,
+  "pushes": 0
+}

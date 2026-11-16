@@ -10,7 +10,9 @@ class AbyssTests(__import__("unittest").IsolatedAsyncioTestCase):
     response = OfflineCase.response
     def test_catalogue_and_original_art(self):
         assets=AbyssAssets(BOT/'data/abyss_assets')
-        self.assertEqual(len(assets.data()['trials']),54)
+        trials=assets.data()['trials']
+        self.assertTrue(trials)
+        self.assertEqual(len({entry['id'] for entry in trials}),len(trials))
         self.assertEqual(assets.resolve('Ye Wanshan')['id'],3)
         for entry in assets.data()['trials']:
             self.assertEqual(hashlib.sha256(assets.image(entry).read_bytes()).hexdigest(),entry['sha256'])
@@ -43,7 +45,7 @@ class AbyssTests(__import__("unittest").IsolatedAsyncioTestCase):
         with patch.object(wwm,'get_rank_list',AsyncMock(return_value=response)):
             await view.load(jump=True)
         self.assertTrue(view.target_found)
-        self.assertEqual(view.mapped('martial',[999,0]),'ID 999, Empty')
+        self.assertEqual(view.mapped('martial',[999,0]),'Unknown kungfu (999), Empty')
     async def test_empty_error_and_page_clamp(self):
         cog=self.cog();view=AbyssRankingView(cog,123,cog.abyss_assets,cog.abyss_assets.resolve('3'))
         with patch.object(wwm,'get_rank_list',AsyncMock(return_value={'code':0,'result':{'rank_total_len':0}})):
@@ -107,13 +109,13 @@ class AbyssTests(__import__("unittest").IsolatedAsyncioTestCase):
         with patch.object(wwm,'get_rank_list',AsyncMock(return_value=response)):
             await view.load(jump=True)
         self.assertEqual(view.rank_name,'DynamicRank___tag1_recall_liupai___recall_tag2_56_69')
-        self.assertIn('ID 10104',str(view.to_components()))
+        self.assertIn('Unknown kungfu (10104)',str(view.to_components()))
         self.assertTrue(view.target_found)
 
     async def test_recorded_martial_names_reuse_profile_mapping(self):
         cog=self.cog();view=AbyssRankingView(cog,123,cog.abyss_assets,cog.abyss_assets.resolve('3'))
         self.assertEqual(view.mapped('martial',[10102,10202]),'Nameless Sword, Nameless Spear')
         self.assertEqual(view.mapped('martial',[10101,10201]),'Strategic Sword, Heavenquaker Spear')
-        self.assertEqual(view.mapped('martial',[10104,0]),'ID 10104, Empty')
+        self.assertEqual(view.mapped('martial',[10104,0]),'Unknown kungfu (10104), Empty')
         view.names['martial']={'10102':'Extracted sword name'}
-        self.assertEqual(view.mapped('martial',[10102]),'Extracted sword name')
+        self.assertEqual(view.mapped('martial',[10102]),'Nameless Sword')

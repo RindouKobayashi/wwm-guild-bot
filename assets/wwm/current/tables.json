@@ -105552,6 +105552,11 @@
           "Ink Cloudfall"
         ]
       },
+      "662092": {
+        "craft": [
+          "Chirrup"
+        ]
+      },
       "662094": {
         "craft": [
           "Divine Steed Soaring"
@@ -105680,6 +105685,26 @@
       "662123": {
         "craft": [
           "Goldfish at Play"
+        ]
+      },
+      "663000": {
+        "craft": [
+          "Message Horn: Near"
+        ]
+      },
+      "663001": {
+        "craft": [
+          "Message Horn: Far"
+        ]
+      },
+      "663002": {
+        "craft": [
+          "Message Horn: Wide"
+        ]
+      },
+      "663003": {
+        "craft": [
+          "Message Horn: Guild"
         ]
       },
       "663032": {
@@ -106076,6 +106101,56 @@
           "Scenario Resource Pack: Homestead"
         ]
       },
+      "668001": {
+        "craft": [
+          "Test 1"
+        ]
+      },
+      "668002": {
+        "craft": [
+          "Test 2 (Soft Time Limit)"
+        ]
+      },
+      "668003": {
+        "craft": [
+          "Test 3 (Hard Time Limit)"
+        ]
+      },
+      "668004": {
+        "craft": [
+          "Test 4"
+        ]
+      },
+      "668005": {
+        "craft": [
+          "Test 5"
+        ]
+      },
+      "668006": {
+        "craft": [
+          "Budding Lotus"
+        ]
+      },
+      "668007": {
+        "craft": [
+          "Ancient Wood"
+        ]
+      },
+      "668008": {
+        "craft": [
+          "Ink Wash"
+        ]
+      },
+      "669001": {
+        "craft": [
+          "Fade In and Fade Out"
+        ]
+      },
+      "669002": {
+        "craft": [
+          "Test Effect 2"
+        ]
+      },
       "669003": {
         "craft": [
           "Warding Stone"
@@ -106094,6 +106169,11 @@
       "669006": {
         "craft": [
           "Plushy Tiger"
+        ]
+      },
+      "669007": {
+        "craft": [
+          "Permanently Unlocked Effect"
         ]
       },
       "669100": {
@@ -108161,9 +108241,44 @@
           "Small Box of Commerce Coins"
         ]
       },
+      "901039": {
+        "craft": [
+          "String of Coins"
+        ]
+      },
+      "901047": {
+        "craft": [
+          "Warm Money Bag"
+        ]
+      },
       "901048": {
         "craft": [
           "Pillow Pill"
+        ]
+      },
+      "901049": {
+        "craft": [
+          "String of Coins"
+        ]
+      },
+      "901050": {
+        "craft": [
+          "Money Bag"
+        ]
+      },
+      "901051": {
+        "craft": [
+          "Money Bag"
+        ]
+      },
+      "901052": {
+        "craft": [
+          "Small String of Coins"
+        ]
+      },
+      "901053": {
+        "craft": [
+          "Money Bag"
         ]
       },
       "901057": {
@@ -108316,6 +108431,11 @@
           "Martial Arts: Custom Notes"
         ]
       },
+      "901091": {
+        "craft": [
+          "Bag of Coins"
+        ]
+      },
       "901092": {
         "craft": [
           "Tier 41 Epic Weapon Custom Chest"
@@ -108339,6 +108459,11 @@
       "901096": {
         "craft": [
           "Attunement Stone: Gold Inlay Custom Chest"
+        ]
+      },
+      "901097": {
+        "craft": [
+          "Custom Swap: Chest"
         ]
       },
       "901098": {
@@ -108376,14 +108501,39 @@
           "Mystic Skill Breakthrough Box: Jiazhong"
         ]
       },
+      "901105": {
+        "craft": [
+          "Small Bag of Coins"
+        ]
+      },
+      "901106": {
+        "craft": [
+          "Small String of Coins"
+        ]
+      },
+      "901107": {
+        "craft": [
+          "Small String of Coins"
+        ]
+      },
       "901108": {
         "craft": [
           "General: Epic Note Chest"
         ]
       },
+      "901109": {
+        "craft": [
+          "Bag of Coins"
+        ]
+      },
       "901110": {
         "craft": [
           "Stonesplit Strength: Epic Note Chest"
+        ]
+      },
+      "901111": {
+        "craft": [
+          "Bag of Coins"
         ]
       },
       "901112": {
@@ -108504,6 +108654,11 @@
       "902005": {
         "craft": [
           "Prosperity Chest"
+        ]
+      },
+      "902007": {
+        "craft": [
+          "Bag of Coins"
         ]
       },
       "902008": {
@@ -112441,6 +112596,11 @@
           "Bamboocut Rec. Chest"
         ]
       },
+      "904017": {
+        "craft": [
+          "Custom Swap: Chest"
+        ]
+      },
       "904018": {
         "craft": [
           "Bellstrike Splendor: Rec. Chest"
@@ -113186,6 +113346,51 @@
           "Tier 110 Tiltrim Custom Chest"
         ]
       },
+      "904500": {
+        "craft": [
+          "Tier 71 Weapon Chest"
+        ]
+      },
+      "904501": {
+        "craft": [
+          "Tier 71 Jadeware Weapon Chest"
+        ]
+      },
+      "904502": {
+        "craft": [
+          "Tier 71 Hawkwing Weapon Chest"
+        ]
+      },
+      "904503": {
+        "craft": [
+          "Tier 71 Rainwhisper Weapon Chest"
+        ]
+      },
+      "904504": {
+        "craft": [
+          "Tier 71 Swallowcall Weapon Chest"
+        ]
+      },
+      "904505": {
+        "craft": [
+          "Tier 71 Mistwillow Weapon Chest"
+        ]
+      },
+      "904506": {
+        "craft": [
+          "Tier 71 Ivorybloom Weapon Chest"
+        ]
+      },
+      "904507": {
+        "craft": [
+          "Tier 71 Swift Gale Weapon Chest"
+        ]
+      },
+      "904508": {
+        "craft": [
+          "Tier 71 Swaying Heights Weapon Chest"
+        ]
+      },
       "904509": {
         "craft": [
           "Pillow Pill"
@@ -113206,6 +113411,61 @@
           "Sweet Mugwort Cakes"
         ]
       },
+      "904513": {
+        "craft": [
+          "Tier 71 Starweave Weapon Chest"
+        ]
+      },
+      "904514": {
+        "craft": [
+          "Tier 81 Weapon Chest"
+        ]
+      },
+      "904515": {
+        "craft": [
+          "Tier 81 Jadeware Weapon Chest"
+        ]
+      },
+      "904516": {
+        "craft": [
+          "Tier 81 Hawkwing Weapon Chest"
+        ]
+      },
+      "904517": {
+        "craft": [
+          "Tier 81 Rainwhisper Weapon Chest"
+        ]
+      },
+      "904518": {
+        "craft": [
+          "Tier 81 Swallowcall Weapon Chest"
+        ]
+      },
+      "904519": {
+        "craft": [
+          "Tier 81 Mistwillow Weapon Chest"
+        ]
+      },
+      "904520": {
+        "craft": [
+          "Tier 81 Ivorybloom Weapon Chest"
+        ]
+      },
+      "904521": {
+        "craft": [
+          "Tier 81 Starweave Weapon Chest"
+        ]
+      },
+      "904522": {
+        "craft": [
+          "Tier 81 Swift Gale Weapon Chest"
+        ]
+      },
+      "904523": {
+        "craft": [
+          "Tier 81 Swaying Heights Weapon Chest"
+        ]
+      },
       "904524": {
         "craft": [
           "Heavenroot Coffer"
@@ -113214,6 +113474,11 @@
       "904525": {
         "craft": [
           "Hefty Bag of Echo Jade"
+        ]
+      },
+      "904526": {
+        "craft": [
+          "Money Bag"
         ]
       },
       "904527": {
@@ -113241,6 +113506,206 @@
           "Uncut Jade Giftbox"
         ]
       },
+      "904532": {
+        "craft": [
+          "Tier 71 Cleftpeak Weapon Chest"
+        ]
+      },
+      "904533": {
+        "craft": [
+          "Tier 81 Cleftpeak Weapon Chest"
+        ]
+      },
+      "904534": {
+        "craft": [
+          "Tier 86 Cleftpeak Weapon Chest"
+        ]
+      },
+      "904535": {
+        "craft": [
+          "Tier 91 Cleftpeak Weapon Chest"
+        ]
+      },
+      "904536": {
+        "craft": [
+          "Tier 96 Cleftpeak Weapon Chest"
+        ]
+      },
+      "904537": {
+        "craft": [
+          "Tier 71 Etherwrath Weapon Chest"
+        ]
+      },
+      "904538": {
+        "craft": [
+          "Tier 81 Etherwrath Weapon Chest"
+        ]
+      },
+      "904539": {
+        "craft": [
+          "Tier 86 Etherwrath Weapon Chest"
+        ]
+      },
+      "904540": {
+        "craft": [
+          "Tier 91 Etherwrath Weapon Chest"
+        ]
+      },
+      "904541": {
+        "craft": [
+          "Tier 96 Etherwrath Weapon Chest"
+        ]
+      },
+      "904544": {
+        "craft": [
+          "Tier 86 Weapon Chest"
+        ]
+      },
+      "904545": {
+        "craft": [
+          "Tier 86 Jadeware Weapon Chest"
+        ]
+      },
+      "904546": {
+        "craft": [
+          "Tier 86 Hawkwing Weapon Chest"
+        ]
+      },
+      "904547": {
+        "craft": [
+          "Tier 86 Rainwhisper Weapon Chest"
+        ]
+      },
+      "904548": {
+        "craft": [
+          "Tier 86 Swallowcall Weapon Chest"
+        ]
+      },
+      "904549": {
+        "craft": [
+          "Tier 86 Mistwillow Weapon Chest"
+        ]
+      },
+      "904550": {
+        "craft": [
+          "Tier 86 Ivorybloom Weapon Chest"
+        ]
+      },
+      "904551": {
+        "craft": [
+          "Tier 86 Starweave Weapon Chest"
+        ]
+      },
+      "904552": {
+        "craft": [
+          "Tier 86 Swift Gale Weapon Chest"
+        ]
+      },
+      "904553": {
+        "craft": [
+          "Tier 86 Swaying Heights Weapon Chest"
+        ]
+      },
+      "904574": {
+        "craft": [
+          "Tier 91 Weapon Chest"
+        ]
+      },
+      "904575": {
+        "craft": [
+          "Tier 91 Jadeware Weapon Chest"
+        ]
+      },
+      "904576": {
+        "craft": [
+          "Tier 91 Hawkwing Weapon Chest"
+        ]
+      },
+      "904577": {
+        "craft": [
+          "Tier 91 Rainwhisper Weapon Chest"
+        ]
+      },
+      "904578": {
+        "craft": [
+          "Tier 91 Swallowcall Weapon Chest"
+        ]
+      },
+      "904579": {
+        "craft": [
+          "Tier 91 Mistwillow Weapon Chest"
+        ]
+      },
+      "904580": {
+        "craft": [
+          "Tier 91 Ivorybloom Weapon Chest"
+        ]
+      },
+      "904581": {
+        "craft": [
+          "Tier 91 Starweave Weapon Chest"
+        ]
+      },
+      "904582": {
+        "craft": [
+          "Tier 91 Swift Gale Weapon Chest"
+        ]
+      },
+      "904583": {
+        "craft": [
+          "Tier 91 Swaying Heights Weapon Chest"
+        ]
+      },
+      "904604": {
+        "craft": [
+          "Tier 96 Weapon Chest"
+        ]
+      },
+      "904605": {
+        "craft": [
+          "Tier 96 Jadeware Weapon Chest"
+        ]
+      },
+      "904606": {
+        "craft": [
+          "Tier 96 Hawkwing Weapon Chest"
+        ]
+      },
+      "904607": {
+        "craft": [
+          "Tier 96 Rainwhisper Weapon Chest"
+        ]
+      },
+      "904608": {
+        "craft": [
+          "Tier 96 Swallowcall Weapon Chest"
+        ]
+      },
+      "904609": {
+        "craft": [
+          "Tier 96 Mistwillow Weapon Chest"
+        ]
+      },
+      "904610": {
+        "craft": [
+          "Tier 96 Ivorybloom Weapon Chest"
+        ]
+      },
+      "904611": {
+        "craft": [
+          "Tier 96 Starweave Weapon Chest"
+        ]
+      },
+      "904612": {
+        "craft": [
+          "Tier 96 Swift Gale Weapon Chest"
+        ]
+      },
+      "904613": {
+        "craft": [
+          "Tier 96 Swaying Heights Weapon Chest"
+        ]
+      },
       "904614": {
         "craft": [
           "Nightbloom Coffer"
@@ -113249,6 +113714,26 @@
       "904615": {
         "craft": [
           "Ephemeral Dream Custom Box"
+        ]
+      },
+      "904616": {
+        "craft": [
+          "Lucky Lantern"
+        ]
+      },
+      "904617": {
+        "craft": [
+          "Year-End Bounty"
+        ]
+      },
+      "904618": {
+        "craft": [
+          "Fried Chicken Bucket"
+        ]
+      },
+      "904619": {
+        "craft": [
+          "Shangsi Festival Box"
         ]
       },
       "904620": {
@@ -113341,6 +113826,181 @@
           "Tier 71 Legendary Weapon Custom Chest"
         ]
       },
+      "904638": {
+        "craft": [
+          "Lotus Casket: Custom Giftbox"
+        ]
+      },
+      "904639": {
+        "craft": [
+          "Bamboo Leaf Pouch"
+        ]
+      },
+      "904640": {
+        "craft": [
+          "Bag of Custom Coins"
+        ]
+      },
+      "904641": {
+        "craft": [
+          "Mystery Pouch: Pastoral Tides"
+        ]
+      },
+      "904642": {
+        "craft": [
+          "Mystery Pouch: Floral Whimsy"
+        ]
+      },
+      "904643": {
+        "craft": [
+          "Mystery Pouch: Downy Feathers"
+        ]
+      },
+      "904644": {
+        "craft": [
+          "Music in the Clouds"
+        ]
+      },
+      "904664": {
+        "craft": [
+          "Tier 100 Weapon Chest"
+        ]
+      },
+      "904665": {
+        "craft": [
+          "Tier 100 Jadeware Weapon Chest"
+        ]
+      },
+      "904666": {
+        "craft": [
+          "Tier 100 Hawkwing Weapon Chest"
+        ]
+      },
+      "904667": {
+        "craft": [
+          "Tier 100 Rainwhisper Weapon Chest"
+        ]
+      },
+      "904668": {
+        "craft": [
+          "Tier 100 Swallowcall Weapon Chest"
+        ]
+      },
+      "904669": {
+        "craft": [
+          "Tier 100 Mistwillow Weapon Chest"
+        ]
+      },
+      "904670": {
+        "craft": [
+          "Tier 100 Ivorybloom Weapon Chest"
+        ]
+      },
+      "904671": {
+        "craft": [
+          "Tier 100 Starweave Weapon Chest"
+        ]
+      },
+      "904672": {
+        "craft": [
+          "Tier 100 Swift Gale Weapon Chest"
+        ]
+      },
+      "904673": {
+        "craft": [
+          "Tier 100 Swaying Heights Weapon Chest"
+        ]
+      },
+      "904674": {
+        "craft": [
+          "Tier 100 Cleftpeak Weapon Chest"
+        ]
+      },
+      "904675": {
+        "craft": [
+          "Tier 100 Etherwrath Weapon Chest"
+        ]
+      },
+      "904676": {
+        "craft": [
+          "Tier 100 Cloudshear Set Weapon Chest"
+        ]
+      },
+      "904677": {
+        "craft": [
+          "Tier 100 Tiltrim: Weapon Chest"
+        ]
+      },
+      "904680": {
+        "craft": [
+          "Tier 105 Weapon Chest"
+        ]
+      },
+      "904681": {
+        "craft": [
+          "Tier 105 Jadeware Weapon Chest"
+        ]
+      },
+      "904682": {
+        "craft": [
+          "Tier 105 Hawkwing Weapon Chest"
+        ]
+      },
+      "904683": {
+        "craft": [
+          "Tier 105 Rainwhisper Weapon Chest"
+        ]
+      },
+      "904684": {
+        "craft": [
+          "Tier 105 Swallowcall Weapon Chest"
+        ]
+      },
+      "904685": {
+        "craft": [
+          "Tier 105 Mistwillow Weapon Chest"
+        ]
+      },
+      "904686": {
+        "craft": [
+          "Tier 105 Ivorybloom Weapon Chest"
+        ]
+      },
+      "904687": {
+        "craft": [
+          "Tier 105 Starweave Weapon Chest"
+        ]
+      },
+      "904688": {
+        "craft": [
+          "Tier 105 Swift Gale Weapon Chest"
+        ]
+      },
+      "904689": {
+        "craft": [
+          "Tier 105 Swaying Heights Weapon Chest"
+        ]
+      },
+      "904690": {
+        "craft": [
+          "Tier 105 Cleftpeak Weapon Chest"
+        ]
+      },
+      "904691": {
+        "craft": [
+          "Tier 105 Etherwrath Weapon Chest"
+        ]
+      },
+      "904692": {
+        "craft": [
+          "Tier 105 Cloudshear Set Weapon Chest"
+        ]
+      },
+      "904693": {
+        "craft": [
+          "Tier 105 Tiltrim: Weapon Chest"
+        ]
+      },
       "904700": {
         "craft": [
           "Tier 91 Gear Chest"
@@ -113414,6 +114074,126 @@
       "904714": {
         "craft": [
           "Supreme: Tier 110 Gear Chest"
+        ]
+      },
+      "904800": {
+        "craft": [
+          "Tier 110 Weapon Chest"
+        ]
+      },
+      "904801": {
+        "craft": [
+          "Tier 110 Jadeware Weapon Chest"
+        ]
+      },
+      "904802": {
+        "craft": [
+          "Tier 110 Hawkwing Weapon Chest"
+        ]
+      },
+      "904803": {
+        "craft": [
+          "Tier 110 Rainwhisper Weapon Chest"
+        ]
+      },
+      "904804": {
+        "craft": [
+          "Tier 110 Swallowcall Weapon Chest"
+        ]
+      },
+      "904805": {
+        "craft": [
+          "Tier 110 Mistwillow Weapon Chest"
+        ]
+      },
+      "904806": {
+        "craft": [
+          "Tier 110 Ivorybloom Weapon Chest"
+        ]
+      },
+      "904807": {
+        "craft": [
+          "Tier 110 Swift Gale Weapon Chest"
+        ]
+      },
+      "904808": {
+        "craft": [
+          "Tier 110 Swaying Heights Weapon Chest"
+        ]
+      },
+      "904809": {
+        "craft": [
+          "Tier 110 Starweave Weapon Chest"
+        ]
+      },
+      "904810": {
+        "craft": [
+          "Tier 110 Cleftpeak Weapon Chest"
+        ]
+      },
+      "904811": {
+        "craft": [
+          "Tier 110 Etherwrath Weapon Chest"
+        ]
+      },
+      "904812": {
+        "craft": [
+          "Tier 110 Cloudshear Set Weapon Chest"
+        ]
+      },
+      "904813": {
+        "craft": [
+          "Tier 110 Tiltrim: Weapon Chest"
+        ]
+      },
+      "904951": {
+        "craft": [
+          "Tier 71 Cloudshear Set Weapon Chest"
+        ]
+      },
+      "904952": {
+        "craft": [
+          "Tier 81 Cloudshear Set Weapon Chest"
+        ]
+      },
+      "904953": {
+        "craft": [
+          "Tier 86 Cloudshear Set Weapon Chest"
+        ]
+      },
+      "904954": {
+        "craft": [
+          "Tier 91 Cloudshear Set Weapon Chest"
+        ]
+      },
+      "904955": {
+        "craft": [
+          "Tier 96 Cloudshear Set Weapon Chest"
+        ]
+      },
+      "904956": {
+        "craft": [
+          "Tier 71 Tiltrim: Weapon Chest"
+        ]
+      },
+      "904957": {
+        "craft": [
+          "Tier 81 Tiltrim: Weapon Chest"
+        ]
+      },
+      "904958": {
+        "craft": [
+          "Tier 86 Tiltrim: Weapon Chest"
+        ]
+      },
+      "904959": {
+        "craft": [
+          "Tier 91 Tiltrim: Weapon Chest"
+        ]
+      },
+      "904960": {
+        "craft": [
+          "Tier 96 Tiltrim: Weapon Chest"
         ]
       },
       "905000": {
@@ -119171,6 +119951,11 @@
           "Souvenir Selection Box"
         ]
       },
+      "908155": {
+        "craft": [
+          "Money Bag"
+        ]
+      },
       "908156": {
         "craft": [
           "Battle Pass Lucky Bag I"
@@ -119204,6 +119989,16 @@
       "908162": {
         "craft": [
           "Battle Pass Chest II"
+        ]
+      },
+      "908163": {
+        "craft": [
+          "Money Bag"
+        ]
+      },
+      "908164": {
+        "craft": [
+          "Next Week's Rewards"
         ]
       },
       "908165": {
@@ -119276,6 +120071,21 @@
           "Lv. 81 Gear Chest"
         ]
       },
+      "908179": {
+        "craft": [
+          "Money Bag"
+        ]
+      },
+      "908180": {
+        "craft": [
+          "Money Bag"
+        ]
+      },
+      "908181": {
+        "craft": [
+          "Next Week's Rewards"
+        ]
+      },
       "908182": {
         "craft": [
           "Mohist Puzzle Box"
@@ -119304,6 +120114,11 @@
       "908187": {
         "craft": [
           "Lv. 91 Gear Chest"
+        ]
+      },
+      "908188": {
+        "craft": [
+          "Next Week's Rewards"
         ]
       },
       "908189": {
@@ -119366,6 +120181,11 @@
           "Tier 91 Ebonward: Helm"
         ]
       },
+      "908201": {
+        "craft": [
+          "Next Week's Rewards"
+        ]
+      },
       "908202": {
         "craft": [
           "Tier 91 Chestpiece Chest: Swallowcall"
@@ -119419,6 +120239,11 @@
       "908212": {
         "craft": [
           "Tier 91 Ebonward: Chestpiece"
+        ]
+      },
+      "908213": {
+        "craft": [
+          "Next Week's Rewards"
         ]
       },
       "908214": {
@@ -119714,6 +120539,11 @@
       "908275": {
         "craft": [
           "Taiyi Stone"
+        ]
+      },
+      "908276": {
+        "craft": [
+          "String of Coins"
         ]
       },
       "908277": {
@@ -120131,6 +120961,11 @@
           "Tier 91 Etherwrath Weapon Chest"
         ]
       },
+      "908364": {
+        "craft": [
+          "Money Bag"
+        ]
+      },
       "908365": {
         "craft": [
           "Windtail Gift"
@@ -120194,6 +121029,11 @@
       "908377": {
         "craft": [
           "Plumed Opulence Pack: Bound"
+        ]
+      },
+      "908378": {
+        "craft": [
+          "Plumed Opulence Pack"
         ]
       },
       "908379": {
@@ -125224,6 +126064,21 @@
       "910177": {
         "craft": [
           "Tier 100 Cloudshear Weapon Chest"
+        ]
+      },
+      "910178": {
+        "craft": [
+          "Event Emote Fragment Treasure Chest"
+        ]
+      },
+      "910179": {
+        "craft": [
+          "Event Emote Fragment Treasure Chest"
+        ]
+      },
+      "910180": {
+        "craft": [
+          "Event Emote Fragment Treasure Chest"
         ]
       },
       "910181": {
@@ -358356,6 +359211,13 @@
         "official_english_localization"
       ]
     ],
+    "662092": [
+      [
+        "craft",
+        "Chirrup",
+        "official_english_localization"
+      ]
+    ],
     "662094": [
       [
         "craft",
@@ -358535,6 +359397,34 @@
       [
         "craft",
         "Goldfish at Play",
+        "official_english_localization"
+      ]
+    ],
+    "663000": [
+      [
+        "craft",
+        "Message Horn: Near",
+        "official_english_localization"
+      ]
+    ],
+    "663001": [
+      [
+        "craft",
+        "Message Horn: Far",
+        "official_english_localization"
+      ]
+    ],
+    "663002": [
+      [
+        "craft",
+        "Message Horn: Wide",
+        "official_english_localization"
+      ]
+    ],
+    "663003": [
+      [
+        "craft",
+        "Message Horn: Guild",
         "official_english_localization"
       ]
     ],
@@ -359124,6 +360014,76 @@
         "official_english_localization"
       ]
     ],
+    "668001": [
+      [
+        "craft",
+        "Test 1",
+        "official_english_localization"
+      ]
+    ],
+    "668002": [
+      [
+        "craft",
+        "Test 2 (Soft Time Limit)",
+        "official_english_localization"
+      ]
+    ],
+    "668003": [
+      [
+        "craft",
+        "Test 3 (Hard Time Limit)",
+        "official_english_localization"
+      ]
+    ],
+    "668004": [
+      [
+        "craft",
+        "Test 4",
+        "official_english_localization"
+      ]
+    ],
+    "668005": [
+      [
+        "craft",
+        "Test 5",
+        "official_english_localization"
+      ]
+    ],
+    "668006": [
+      [
+        "craft",
+        "Budding Lotus",
+        "official_english_localization"
+      ]
+    ],
+    "668007": [
+      [
+        "craft",
+        "Ancient Wood",
+        "official_english_localization"
+      ]
+    ],
+    "668008": [
+      [
+        "craft",
+        "Ink Wash",
+        "official_english_localization"
+      ]
+    ],
+    "669001": [
+      [
+        "craft",
+        "Fade In and Fade Out",
+        "official_english_localization"
+      ]
+    ],
+    "669002": [
+      [
+        "craft",
+        "Test Effect 2",
+        "official_english_localization"
+      ]
+    ],
     "669003": [
       [
         "craft",
@@ -359149,6 +360109,13 @@
       [
         "craft",
         "Plushy Tiger",
+        "official_english_localization"
+      ]
+    ],
+    "669007": [
+      [
+        "craft",
+        "Permanently Unlocked Effect",
         "official_english_localization"
       ]
     ],
@@ -362043,10 +363010,59 @@
         "official_english_localization"
       ]
     ],
+    "901039": [
+      [
+        "craft",
+        "String of Coins",
+        "official_english_localization"
+      ]
+    ],
+    "901047": [
+      [
+        "craft",
+        "Warm Money Bag",
+        "official_english_localization"
+      ]
+    ],
     "901048": [
       [
         "craft",
         "Pillow Pill",
+        "official_english_localization"
+      ]
+    ],
+    "901049": [
+      [
+        "craft",
+        "String of Coins",
+        "official_english_localization"
+      ]
+    ],
+    "901050": [
+      [
+        "craft",
+        "Money Bag",
+        "official_english_localization"
+      ]
+    ],
+    "901051": [
+      [
+        "craft",
+        "Money Bag",
+        "official_english_localization"
+      ]
+    ],
+    "901052": [
+      [
+        "craft",
+        "Small String of Coins",
+        "official_english_localization"
+      ]
+    ],
+    "901053": [
+      [
+        "craft",
+        "Money Bag",
         "official_english_localization"
       ]
     ],
@@ -362260,6 +363276,13 @@
         "official_english_localization"
       ]
     ],
+    "901091": [
+      [
+        "craft",
+        "Bag of Coins",
+        "official_english_localization"
+      ]
+    ],
     "901092": [
       [
         "craft",
@@ -362292,6 +363315,13 @@
       [
         "craft",
         "Attunement Stone: Gold Inlay Custom Chest",
+        "official_english_localization"
+      ]
+    ],
+    "901097": [
+      [
+        "craft",
+        "Custom Swap: Chest",
         "official_english_localization"
       ]
     ],
@@ -362344,6 +363374,27 @@
         "official_english_localization"
       ]
     ],
+    "901105": [
+      [
+        "craft",
+        "Small Bag of Coins",
+        "official_english_localization"
+      ]
+    ],
+    "901106": [
+      [
+        "craft",
+        "Small String of Coins",
+        "official_english_localization"
+      ]
+    ],
+    "901107": [
+      [
+        "craft",
+        "Small String of Coins",
+        "official_english_localization"
+      ]
+    ],
     "901108": [
       [
         "craft",
@@ -362351,10 +363402,24 @@
         "official_english_localization"
       ]
     ],
+    "901109": [
+      [
+        "craft",
+        "Bag of Coins",
+        "official_english_localization"
+      ]
+    ],
     "901110": [
       [
         "craft",
         "Stonesplit Strength: Epic Note Chest",
+        "official_english_localization"
+      ]
+    ],
+    "901111": [
+      [
+        "craft",
+        "Bag of Coins",
         "official_english_localization"
       ]
     ],
@@ -362523,6 +363588,13 @@
       [
         "craft",
         "Prosperity Chest",
+        "official_english_localization"
+      ]
+    ],
+    "902007": [
+      [
+        "craft",
+        "Bag of Coins",
         "official_english_localization"
       ]
     ],
@@ -368035,6 +369107,13 @@
         "official_english_localization"
       ]
     ],
+    "904017": [
+      [
+        "craft",
+        "Custom Swap: Chest",
+        "official_english_localization"
+      ]
+    ],
     "904018": [
       [
         "craft",
@@ -369078,6 +370157,69 @@
         "official_english_localization"
       ]
     ],
+    "904500": [
+      [
+        "craft",
+        "Tier 71 Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904501": [
+      [
+        "craft",
+        "Tier 71 Jadeware Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904502": [
+      [
+        "craft",
+        "Tier 71 Hawkwing Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904503": [
+      [
+        "craft",
+        "Tier 71 Rainwhisper Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904504": [
+      [
+        "craft",
+        "Tier 71 Swallowcall Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904505": [
+      [
+        "craft",
+        "Tier 71 Mistwillow Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904506": [
+      [
+        "craft",
+        "Tier 71 Ivorybloom Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904507": [
+      [
+        "craft",
+        "Tier 71 Swift Gale Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904508": [
+      [
+        "craft",
+        "Tier 71 Swaying Heights Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
     "904509": [
       [
         "craft",
@@ -369106,6 +370248,83 @@
         "official_english_localization"
       ]
     ],
+    "904513": [
+      [
+        "craft",
+        "Tier 71 Starweave Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904514": [
+      [
+        "craft",
+        "Tier 81 Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904515": [
+      [
+        "craft",
+        "Tier 81 Jadeware Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904516": [
+      [
+        "craft",
+        "Tier 81 Hawkwing Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904517": [
+      [
+        "craft",
+        "Tier 81 Rainwhisper Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904518": [
+      [
+        "craft",
+        "Tier 81 Swallowcall Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904519": [
+      [
+        "craft",
+        "Tier 81 Mistwillow Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904520": [
+      [
+        "craft",
+        "Tier 81 Ivorybloom Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904521": [
+      [
+        "craft",
+        "Tier 81 Starweave Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904522": [
+      [
+        "craft",
+        "Tier 81 Swift Gale Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904523": [
+      [
+        "craft",
+        "Tier 81 Swaying Heights Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
     "904524": [
       [
         "craft",
@@ -369117,6 +370336,13 @@
       [
         "craft",
         "Hefty Bag of Echo Jade",
+        "official_english_localization"
+      ]
+    ],
+    "904526": [
+      [
+        "craft",
+        "Money Bag",
         "official_english_localization"
       ]
     ],
@@ -369155,6 +370381,286 @@
         "official_english_localization"
       ]
     ],
+    "904532": [
+      [
+        "craft",
+        "Tier 71 Cleftpeak Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904533": [
+      [
+        "craft",
+        "Tier 81 Cleftpeak Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904534": [
+      [
+        "craft",
+        "Tier 86 Cleftpeak Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904535": [
+      [
+        "craft",
+        "Tier 91 Cleftpeak Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904536": [
+      [
+        "craft",
+        "Tier 96 Cleftpeak Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904537": [
+      [
+        "craft",
+        "Tier 71 Etherwrath Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904538": [
+      [
+        "craft",
+        "Tier 81 Etherwrath Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904539": [
+      [
+        "craft",
+        "Tier 86 Etherwrath Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904540": [
+      [
+        "craft",
+        "Tier 91 Etherwrath Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904541": [
+      [
+        "craft",
+        "Tier 96 Etherwrath Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904544": [
+      [
+        "craft",
+        "Tier 86 Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904545": [
+      [
+        "craft",
+        "Tier 86 Jadeware Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904546": [
+      [
+        "craft",
+        "Tier 86 Hawkwing Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904547": [
+      [
+        "craft",
+        "Tier 86 Rainwhisper Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904548": [
+      [
+        "craft",
+        "Tier 86 Swallowcall Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904549": [
+      [
+        "craft",
+        "Tier 86 Mistwillow Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904550": [
+      [
+        "craft",
+        "Tier 86 Ivorybloom Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904551": [
+      [
+        "craft",
+        "Tier 86 Starweave Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904552": [
+      [
+        "craft",
+        "Tier 86 Swift Gale Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904553": [
+      [
+        "craft",
+        "Tier 86 Swaying Heights Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904574": [
+      [
+        "craft",
+        "Tier 91 Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904575": [
+      [
+        "craft",
+        "Tier 91 Jadeware Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904576": [
+      [
+        "craft",
+        "Tier 91 Hawkwing Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904577": [
+      [
+        "craft",
+        "Tier 91 Rainwhisper Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904578": [
+      [
+        "craft",
+        "Tier 91 Swallowcall Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904579": [
+      [
+        "craft",
+        "Tier 91 Mistwillow Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904580": [
+      [
+        "craft",
+        "Tier 91 Ivorybloom Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904581": [
+      [
+        "craft",
+        "Tier 91 Starweave Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904582": [
+      [
+        "craft",
+        "Tier 91 Swift Gale Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904583": [
+      [
+        "craft",
+        "Tier 91 Swaying Heights Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904604": [
+      [
+        "craft",
+        "Tier 96 Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904605": [
+      [
+        "craft",
+        "Tier 96 Jadeware Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904606": [
+      [
+        "craft",
+        "Tier 96 Hawkwing Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904607": [
+      [
+        "craft",
+        "Tier 96 Rainwhisper Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904608": [
+      [
+        "craft",
+        "Tier 96 Swallowcall Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904609": [
+      [
+        "craft",
+        "Tier 96 Mistwillow Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904610": [
+      [
+        "craft",
+        "Tier 96 Ivorybloom Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904611": [
+      [
+        "craft",
+        "Tier 96 Starweave Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904612": [
+      [
+        "craft",
+        "Tier 96 Swift Gale Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904613": [
+      [
+        "craft",
+        "Tier 96 Swaying Heights Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
     "904614": [
       [
         "craft",
@@ -369166,6 +370672,34 @@
       [
         "craft",
         "Ephemeral Dream Custom Box",
+        "official_english_localization"
+      ]
+    ],
+    "904616": [
+      [
+        "craft",
+        "Lucky Lantern",
+        "official_english_localization"
+      ]
+    ],
+    "904617": [
+      [
+        "craft",
+        "Year-End Bounty",
+        "official_english_localization"
+      ]
+    ],
+    "904618": [
+      [
+        "craft",
+        "Fried Chicken Bucket",
+        "official_english_localization"
+      ]
+    ],
+    "904619": [
+      [
+        "craft",
+        "Shangsi Festival Box",
         "official_english_localization"
       ]
     ],
@@ -369295,6 +370829,251 @@
         "official_english_localization"
       ]
     ],
+    "904638": [
+      [
+        "craft",
+        "Lotus Casket: Custom Giftbox",
+        "official_english_localization"
+      ]
+    ],
+    "904639": [
+      [
+        "craft",
+        "Bamboo Leaf Pouch",
+        "official_english_localization"
+      ]
+    ],
+    "904640": [
+      [
+        "craft",
+        "Bag of Custom Coins",
+        "official_english_localization"
+      ]
+    ],
+    "904641": [
+      [
+        "craft",
+        "Mystery Pouch: Pastoral Tides",
+        "official_english_localization"
+      ]
+    ],
+    "904642": [
+      [
+        "craft",
+        "Mystery Pouch: Floral Whimsy",
+        "official_english_localization"
+      ]
+    ],
+    "904643": [
+      [
+        "craft",
+        "Mystery Pouch: Downy Feathers",
+        "official_english_localization"
+      ]
+    ],
+    "904644": [
+      [
+        "craft",
+        "Music in the Clouds",
+        "official_english_localization"
+      ]
+    ],
+    "904664": [
+      [
+        "craft",
+        "Tier 100 Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904665": [
+      [
+        "craft",
+        "Tier 100 Jadeware Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904666": [
+      [
+        "craft",
+        "Tier 100 Hawkwing Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904667": [
+      [
+        "craft",
+        "Tier 100 Rainwhisper Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904668": [
+      [
+        "craft",
+        "Tier 100 Swallowcall Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904669": [
+      [
+        "craft",
+        "Tier 100 Mistwillow Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904670": [
+      [
+        "craft",
+        "Tier 100 Ivorybloom Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904671": [
+      [
+        "craft",
+        "Tier 100 Starweave Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904672": [
+      [
+        "craft",
+        "Tier 100 Swift Gale Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904673": [
+      [
+        "craft",
+        "Tier 100 Swaying Heights Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904674": [
+      [
+        "craft",
+        "Tier 100 Cleftpeak Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904675": [
+      [
+        "craft",
+        "Tier 100 Etherwrath Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904676": [
+      [
+        "craft",
+        "Tier 100 Cloudshear Set Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904677": [
+      [
+        "craft",
+        "Tier 100 Tiltrim: Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904680": [
+      [
+        "craft",
+        "Tier 105 Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904681": [
+      [
+        "craft",
+        "Tier 105 Jadeware Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904682": [
+      [
+        "craft",
+        "Tier 105 Hawkwing Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904683": [
+      [
+        "craft",
+        "Tier 105 Rainwhisper Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904684": [
+      [
+        "craft",
+        "Tier 105 Swallowcall Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904685": [
+      [
+        "craft",
+        "Tier 105 Mistwillow Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904686": [
+      [
+        "craft",
+        "Tier 105 Ivorybloom Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904687": [
+      [
+        "craft",
+        "Tier 105 Starweave Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904688": [
+      [
+        "craft",
+        "Tier 105 Swift Gale Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904689": [
+      [
+        "craft",
+        "Tier 105 Swaying Heights Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904690": [
+      [
+        "craft",
+        "Tier 105 Cleftpeak Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904691": [
+      [
+        "craft",
+        "Tier 105 Etherwrath Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904692": [
+      [
+        "craft",
+        "Tier 105 Cloudshear Set Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904693": [
+      [
+        "craft",
+        "Tier 105 Tiltrim: Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
     "904700": [
       [
         "craft",
@@ -369397,6 +371176,174 @@
       [
         "craft",
         "Supreme: Tier 110 Gear Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904800": [
+      [
+        "craft",
+        "Tier 110 Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904801": [
+      [
+        "craft",
+        "Tier 110 Jadeware Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904802": [
+      [
+        "craft",
+        "Tier 110 Hawkwing Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904803": [
+      [
+        "craft",
+        "Tier 110 Rainwhisper Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904804": [
+      [
+        "craft",
+        "Tier 110 Swallowcall Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904805": [
+      [
+        "craft",
+        "Tier 110 Mistwillow Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904806": [
+      [
+        "craft",
+        "Tier 110 Ivorybloom Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904807": [
+      [
+        "craft",
+        "Tier 110 Swift Gale Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904808": [
+      [
+        "craft",
+        "Tier 110 Swaying Heights Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904809": [
+      [
+        "craft",
+        "Tier 110 Starweave Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904810": [
+      [
+        "craft",
+        "Tier 110 Cleftpeak Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904811": [
+      [
+        "craft",
+        "Tier 110 Etherwrath Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904812": [
+      [
+        "craft",
+        "Tier 110 Cloudshear Set Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904813": [
+      [
+        "craft",
+        "Tier 110 Tiltrim: Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904951": [
+      [
+        "craft",
+        "Tier 71 Cloudshear Set Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904952": [
+      [
+        "craft",
+        "Tier 81 Cloudshear Set Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904953": [
+      [
+        "craft",
+        "Tier 86 Cloudshear Set Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904954": [
+      [
+        "craft",
+        "Tier 91 Cloudshear Set Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904955": [
+      [
+        "craft",
+        "Tier 96 Cloudshear Set Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904956": [
+      [
+        "craft",
+        "Tier 71 Tiltrim: Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904957": [
+      [
+        "craft",
+        "Tier 81 Tiltrim: Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904958": [
+      [
+        "craft",
+        "Tier 86 Tiltrim: Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904959": [
+      [
+        "craft",
+        "Tier 91 Tiltrim: Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "904960": [
+      [
+        "craft",
+        "Tier 96 Tiltrim: Weapon Chest",
         "official_english_localization"
       ]
     ],
@@ -377457,6 +379404,13 @@
         "official_english_localization"
       ]
     ],
+    "908155": [
+      [
+        "craft",
+        "Money Bag",
+        "official_english_localization"
+      ]
+    ],
     "908156": [
       [
         "craft",
@@ -377503,6 +379457,20 @@
       [
         "craft",
         "Battle Pass Chest II",
+        "official_english_localization"
+      ]
+    ],
+    "908163": [
+      [
+        "craft",
+        "Money Bag",
+        "official_english_localization"
+      ]
+    ],
+    "908164": [
+      [
+        "craft",
+        "Next Week's Rewards",
         "official_english_localization"
       ]
     ],
@@ -377604,6 +379572,27 @@
         "official_english_localization"
       ]
     ],
+    "908179": [
+      [
+        "craft",
+        "Money Bag",
+        "official_english_localization"
+      ]
+    ],
+    "908180": [
+      [
+        "craft",
+        "Money Bag",
+        "official_english_localization"
+      ]
+    ],
+    "908181": [
+      [
+        "craft",
+        "Next Week's Rewards",
+        "official_english_localization"
+      ]
+    ],
     "908182": [
       [
         "craft",
@@ -377643,6 +379632,13 @@
       [
         "craft",
         "Lv. 91 Gear Chest",
+        "official_english_localization"
+      ]
+    ],
+    "908188": [
+      [
+        "craft",
+        "Next Week's Rewards",
         "official_english_localization"
       ]
     ],
@@ -377730,6 +379726,13 @@
         "official_english_localization"
       ]
     ],
+    "908201": [
+      [
+        "craft",
+        "Next Week's Rewards",
+        "official_english_localization"
+      ]
+    ],
     "908202": [
       [
         "craft",
@@ -377804,6 +379807,13 @@
       [
         "craft",
         "Tier 91 Ebonward: Chestpiece",
+        "official_english_localization"
+      ]
+    ],
+    "908213": [
+      [
+        "craft",
+        "Next Week's Rewards",
         "official_english_localization"
       ]
     ],
@@ -378217,6 +380227,13 @@
       [
         "craft",
         "Taiyi Stone",
+        "official_english_localization"
+      ]
+    ],
+    "908276": [
+      [
+        "craft",
+        "String of Coins",
         "official_english_localization"
       ]
     ],
@@ -378801,6 +380818,13 @@
         "official_english_localization"
       ]
     ],
+    "908364": [
+      [
+        "craft",
+        "Money Bag",
+        "official_english_localization"
+      ]
+    ],
     "908365": [
       [
         "craft",
@@ -378889,6 +380913,13 @@
       [
         "craft",
         "Plumed Opulence Pack: Bound",
+        "official_english_localization"
+      ]
+    ],
+    "908378": [
+      [
+        "craft",
+        "Plumed Opulence Pack",
         "official_english_localization"
       ]
     ],
@@ -385931,6 +387962,27 @@
       [
         "craft",
         "Tier 100 Cloudshear Weapon Chest",
+        "official_english_localization"
+      ]
+    ],
+    "910178": [
+      [
+        "craft",
+        "Event Emote Fragment Treasure Chest",
+        "official_english_localization"
+      ]
+    ],
+    "910179": [
+      [
+        "craft",
+        "Event Emote Fragment Treasure Chest",
+        "official_english_localization"
+      ]
+    ],
+    "910180": [
+      [
+        "craft",
+        "Event Emote Fragment Treasure Chest",
         "official_english_localization"
       ]
     ],
@@ -480353,5 +482405,3379 @@
       "151": "Kitty",
       "172": "Pet"
     }
+  },
+  "martial": {
+    "format": 1,
+    "kungfu": {
+      "20103030": {
+        "name": "Stormbreaker Spear: Edge - Morphstrike",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fa0b0000ee01"
+        }
+      },
+      "20602010": {
+        "name": "Soulshade Umbrella: Edge - Execute",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500030cca05ea01"
+        }
+      },
+      "20103011": {
+        "name": "Stormbreaker Spear: Radiance - Execute",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f90b0000ef01"
+        }
+      },
+      "20901012": {
+        "name": "Heavenwill Gauntlets: EX - Execute",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500110c0000ea01"
+        }
+      },
+      "208015": {
+        "name": "Snowparting Blade: EX",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ec0bed01ee01"
+        }
+      },
+      "20103031": {
+        "name": "Stormbreaker Spear: Radiance - Morphstrike",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fa0bee01ee01"
+        }
+      },
+      "20703011": {
+        "name": "Skygrasp Rope Dart: Radiance - Execute",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000c0c0000eb01"
+        }
+      },
+      "102024": {
+        "name": "Nameless Spear - Radiance",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00013080000e501"
+        }
+      },
+      "204011": {
+        "name": "Thundercry Blade - Valor",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001608dc03ee01"
+        }
+      },
+      "206032": {
+        "name": "Everspring Umbrella - Edge",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001b08b505e601"
+        }
+      },
+      "102025": {
+        "name": "Nameless Spear: EX",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500db0bca03e601"
+        }
+      },
+      "10202010": {
+        "name": "Nameless Spear: Edge - Execute",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f20b4c00e601"
+        }
+      },
+      "10301032": {
+        "name": "Panacea Fan: EX - Morphstrike",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f50bc405ec01"
+        }
+      },
+      "20401032": {
+        "name": "Thundercry Blade: EX - Morphstrike",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fc0bde03ef01"
+        }
+      },
+      "20501031": {
+        "name": "Infernal Twinblades: Radiance - Morphstrike",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500000cee01ee01"
+        }
+      },
+      "20701030": {
+        "name": "Mortal Rope Dart: Edge - Morphstrike",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500090c0000ea01"
+        }
+      },
+      "20703": {
+        "name": "Skygrasp Rope Dart",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000e080004ec01"
+        }
+      },
+      "20602011": {
+        "name": "Soulshade Umbrella: Radiance - Execute",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500040c0000ea01"
+        }
+      },
+      "10201010": {
+        "name": "Heavenquaker Spear: Edge - Execute",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f10bb0054c00"
+        }
+      },
+      "10201012": {
+        "name": "Heavenquaker Spear: EX - Execute",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f10b48064c00"
+        }
+      },
+      "10301040": {
+        "name": "Panacea Fan: Valor",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f60b0000ed01"
+        }
+      },
+      "20401031": {
+        "name": "Thundercry Blade: Radiance - Morphstrike",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fc0bef01ef01"
+        }
+      },
+      "204024": {
+        "name": "Phalanxbane Blade: Radiance",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00018080000ee01"
+        }
+      },
+      "20603031": {
+        "name": "Everspring Umbrella: Radiance - Morphstrike",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500070ce701e901"
+        }
+      },
+      "10301030": {
+        "name": "Panacea Fan: Edge - Morphstrike",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f50bec01ec01"
+        }
+      },
+      "20902": {
+        "name": "Skystrike Gauntlets",
+        "path_id": 14,
+        "icon_key": "path_14",
+        "icon_sha256": "c60b8855414512354cb3bcd3e36aefc99e8ac7ba8c8882fd751c9819b4b6997f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500d70bee01f201"
+        }
+      },
+      "101012": {
+        "name": "Strategic Sword - Edge",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001008cd03e701"
+        }
+      },
+      "10202011": {
+        "name": "Nameless Spear: Radiance - Execute",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f20b3202e601"
+        }
+      },
+      "206012": {
+        "name": "Vernal Umbrella - Edge",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001908c605ed01"
+        }
+      },
+      "10101012": {
+        "name": "Strategic Sword: EX - Execute",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ee0be701e801"
+        }
+      },
+      "102021": {
+        "name": "Nameless Spear - Valor",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001208c502e501"
+        }
+      },
+      "20901": {
+        "name": "Heavenwill Gauntlets",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000f081a02f001"
+        }
+      },
+      "20702032": {
+        "name": "Unfettered Rope Dart: EX - Morphstrike",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000b0cd103e901"
+        }
+      },
+      "20601030": {
+        "name": "Vernal Umbrella: Edge - Morphstrike",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500030c0000ee01"
+        }
+      },
+      "10101": {
+        "name": "Strategic Sword",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00008084005f001"
+        }
+      },
+      "201034": {
+        "name": "Stormbreaker Spear - Radiance",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00016080000ee01"
+        }
+      },
+      "20701031": {
+        "name": "Mortal Rope Dart: Radiance - Morphstrike",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500090cea01ea01"
+        }
+      },
+      "204010": {
+        "name": "Thundercry Blade- Common",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001608ee01ee01"
+        }
+      },
+      "206015": {
+        "name": "Vernal Umbrella: EX",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500e40bc705ee01"
+        }
+      },
+      "209015": {
+        "name": "Heavenwill Gauntlets: EX",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ed0bd403ea01"
+        }
+      },
+      "207024": {
+        "name": "Unfettered Rope Dart - Radiance",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001e080000e801"
+        }
+      },
+      "103022": {
+        "name": "Inkwell Fan - Edge",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001408b905e701"
+        }
+      },
+      "10302032": {
+        "name": "Inkwell Fan: EX - Morphstrike",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f80bd003e801"
+        }
+      },
+      "20501010": {
+        "name": "Infernal Twinblades: Edge - Execute",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fe0bcd05ee01"
+        }
+      },
+      "20702011": {
+        "name": "Unfettered Rope Dart: Radiance - Execute",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000a0c0000e901"
+        }
+      },
+      "20901020": {
+        "name": "Heavenwill Gauntlets: Radiance - Pierce",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500110cea01ea01"
+        }
+      },
+      "101015": {
+        "name": "Strategic Sword: EX",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500d80bb505e801"
+        }
+      },
+      "204015": {
+        "name": "Thundercry Blade: EX",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500e10b0000ef01"
+        }
+      },
+      "209014": {
+        "name": "Heavenwill Gauntlets: Radiance",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00021080000ea01"
+        }
+      },
+      "20401030": {
+        "name": "Thundercry Blade: Edge - Morphstrike",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fc0b0000ef01"
+        }
+      },
+      "207035": {
+        "name": "Skygrasp Rope Dart: EX",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500eb0b0000eb01"
+        }
+      },
+      "10102": {
+        "name": "Nameless Sword",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00009080000e801"
+        }
+      },
+      "207031": {
+        "name": "Skygrasp Rope Dart: Valor",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001e08d103e901"
+        }
+      },
+      "10301012": {
+        "name": "Panacea Fan: EX - Execute",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f40bd803ec01"
+        }
+      },
+      "20103010": {
+        "name": "Stormbreaker Spear: Edge - Execute",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f80bb805ef01"
+        }
+      },
+      "102020": {
+        "name": "Nameless Spear - Common",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001208e100e401"
+        }
+      },
+      "20602": {
+        "name": "Soulshade Umbrella",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000d081204f001"
+        }
+      },
+      "20304": {
+        "name": "Panacea Fan",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500d30bf101f201"
+        }
+      },
+      "101020": {
+        "name": "Nameless Sword - Common",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00011080000e401"
+        }
+      },
+      "204014": {
+        "name": "Thundercry Blade - Radiance",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00017080000ee01"
+        }
+      },
+      "207015": {
+        "name": "Mortal Rope Dart: EX",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500e80bd203ea01"
+        }
+      },
+      "207030": {
+        "name": "Skygrasp Rope Dart: Common",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001e08e801e901"
+        }
+      },
+      "20103032": {
+        "name": "Stormbreaker Spear: EX - Morphstrike",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fa0bdc03ef01"
+        }
+      },
+      "20402030": {
+        "name": "Phalanxbane Blade: Edge - Morphstrike",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fe0b0000ef01"
+        }
+      },
+      "20501032": {
+        "name": "Infernal Twinblades: EX - Morphstrike",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500000cdc03ee01"
+        }
+      },
+      "20703010": {
+        "name": "Skygrasp Rope Dart: Edge - Execute",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000b0cba05eb01"
+        }
+      },
+      "20103021": {
+        "name": "Stormbreaker Spear: EX - Pierce",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f90bcd05ef01"
+        }
+      },
+      "201031": {
+        "name": "Stormbreaker Spear - Valor",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001508d403ee01"
+        }
+      },
+      "103020": {
+        "name": "Inkwell Fan - Common",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001408eb01e701"
+        }
+      },
+      "208014": {
+        "name": "Snowparting Blade: Radiance",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00020080000ed01"
+        }
+      },
+      "20401012": {
+        "name": "Thundercry Blade: EX - Execute",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fb0bef01ef01"
+        }
+      },
+      "10202012": {
+        "name": "Nameless Spear: EX - Execute",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f20b1804e601"
+        }
+      },
+      "10301020": {
+        "name": "Panacea Fan: Radiance - Pierce",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f40bc405ec01"
+        }
+      },
+      "103015": {
+        "name": "Panacea Fan: EX",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500dc0bc105ec01"
+        }
+      },
+      "20801021": {
+        "name": "Snowparting Blade: EX - Pierce",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000f0cee01ee01"
+        }
+      },
+      "20402010": {
+        "name": "Phalanxbane Blade: Edge - Execute",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fc0bcd05ef01"
+        }
+      },
+      "20901011": {
+        "name": "Heavenwill Gauntlets: Radiance - Execute",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500100cbc05ea01"
+        }
+      },
+      "103012": {
+        "name": "Panacea Fan - Edge",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001308bb05eb01"
+        }
+      },
+      "102011": {
+        "name": "Heavenquaker Spear - Valor",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d000120800004b00"
+        }
+      },
+      "21001": {
+        "name": "Museflow Waist Drum",
+        "path_id": 13,
+        "icon_key": "path_13",
+        "icon_sha256": "2cada8fbb7aeb4fef37153e66a07bbbeb589f30f349a5419828e66b9dee3bb81",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000f083504ee01"
+        }
+      },
+      "204025": {
+        "name": "Phalanxbane Blade: EX",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500e20bee01ef01"
+        }
+      },
+      "206011": {
+        "name": "Vernal Umbrella - Valor",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001908d903ed01"
+        }
+      },
+      "10302021": {
+        "name": "Inkwell Fan: EX - Pierce",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f70bb805e801"
+        }
+      },
+      "10202021": {
+        "name": "Nameless Spear: EX - Pierce",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f30b0000e601"
+        }
+      },
+      "20703041": {
+        "name": "Skygrasp Rope Dart: Radiance",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000e0c0000ec01"
+        }
+      },
+      "10201020": {
+        "name": "Heavenquaker Spear: Radiance - Pierce",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f10b94064c00"
+        }
+      },
+      "20401020": {
+        "name": "Thundercry Blade: Radiance - Pierce",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fb0bde03ef01"
+        }
+      },
+      "20603011": {
+        "name": "Everspring Umbrella: Radiance - Execute",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500060c0000e901"
+        }
+      },
+      "208011": {
+        "name": "Snowparting Blade: Valor",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001f08d503ec01"
+        }
+      },
+      "20402021": {
+        "name": "Phalanxbane Blade: EX - Pierce",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fd0bcd05ef01"
+        }
+      },
+      "101014": {
+        "name": "Strategic Sword - Radiance",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001008b405e701"
+        }
+      },
+      "20602020": {
+        "name": "Soulshade Umbrella: Radiance - Pierce",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500040cd403ea01"
+        }
+      },
+      "20901032": {
+        "name": "Heavenwill Gauntlets: EX - Morphstrike",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500120cea01ea01"
+        }
+      },
+      "10201021": {
+        "name": "Heavenquaker Spear: EX - Pierce",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f10be0064c00"
+        }
+      },
+      "102012": {
+        "name": "Heavenquaker Spear - Edge",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00012084b004b00"
+        }
+      },
+      "20703040": {
+        "name": "Skygrasp Rope Dart: Edge",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000d0cc105ec01"
+        }
+      },
+      "10301010": {
+        "name": "Panacea Fan: Edge - Execute",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f40b0000ec01"
+        }
+      },
+      "102015": {
+        "name": "Heavenquaker Spear: EX",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500da0b11034c00"
+        }
+      },
+      "206010": {
+        "name": "Vernal Umbrella - Common",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001908ed01ec01"
+        }
+      },
+      "20501020": {
+        "name": "Infernal Twinblades: Radiance - Pierce",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ff0bdc03ee01"
+        }
+      },
+      "207021": {
+        "name": "Unfettered Rope Dart - Valor",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001d08ce03e501"
+        }
+      },
+      "102010": {
+        "name": "Heavenquaker Spear - Common",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d000110892074a00"
+        }
+      },
+      "101024": {
+        "name": "Nameless Sword - Radiance",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001108ad05e501"
+        }
+      },
+      "207010": {
+        "name": "Mortal Rope Dart: Common",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001c08e801e701"
+        }
+      },
+      "20402011": {
+        "name": "Phalanxbane Blade: Radiance - Execute",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fd0b0000ef01"
+        }
+      },
+      "20901021": {
+        "name": "Heavenwill Gauntlets: EX - Pierce",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500110cd403ea01"
+        }
+      },
+      "20602030": {
+        "name": "Soulshade Umbrella: Edge - Morphstrike",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500050c0000ea01"
+        }
+      },
+      "10102031": {
+        "name": "Nameless Sword: Radiance - Morphstrike",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f10be501e501"
+        }
+      },
+      "20801030": {
+        "name": "Snowparting Blade: Edge - Morphstrike",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000f0cdc03ec01"
+        }
+      },
+      "208012": {
+        "name": "Snowparting Blade: Edge",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001f08c105ec01"
+        }
+      },
+      "10101020": {
+        "name": "Strategic Sword: Radiance - Pierce",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ee0bcf03e801"
+        }
+      },
+      "10302031": {
+        "name": "Inkwell Fan: Radiance - Morphstrike",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f80be801e801"
+        }
+      },
+      "20701020": {
+        "name": "Mortal Rope Dart: Radiance - Pierce",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500080cd403ea01"
+        }
+      },
+      "101011": {
+        "name": "Strategic Sword - Valor",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001008e601e701"
+        }
+      },
+      "103010": {
+        "name": "Panacea Fan - Common",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001308e501eb01"
+        }
+      },
+      "10302": {
+        "name": "Inkwell Fan",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000b08ce03ea01"
+        }
+      },
+      "20801032": {
+        "name": "Snowparting Blade: EX - Morphstrike",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500100c0000ee01"
+        }
+      },
+      "20801011": {
+        "name": "Snowparting Blade: Radiance - Execute",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000e0cd803ee01"
+        }
+      },
+      "20901000": {
+        "name": "Empty Martial Arts",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500100cee01e401"
+        }
+      },
+      "205012": {
+        "name": "Infernal Twinblades: Edge",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001808c605ed01"
+        }
+      },
+      "10302012": {
+        "name": "Inkwell Fan: EX - Execute",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f70be801e801"
+        }
+      },
+      "10302010": {
+        "name": "Inkwell Fan: Edge - Execute",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f60bc705e801"
+        }
+      },
+      "207032": {
+        "name": "Skygrasp Rope Dart: Edge",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001e08ba05eb01"
+        }
+      },
+      "20501042": {
+        "name": "Infernal Twinblades: Edge",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500010cee01ef01"
+        }
+      },
+      "209011": {
+        "name": "Heavenwill Gauntlets: Valor",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0002008d503e801"
+        }
+      },
+      "20703020": {
+        "name": "Skygrasp Rope Dart: Radiance - Pierce",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000c0cd603eb01"
+        }
+      },
+      "206021": {
+        "name": "Soulshade Umbrella - Valor",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001a08d503e901"
+        }
+      },
+      "20402031": {
+        "name": "Phalanxbane Blade: Radiance - Morphstrike",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fe0bef01ef01"
+        }
+      },
+      "207012": {
+        "name": "Mortal Rope Dart: Edge",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001c08b605e901"
+        }
+      },
+      "20701032": {
+        "name": "Mortal Rope Dart: EX - Morphstrike",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500090cd403ea01"
+        }
+      },
+      "201030": {
+        "name": "Stormbreaker Spear - Common",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001508e701ed01"
+        }
+      },
+      "20601031": {
+        "name": "Vernal Umbrella: Radiance - Morphstrike",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500030cee01ee01"
+        }
+      },
+      "10102010": {
+        "name": "Nameless Sword: Edge - Execute",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ef0bb605e501"
+        }
+      },
+      "20702030": {
+        "name": "Unfettered Rope Dart: Edge - Morphstrike",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000b0c0000e801"
+        }
+      },
+      "20603020": {
+        "name": "Everspring Umbrella: Radiance - Pierce",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500060cd203e901"
+        }
+      },
+      "20602031": {
+        "name": "Soulshade Umbrella: Radiance - Morphstrike",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500050cea01ea01"
+        }
+      },
+      "20501040": {
+        "name": "Infernal Twinblades: Common",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500000cca05ec01"
+        }
+      },
+      "20702020": {
+        "name": "Unfettered Rope Dart: Radiance - Pierce",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000a0cd203e901"
+        }
+      },
+      "20601021": {
+        "name": "Vernal Umbrella: EX - Pierce",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500020cca05ee01"
+        }
+      },
+      "20501041": {
+        "name": "Infernal Twinblades: Valor",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500010c0000ee01"
+        }
+      },
+      "20801020": {
+        "name": "Snowparting Blade: Radiance - Pierce",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000f0c0000ee01"
+        }
+      },
+      "20402012": {
+        "name": "Phalanxbane Blade: EX - Execute",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fd0bef01ef01"
+        }
+      },
+      "20701021": {
+        "name": "Mortal Rope Dart: EX - Pierce",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500080cbe05ea01"
+        }
+      },
+      "10301021": {
+        "name": "Panacea Fan: EX - Pierce",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f50b0000ec01"
+        }
+      },
+      "20603032": {
+        "name": "Everspring Umbrella: EX - Morphstrike",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500070cd003e901"
+        }
+      },
+      "20401010": {
+        "name": "Thundercry Blade: Edge - Execute",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fa0bcb05ef01"
+        }
+      },
+      "205014": {
+        "name": "Infernal Twinblades: Radiance",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00019080000ed01"
+        }
+      },
+      "10101030": {
+        "name": "Strategic Sword: Edge - Morphstrike",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ef0b0000e701"
+        }
+      },
+      "10101032": {
+        "name": "Strategic Sword: EX - Morphstrike",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ef0bce03e801"
+        }
+      },
+      "10202": {
+        "name": "Nameless Spear",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000a084302e701"
+        }
+      },
+      "20401": {
+        "name": "Thundercry Blade",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000c081802f101"
+        }
+      },
+      "103027": {
+        "name": "Inkwell Fan: Radiance",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500de0bd003e801"
+        }
+      },
+      "10202030": {
+        "name": "Nameless Spear: Edge - Morphstrike",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f30be601e501"
+        }
+      },
+      "208010": {
+        "name": "Snowparting Blade: Common",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001f08eb01ea01"
+        }
+      },
+      "20103012": {
+        "name": "Stormbreaker Spear: EX - Execute",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f90bef01ef01"
+        }
+      },
+      "20701011": {
+        "name": "Mortal Rope Dart: Radiance - Execute",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500080c0000ea01"
+        }
+      },
+      "205010": {
+        "name": "Infernal Twinblades - Common",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001808ee01eb01"
+        }
+      },
+      "206030": {
+        "name": "Everspring Umbrella - Common",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001b08e901e601"
+        }
+      },
+      "10301041": {
+        "name": "Panacea Fan: Edge",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f60bed01ed01"
+        }
+      },
+      "10101011": {
+        "name": "Strategic Sword: Radiance - Execute",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ee0b0000e701"
+        }
+      },
+      "20702021": {
+        "name": "Unfettered Rope Dart: EX - Pierce",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000a0cbb05e901"
+        }
+      },
+      "20305": {
+        "name": "Inkwell Fan",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500d30be303ef01"
+        }
+      },
+      "204012": {
+        "name": "Thundercry Blade - Edge",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001608ca05ee01"
+        }
+      },
+      "20601": {
+        "name": "Vernal Umbrella",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000d082102f101"
+        }
+      },
+      "103025": {
+        "name": "Inkwell Fan: EX",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500de0b0000e801"
+        }
+      },
+      "10302011": {
+        "name": "Inkwell Fan: Radiance - Execute",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f70b0000e801"
+        }
+      },
+      "20603030": {
+        "name": "Everspring Umbrella: Edge - Morphstrike",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500070c0000e701"
+        }
+      },
+      "101010": {
+        "name": "Strategic Sword - Common",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00010080000e601"
+        }
+      },
+      "207011": {
+        "name": "Mortal Rope Dart: Valor",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001c08cf03e701"
+        }
+      },
+      "20703030": {
+        "name": "Skygrasp Rope Dart: Edge - Morphstrike",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000d0c0000eb01"
+        }
+      },
+      "20703032": {
+        "name": "Skygrasp Rope Dart: EX - Morphstrike",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000d0cd603eb01"
+        }
+      },
+      "10301": {
+        "name": "Panacea Fan",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000b08dd01f101"
+        }
+      },
+      "10201011": {
+        "name": "Heavenquaker Spear: Radiance - Execute",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f10bfc054c00"
+        }
+      },
+      "20501011": {
+        "name": "Infernal Twinblades: Radiance - Execute",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ff0b0000ee01"
+        }
+      },
+      "20701010": {
+        "name": "Mortal Rope Dart: Edge - Execute",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500070cb905ea01"
+        }
+      },
+      "206014": {
+        "name": "Vernal Umbrella - Radiance",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001a080000ed01"
+        }
+      },
+      "20103": {
+        "name": "Stormbreaker Spear",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000c080000f101"
+        }
+      },
+      "206031": {
+        "name": "Everspring Umbrella - Valor",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001b08cf03e601"
+        }
+      },
+      "20703012": {
+        "name": "Skygrasp Rope Dart: EX - Execute",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000c0ceb01eb01"
+        }
+      },
+      "20103020": {
+        "name": "Stormbreaker Spear: Radiance - Pierce",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f90bde03ef01"
+        }
+      },
+      "20801010": {
+        "name": "Snowparting Blade: Edge - Execute",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000e0cec01ec01"
+        }
+      },
+      "10102011": {
+        "name": "Nameless Sword: Radiance - Execute",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f00b0000e501"
+        }
+      },
+      "10301031": {
+        "name": "Panacea Fan: Radiance - Morphstrike",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f50bd803ec01"
+        }
+      },
+      "206022": {
+        "name": "Soulshade Umbrella - Edge",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001a08be05e901"
+        }
+      },
+      "10302020": {
+        "name": "Inkwell Fan: Radiance - Pierce",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f70bd003e801"
+        }
+      },
+      "20702031": {
+        "name": "Unfettered Rope Dart: Radiance - Morphstrike",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000b0ce801e901"
+        }
+      },
+      "20501043": {
+        "name": "Infernal Twinblades: Radiance",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500010cdd03ef01"
+        }
+      },
+      "20601011": {
+        "name": "Vernal Umbrella: Radiance - Execute",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500020c0000ee01"
+        }
+      },
+      "205011": {
+        "name": "Infernal Twinblades: Valor",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001808d903ed01"
+        }
+      },
+      "20901031": {
+        "name": "Heavenwill Gauntlets: Radiance - Morphstrike",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500120c0000ea01"
+        }
+      },
+      "20603010": {
+        "name": "Everspring Umbrella: Edge - Execute",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500050cbe05e701"
+        }
+      },
+      "102022": {
+        "name": "Nameless Spear - Edge",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001208aa04e501"
+        }
+      },
+      "10102030": {
+        "name": "Nameless Sword: Edge - Morphstrike",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f10b0000e501"
+        }
+      },
+      "207014": {
+        "name": "Mortal Rope Dart: Radiance",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001d080000e901"
+        }
+      },
+      "20601012": {
+        "name": "Vernal Umbrella: EX - Execute",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500020cee01ee01"
+        }
+      },
+      "206034": {
+        "name": "Everspring Umbrella - Radiance",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001c080000e801"
+        }
+      },
+      "20402020": {
+        "name": "Phalanxbane Blade: Radiance - Pierce",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fd0bde03ef01"
+        }
+      },
+      "207020": {
+        "name": "Unfettered Rope Dart - Common",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001d08e901e501"
+        }
+      },
+      "201035": {
+        "name": "Stormbreaker Spear: EX",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500df0bca05ef01"
+        }
+      },
+      "20901030": {
+        "name": "Heavenwill Gauntlets: Edge - Morphstrike",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500110cbe05ea01"
+        }
+      },
+      "207022": {
+        "name": "Unfettered Rope Dart - Edge",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001d08b305e701"
+        }
+      },
+      "20801": {
+        "name": "Snowparting Blade",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000f080000ef01"
+        }
+      },
+      "206035": {
+        "name": "Everspring Umbrella: EX",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500e70be801e901"
+        }
+      },
+      "10301011": {
+        "name": "Panacea Fan: Radiance - Execute",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f40bec01ec01"
+        }
+      },
+      "20501030": {
+        "name": "Infernal Twinblades: Edge - Morphstrike",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500000c0000ee01"
+        }
+      },
+      "20602012": {
+        "name": "Soulshade Umbrella: EX - Execute",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500040cea01ea01"
+        }
+      },
+      "20702010": {
+        "name": "Unfettered Rope Dart: Edge - Execute",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500090cbe05e801"
+        }
+      },
+      "20601020": {
+        "name": "Vernal Umbrella: Radiance - Pierce",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500020cdc03ee01"
+        }
+      },
+      "204022": {
+        "name": "Phalanxbane Blade: Edge",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001708c805ee01"
+        }
+      },
+      "206025": {
+        "name": "Soulshade Umbrella: EX",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500e60b0000ea01"
+        }
+      },
+      "10202020": {
+        "name": "Nameless Spear: Radiance - Pierce",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f20bfe05e601"
+        }
+      },
+      "10202032": {
+        "name": "Nameless Spear: EX - Morphstrike",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f30bb105e601"
+        }
+      },
+      "20901010": {
+        "name": "Heavenwill Gauntlets: Edge - Execute",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500100cd203ea01"
+        }
+      },
+      "10201": {
+        "name": "Heavenquaker Spear",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000a085700ec01"
+        }
+      },
+      "20501012": {
+        "name": "Infernal Twinblades: EX - Execute",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ff0bee01ee01"
+        }
+      },
+      "10306": {
+        "name": "Willowbend Fan",
+        "path_id": 13,
+        "icon_key": "path_13",
+        "icon_sha256": "2cada8fbb7aeb4fef37153e66a07bbbeb589f30f349a5419828e66b9dee3bb81",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000b08e405e901"
+        }
+      },
+      "207025": {
+        "name": "Unfettered Rope Dart: EX",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500e90bb405e901"
+        }
+      },
+      "10201031": {
+        "name": "Heavenquaker Spear: Radiance - Morphstrike",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f10b77074b00"
+        }
+      },
+      "201032": {
+        "name": "Stormbreaker Spear - Edge",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001508c205ee01"
+        }
+      },
+      "103011": {
+        "name": "Panacea Fan - Valor",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001308d003eb01"
+        }
+      },
+      "10202031": {
+        "name": "Nameless Spear: Radiance - Morphstrike",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f30bcb03e601"
+        }
+      },
+      "10102013": {
+        "name": "Nameless Sword: Radiance - Pierce",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f00bcb03e601"
+        }
+      },
+      "20701012": {
+        "name": "Mortal Rope Dart: EX - Execute",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500080cea01ea01"
+        }
+      },
+      "103014": {
+        "name": "Panacea Fan - Radiance",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00014080000eb01"
+        }
+      },
+      "10302030": {
+        "name": "Inkwell Fan: Edge - Morphstrike",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f80b0000e801"
+        }
+      },
+      "20601032": {
+        "name": "Vernal Umbrella: EX - Morphstrike",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500030cdc03ee01"
+        }
+      },
+      "102014": {
+        "name": "Heavenquaker Spear - Radiance",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d000120896004b00"
+        }
+      },
+      "207034": {
+        "name": "Skygrasp Rope Dart: Radiance",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001f080000eb01"
+        }
+      },
+      "10102032": {
+        "name": "Nameless Sword: EX - Morphstrike",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f10bca03e601"
+        }
+      },
+      "20703021": {
+        "name": "Skygrasp Rope Dart: EX - Pierce",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000c0cc105eb01"
+        }
+      },
+      "20501021": {
+        "name": "Infernal Twinblades: EX - Pierce",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ff0bca05ee01"
+        }
+      },
+      "10102012": {
+        "name": "Nameless Sword: EX - Execute",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f00be501e601"
+        }
+      },
+      "20801031": {
+        "name": "Snowparting Blade: Radiance - Morphstrike",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000f0cc805ee01"
+        }
+      },
+      "20503": {
+        "name": "Riven Twinblades",
+        "path_id": 14,
+        "icon_key": "path_14",
+        "icon_sha256": "c60b8855414512354cb3bcd3e36aefc99e8ac7ba8c8882fd751c9819b4b6997f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500d40b0e04ef01"
+        }
+      },
+      "10101010": {
+        "name": "Strategic Sword: Edge - Execute",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ed0bbe05e701"
+        }
+      },
+      "209010": {
+        "name": "Heavenwill Gauntlets: Common",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0002008ed01e801"
+        }
+      },
+      "20701": {
+        "name": "Mortal Rope Dart",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000e082c00eb01"
+        }
+      },
+      "103026": {
+        "name": "Inkwell Fan: Edge",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500de0be801e801"
+        }
+      },
+      "20702012": {
+        "name": "Unfettered Rope Dart: EX - Execute",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000a0ce901e901"
+        }
+      },
+      "101021": {
+        "name": "Nameless Sword - Valor",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001108e401e401"
+        }
+      },
+      "206020": {
+        "name": "Soulshade Umbrella - Common",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001a08ed01e801"
+        }
+      },
+      "101022": {
+        "name": "Nameless Sword - Edge",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001108c803e501"
+        }
+      },
+      "20603021": {
+        "name": "Everspring Umbrella: EX - Pierce",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500060cbb05e901"
+        }
+      },
+      "20402": {
+        "name": "Phalanxbane Blade",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000c080904f201"
+        }
+      },
+      "103021": {
+        "name": "Inkwell Fan - Valor",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001408d203e701"
+        }
+      },
+      "10101031": {
+        "name": "Strategic Sword: Radiance - Morphstrike",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ef0be701e701"
+        }
+      },
+      "10102014": {
+        "name": "Nameless Sword: EX - Pierce",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f00bb105e601"
+        }
+      },
+      "10201032": {
+        "name": "Heavenquaker Spear: EX - Morphstrike",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f20b00004c00"
+        }
+      },
+      "209012": {
+        "name": "Heavenwill Gauntlets: Edge",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0002008bd05ea01"
+        }
+      },
+      "20703031": {
+        "name": "Skygrasp Rope Dart: Radiance - Morphstrike",
+        "path_id": 12,
+        "icon_key": "path_12",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000d0ceb01eb01"
+        }
+      },
+      "103024": {
+        "name": "Inkwell Fan - Radiance",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d00015080000e701"
+        }
+      },
+      "20401021": {
+        "name": "Thundercry Blade: EX - Pierce",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fb0bcd05ef01"
+        }
+      },
+      "20602032": {
+        "name": "Soulshade Umbrella: EX - Morphstrike",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500050cd403ea01"
+        }
+      },
+      "20603": {
+        "name": "Everspring Umbrella",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000d080206ec01"
+        }
+      },
+      "20501": {
+        "name": "Infernal Twinblades",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000d080000f001"
+        }
+      },
+      "101025": {
+        "name": "Nameless Sword: EX",
+        "path_id": 1,
+        "icon_key": "path_1",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500da0b0000e601"
+        }
+      },
+      "10101021": {
+        "name": "Strategic Sword: EX - Pierce",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500ee0bb705e801"
+        }
+      },
+      "205015": {
+        "name": "Infernal Twinblades: EX",
+        "path_id": 5,
+        "icon_key": "path_5",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500e30bda03ee01"
+        }
+      },
+      "206024": {
+        "name": "Soulshade Umbrella - Radiance",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001b080000e901"
+        }
+      },
+      "204020": {
+        "name": "Phalanxbane Blade: Common",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001708ee01ed01"
+        }
+      },
+      "20402032": {
+        "name": "Phalanxbane Blade: EX - Morphstrike",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fe0bde03ef01"
+        }
+      },
+      "20601010": {
+        "name": "Vernal Umbrella: Edge - Execute",
+        "path_id": 3,
+        "icon_key": "path_3",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500010ccc05ee01"
+        }
+      },
+      "20602021": {
+        "name": "Soulshade Umbrella: EX - Pierce",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500040cbe05ea01"
+        }
+      },
+      "20801012": {
+        "name": "Snowparting Blade: EX - Execute",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "05000e0cc605ee01"
+        }
+      },
+      "20603012": {
+        "name": "Everspring Umbrella: EX - Execute",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500060ce901e901"
+        }
+      },
+      "10201030": {
+        "name": "Heavenquaker Spear: Edge - Morphstrike",
+        "path_id": 6,
+        "icon_key": "path_6",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f10b2c074b00"
+        }
+      },
+      "20401011": {
+        "name": "Thundercry Blade: Radiance - Execute",
+        "path_id": 7,
+        "icon_key": "path_7",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500fb0b0000ef01"
+        }
+      },
+      "20702": {
+        "name": "Unfettered Rope Dart",
+        "path_id": 10,
+        "icon_key": "path_10",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0000e081702e901"
+        }
+      },
+      "10301042": {
+        "name": "Panacea Fan: Radiance",
+        "path_id": 8,
+        "icon_key": "path_8",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index2",
+          "frame": 1494,
+          "locator": "0500f60bda03ed01"
+        }
+      },
+      "204021": {
+        "name": "Phalanxbane Blade: Valor",
+        "path_id": 2,
+        "icon_key": "path_2",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index202",
+          "frame": 10951,
+          "locator": "d0001708db03ed01"
+        }
+      }
+    },
+    "paths": {
+      "1": {
+        "name": "Bellstrike - Splendor",
+        "icon_key": "path_1",
+        "file": "art/path_1.png",
+        "resource": "tianquan_small_1_oversea_0_0_ui",
+        "icon_sha256": "aa141a58489682ebab49c6ea2dc72a8b97c9ac195645c1d48df0346468242d0f",
+        "source": {
+          "archive": "index3",
+          "frame": 787,
+          "locator": "08001d0808021d00"
+        },
+        "original_sha256": "4ae3f5d91f6972fde131c74ba599ff15523233351950a46631f96ffaed5d44a2"
+      },
+      "10": {
+        "name": "Bamboocut - Dust",
+        "icon_key": "path_10",
+        "file": "art/path_10.png",
+        "resource": "guyun_small_2_oversea_0_0_ui",
+        "icon_sha256": "5372a68b2e844c9c66f6268f590810a5426ed0f209f229a2c4faa36d7fdb4cb4",
+        "source": {
+          "archive": "index3",
+          "frame": 787,
+          "locator": "08001d08d1021c00"
+        },
+        "original_sha256": "51ab8b6aa8a2171fb45d2b8ac867f3b25fef8af9ad4753de7d64908eb7b3d26a"
+      },
+      "12": {
+        "name": "Bamboocut - Kite",
+        "icon_key": "path_12",
+        "file": "art/path_12.png",
+        "resource": "moshandao_small_1_oversea_0_0_ui",
+        "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
+        "source": {
+          "archive": "index3",
+          "frame": 787,
+          "locator": "08001d08ed021d00"
+        },
+        "original_sha256": "9ad4908fbec5aeb881fc74ac28315f619f09ce8199e4b760ed531d8c7e9562f6"
+      },
+      "13": {
+        "name": "Silkbind - Wings",
+        "icon_key": "path_13",
+        "file": "art/path_13.png",
+        "resource": "liyuan_small_3_oversea_0_0_ui",
+        "icon_sha256": "2cada8fbb7aeb4fef37153e66a07bbbeb589f30f349a5419828e66b9dee3bb81",
+        "source": {
+          "archive": "index3",
+          "frame": 787,
+          "locator": "08001d080a031c00"
+        },
+        "original_sha256": "c5677ed12b2852c90620b79ad2db0b8403819d57b2a16db7c4146bb9a6afdbc9"
+      },
+      "14": {
+        "name": "Bamboocut - Draught",
+        "icon_key": "path_14",
+        "file": "art/path_14.png",
+        "resource": "zuiquan_small_1_oversea_0_0_ui",
+        "icon_sha256": "c60b8855414512354cb3bcd3e36aefc99e8ac7ba8c8882fd751c9819b4b6997f",
+        "source": {
+          "archive": "index3",
+          "frame": 787,
+          "locator": "08001d0826031d00"
+        },
+        "original_sha256": "5440afab7cc8a1a53d9d42e134018a7c97111f2ce67827cc1ac2aa26e3633324"
+      },
+      "2": {
+        "name": "Stonesplit - Strength",
+        "icon_key": "path_2",
+        "file": "art/path_2.png",
+        "resource": "kuanglan_small_1_oversea_0_0_ui",
+        "icon_sha256": "e6ba6da9a8eff100606c8d088b1dfc5b718539d29587944547b6c12bed00957d",
+        "source": {
+          "archive": "index3",
+          "frame": 787,
+          "locator": "08001d0825021d00"
+        },
+        "original_sha256": "2f05e7242aca1fd1c0e0d49efe9d31f179d188c9e50aabb46b51e9e48ad160ae"
+      },
+      "3": {
+        "name": "Silkbind - Jade",
+        "icon_key": "path_3",
+        "file": "art/path_3.png",
+        "resource": "qingxi_small_1_oversea_0_0_ui",
+        "icon_sha256": "97f447b47f4093e3c66a843a1e4dc802e0556383ca6feae5d78c847024fdc79c",
+        "source": {
+          "archive": "index3",
+          "frame": 787,
+          "locator": "08001d0842021c00"
+        },
+        "original_sha256": "90587db1879683a84f5ed8209a6a3210279edd25b9f59a9bf999487a20f0f7d6"
+      },
+      "5": {
+        "name": "Bamboocut - Wind",
+        "icon_key": "path_5",
+        "file": "art/path_5.png",
+        "resource": "guyun_small_1_oversea_0_0_ui",
+        "icon_sha256": "f0d7b69a1e7fb955c8e174777fb8cc8ce3f1b249d87e81bc3274a2b1c39dd9df",
+        "source": {
+          "archive": "index3",
+          "frame": 787,
+          "locator": "08001d085e021d00"
+        },
+        "original_sha256": "5afea417e7759b68688ef3a644bd9cd71f882858d711c9b6f392f18139eb8a98"
+      },
+      "6": {
+        "name": "Bellstrike - Umbra",
+        "icon_key": "path_6",
+        "file": "art/path_6.png",
+        "resource": "tianquan_small_2_oversea_0_0_ui",
+        "icon_sha256": "c27f85c1b30e77ed9608fef725192a88787e8002e60db458e9be94bf7a5de9eb",
+        "source": {
+          "archive": "index3",
+          "frame": 787,
+          "locator": "08001d087b021d00"
+        },
+        "original_sha256": "da4dd9b48e245362b981e88c322dff086c113a506fa5e9f7627df8b9a48decbe"
+      },
+      "7": {
+        "name": "Stonesplit - Might",
+        "icon_key": "path_7",
+        "file": "art/path_7.png",
+        "resource": "kuanglan_small_2_oversea_0_0_ui",
+        "icon_sha256": "c1157f2766753e2607804d91be2be0270af7a04379af897d077d524fdb2c4f99",
+        "source": {
+          "archive": "index3",
+          "frame": 787,
+          "locator": "08001d0898021d00"
+        },
+        "original_sha256": "b93b5be2c27caceb32c243d6ba74248d605c56ba275cc776c968dfc66fbc46b4"
+      },
+      "8": {
+        "name": "Silkbind - Deluge",
+        "icon_key": "path_8",
+        "file": "art/path_8.png",
+        "resource": "qingxi_small_2_oversea_0_0_ui",
+        "icon_sha256": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
+        "source": {
+          "archive": "index3",
+          "frame": 787,
+          "locator": "08001d08b5021c00"
+        },
+        "original_sha256": "c94895a5de02a75c061f1751e2da24d80007e81f22e0e769110678e9f84ecc17"
+      }
+    },
+    "sources": {
+      "kungfu": [
+        {
+          "archive": "index2",
+          "frame": 1494,
+          "fields": [
+            "WX_PRO_ATK_A",
+            "WX_PRO_ATK_B",
+            "WX_PRO_ATK_C",
+            "WX_PRO_ATK_D",
+            "WX_PRO_ATK_E",
+            "dodge_skill_id",
+            "fight_slot_id",
+            "hide",
+            "is_chiji",
+            "kongfu_function_icon",
+            "kongfu_icon",
+            "kongfu_id",
+            "kongfu_pve_type",
+            "kongfu_type",
+            "name",
+            "neigong_type",
+            "school_id",
+            "skill_num",
+            "skills",
+            "unlocks",
+            "weapon_type",
+            "description",
+            "fall_slot_id",
+            "fight_dodge_skill_id",
+            "gameplay_id",
+            "icon_back_color",
+            "icon_bg_color",
+            "jianghu_fanji",
+            "jianghu_jiekong",
+            "jianghu_pofang",
+            "kongfu_video",
+            "kongfu_video_pic",
+            "level_model",
+            "lv_up_res",
+            "main_property",
+            "main_property_icon",
+            "main_property_name",
+            "skill_rush_id",
+            "skill_tf_id",
+            "skill_yiwu_id",
+            "slot_id",
+            "xieshi_skill_id",
+            "attr_tip",
+            "base_kongfu",
+            "base_skill_list",
+            "base_skill_list_action",
+            "charge_skill",
+            "difficulty",
+            "extra_skill_list",
+            "fit_neigong",
+            "fit_tips",
+            "in_school_id",
+            "kongfu_belong",
+            "kongfu_bowu_id",
+            "kongfu_goto",
+            "kongfu_resource",
+            "kongfu_source_id",
+            "kongfu_tag",
+            "liupai_id",
+            "passive_skill_id",
+            "plan_id",
+            "resource_weapon_icon",
+            "resource_weapon_xinfa",
+            "show_attr_tip_bt",
+            "special_skill_list",
+            "get_kongfu_replace",
+            "threat_magnification",
+            "kongfu_setting_id",
+            "resource_weapon_buff",
+            "auxiliary_dodge_skill_id",
+            "no_weapon"
+          ],
+          "records": 294
+        },
+        {
+          "archive": "index202",
+          "frame": 10951,
+          "fields": [
+            "WX_PRO_ATK_A",
+            "WX_PRO_ATK_B",
+            "WX_PRO_ATK_C",
+            "WX_PRO_ATK_D",
+            "WX_PRO_ATK_E",
+            "dodge_skill_id",
+            "fight_slot_id",
+            "hide",
+            "is_chiji",
+            "kongfu_function_icon",
+            "kongfu_icon",
+            "kongfu_id",
+            "kongfu_pve_type",
+            "kongfu_type",
+            "name",
+            "neigong_type",
+            "school_id",
+            "skill_num",
+            "skills",
+            "unlocks",
+            "weapon_type",
+            "description",
+            "fall_slot_id",
+            "fight_dodge_skill_id",
+            "gameplay_id",
+            "icon_back_color",
+            "icon_bg_color",
+            "jianghu_fanji",
+            "jianghu_jiekong",
+            "jianghu_pofang",
+            "kongfu_video",
+            "kongfu_video_pic",
+            "level_model",
+            "lv_up_res",
+            "main_property",
+            "main_property_icon",
+            "main_property_name",
+            "skill_rush_id",
+            "skill_tf_id",
+            "skill_yiwu_id",
+            "slot_id",
+            "xieshi_skill_id",
+            "attr_tip",
+            "base_kongfu",
+            "base_skill_list",
+            "base_skill_list_action",
+            "charge_skill",
+            "difficulty",
+            "extra_skill_list",
+            "fit_neigong",
+            "fit_tips",
+            "in_school_id",
+            "kongfu_belong",
+            "kongfu_bowu_id",
+            "kongfu_goto",
+            "kongfu_resource",
+            "kongfu_source_id",
+            "kongfu_tag",
+            "liupai_id",
+            "passive_skill_id",
+            "plan_id",
+            "resource_weapon_icon",
+            "resource_weapon_xinfa",
+            "show_attr_tip_bt",
+            "special_skill_list",
+            "threat_magnification",
+            "kongfu_setting_id",
+            "resource_weapon_buff",
+            "auxiliary_dodge_skill_id",
+            "base_skill_list_special"
+          ],
+          "records": 114
+        }
+      ],
+      "paths": [
+        {
+          "archive": "index3",
+          "frame": 787,
+          "fields": [
+            "filter_order",
+            "is_xinfa_show",
+            "liupai_background_color",
+            "liupai_background_color_2",
+            "liupai_background_pic",
+            "liupai_background_pic_2",
+            "liupai_icon",
+            "liupai_id",
+            "liupai_small_icon",
+            "name",
+            "att_no",
+            "des",
+            "liupai_pic",
+            "plan_id",
+            "scene",
+            "scene_pic",
+            "shuxing_att",
+            "shuxing_name",
+            "only_zhuanlv_show"
+          ],
+          "records": 13
+        }
+      ],
+      "index_sha256": {
+        "index1": "94945b5353fb28f8342e95c80d9dde825f685abb38276003cee8e850ca44856d",
+        "index2": "c2d33e0a165fb331a0cf6881d4ed6fbbe6c1fc190387d795b7b3cdff94a881df",
+        "index3": "82666901fe9377e6a1a8033a30ba42b79ad1f714b972ad5b17cfebec44aef92a",
+        "index4": "d4be1a69f409bed2137cba2632468bb2d651554a4df1e07e94499b5e0bbfd75f",
+        "index200": "14c48d7a0b3965df9d1be62ca178f276e334b81158c4fb88bb9960edfedd42c3",
+        "index201": "fd7fccfb642af004d8c7d621ea5babde702b7f52edee60b303e3af0181fa5323",
+        "index202": "8937aca7044ac84da44b53d862cb5d81f03c745eeae945e502b34812b7f2436f",
+        "index203": "a03212dc68680f593f63fb04a51643817f07062e68dd5525384d3694bc83379c",
+        "index204": "51ddf021fe062e29ad36102224e1b29ef33e36fc914471d9df831b58425c1e85",
+        "index1001": "1264ebf5dffd46c121cfc03fd991e11a97cb9a5bd4f2c1f394cb4e6a7b6d0a4c",
+        "index1200": "8b323da7d12d2d46024088f138370c8bebf6d7c0a1192048e3106f44d27abe4b"
+      },
+      "artwork": {
+        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "physical_lookup": {
+          "scope": "base+LT+patch",
+          "sources": [
+            {
+              "path": "Resources.mpkinfo",
+              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+            },
+            {
+              "path": "LocalData\\Patch\\LT1.mpkinfo",
+              "sha256": "353f314a629bbcd842b024931296e2c3ceb062aeb41607b043416cc0c29afc71"
+            },
+            {
+              "path": "LocalData\\Patch\\Patch.mpkdb",
+              "sha256": "084d265031cf7e9dd61ea7b90b39a034aeb63d5fe5504e358a8cfd6f21c3c017"
+            }
+          ],
+          "lt_indexes": [
+            "LT1.mpkinfo"
+          ],
+          "patch_database_present": true,
+          "missing_file_ids": []
+        },
+        "selection": "overseas regular UI variant; 4k excluded"
+      },
+      "game_version": null,
+      "version_note": "Installed content identified by index/registry fingerprints; no authoritative semantic version supplied."
+    },
+    "excluded_no_path": [
+      "10114",
+      "10203",
+      "10112",
+      "10105",
+      "20400",
+      "20800",
+      "21000",
+      "10305",
+      "10206",
+      "10111",
+      "10103",
+      "10108",
+      "10109",
+      "20600",
+      "20700",
+      "10113",
+      "10107",
+      "10000",
+      "0",
+      "20500",
+      "10106",
+      "10205",
+      "20900",
+      "10104"
+    ]
   }
 }

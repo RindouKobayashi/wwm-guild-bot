@@ -358,9 +358,14 @@ if _extracted_api:
     LIKES.update({int(key): value for key, value in _extracted_api['likes'].items()})
     if _extracted_api.get('boss_names'):
         BOSS_NAMES = {int(key): value for key, value in _extracted_api['boss_names'].items()}
-for _identifier, _name in _game_assets().section('martial_names', {}).items():
-    if str(_identifier).isdigit() and isinstance(_name, str) and _name:
-        KONGFU_WEAPON_MAP.setdefault(int(_identifier), {})['name'] = _name
+from utility.martial import catalogue as _martial_catalogue, lookup as _martial_lookup, equipped as _martial_equipped, identifier as _martial_id
+KONGFU_WEAPON_MAP = _martial_catalogue(KONGFU_WEAPON_MAP)
+
+
+def get_kongfu(value):
+    return _martial_lookup(value, KONGFU_WEAPON_MAP)
+
+
 
 
 def get_like_topic_name(topic_id):
@@ -379,6 +384,9 @@ TANK_WEAPONS = {20103, 20401}
 
 def classify_kongfu_role(weapon_ids: list) -> str:
     """Classify player role based on their equipped kongfu/weapon IDs."""
+    weapon_ids = [_martial_id(w) for w in weapon_ids]
+    if not weapon_ids or any(w not in KONGFU_WEAPON_MAP or not KONGFU_WEAPON_MAP[w].get("role") for w in weapon_ids):
+        return "Undetermined"
     healer_count = sum(1 for w in weapon_ids if w in HEALER_WEAPONS)
     tank_count = sum(1 for w in weapon_ids if w in TANK_WEAPONS)
     dps_count = len(weapon_ids) - healer_count - tank_count
@@ -399,9 +407,9 @@ def classify_kongfu_role(weapon_ids: list) -> str:
 
 def format_kongfu_display(weapon_ids: list) -> str:
     """Format weapon names and role classification into a display string."""
-    weapon_names = [KONGFU_WEAPON_MAP.get(w, {}).get("name", f"Unknown ({w})") for w in weapon_ids]
+    weapon_names = [(get_kongfu(w) or {}).get("name", "Unavailable") for w in weapon_ids]
     role = classify_kongfu_role(weapon_ids)
-    role_emoji = (KONGFU_WEAPON_MAP.get(w, {}).get("emoji", "") for w in weapon_ids)
+    role_emoji = ((get_kongfu(w) or {}).get("emoji", "") for w in weapon_ids)
 
     weapons_str = ", ".join(weapon_names)
     return f"{weapons_str} | {' '.join(role_emoji)} {role}"
@@ -411,17 +419,4 @@ def get_kongfu_ids_from_player(player_data: dict) -> list:
     """Extract kongfu weapon IDs from player data's kongfu section.
     Structure is: {"kongfu": {"kongfu_main": 10101, "kongfu_sub": 10202}}
     """
-    kongfu_data = player_data.get('kongfu', {})
-    if not kongfu_data:
-        return []
-    
-    weapon_ids = []
-    main_id = kongfu_data.get('kongfu_main')
-    sub_id = kongfu_data.get('kongfu_sub')
-    if main_id:
-        weapon_ids.append(main_id)
-    if sub_id:
-        weapon_ids.append(sub_id)
-    
-    return weapon_ids
-
+    return _martial_equipped(player_data)

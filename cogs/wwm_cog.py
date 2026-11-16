@@ -3463,17 +3463,18 @@ class WWMCog(commands.Cog):
         kongfu_sub = None
         kongfu_role = None
         try:
-            from utility.api_constants import KONGFU_WEAPON_MAP
-            kongfu_data = data.get('kongfu', {})
+            from utility.api_constants import get_kongfu
+            kongfu_data = data.get('kongfu')
+            kongfu_data = kongfu_data if isinstance(kongfu_data, dict) else {}
             if kongfu_data:
                 main_id = kongfu_data.get('kongfu_main')
                 sub_id = kongfu_data.get('kongfu_sub')
                 if main_id:
-                    kongfu_main = KONGFU_WEAPON_MAP.get(main_id, f"Unknown ({main_id})").get("name")
-                    kongfu_main += " " + KONGFU_WEAPON_MAP.get(main_id, f"Unknown ({main_id})").get("emoji", "")
+                    kongfu_main = (get_kongfu(main_id) or {}).get("name", "Unavailable")
+                    kongfu_main += " " + (get_kongfu(main_id) or {}).get("emoji", "")
                 if sub_id:
-                    kongfu_sub = KONGFU_WEAPON_MAP.get(sub_id, f"Unknown ({sub_id})").get("name")
-                    kongfu_sub += " " + KONGFU_WEAPON_MAP.get(sub_id, f"Unknown ({sub_id})").get("emoji", "")
+                    kongfu_sub = (get_kongfu(sub_id) or {}).get("name", "Unavailable")
+                    kongfu_sub += " " + (get_kongfu(sub_id) or {}).get("emoji", "")
                 weapon_ids = get_kongfu_ids_from_player(data)
                 if weapon_ids:
                     kongfu_role = classify_kongfu_role(weapon_ids) if weapon_ids else ""

@@ -1,0 +1,10 @@
+{
+  "format": 1,
+  "enabled": true,
+  "applications": {
+    "test": "1289424877916393547",
+    "production": "1488802246081773669"
+  },
+  "catalogue_sha256": "021abd3ec90f737d69af6d2855382c026e127f1e26c3c0e55dabfe99a9f9ff25",
+  "upload_manifest_sha256": "1e44eacb55508584b8ce49cda86cd2b693098574a9b8ffaa13f5eeac98c62d11"
+}

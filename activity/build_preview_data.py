@@ -11,10 +11,8 @@ def main():
     public=HERE/'public';(public/'art').mkdir(parents=True,exist_ok=True)
     source=BOT.parent/'WWM-Toolkit/output/game_data/abyss_trials'
     data=json.loads((BOT/'data/abyss_assets/catalogue.json').read_text(encoding='utf-8'))
-    weapons={}
-    for node in ast.parse((BOT/'utility/api_constants.py').read_text(encoding='utf-8')).body:
-        if isinstance(node,ast.Assign) and any(isinstance(t,ast.Name) and t.id=='KONGFU_WEAPON_MAP' for t in node.targets):
-            weapons={str(k):v['name'] for k,v in ast.literal_eval(node.value).items()}
+    from utility.api_constants import KONGFU_WEAPON_MAP
+    weapons={str(k):v['name'] for k,v in KONGFU_WEAPON_MAP.items()}
     data['names']['martial']={**weapons,**data['names'].get('martial',{})}
     boards=[]
     for entry in data['trials']:

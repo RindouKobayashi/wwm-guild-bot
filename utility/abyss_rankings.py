@@ -3,7 +3,7 @@ import json,math
 from pathlib import Path
 from datetime import datetime,timezone
 import discord
-from utility.api_constants import KONGFU_WEAPON_MAP
+from utility.api_constants import get_kongfu
 
 class AbyssAssets:
     def __init__(self,root):
@@ -72,9 +72,7 @@ class AbyssRankingView(discord.ui.LayoutView):
     def mapped(self,kind,values):
         names = self.names.get(kind, {})
         if kind == 'martial':
-            # Reuse the same martial-art labels as player profiles. Extracted
-            # names take precedence; unknown encounter-specific IDs stay visible.
-            names = {**{str(k):v['name'] for k,v in KONGFU_WEAPON_MAP.items() if v.get('name')}, **names}
+            return ', '.join('Empty' if v in (0,'0') else clean((get_kongfu(v) or {}).get('name','Unavailable'),38) for v in values) or 'Not recorded'
         return ', '.join('Empty' if v==0 else clean(names.get(str(v),f'ID {v}'),38) for v in values) or 'Not recorded'
     def rebuild(self):
         self.clear_items()

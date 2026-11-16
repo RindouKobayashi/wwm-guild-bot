@@ -8,12 +8,15 @@ The four versioned exports in this folder contain public game data:
 - `equipment_metadata.json`
 
 They were refreshed from the November 14, 2026 extraction and checked against the
-published asset bundle: 5,344 named affixes, 2,624 equipment names, 30,910 item IDs
+published asset bundle: 5,344 named affixes, 2,624 equipment names, 31,081 item IDs
 and 2,634 equipment metadata records.
 
 This includes 54 original ranged-affix references recovered from small shards;
 the existing 5,290 core mappings were preserved. See the
 [small-shard repair](../maintenance/assets/Small%20affix%20shards.md).
+The broader audit also recovered 171 item names by correcting packed column
+indices in the 273-column crafting table. See the
+[coverage audit](../maintenance/assets/Asset%20coverage%20audit%202026-11-14.md).
 
 The bot and Activity normally read the validated bundle in `assets/wwm/current`.
 These files support legacy fallback and maintenance tools. The normal asset

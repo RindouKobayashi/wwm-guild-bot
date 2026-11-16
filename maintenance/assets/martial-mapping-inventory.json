@@ -1,0 +1,540 @@
+{
+  "format": 1,
+  "coverage": "Literal uppercase containers in runtime cogs, utility and Activity Python. Values excluded. Generated bundles and dynamic/DB mappings audited separately in the companion report.",
+  "mappings": [
+    {
+      "symbol": "FIELDS",
+      "file": "activity/player_profiles.py",
+      "line": 5,
+      "kind": "list",
+      "entries": 15,
+      "consumers": [
+        "activity/server.py"
+      ]
+    },
+    {
+      "symbol": "GEAR_ORDER",
+      "file": "activity/player_profiles.py",
+      "line": 94,
+      "kind": "list",
+      "entries": 10,
+      "consumers": [
+        "activity/player_profiles.py"
+      ]
+    },
+    {
+      "symbol": "GEAR_ATTRIBUTES",
+      "file": "activity/player_profiles.py",
+      "line": 95,
+      "kind": "dict",
+      "entries": 11,
+      "consumers": [
+        "activity/player_profiles.py"
+      ]
+    },
+    {
+      "symbol": "QUALITY_NAMES",
+      "file": "activity/player_profiles.py",
+      "line": 98,
+      "kind": "dict",
+      "entries": 5,
+      "consumers": [
+        "activity/player_profiles.py"
+      ]
+    },
+    {
+      "symbol": "STANDARD_SIZE",
+      "file": "cogs/autotranslate_cog.py",
+      "line": 282,
+      "kind": "tuple",
+      "entries": 2,
+      "consumers": [
+        "cogs/autotranslate_cog.py"
+      ]
+    },
+    {
+      "symbol": "ROLE_NAMES",
+      "file": "cogs/event_log_cog.py",
+      "line": 25,
+      "kind": "dict",
+      "entries": 10,
+      "consumers": [
+        "cogs/event_log_cog.py"
+      ]
+    },
+    {
+      "symbol": "RANK_ORDER",
+      "file": "cogs/event_log_cog.py",
+      "line": 31,
+      "kind": "list",
+      "entries": 10,
+      "consumers": []
+    },
+    {
+      "symbol": "LADDER_RANKS",
+      "file": "cogs/event_log_cog.py",
+      "line": 32,
+      "kind": "set",
+      "entries": 4,
+      "consumers": [
+        "cogs/event_log_cog.py"
+      ]
+    },
+    {
+      "symbol": "ASSIGNMENT_RANKS",
+      "file": "cogs/event_log_cog.py",
+      "line": 33,
+      "kind": "set",
+      "entries": 6,
+      "consumers": [
+        "cogs/event_log_cog.py"
+      ]
+    },
+    {
+      "symbol": "CATEGORY_COLORS",
+      "file": "cogs/help_cog.py",
+      "line": 11,
+      "kind": "list",
+      "entries": 9,
+      "consumers": [
+        "cogs/help_cog.py"
+      ]
+    },
+    {
+      "symbol": "FARM_QUALITY_MAP",
+      "file": "cogs/homestead_cog.py",
+      "line": 17,
+      "kind": "dict",
+      "entries": 4,
+      "consumers": [
+        "cogs/homestead_cog.py"
+      ]
+    },
+    {
+      "symbol": "SERIAL_ID_EMBED_META",
+      "file": "cogs/homestead_cog.py",
+      "line": 25,
+      "kind": "dict",
+      "entries": 7,
+      "consumers": [
+        "cogs/homestead_cog.py"
+      ]
+    },
+    {
+      "symbol": "SERIAL_ID_NAMES",
+      "file": "cogs/homestead_cog.py",
+      "line": 36,
+      "kind": "dict",
+      "entries": 7,
+      "consumers": [
+        "cogs/homestead_cog.py"
+      ]
+    },
+    {
+      "symbol": "DEFAULT_ENABLED_QUALITIES",
+      "file": "cogs/homestead_cog.py",
+      "line": 47,
+      "kind": "list",
+      "entries": 4,
+      "consumers": [
+        "cogs/homestead_cog.py"
+      ]
+    },
+    {
+      "symbol": "DEFAULT_ENABLED_SERIAL_IDS",
+      "file": "cogs/homestead_cog.py",
+      "line": 48,
+      "kind": "list",
+      "entries": 7,
+      "consumers": [
+        "cogs/homestead_cog.py"
+      ]
+    },
+    {
+      "symbol": "DEFAULT_PING_MAP",
+      "file": "cogs/homestead_cog.py",
+      "line": 50,
+      "kind": "dict",
+      "entries": 0,
+      "consumers": []
+    },
+    {
+      "symbol": "LEADERBOARD_COLORS",
+      "file": "cogs/leaderboard_cog.py",
+      "line": 52,
+      "kind": "dict",
+      "entries": 5,
+      "consumers": [
+        "cogs/leaderboard_cog.py"
+      ]
+    },
+    {
+      "symbol": "LEADERBOARD_EMOJIS",
+      "file": "cogs/leaderboard_cog.py",
+      "line": 60,
+      "kind": "dict",
+      "entries": 5,
+      "consumers": [
+        "cogs/leaderboard_cog.py"
+      ]
+    },
+    {
+      "symbol": "LB_API_FIELDS",
+      "file": "cogs/leaderboard_cog.py",
+      "line": 68,
+      "kind": "dict",
+      "entries": 4,
+      "consumers": [
+        "cogs/leaderboard_cog.py"
+      ]
+    },
+    {
+      "symbol": "AVATAR_VALID_SUBFOLDERS",
+      "file": "cogs/live_chat_cog.py",
+      "line": 129,
+      "kind": "set",
+      "entries": 6,
+      "consumers": [
+        "cogs/live_chat_cog.py"
+      ]
+    },
+    {
+      "symbol": "GOOD_EMOJIS",
+      "file": "cogs/market_cog.py",
+      "line": 52,
+      "kind": "list",
+      "entries": 8,
+      "consumers": [
+        "cogs/market_cog.py"
+      ]
+    },
+    {
+      "symbol": "ALLOWED_CHANNELS",
+      "file": "cogs/music_cog.py",
+      "line": 34,
+      "kind": "set",
+      "entries": 3,
+      "consumers": [
+        "cogs/music_cog.py"
+      ]
+    },
+    {
+      "symbol": "MONTH_NAMES",
+      "file": "cogs/wwm_cog.py",
+      "line": 84,
+      "kind": "list",
+      "entries": 12,
+      "consumers": [
+        "cogs/wwm_cog.py"
+      ]
+    },
+    {
+      "symbol": "COLLECTION_CATEGORY_SCOPES",
+      "file": "cogs/wwm_cog.py",
+      "line": 153,
+      "kind": "dict",
+      "entries": 4,
+      "consumers": [
+        "cogs/wwm_cog.py"
+      ]
+    },
+    {
+      "symbol": "COLLECTION_SOURCES",
+      "file": "cogs/wwm_cog.py",
+      "line": 165,
+      "kind": "dict",
+      "entries": 4,
+      "consumers": []
+    },
+    {
+      "symbol": "GRADE_NAMES",
+      "file": "cogs/wwm_cog.py",
+      "line": 1003,
+      "kind": "dict",
+      "entries": 10,
+      "consumers": []
+    },
+    {
+      "symbol": "SMALL_GRADE_SUFFIXES",
+      "file": "cogs/wwm_cog.py",
+      "line": 1009,
+      "kind": "dict",
+      "entries": 6,
+      "consumers": []
+    },
+    {
+      "symbol": "COLLECTION_BUCKET_LABELS",
+      "file": "cogs/wwm_cog.py",
+      "line": 1845,
+      "kind": "dict",
+      "entries": 4,
+      "consumers": []
+    },
+    {
+      "symbol": "COLLECTION_BUCKET_ORDER",
+      "file": "cogs/wwm_cog.py",
+      "line": 1851,
+      "kind": "list",
+      "entries": 4,
+      "consumers": []
+    },
+    {
+      "symbol": "SLOT_NAMES",
+      "file": "cogs/wwm_cog.py",
+      "line": 2251,
+      "kind": "dict",
+      "entries": 10,
+      "consumers": [
+        "cogs/wwm_cog.py"
+      ]
+    },
+    {
+      "symbol": "BOW_SLOTS",
+      "file": "cogs/wwm_cog.py",
+      "line": 2267,
+      "kind": "set",
+      "entries": 2,
+      "consumers": [
+        "cogs/wwm_cog.py"
+      ]
+    },
+    {
+      "symbol": "PAGE_GROUPS",
+      "file": "cogs/wwm_cog.py",
+      "line": 2430,
+      "kind": "list",
+      "entries": 4,
+      "consumers": [
+        "cogs/wwm_cog.py"
+      ]
+    },
+    {
+      "symbol": "BOW_SLOTS",
+      "file": "cogs/wwm_cog.py",
+      "line": 2592,
+      "kind": "set",
+      "entries": 2,
+      "consumers": [
+        "cogs/wwm_cog.py"
+      ]
+    },
+    {
+      "symbol": "CHINESE_UNIT_TRANSLATIONS",
+      "file": "utility/affix_mapper.py",
+      "line": 30,
+      "kind": "dict",
+      "entries": 3,
+      "consumers": [
+        "utility/affix_mapper.py"
+      ]
+    },
+    {
+      "symbol": "BULK_FIELDS",
+      "file": "utility/api_constants.py",
+      "line": 10,
+      "kind": "dict",
+      "entries": 5,
+      "consumers": []
+    },
+    {
+      "symbol": "BULK_PRESETS",
+      "file": "utility/api_constants.py",
+      "line": 62,
+      "kind": "dict",
+      "entries": 4,
+      "consumers": []
+    },
+    {
+      "symbol": "GUILD_FIELDS",
+      "file": "utility/api_constants.py",
+      "line": 80,
+      "kind": "dict",
+      "entries": 7,
+      "consumers": []
+    },
+    {
+      "symbol": "API_ENDPOINTS",
+      "file": "utility/api_constants.py",
+      "line": 125,
+      "kind": "dict",
+      "entries": 7,
+      "consumers": []
+    },
+    {
+      "symbol": "CLUB_CHAT_FIELDS",
+      "file": "utility/api_constants.py",
+      "line": 139,
+      "kind": "list",
+      "entries": 1,
+      "consumers": []
+    },
+    {
+      "symbol": "SCHOOL_NAMES",
+      "file": "utility/api_constants.py",
+      "line": 147,
+      "kind": "dict",
+      "entries": 9,
+      "consumers": [
+        "activity/server.py",
+        "cogs/ranking_cog.py",
+        "cogs/sect_cog.py",
+        "cogs/wwm_cog.py"
+      ]
+    },
+    {
+      "symbol": "VOTE_COUNTS",
+      "file": "utility/api_constants.py",
+      "line": 193,
+      "kind": "dict",
+      "entries": 30,
+      "consumers": [
+        "cogs/sect_cog.py",
+        "cogs/wwm_cog.py"
+      ]
+    },
+    {
+      "symbol": "SCHOOL_RANKING",
+      "file": "utility/api_constants.py",
+      "line": 231,
+      "kind": "dict",
+      "entries": 39,
+      "consumers": [
+        "cogs/sect_cog.py",
+        "cogs/wwm_cog.py"
+      ]
+    },
+    {
+      "symbol": "LIKES",
+      "file": "utility/api_constants.py",
+      "line": 280,
+      "kind": "dict",
+      "entries": 10,
+      "consumers": [
+        "utility/api_constants.py"
+      ]
+    },
+    {
+      "symbol": "BOSS_NAMES",
+      "file": "utility/api_constants.py",
+      "line": 293,
+      "kind": "dict",
+      "entries": 31,
+      "consumers": [
+        "cogs/event_log_cog.py",
+        "cogs/leaderboard_cog.py"
+      ]
+    },
+    {
+      "symbol": "CLUB_CHAT_MESSAGE_FIELDS",
+      "file": "utility/api_constants.py",
+      "line": 307,
+      "kind": "set",
+      "entries": 14,
+      "consumers": []
+    },
+    {
+      "symbol": "KONGFU_WEAPON_MAP",
+      "file": "utility/api_constants.py",
+      "line": 327,
+      "kind": "dict",
+      "entries": 20,
+      "consumers": [
+        "activity/build_preview_data.py",
+        "utility/api_constants.py"
+      ]
+    },
+    {
+      "symbol": "HEALER_WEAPONS",
+      "file": "utility/api_constants.py",
+      "line": 381,
+      "kind": "set",
+      "entries": 2,
+      "consumers": [
+        "utility/api_constants.py"
+      ]
+    },
+    {
+      "symbol": "TANK_WEAPONS",
+      "file": "utility/api_constants.py",
+      "line": 382,
+      "kind": "set",
+      "entries": 2,
+      "consumers": [
+        "utility/api_constants.py"
+      ]
+    },
+    {
+      "symbol": "SCHOOL_EMOTES",
+      "file": "utility/api_constants.py",
+      "line": 160,
+      "kind": "dict",
+      "entries": 8,
+      "consumers": [
+        "cogs/sect_cog.py",
+        "cogs/wwm_cog.py"
+      ]
+    },
+    {
+      "symbol": "SCHOOL_ROLES",
+      "file": "utility/api_constants.py",
+      "line": 170,
+      "kind": "dict",
+      "entries": 8,
+      "consumers": [
+        "cogs/guild_verification_cog.py"
+      ]
+    },
+    {
+      "symbol": "SCHOOL_EMOTES",
+      "file": "utility/api_constants.py",
+      "line": 181,
+      "kind": "dict",
+      "entries": 7,
+      "consumers": [
+        "cogs/sect_cog.py",
+        "cogs/wwm_cog.py"
+      ]
+    },
+    {
+      "symbol": "DEFAULT_FIELDS",
+      "file": "utility/wwm.py",
+      "line": 42,
+      "kind": "list",
+      "entries": 24,
+      "consumers": [
+        "utility/wwm.py"
+      ]
+    },
+    {
+      "symbol": "ALL_KNOWN_FIELDS",
+      "file": "utility/wwm.py",
+      "line": 51,
+      "kind": "list",
+      "entries": 102,
+      "consumers": [
+        "cogs/admin_test_cog.py",
+        "utility/wwm.py"
+      ]
+    },
+    {
+      "symbol": "DEFAULT_GUILD_FIELDS",
+      "file": "utility/wwm.py",
+      "line": 157,
+      "kind": "dict",
+      "entries": 10,
+      "consumers": [
+        "utility/wwm.py"
+      ]
+    },
+    {
+      "symbol": "NS",
+      "file": "utility/xlsx_reader.py",
+      "line": 28,
+      "kind": "dict",
+      "entries": 1,
+      "consumers": [
+        "utility/xlsx_reader.py"
+      ]
+    }
+  ]
+}

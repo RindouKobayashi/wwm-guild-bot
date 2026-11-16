@@ -73,6 +73,16 @@ async def main():
     elif os.name != 'nt':
         loop.add_signal_handler(signal.SIGTERM, shutdown_signal)
     try:
+        from utility.emoji_startup import startup as sync_reviewed_icons
+        environment = 'production' if settings.branch == 'main' else 'test'
+        icon_sync = await sync_reviewed_icons(environment, settings.DISCORD_API_TOKEN)
+        if icon_sync['state'] == 'incomplete':
+            logger.warning(icon_sync['message'])
+        else:
+            logger.info('Reviewed icon sync: %s', icon_sync['state'])
+        from control_panel.telemetry import emit
+        emit('log', {'level':'WARNING' if icon_sync['state']=='incomplete' else 'INFO',
+                     'message':'Reviewed icon sync: '+icon_sync['state'], 'service':'bot'})
         await bot.start(settings.DISCORD_API_TOKEN)
     except KeyboardInterrupt:
         logger.info("Keyboard Interrupt received. Shutting down the bot.")

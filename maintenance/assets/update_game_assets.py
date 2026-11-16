@@ -17,7 +17,7 @@ sys.path.insert(0, str(BOT))
 from utility.game_assets import GameAssets, ROOT, digest, validate_release
 from build_game_bundle import legacy_tables, apply_exports, add_rankings, finish, read, write
 
-SECTIONS = {'affixes', 'equipment', 'items', 'dungeons', 'abyss', 'constants'}
+SECTIONS = {'affixes', 'equipment', 'items', 'dungeons', 'abyss', 'constants', 'martial'}
 
 
 def pointer(base):
@@ -207,6 +207,10 @@ def main():
                          ['--toolkit', toolkit, '--game-root', table_root, '--output', extracted], work, 'api-constants')
                 tables['api_constants'] = read(extracted)
                 tables['unmigrated_policy'] = [value for value in tables.get('unmigrated_policy', []) if value != 'sect names']
+            if 'martial' in selected:
+                from extract_martial import extract
+                martial_output = work / 'martial'
+                tables['martial'] = extract(toolkit, game, martial_output)
             if args.include_avatars:
                 run_step(python, toolkit / 'app/scan_game_avatars.py', ['--game-root', game], work, 'avatars')
                 provenance['warnings'].append('Avatar source/render exports refreshed in Toolkit. Unsupported effects remain unresolved; no invented composites. Runtime avatar publishing is not yet enabled.')
@@ -221,6 +225,11 @@ def main():
         elif args.only:
             raise ValueError('--only is for extraction; use a full --from-existing bootstrap')
         provenance['unresolved_artwork'] = add_rankings(stage, dungeons, abyss, tables)
+        if 'martial' in selected and not args.from_existing:
+            from extract_martial import copy_export
+            copy_export(martial_output, stage / 'martial')
+        elif existing.directory and (existing.directory / 'martial').exists():
+            shutil.copytree(existing.directory / 'martial', stage / 'martial', dirs_exist_ok=True)
         write(work / 'changes-before-validation.json', __import__('build_game_bundle').changes(existing.tables, tables))
         # Staging records all removals; accepting them is a separate apply action.
         report = finish(stage, tables, provenance, existing.tables, True, existing.directory)

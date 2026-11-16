@@ -26,6 +26,8 @@ def sections(tables, directory=None):
     for key in ('item_index', 'martial_names'):
         if key in tables:
             result[key] = tables[key]
+    for key, value in tables.get('martial', {}).items():
+        if key in ('kungfu','paths'):result['martial.'+key]=value
     for key, value in tables.get('api_constants', {}).items():
         if isinstance(value, dict) and key != 'sources':
             result['api_constants.' + key] = value
