@@ -1,7 +1,9 @@
 # Live-chat emotes
 
-Game emotes are ordinary image attachments. No Discord application emoji upload,
-server emoji slots or Developer Portal setup is needed.
+Standalone game stickers remain ordinary image attachments. The small inline
+faces are also bundled as bot-owned application emojis, preserving animation.
+They do not consume server emoji slots. The normal startup sync uploads missing
+reviewed files; no manual Developer Portal setup is needed.
 
 ## Main-computer update
 
@@ -31,6 +33,60 @@ remain missing, and no group icon is substituted for unavailable emote art.
 Critical routing-source hashes are pinned in `emote_sources.json`. A changed
 script stops extraction until its control flow is reviewed; matching symbol
 names alone cannot approve a changed ID relationship.
+
+Inline artwork comes from the client's `all_png_data` Cocos atlas list. The
+extractor finds exact frame filenames in installed `.plist` files, decodes the
+referenced atlas texture and reconstructs each frame using its original crop and
+transparent canvas. It checks bounds, dimensions and trim offsets; rotated
+frames remain unsupported until their decoding is verified. All 280 required
+frames on this install are unrotated. This recovers the 55 inline emotes for the
+gallery without mixing their IDs with standalone sticker IDs. Their GIF previews
+use the client's default 200 ms frame
+interval; custom rich-text timing is not interpreted by the relay.
+The heart (261) has four identical original frames and is correctly exported as
+a still; the other 54 recovered inline entries have animated previews.
+
+## Inline replacement and automatic upload
+
+The original chat input source serializes an inline face as a position marker
+such as `[#4]`, with its actual game ID in `ext.emotion[4]`. The bot resolves this
+metadata rather than treating 4 as an emote ID. Integer and string dictionary
+keys are supported. Unknown or malformed mappings keep the original text;
+known faces without an upload use readable labels such as `[smile]`.
+
+`emotes/upload-pack/` contains 54 animated 128×128 GIFs and one PNG, a manifest,
+an illustrated sheet and upload instructions. Each file is below 256 KiB.
+The release approval binds the exact catalogue and upload-manifest hashes to the
+test/production application IDs in `assets/discord/inline-applications.json`.
+Review and commit the pack, pull on the Pi, and start normally. Both Windows
+and Pi use the same bounded startup sync before gateway login; extraction and
+128px conversion stay on the main computer. A separate Discord client is never
+started. This is a new reviewed upload collection, separate from martial icons.
+
+Startup checks the authenticated application's identity, reuses receipts or
+verified artwork, and creates only approved missing/versioned emojis. It never
+deletes old emojis. Successful IDs are saved incrementally in ignored
+`data/inline-emojis.json`; pending uncertain uploads and status have separate
+inline-specific files. A timeout leaves readable labels for missing uploads;
+the next start reconciles before creating again. Animated reconciliation checks
+every frame and timing, not only the first frame. Application capacity is checked
+before any upload. No credentials appear in the pack or receipts.
+
+Rendering uses the connected bot's application ID, not an environment guess.
+It inserts `<a:name:id>` for animations and `<:name:id>` for the heart, after
+translation so Discord emoji IDs are not sent to the translation provider.
+Original and translated text use the markers they retain; a translator-mangled
+marker is preserved rather than guessed. Each message has bounded replacements.
+Standalone image cards and Discord-to-game sending remain unchanged.
+
+For maintenance, `python maintenance/assets/upload_inline_emojis.py --environment
+test` is a read-only preview. `--upload` requires typing `UPLOAD TEST`, or the
+application ID in production. `--import-existing` verifies manually uploaded
+artwork and cannot create emojis, including if the list changes after confirmation.
+Never clear an uncertain pending upload just to retry; reconcile it first.
+
+Discord's application-emoji format and limits:
+https://docs.discord.com/developers/resources/emoji
 
 Primary rows are bounded by the named MANIFEST page span. Actual Swiss-table
 occupied counts, unique index keys, row identities and complete row consumption

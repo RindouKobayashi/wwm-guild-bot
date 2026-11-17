@@ -1,6 +1,7 @@
 import discord
 import settings
 import asyncio
+import logging
 from discord.ext import commands
 from settings import logger
 from control_panel.commands import ObservedTree, install as install_command_observers
@@ -75,7 +76,9 @@ async def main():
     try:
         from utility.emoji_startup import startup as sync_reviewed_icons
         environment = 'production' if settings.branch == 'main' else 'test'
-        icon_sync = await sync_reviewed_icons(environment, settings.DISCORD_API_TOKEN)
+        from utility.game_assets import current as current_assets
+        published_assets = current_assets()
+        icon_sync = await sync_reviewed_icons(environment, settings.DISCORD_API_TOKEN, assets=published_assets)
         if icon_sync['state'] == 'incomplete':
             logger.warning(icon_sync['message'])
         else:
@@ -83,6 +86,11 @@ async def main():
         from control_panel.telemetry import emit
         emit('log', {'level':'WARNING' if icon_sync['state']=='incomplete' else 'INFO',
                      'message':'Reviewed icon sync: '+icon_sync['state'], 'service':'bot'})
+        inline_sync = await sync_reviewed_icons(environment, settings.DISCORD_API_TOKEN, kind='inline', assets=published_assets)
+        logger.log(logging.WARNING if inline_sync['state']=='incomplete' else logging.INFO,
+                   'Reviewed inline emoji sync: %s', inline_sync['state'])
+        emit('log', {'level':'WARNING' if inline_sync['state']=='incomplete' else 'INFO',
+                     'message':'Reviewed inline emoji sync: '+inline_sync['state'], 'service':'bot'})
         await bot.start(settings.DISCORD_API_TOKEN)
     except KeyboardInterrupt:
         logger.info("Keyboard Interrupt received. Shutting down the bot.")

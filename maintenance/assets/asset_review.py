@@ -39,6 +39,12 @@ def sections(tables, directory=None):
     result = {key: value for key, value in result.items() if isinstance(value, dict)}
     if directory:
         directory = Path(directory)
+        upload_manifest = directory / 'emotes/upload-pack/upload-manifest.json'
+        if upload_manifest.exists():
+            result['inline_emoji_uploads'] = {row['key']: row for row in json.loads(upload_manifest.read_text(encoding='utf-8'))['icons']}
+        inline_approval = directory / 'emotes/startup-approval.json'
+        if inline_approval.exists():
+            result['inline_emoji_approval'] = {'startup': json.loads(inline_approval.read_text(encoding='utf-8'))}
         catalogue = directory / 'activity/catalogue.json'
         if catalogue.exists():
             boards = json.loads(catalogue.read_text(encoding='utf-8'))['boards']

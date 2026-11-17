@@ -1,5 +1,6 @@
 import asyncio
 from utility.emotes import EmoteResolver, key as emote_key, fallback_text as emote_fallback_text
+from utility.inline_emojis import InlineEmojis
 import io
 import json
 import os
@@ -2577,6 +2578,7 @@ class LiveChatCog(commands.Cog):
         # emotion_id strings we've already prompted the user to map.
         self.seen_emotion_ids: Set[str] = set()
         self.emotes = EmoteResolver(manual_dir=EMOTION_DIR)
+        self.inline_emojis = InlineEmojis()
 
         # Configuration
         self.CONFIG_FILE = "data/live_chat_config.json"
@@ -3003,6 +3005,11 @@ class LiveChatCog(commands.Cog):
                     message += f"\n\n[Translated] {translated}"
 
         
+        # Resolve position markers only after translation. Discord emoji IDs
+        # never leave the host for the translation provider.
+        inline = getattr(self, 'inline_emojis', None)
+        if inline:
+            message = inline.render(message, ext.get('emotion'), getattr(self.bot, 'application_id', None))
         channel_type = msg.get('channel', 'club_chat')
         
         # Channel styling

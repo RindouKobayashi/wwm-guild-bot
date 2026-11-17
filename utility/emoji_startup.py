@@ -18,16 +18,21 @@ def approval(directory, environment):
     return app
 
 
-async def sync(directory, environment, token, root=BOT, api=None):
+async def sync(directory, environment, token, root=BOT, api=None, kind='martial', allow_create=True):
+    if kind not in ('martial','inline'):raise ValueError('Unsupported emoji collection')
+    if kind=='inline':
+        from utility.inline_emojis import validate_pack
+        validate_pack(directory)
     from utility.martial import read_registry
     app=approval(directory,environment);pack=directory/'upload-pack';rows=icons(pack)
-    local=root/'data/martial-emojis.json';pending_file=root/'data/martial-emoji-upload-pending.json'
-    registry=read_registry(root/'assets/discord/martial-emojis.json',local);pending=load(pending_file,{})
+    local=root/f'data/{kind}-emojis.json';pending_file=root/f'data/{kind}-emoji-upload-pending.json'
+    registry=read_registry(root/f'assets/discord/{kind}-emojis.json',local);pending=load(pending_file,{})
     identity=await api.call('GET','/oauth2/applications/@me')
     if str(identity.get('id'))!=app:raise ValueError('Discord application does not match the approved environment')
     previous=registry['environments'].get(environment)
     if previous and previous!=app:raise ValueError('Local environment is bound to another application')
     plan=await preview(api,app,rows,pack,registry,pending)
+    if not allow_create and any(row['state']=='create' for row in plan):raise ValueError('Import cannot create missing emojis')
     receipts=registry['applications'].setdefault(app,{})
     registry['environments'][environment]=app
     created=0
@@ -39,7 +44,8 @@ async def sync(directory, environment, token, root=BOT, api=None):
             pending[key]=dict(name=row['name'],sha256=row['sha256']);save(pending_file,pending)
             # No automatic retries after an uncertain POST. Reconcile next launch.
             try:
-                result=await api.call('POST',f'/applications/{app}/emojis',dict(name=row['name'],image='data:image/png;base64,'+base64.b64encode(path.read_bytes()).decode()))
+                mime='gif' if row.get('animated',False) else 'png'
+                result=await api.call('POST',f'/applications/{app}/emojis',dict(name=row['name'],image='data:image/'+mime+';base64,'+base64.b64encode(path.read_bytes()).decode()))
             except RejectedUpload:
                 pending.pop(key,None);save(pending_file,pending)
                 raise
@@ -49,20 +55,24 @@ async def sync(directory, environment, token, root=BOT, api=None):
     return dict(state='complete',application_id=app,created=created,reused=len(plan)-created,icons=len(plan))
 
 
-async def startup(environment,token,root=BOT,timeout=45):
+async def startup(environment,token,root=BOT,timeout=45,kind='martial',assets=None):
     """Failure changes decoration, never whether the bot is allowed to start."""
+    if kind not in ('martial','inline'):raise ValueError('Unsupported emoji collection')
     lock=None
     try:
-        assets=GameAssets(root/'assets/wwm')
+        if kind not in ('martial','inline'):raise ValueError('Unsupported emoji collection')
+        assets=assets or GameAssets(root/'assets/wwm')
         if assets.error:raise ValueError('Asset release failed validation')
-        if assets.directory is None or not assets.section('martial'):
-            result=dict(state='not_configured',message='No reviewed martial release installed')
+        section='martial' if kind=='martial' else 'emotes'
+        directory=assets.directory/section if assets.directory else None
+        if directory is None or not assets.section(section) or not (directory/'startup-approval.json').is_file():
+            result=dict(state='not_configured',message='No reviewed '+kind+' emoji release installed')
         else:
             from control_panel.locks import FileLock
             import aiohttp
-            lock=FileLock(root/'data/martial-emoji-upload.lock')
+            lock=FileLock(root/f'data/{kind}-emoji-upload.lock')
             async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=15),trust_env=False) as session:
-                result=await asyncio.wait_for(sync(assets.directory/'martial',environment,token,root,API(session,token)),timeout)
+                result=await asyncio.wait_for(sync(directory,environment,token,root,API(session,token),kind),timeout)
     except asyncio.CancelledError:
         raise
     except Exception as exc:
@@ -71,8 +81,9 @@ async def startup(environment,token,root=BOT,timeout=45):
     finally:
         if lock:lock.close()
     result.update(environment=environment,checked_at=time.time())
-    try:save(root/'data/martial-emoji-sync-status.json',result)
+    try:save(root/f'data/{kind}-emoji-sync-status.json',result)
     except OSError:pass
-    from utility.martial import reload_registry
-    reload_registry()
+    if kind=='martial':
+        from utility.martial import reload_registry
+        reload_registry()
     return result

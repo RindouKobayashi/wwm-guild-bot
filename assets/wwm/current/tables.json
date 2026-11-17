@@ -492055,1385 +492055,1270 @@
         "source_table": "chat_emotion_frame_data",
         "name": "smile",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 7,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_201_00000_0_0_ui",
-          "ui_emotion_201_00001_0_0_ui",
-          "ui_emotion_201_00002_0_0_ui",
-          "ui_emotion_201_00003_0_0_ui",
-          "ui_emotion_201_00004_0_0_ui",
-          "ui_emotion_201_00005_0_0_ui",
-          "ui_emotion_201_00006_0_0_ui"
+          "ui_emotion_201_00000.png",
+          "ui_emotion_201_00001.png",
+          "ui_emotion_201_00002.png",
+          "ui_emotion_201_00003.png",
+          "ui_emotion_201_00004.png",
+          "ui_emotion_201_00005.png",
+          "ui_emotion_201_00006.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_201.gif",
+        "image_sha256": "7fbfbba0b2e442ce10afd10aca104adb84d0df7ba6c8c492fa64fb3a7a57c114",
+        "preview": "art/inline_201.png",
+        "preview_sha256": "354306a1f0eaf50d33026e3ba2d5f71357fbeb7e7006fb187996794f5f11b218",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "202": {
         "id": 202,
         "source_table": "chat_emotion_frame_data",
         "name": "laughter",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_202_00000_0_0_ui",
-          "ui_emotion_202_00001_0_0_ui",
-          "ui_emotion_202_00002_0_0_ui",
-          "ui_emotion_202_00003_0_0_ui"
+          "ui_emotion_202_00000.png",
+          "ui_emotion_202_00001.png",
+          "ui_emotion_202_00002.png",
+          "ui_emotion_202_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_202.gif",
+        "image_sha256": "a2300432485ded572947268bee43f8b8bef277b3a94c3c37fee767400ac9a50f",
+        "preview": "art/inline_202.png",
+        "preview_sha256": "ed41f0005c903fffbc0e80cabb00b22c70e778d8013eb13ec74b9723585e22b1",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "204": {
         "id": 204,
         "source_table": "chat_emotion_frame_data",
         "name": "surprised",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 5,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_204_00000_0_0_ui",
-          "ui_emotion_204_00001_0_0_ui",
-          "ui_emotion_204_00002_0_0_ui",
-          "ui_emotion_204_00003_0_0_ui",
-          "ui_emotion_204_00004_0_0_ui"
+          "ui_emotion_204_00000.png",
+          "ui_emotion_204_00001.png",
+          "ui_emotion_204_00002.png",
+          "ui_emotion_204_00003.png",
+          "ui_emotion_204_00004.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_204.gif",
+        "image_sha256": "03911364fc77825b1ddf97582aa89a932dcba014a241cde2d1574a1ec9fd8b56",
+        "preview": "art/inline_204.png",
+        "preview_sha256": "5449d59cb8eb1b74e83961a1ea24d3174d23cc28624da4aa3d559c2ac4788693",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "206": {
         "id": 206,
         "source_table": "chat_emotion_frame_data",
         "name": "proud",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_206_00000_0_0_ui",
-          "ui_emotion_206_00001_0_0_ui",
-          "ui_emotion_206_00002_0_0_ui",
-          "ui_emotion_206_00003_0_0_ui"
+          "ui_emotion_206_00000.png",
+          "ui_emotion_206_00001.png",
+          "ui_emotion_206_00002.png",
+          "ui_emotion_206_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_206.gif",
+        "image_sha256": "650f81bba31a8eb2f99bf650e2d9e3c54e3863911fa5e2ca76164276fb4c3298",
+        "preview": "art/inline_206.png",
+        "preview_sha256": "5e8f7c1457b3a87dad9dc3b923f07497ed133f9b8a441d55d9534a3c4a983f0a",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "207": {
         "id": 207,
         "source_table": "chat_emotion_frame_data",
         "name": "angry",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 6,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_207_00000_0_0_ui",
-          "ui_emotion_207_00001_0_0_ui",
-          "ui_emotion_207_00002_0_0_ui",
-          "ui_emotion_207_00003_0_0_ui",
-          "ui_emotion_207_00004_0_0_ui",
-          "ui_emotion_207_00005_0_0_ui"
+          "ui_emotion_207_00000.png",
+          "ui_emotion_207_00001.png",
+          "ui_emotion_207_00002.png",
+          "ui_emotion_207_00003.png",
+          "ui_emotion_207_00004.png",
+          "ui_emotion_207_00005.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_207.gif",
+        "image_sha256": "3fc054d589cfb42b7fba5160759f98f987f96fbcfd7535c37665760351722a43",
+        "preview": "art/inline_207.png",
+        "preview_sha256": "1ab16c81d15241bbb9401e3b0b81ba0dd194b3d92f72a25d410a0a1354493475",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "208": {
         "id": 208,
         "source_table": "chat_emotion_frame_data",
         "name": "scared",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 2,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_208_00000_0_0_ui",
-          "ui_emotion_208_00001_0_0_ui"
+          "ui_emotion_208_00000.png",
+          "ui_emotion_208_00001.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_208.gif",
+        "image_sha256": "d758659c4b8fa0a513bcc144027e56ac3a0aa95589d7bff0a2fba092d532969a",
+        "preview": "art/inline_208.png",
+        "preview_sha256": "17a2f75f0e62885aea2ccb9e2d47b819efe1c49d19a8cf516a385a85a6f85c78",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "209": {
         "id": 209,
         "source_table": "chat_emotion_frame_data",
         "name": "Shy by nature",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 7,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_209_00000_0_0_ui",
-          "ui_emotion_209_00001_0_0_ui",
-          "ui_emotion_209_00002_0_0_ui",
-          "ui_emotion_209_00003_0_0_ui",
-          "ui_emotion_209_00004_0_0_ui",
-          "ui_emotion_209_00005_0_0_ui",
-          "ui_emotion_209_00006_0_0_ui"
+          "ui_emotion_209_00000.png",
+          "ui_emotion_209_00001.png",
+          "ui_emotion_209_00002.png",
+          "ui_emotion_209_00003.png",
+          "ui_emotion_209_00004.png",
+          "ui_emotion_209_00005.png",
+          "ui_emotion_209_00006.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_209.gif",
+        "image_sha256": "91239667af77eb7cc0027e8c508010df574ad829f90daa7829ea87dae95763c8",
+        "preview": "art/inline_209.png",
+        "preview_sha256": "0b2a4b1f924d5897b031cbfc6595b0fb5476f971985d6fceb3d29f0562f5c8cf",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "210": {
         "id": 210,
         "source_table": "chat_emotion_frame_data",
         "name": "sad",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_210_00000_0_0_ui",
-          "ui_emotion_210_00001_0_0_ui",
-          "ui_emotion_210_00002_0_0_ui",
-          "ui_emotion_210_00003_0_0_ui"
+          "ui_emotion_210_00000.png",
+          "ui_emotion_210_00001.png",
+          "ui_emotion_210_00002.png",
+          "ui_emotion_210_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_210.gif",
+        "image_sha256": "bb3cd478963a78cd7565e7aa8f40d322d132d6970d9c11895278768adad2d929",
+        "preview": "art/inline_210.png",
+        "preview_sha256": "305d92110b7b3838501fd066938b5155ba6b89ecc3c0913f432b099ca8f49c04",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "213": {
         "id": 213,
         "source_table": "chat_emotion_frame_data",
         "name": "sleep",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 3,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_213_00000_0_0_ui",
-          "ui_emotion_213_00001_0_0_ui",
-          "ui_emotion_213_00002_0_0_ui"
+          "ui_emotion_213_00000.png",
+          "ui_emotion_213_00001.png",
+          "ui_emotion_213_00002.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_213.gif",
+        "image_sha256": "444818b1860cd4d6332385b14efe250b09b77585ae6f73f1c689d42c1661b578",
+        "preview": "art/inline_213.png",
+        "preview_sha256": "737c068a751e303ec74e3128870d722c508eb8e89d4ecb7fc4a726b1e6a4f7f0",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "214": {
         "id": 214,
         "source_table": "chat_emotion_frame_data",
         "name": "grin",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 5,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_214_00000_0_0_ui",
-          "ui_emotion_214_00001_0_0_ui",
-          "ui_emotion_214_00002_0_0_ui",
-          "ui_emotion_214_00003_0_0_ui",
-          "ui_emotion_214_00004_0_0_ui"
+          "ui_emotion_214_00000.png",
+          "ui_emotion_214_00001.png",
+          "ui_emotion_214_00002.png",
+          "ui_emotion_214_00003.png",
+          "ui_emotion_214_00004.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_214.gif",
+        "image_sha256": "b5acc9a4a72e4151e12cdbbb1cbedc5adb0a939bd6fde4585f9e753bb8654738",
+        "preview": "art/inline_214.png",
+        "preview_sha256": "501a42b68b53f5161474b716b428bbd1ac84a84782026e493f5d3693b4f7b74f",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "215": {
         "id": 215,
         "source_table": "chat_emotion_frame_data",
         "name": "kiss",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_215_00000_0_0_ui",
-          "ui_emotion_215_00001_0_0_ui",
-          "ui_emotion_215_00002_0_0_ui",
-          "ui_emotion_215_00003_0_0_ui"
+          "ui_emotion_215_00000.png",
+          "ui_emotion_215_00001.png",
+          "ui_emotion_215_00002.png",
+          "ui_emotion_215_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_215.gif",
+        "image_sha256": "80949abf5a900568b703f4cb1899496e7fd4527d1fd67364b811cb4c73ec0421",
+        "preview": "art/inline_215.png",
+        "preview_sha256": "e0647e53eee627b6b36c70cd2a6291cef5223096db25ccf44e23f5d6dab64b3c",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "216": {
         "id": 216,
         "source_table": "chat_emotion_frame_data",
         "name": "greatlove",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 3,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_216_00000_0_0_ui",
-          "ui_emotion_216_00001_0_0_ui",
-          "ui_emotion_216_00002_0_0_ui"
+          "ui_emotion_216_00000.png",
+          "ui_emotion_216_00001.png",
+          "ui_emotion_216_00002.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_216.gif",
+        "image_sha256": "6984cd1256aab15cc583953fbd78ba6a0dfbf9ca6605a05314a11369aef73c99",
+        "preview": "art/inline_216.png",
+        "preview_sha256": "712bef5d90910392a9270333bd420008be21023b96171a20b6425044ad20f79e",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "217": {
         "id": 217,
         "source_table": "chat_emotion_frame_data",
         "name": "sweating",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 2,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_217_00000_0_0_ui",
-          "ui_emotion_217_00001_0_0_ui",
-          "ui_emotion_217_00002_0_0_ui",
-          "ui_emotion_217_00003_0_0_ui"
+          "ui_emotion_217_00000.png",
+          "ui_emotion_217_00001.png",
+          "ui_emotion_217_00002.png",
+          "ui_emotion_217_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_217.gif",
+        "image_sha256": "483dff9342c3d7ce57e7b0394145a21cb20fbe295130f78ea2323404f2112fe9",
+        "preview": "art/inline_217.png",
+        "preview_sha256": "399bc9b3e3f108a8dc1e378cc487ef1a97aab2cf016823afd31480a6ee3e8666",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "218": {
         "id": 218,
         "source_table": "chat_emotion_frame_data",
         "name": "Uncontrollable Giggling",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 3,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_218_00000_0_0_ui",
-          "ui_emotion_218_00001_0_0_ui",
-          "ui_emotion_218_00002_0_0_ui"
+          "ui_emotion_218_00000.png",
+          "ui_emotion_218_00001.png",
+          "ui_emotion_218_00002.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_218.gif",
+        "image_sha256": "0c605c75f61a6a394c604f7c351f8a6cbf67a09e6f8f3ef7037dabd7b469857c",
+        "preview": "art/inline_218.png",
+        "preview_sha256": "466f00ca3ea66a3d7f9202235c997d51027d6ab2a6a40632a7acb599600230d9",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "219": {
         "id": 219,
         "source_table": "chat_emotion_frame_data",
         "name": "tired",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 6,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_219_00000_0_0_ui",
-          "ui_emotion_219_00001_0_0_ui",
-          "ui_emotion_219_00002_0_0_ui",
-          "ui_emotion_219_00003_0_0_ui",
-          "ui_emotion_219_00004_0_0_ui",
-          "ui_emotion_219_00005_0_0_ui"
+          "ui_emotion_219_00000.png",
+          "ui_emotion_219_00001.png",
+          "ui_emotion_219_00002.png",
+          "ui_emotion_219_00003.png",
+          "ui_emotion_219_00004.png",
+          "ui_emotion_219_00005.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_219.gif",
+        "image_sha256": "90f57f715c628817eb4d29bd99751afefb1e5a8287a1bb0f3bc036102f5d1267",
+        "preview": "art/inline_219.png",
+        "preview_sha256": "256ef309108cef69bcc717b898e11922b80584f997d454421963b488addeba99",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "220": {
         "id": 220,
         "source_table": "chat_emotion_frame_data",
         "name": "spit",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 5,
         "show_frame": 2,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_220_00000_0_0_ui",
-          "ui_emotion_220_00001_0_0_ui",
-          "ui_emotion_220_00002_0_0_ui",
-          "ui_emotion_220_00003_0_0_ui",
-          "ui_emotion_220_00004_0_0_ui"
+          "ui_emotion_220_00000.png",
+          "ui_emotion_220_00001.png",
+          "ui_emotion_220_00002.png",
+          "ui_emotion_220_00003.png",
+          "ui_emotion_220_00004.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_220.gif",
+        "image_sha256": "714ac4a906268d61609d6fb7cc4f28332f41e7f4ee36018c4f8bc71dbea4abdb",
+        "preview": "art/inline_220.png",
+        "preview_sha256": "48403e48c710b2ff9a5420e243c2bc1e9e8386a9f4a71921cd71e29f31cbd03c",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "221": {
         "id": 221,
         "source_table": "chat_emotion_frame_data",
         "name": "Express Confusion",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 2,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_221_00000_0_0_ui",
-          "ui_emotion_221_00001_0_0_ui",
-          "ui_emotion_221_00002_0_0_ui",
-          "ui_emotion_221_00003_0_0_ui"
+          "ui_emotion_221_00000.png",
+          "ui_emotion_221_00001.png",
+          "ui_emotion_221_00002.png",
+          "ui_emotion_221_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_221.gif",
+        "image_sha256": "5d2a1b046eeccc9ae2299a3571b337f7a579c999e42734ee5bb432567f861baa",
+        "preview": "art/inline_221.png",
+        "preview_sha256": "5c8a98bed5d2601285792dd75ae15bb839671dbafe40b3965ac820a54142f85d",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "222": {
         "id": 222,
         "source_table": "chat_emotion_frame_data",
         "name": "shh",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_222_00000_0_0_ui",
-          "ui_emotion_222_00001_0_0_ui",
-          "ui_emotion_222_00002_0_0_ui",
-          "ui_emotion_222_00003_0_0_ui"
+          "ui_emotion_222_00000.png",
+          "ui_emotion_222_00001.png",
+          "ui_emotion_222_00002.png",
+          "ui_emotion_222_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_222.gif",
+        "image_sha256": "695b9ade0488e9d575882cc7a563713f8818c98d66a31c785d064fb0c2954121",
+        "preview": "art/inline_222.png",
+        "preview_sha256": "30ea694888c6586f70642c804d3034f75057f6cb9d86e9f915f6a07cfc3a26d8",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "223": {
         "id": 223,
         "source_table": "chat_emotion_frame_data",
         "name": "knock",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 6,
         "show_frame": 3,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_223_00000_0_0_ui",
-          "ui_emotion_223_00001_0_0_ui",
-          "ui_emotion_223_00002_0_0_ui",
-          "ui_emotion_223_00003_0_0_ui",
-          "ui_emotion_223_00004_0_0_ui",
-          "ui_emotion_223_00005_0_0_ui"
+          "ui_emotion_223_00000.png",
+          "ui_emotion_223_00001.png",
+          "ui_emotion_223_00002.png",
+          "ui_emotion_223_00003.png",
+          "ui_emotion_223_00004.png",
+          "ui_emotion_223_00005.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_223.gif",
+        "image_sha256": "a4bcb920c1333c6024ec4d701314e840406798d4ef476ded11c4a05f97c06116",
+        "preview": "art/inline_223.png",
+        "preview_sha256": "de99fe88729408a9eb970c7e13b7fedceeefd6aaf52851559316decf03ab65f7",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "224": {
         "id": 224,
         "source_table": "chat_emotion_frame_data",
         "name": "shutup",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 6,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_224_00000_0_0_ui",
-          "ui_emotion_224_00001_0_0_ui",
-          "ui_emotion_224_00002_0_0_ui",
-          "ui_emotion_224_00003_0_0_ui",
-          "ui_emotion_224_00004_0_0_ui",
-          "ui_emotion_224_00005_0_0_ui"
+          "ui_emotion_224_00000.png",
+          "ui_emotion_224_00001.png",
+          "ui_emotion_224_00002.png",
+          "ui_emotion_224_00003.png",
+          "ui_emotion_224_00004.png",
+          "ui_emotion_224_00005.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_224.gif",
+        "image_sha256": "96e4e476437e00ab8fbe5563fbb4e81aef6e51590b9bce9f8af4680e5e8c8d90",
+        "preview": "art/inline_224.png",
+        "preview_sha256": "1c9086064c3325843c7dc00346eec2d9823dc7ed38a1b98ee267102801b93f55",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "226": {
         "id": 226,
         "source_table": "chat_emotion_frame_data",
         "name": "nosebleed",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 5,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_226_00000_0_0_ui",
-          "ui_emotion_226_00001_0_0_ui",
-          "ui_emotion_226_00002_0_0_ui",
-          "ui_emotion_226_00003_0_0_ui",
-          "ui_emotion_226_00004_0_0_ui"
+          "ui_emotion_226_00000.png",
+          "ui_emotion_226_00001.png",
+          "ui_emotion_226_00002.png",
+          "ui_emotion_226_00003.png",
+          "ui_emotion_226_00004.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_226.gif",
+        "image_sha256": "4a157a7dbfdb4658ebf717ca0bdb62a866f3da99ff660f87b7c7db4cd0026f69",
+        "preview": "art/inline_226.png",
+        "preview_sha256": "eafc1505a159d744e375830e29c3362263dcac45092ebb1fd4c342c00a018914",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "228": {
         "id": 228,
         "source_table": "chat_emotion_frame_data",
         "name": "Cute",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 5,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_228_00000_0_0_ui",
-          "ui_emotion_228_00001_0_0_ui",
-          "ui_emotion_228_00002_0_0_ui",
-          "ui_emotion_228_00003_0_0_ui",
-          "ui_emotion_228_00004_0_0_ui"
+          "ui_emotion_228_00000.png",
+          "ui_emotion_228_00001.png",
+          "ui_emotion_228_00002.png",
+          "ui_emotion_228_00003.png",
+          "ui_emotion_228_00004.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_228.gif",
+        "image_sha256": "8515313fc496af1c6d4a65af0c1440b1ea57c6a8b64f875e85ab56fe91986529",
+        "preview": "art/inline_228.png",
+        "preview_sha256": "99a4c164efd80bfe05519e5ad2f07a6644599b19d8fb0d5e45d5faec457dce75",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "229": {
         "id": 229,
         "source_table": "chat_emotion_frame_data",
         "name": "yay",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 7,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_229_00000_0_0_ui",
-          "ui_emotion_229_00001_0_0_ui",
-          "ui_emotion_229_00002_0_0_ui",
-          "ui_emotion_229_00003_0_0_ui",
-          "ui_emotion_229_00004_0_0_ui",
-          "ui_emotion_229_00005_0_0_ui",
-          "ui_emotion_229_00006_0_0_ui"
+          "ui_emotion_229_00000.png",
+          "ui_emotion_229_00001.png",
+          "ui_emotion_229_00002.png",
+          "ui_emotion_229_00003.png",
+          "ui_emotion_229_00004.png",
+          "ui_emotion_229_00005.png",
+          "ui_emotion_229_00006.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_229.gif",
+        "image_sha256": "a0ffd45b861441a5395f8e4f7cc3cd6bb150c6591f12223013df4088e3a02e24",
+        "preview": "art/inline_229.png",
+        "preview_sha256": "ea8a73531ed07cb902fb975c0930d8ca8c98c2ff0c26ebb6e7a377500614bce6",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "231": {
         "id": 231,
         "source_table": "chat_emotion_frame_data",
         "name": "despise",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 2,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_231_00000_0_0_ui",
-          "ui_emotion_231_00001_0_0_ui"
+          "ui_emotion_231_00000.png",
+          "ui_emotion_231_00001.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_231.gif",
+        "image_sha256": "fcc933fe351782165c61dab88bcd8c7109d9729b6b101d49037cf0903cd5d115",
+        "preview": "art/inline_231.png",
+        "preview_sha256": "d9f6c381238bd1ac14a68ce259f344d468a750edfe9061fc4b94f41c8452f330",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "233": {
         "id": 233,
         "source_table": "chat_emotion_frame_data",
         "name": "ohoh",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 5,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_233_00000_0_0_ui",
-          "ui_emotion_233_00001_0_0_ui",
-          "ui_emotion_233_00002_0_0_ui",
-          "ui_emotion_233_00003_0_0_ui",
-          "ui_emotion_233_00004_0_0_ui"
+          "ui_emotion_233_00000.png",
+          "ui_emotion_233_00001.png",
+          "ui_emotion_233_00002.png",
+          "ui_emotion_233_00003.png",
+          "ui_emotion_233_00004.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_233.gif",
+        "image_sha256": "e59cfe5b84e95a888133810fd6933d74d0b4ebd3acd186623a53e72662dd4ee5",
+        "preview": "art/inline_233.png",
+        "preview_sha256": "9594ec5042ee8ce2ca81e9226748ce3ad77a1ee1f9878501493145fe044b753e",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "234": {
         "id": 234,
         "source_table": "chat_emotion_frame_data",
         "name": "dizzy",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 2,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_234_00000_0_0_ui",
-          "ui_emotion_234_00001_0_0_ui"
+          "ui_emotion_234_00000.png",
+          "ui_emotion_234_00001.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_234.gif",
+        "image_sha256": "b6790cc6b07d141eaf868a1f89a9c8967bcc7b0ed1ee14f235d7b7831ddf5fe5",
+        "preview": "art/inline_234.png",
+        "preview_sha256": "cb362167b556f64d649ec21e4e7b3b2c4ca46312c1587c165170b9594fe2f838",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "235": {
         "id": 235,
         "source_table": "chat_emotion_frame_data",
         "name": "picknose",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 5,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_235_00000_0_0_ui",
-          "ui_emotion_235_00001_0_0_ui",
-          "ui_emotion_235_00002_0_0_ui",
-          "ui_emotion_235_00003_0_0_ui",
-          "ui_emotion_235_00004_0_0_ui"
+          "ui_emotion_235_00000.png",
+          "ui_emotion_235_00001.png",
+          "ui_emotion_235_00002.png",
+          "ui_emotion_235_00003.png",
+          "ui_emotion_235_00004.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_235.gif",
+        "image_sha256": "fdb691c7f84a07d49d3869e09452d78682849abf04e8dc6d92f1fd413b33bd78",
+        "preview": "art/inline_235.png",
+        "preview_sha256": "27d1b402008811efd365bcdbd01ea977aa996924d3ef9dffa9d8c784a4c010b0",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "236": {
         "id": 236,
         "source_table": "chat_emotion_frame_data",
         "name": "pouting",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 5,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_236_00000_0_0_ui",
-          "ui_emotion_236_00001_0_0_ui",
-          "ui_emotion_236_00002_0_0_ui",
-          "ui_emotion_236_00003_0_0_ui",
-          "ui_emotion_236_00004_0_0_ui"
+          "ui_emotion_236_00000.png",
+          "ui_emotion_236_00001.png",
+          "ui_emotion_236_00002.png",
+          "ui_emotion_236_00003.png",
+          "ui_emotion_236_00004.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_236.gif",
+        "image_sha256": "596af6a5814791e583c73e7ba19e14046eb89f50e33ef93f05c5765126d22543",
+        "preview": "art/inline_236.png",
+        "preview_sha256": "611083bea99c21debc604658fba94001232d72d5c78ddad5daa7f976830528a9",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "237": {
         "id": 237,
         "source_table": "chat_emotion_frame_data",
         "name": "applause",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 2,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_237_00000_0_0_ui",
-          "ui_emotion_237_00001_0_0_ui"
+          "ui_emotion_237_00000.png",
+          "ui_emotion_237_00001.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_237.gif",
+        "image_sha256": "4a3581991c41ee05af2e8dd4465df469c47a413995df2a1650b433fdb6c470f6",
+        "preview": "art/inline_237.png",
+        "preview_sha256": "7fe9d6db3add57ba9c80f7e733ccd388f5b7b27dc080ae5f8c1647c93298c766",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "240": {
         "id": 240,
         "source_table": "chat_emotion_frame_data",
         "name": "punchable",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 6,
         "show_frame": 2,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_240_00000_0_0_ui",
-          "ui_emotion_240_00001_0_0_ui",
-          "ui_emotion_240_00002_0_0_ui",
-          "ui_emotion_240_00003_0_0_ui",
-          "ui_emotion_240_00004_0_0_ui",
-          "ui_emotion_240_00005_0_0_ui"
+          "ui_emotion_240_00000.png",
+          "ui_emotion_240_00001.png",
+          "ui_emotion_240_00002.png",
+          "ui_emotion_240_00003.png",
+          "ui_emotion_240_00004.png",
+          "ui_emotion_240_00005.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_240.gif",
+        "image_sha256": "edb52bd24eaac4ada1109677e1bf1e6932e74e0d7bca373fd04eef157ec35a35",
+        "preview": "art/inline_240.png",
+        "preview_sha256": "14305d6c35d10363cce9c628058dd6a6ed20552168f554f03a1c5099eba3ec4a",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "241": {
         "id": 241,
         "source_table": "chat_emotion_frame_data",
         "name": "flirting",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 6,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_241_00000_0_0_ui",
-          "ui_emotion_241_00001_0_0_ui",
-          "ui_emotion_241_00002_0_0_ui",
-          "ui_emotion_241_00003_0_0_ui",
-          "ui_emotion_241_00004_0_0_ui",
-          "ui_emotion_241_00005_0_0_ui"
+          "ui_emotion_241_00000.png",
+          "ui_emotion_241_00001.png",
+          "ui_emotion_241_00002.png",
+          "ui_emotion_241_00003.png",
+          "ui_emotion_241_00004.png",
+          "ui_emotion_241_00005.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_241.gif",
+        "image_sha256": "a79b3d5598baf724319e3059c03bc3d092e14bb5c62b0ce2cd147e8319b0c43b",
+        "preview": "art/inline_241.png",
+        "preview_sha256": "53b7f5f436ede2f6125cc97cc9acb2e39a3fd9e3cc06ff821044ab1285e435fe",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "243": {
         "id": 243,
         "source_table": "chat_emotion_frame_data",
         "name": "cry",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 8,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_243_00000_0_0_ui",
-          "ui_emotion_243_00001_0_0_ui",
-          "ui_emotion_243_00002_0_0_ui",
-          "ui_emotion_243_00003_0_0_ui",
-          "ui_emotion_243_00004_0_0_ui",
-          "ui_emotion_243_00005_0_0_ui",
-          "ui_emotion_243_00006_0_0_ui",
-          "ui_emotion_243_00007_0_0_ui"
+          "ui_emotion_243_00000.png",
+          "ui_emotion_243_00001.png",
+          "ui_emotion_243_00002.png",
+          "ui_emotion_243_00003.png",
+          "ui_emotion_243_00004.png",
+          "ui_emotion_243_00005.png",
+          "ui_emotion_243_00006.png",
+          "ui_emotion_243_00007.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_243.gif",
+        "image_sha256": "70976121798d36ac9ccb2c0542de45009dfb0f2e403039fac259ad7cee2d963e",
+        "preview": "art/inline_243.png",
+        "preview_sha256": "08c12645b7f73a5eb8b9b7ad2f5c95f9e4d0987c0f01f0bb576f1bbdade8281a",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "244": {
         "id": 244,
         "source_table": "chat_emotion_frame_data",
         "name": "snicker",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 5,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_244_00000_0_0_ui",
-          "ui_emotion_244_00001_0_0_ui",
-          "ui_emotion_244_00002_0_0_ui",
-          "ui_emotion_244_00003_0_0_ui",
-          "ui_emotion_244_00004_0_0_ui"
+          "ui_emotion_244_00000.png",
+          "ui_emotion_244_00001.png",
+          "ui_emotion_244_00002.png",
+          "ui_emotion_244_00003.png",
+          "ui_emotion_244_00004.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_244.gif",
+        "image_sha256": "558ae40d87f04d50456b9d085cd0b5a8cd160bc26a6246f776c72a2c60f603a2",
+        "preview": "art/inline_244.png",
+        "preview_sha256": "c57a6f4eea91facbcce99a6e66c884b5b465a2e853da0271b9724397a4e09547",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "245": {
         "id": 245,
         "source_table": "chat_emotion_frame_data",
         "name": "sendrose",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 7,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_245_00000_0_0_ui",
-          "ui_emotion_245_00001_0_0_ui",
-          "ui_emotion_245_00002_0_0_ui",
-          "ui_emotion_245_00003_0_0_ui",
-          "ui_emotion_245_00004_0_0_ui",
-          "ui_emotion_245_00005_0_0_ui",
-          "ui_emotion_245_00006_0_0_ui"
+          "ui_emotion_245_00000.png",
+          "ui_emotion_245_00001.png",
+          "ui_emotion_245_00002.png",
+          "ui_emotion_245_00003.png",
+          "ui_emotion_245_00004.png",
+          "ui_emotion_245_00005.png",
+          "ui_emotion_245_00006.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_245.gif",
+        "image_sha256": "f0114b87aeb7b923802a45f2a8fd1ae57c0268153ac5698ba3a9393b79de4fe0",
+        "preview": "art/inline_245.png",
+        "preview_sha256": "843116dce0e4f1a66b0172438789d49c3a5e3bb1a78cc0eccdbdb5c63fcf8e78",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "247": {
         "id": 247,
         "source_table": "chat_emotion_frame_data",
         "name": "furious",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_247_00000_0_0_ui",
-          "ui_emotion_247_00001_0_0_ui",
-          "ui_emotion_247_00002_0_0_ui",
-          "ui_emotion_247_00003_0_0_ui"
+          "ui_emotion_247_00000.png",
+          "ui_emotion_247_00001.png",
+          "ui_emotion_247_00002.png",
+          "ui_emotion_247_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_247.gif",
+        "image_sha256": "c7de80f0d670b76a3cd52f07948c3210f9020d8deda8e56df9de6105b0859391",
+        "preview": "art/inline_247.png",
+        "preview_sha256": "58f43cfa93ff68c6267f03656509ca6f47f758f94378444fef955baf721b1335",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "248": {
         "id": 248,
         "source_table": "chat_emotion_frame_data",
         "name": "goodbye",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_248_00000_0_0_ui",
-          "ui_emotion_248_00001_0_0_ui",
-          "ui_emotion_248_00002_0_0_ui",
-          "ui_emotion_248_00003_0_0_ui"
+          "ui_emotion_248_00000.png",
+          "ui_emotion_248_00001.png",
+          "ui_emotion_248_00002.png",
+          "ui_emotion_248_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_248.gif",
+        "image_sha256": "ebd251c5c6147f4ef49c68e860a1788b7ba44086909309bcc9fcd877dc4121f3",
+        "preview": "art/inline_248.png",
+        "preview_sha256": "8775f1fbde095469e103c9cde053bef6d9040f2f7504bf3573ae0cd3315891de",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "249": {
         "id": 249,
         "source_table": "chat_emotion_frame_data",
         "name": "floating",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 5,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_249_00000_0_0_ui",
-          "ui_emotion_249_00001_0_0_ui",
-          "ui_emotion_249_00002_0_0_ui",
-          "ui_emotion_249_00003_0_0_ui",
-          "ui_emotion_249_00004_0_0_ui"
+          "ui_emotion_249_00000.png",
+          "ui_emotion_249_00001.png",
+          "ui_emotion_249_00002.png",
+          "ui_emotion_249_00003.png",
+          "ui_emotion_249_00004.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_249.gif",
+        "image_sha256": "744c50a9ab9cf6ce7c145ea34c464868fd85d1ed1b28923d0dca46286df9ee7a",
+        "preview": "art/inline_249.png",
+        "preview_sha256": "f9c978fea51928e8733b4a3521abab90eb8254ceed45955a6570761cf03d9cb6",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "251": {
         "id": 251,
         "source_table": "chat_emotion_frame_data",
         "name": "Pray",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 8,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_251_00000_0_0_ui",
-          "ui_emotion_251_00001_0_0_ui",
-          "ui_emotion_251_00002_0_0_ui",
-          "ui_emotion_251_00003_0_0_ui",
-          "ui_emotion_251_00004_0_0_ui",
-          "ui_emotion_251_00005_0_0_ui",
-          "ui_emotion_251_00006_0_0_ui",
-          "ui_emotion_251_00007_0_0_ui"
+          "ui_emotion_251_00000.png",
+          "ui_emotion_251_00001.png",
+          "ui_emotion_251_00002.png",
+          "ui_emotion_251_00003.png",
+          "ui_emotion_251_00004.png",
+          "ui_emotion_251_00005.png",
+          "ui_emotion_251_00006.png",
+          "ui_emotion_251_00007.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_251.gif",
+        "image_sha256": "b9bd220dd8a50eb5af5c08425ad1ce4dc11c356e774580ff9232c7a10985bed8",
+        "preview": "art/inline_251.png",
+        "preview_sha256": "35b2756f2bfc924caa9a3f756960f36a4ff534e988742832dfa92e6cd0f3879b",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "253": {
         "id": 253,
         "source_table": "chat_emotion_frame_data",
         "name": "freakout",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 9,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_253_00000_0_0_ui",
-          "ui_emotion_253_00001_0_0_ui",
-          "ui_emotion_253_00002_0_0_ui",
-          "ui_emotion_253_00003_0_0_ui",
-          "ui_emotion_253_00004_0_0_ui",
-          "ui_emotion_253_00005_0_0_ui",
-          "ui_emotion_253_00006_0_0_ui",
-          "ui_emotion_253_00007_0_0_ui",
-          "ui_emotion_253_00008_0_0_ui"
+          "ui_emotion_253_00000.png",
+          "ui_emotion_253_00001.png",
+          "ui_emotion_253_00002.png",
+          "ui_emotion_253_00003.png",
+          "ui_emotion_253_00004.png",
+          "ui_emotion_253_00005.png",
+          "ui_emotion_253_00006.png",
+          "ui_emotion_253_00007.png",
+          "ui_emotion_253_00008.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_253.gif",
+        "image_sha256": "f89ba1dc90e3d766be0dcd40a43e10a463e8056668485c220d96685424cd5a6b",
+        "preview": "art/inline_253.png",
+        "preview_sha256": "e17acde70562130e34b06c5d18225352dfb21f79f55c3173e59fe444c00ba53e",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "254": {
         "id": 254,
         "source_table": "chat_emotion_frame_data",
         "name": "wronged",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 7,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_254_00000_0_0_ui",
-          "ui_emotion_254_00001_0_0_ui",
-          "ui_emotion_254_00002_0_0_ui",
-          "ui_emotion_254_00003_0_0_ui",
-          "ui_emotion_254_00004_0_0_ui",
-          "ui_emotion_254_00005_0_0_ui",
-          "ui_emotion_254_00006_0_0_ui"
+          "ui_emotion_254_00000.png",
+          "ui_emotion_254_00001.png",
+          "ui_emotion_254_00002.png",
+          "ui_emotion_254_00003.png",
+          "ui_emotion_254_00004.png",
+          "ui_emotion_254_00005.png",
+          "ui_emotion_254_00006.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_254.gif",
+        "image_sha256": "0ac151df09e03503a3f8db9ae38821386bb2bf7b8615d1a4120203d4bb1ca1bb",
+        "preview": "art/inline_254.png",
+        "preview_sha256": "1f9c5e4a08f8692cb84e42b13c17a1c8f9716abbfa87d979a42c44745ea6ba13",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "255": {
         "id": 255,
         "source_table": "chat_emotion_frame_data",
         "name": "meow",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 5,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_255_00000_0_0_ui",
-          "ui_emotion_255_00001_0_0_ui",
-          "ui_emotion_255_00002_0_0_ui",
-          "ui_emotion_255_00003_0_0_ui",
-          "ui_emotion_255_00004_0_0_ui"
+          "ui_emotion_255_00000.png",
+          "ui_emotion_255_00001.png",
+          "ui_emotion_255_00002.png",
+          "ui_emotion_255_00003.png",
+          "ui_emotion_255_00004.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_255.gif",
+        "image_sha256": "d33dba26d943b6a578e2dd0a5a977361aa7f9485f8c42358b57e1cc5d1ae0bad",
+        "preview": "art/inline_255.png",
+        "preview_sha256": "c03073ae3d7f34a23cab789d2be85b765d643594712a89734912c6728d03e63d",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "256": {
         "id": 256,
         "source_table": "chat_emotion_frame_data",
         "name": "anger",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 3,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_256_00000_0_0_ui",
-          "ui_emotion_256_00001_0_0_ui",
-          "ui_emotion_256_00002_0_0_ui"
+          "ui_emotion_256_00000.png",
+          "ui_emotion_256_00001.png",
+          "ui_emotion_256_00002.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_256.gif",
+        "image_sha256": "ae245d16a8cf0de445f253f4a27fbe6bdf69aa2d42b480f403989bf2140ca941",
+        "preview": "art/inline_256.png",
+        "preview_sha256": "789dd09aaa1158a0fad51490ec22f79523f373eedbbc2a06a3e642778d464e36",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "257": {
         "id": 257,
         "source_table": "chat_emotion_frame_data",
         "name": "Arrogant",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 6,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_257_00000_0_0_ui",
-          "ui_emotion_257_00001_0_0_ui",
-          "ui_emotion_257_00002_0_0_ui",
-          "ui_emotion_257_00003_0_0_ui",
-          "ui_emotion_257_00004_0_0_ui",
-          "ui_emotion_257_00005_0_0_ui"
+          "ui_emotion_257_00000.png",
+          "ui_emotion_257_00001.png",
+          "ui_emotion_257_00002.png",
+          "ui_emotion_257_00003.png",
+          "ui_emotion_257_00004.png",
+          "ui_emotion_257_00005.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_257.gif",
+        "image_sha256": "b1d158d4c916ce8d8f6096928ec68e8509a563793d2b12ae67fb47ebef6b67e4",
+        "preview": "art/inline_257.png",
+        "preview_sha256": "6b39e89af302b4476cda9759e66a32bef89ea07508ad71f6fcb1ccb3f8065618",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "260": {
         "id": 260,
         "source_table": "chat_emotion_frame_data",
         "name": "rose",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_260_00000_0_0_ui",
-          "ui_emotion_260_00001_0_0_ui",
-          "ui_emotion_260_00002_0_0_ui",
-          "ui_emotion_260_00003_0_0_ui"
+          "ui_emotion_260_00000.png",
+          "ui_emotion_260_00001.png",
+          "ui_emotion_260_00002.png",
+          "ui_emotion_260_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_260.gif",
+        "image_sha256": "ea117fd2632e049e25903255cc6658df887f2e8b64a256f0bb941252d7b27b58",
+        "preview": "art/inline_260.png",
+        "preview_sha256": "f12f2883d054e5f5a6d5955589618375667f17f342f4af70fff6a307a5cbb481",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "261": {
         "id": 261,
         "source_table": "chat_emotion_frame_data",
         "name": "heart",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "static",
         "frame_count": 4,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_261_00000_0_0_ui",
-          "ui_emotion_261_00001_0_0_ui",
-          "ui_emotion_261_00002_0_0_ui",
-          "ui_emotion_261_00003_0_0_ui"
+          "ui_emotion_261_00000.png",
+          "ui_emotion_261_00001.png",
+          "ui_emotion_261_00002.png",
+          "ui_emotion_261_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_261.png",
+        "image_sha256": "a63b9d815c09034643a2eff3c51ae8489b2d19d57007693defd765b66637e977",
+        "preview": "art/inline_261.png",
+        "preview_sha256": "a63b9d815c09034643a2eff3c51ae8489b2d19d57007693defd765b66637e977",
+        "reason": "All source frames are identical; original still image preserved."
       },
       "262": {
         "id": 262,
         "source_table": "chat_emotion_frame_data",
         "name": "heartbreak",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 9,
         "show_frame": 4,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_262_00000_0_0_ui",
-          "ui_emotion_262_00001_0_0_ui",
-          "ui_emotion_262_00002_0_0_ui",
-          "ui_emotion_262_00003_0_0_ui",
-          "ui_emotion_262_00004_0_0_ui",
-          "ui_emotion_262_00005_0_0_ui",
-          "ui_emotion_262_00006_0_0_ui",
-          "ui_emotion_262_00007_0_0_ui",
-          "ui_emotion_262_00008_0_0_ui"
+          "ui_emotion_262_00000.png",
+          "ui_emotion_262_00001.png",
+          "ui_emotion_262_00002.png",
+          "ui_emotion_262_00003.png",
+          "ui_emotion_262_00004.png",
+          "ui_emotion_262_00005.png",
+          "ui_emotion_262_00006.png",
+          "ui_emotion_262_00007.png",
+          "ui_emotion_262_00008.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_262.gif",
+        "image_sha256": "5ffeb0e0c878e07e122053caa84793ea6c4f930bdd8906e0b85e9b45b0af16df",
+        "preview": "art/inline_262.png",
+        "preview_sha256": "2445cbc357cfc8087da2345f9c8a6da6d922797a0d48155ec593bc3c66bfa63a",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "263": {
         "id": 263,
         "source_table": "chat_emotion_frame_data",
         "name": "lips",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_263_00000_0_0_ui",
-          "ui_emotion_263_00001_0_0_ui",
-          "ui_emotion_263_00002_0_0_ui",
-          "ui_emotion_263_00003_0_0_ui"
+          "ui_emotion_263_00000.png",
+          "ui_emotion_263_00001.png",
+          "ui_emotion_263_00002.png",
+          "ui_emotion_263_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_263.gif",
+        "image_sha256": "8f6e6a0e0bd999a634768f49abe987255bf12d7fec245195bfb8581fd24f88e0",
+        "preview": "art/inline_263.png",
+        "preview_sha256": "b352687642cb47b79613107e4296f2eef9f55adae0495aba72340609e3e3a01c",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "264": {
         "id": 264,
         "source_table": "chat_emotion_frame_data",
         "name": "weak",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 6,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_264_00000_0_0_ui",
-          "ui_emotion_264_00001_0_0_ui",
-          "ui_emotion_264_00002_0_0_ui",
-          "ui_emotion_264_00003_0_0_ui",
-          "ui_emotion_264_00004_0_0_ui",
-          "ui_emotion_264_00005_0_0_ui"
+          "ui_emotion_264_00000.png",
+          "ui_emotion_264_00001.png",
+          "ui_emotion_264_00002.png",
+          "ui_emotion_264_00003.png",
+          "ui_emotion_264_00004.png",
+          "ui_emotion_264_00005.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_264.gif",
+        "image_sha256": "1e12a0ab394e0fea5f537265724d5eb74649347c15e41cacd412c2e7ad6ea3ce",
+        "preview": "art/inline_264.png",
+        "preview_sha256": "211b064105f2506a48032e370b2e6b6fffae8daf7035a8168385b77172d5cf8e",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "265": {
         "id": 265,
         "source_table": "chat_emotion_frame_data",
         "name": "strong",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_265_00000_0_0_ui",
-          "ui_emotion_265_00001_0_0_ui",
-          "ui_emotion_265_00002_0_0_ui",
-          "ui_emotion_265_00003_0_0_ui"
+          "ui_emotion_265_00000.png",
+          "ui_emotion_265_00001.png",
+          "ui_emotion_265_00002.png",
+          "ui_emotion_265_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_265.gif",
+        "image_sha256": "f56b5ca58cb4895ceebe3ca699312aa759cb8b9c6164eff8cc4bdac02a9db33d",
+        "preview": "art/inline_265.png",
+        "preview_sha256": "be8fe3861fea63778a337a8e484be3a3060742dea46b58597417df05d0695002",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "266": {
         "id": 266,
         "source_table": "chat_emotion_frame_data",
         "name": "handshake",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 4,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_266_00000_0_0_ui",
-          "ui_emotion_266_00001_0_0_ui",
-          "ui_emotion_266_00002_0_0_ui",
-          "ui_emotion_266_00003_0_0_ui"
+          "ui_emotion_266_00000.png",
+          "ui_emotion_266_00001.png",
+          "ui_emotion_266_00002.png",
+          "ui_emotion_266_00003.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_266.gif",
+        "image_sha256": "a588ada7c114adac239a2ac1e655a568680999093fd304bfbca65ce799c8545b",
+        "preview": "art/inline_266.png",
+        "preview_sha256": "f32df7e702ce5ffaa519243c369d1b4ffaa5a051100aa4494f7692aee5d437d5",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "270": {
         "id": 270,
         "source_table": "chat_emotion_frame_data",
         "name": "Blade",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 6,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_270_00000_0_0_ui",
-          "ui_emotion_270_00001_0_0_ui",
-          "ui_emotion_270_00002_0_0_ui",
-          "ui_emotion_270_00003_0_0_ui",
-          "ui_emotion_270_00004_0_0_ui",
-          "ui_emotion_270_00005_0_0_ui"
+          "ui_emotion_270_00000.png",
+          "ui_emotion_270_00001.png",
+          "ui_emotion_270_00002.png",
+          "ui_emotion_270_00003.png",
+          "ui_emotion_270_00004.png",
+          "ui_emotion_270_00005.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_270.gif",
+        "image_sha256": "5c9836cf3957239b16060d48250fb26db5d96eacbbbfda06b1e12cd268a57daa",
+        "preview": "art/inline_270.png",
+        "preview_sha256": "58bd935a371c20f2e000f42315e8bd0d508bd8e308a89107a8b62cfd4aeb978d",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "271": {
         "id": 271,
         "source_table": "chat_emotion_frame_data",
         "name": "Explosive",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 6,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_271_00000_0_0_ui",
-          "ui_emotion_271_00001_0_0_ui",
-          "ui_emotion_271_00002_0_0_ui",
-          "ui_emotion_271_00003_0_0_ui",
-          "ui_emotion_271_00004_0_0_ui",
-          "ui_emotion_271_00005_0_0_ui"
+          "ui_emotion_271_00000.png",
+          "ui_emotion_271_00001.png",
+          "ui_emotion_271_00002.png",
+          "ui_emotion_271_00003.png",
+          "ui_emotion_271_00004.png",
+          "ui_emotion_271_00005.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_271.gif",
+        "image_sha256": "3ae64f1ecbdcaccbe526395c67a8ee5220e226b32264f3fdcda0b2b6f85c1da3",
+        "preview": "art/inline_271.png",
+        "preview_sha256": "0290204c25e1afbacf6f525d486eaa399a77f37199e0b5e39344db3e73418487",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "296": {
         "id": 296,
         "source_table": "chat_emotion_frame_data",
         "name": "showoff",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 7,
         "show_frame": 5,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_296_00000_0_0_ui",
-          "ui_emotion_296_00001_0_0_ui",
-          "ui_emotion_296_00002_0_0_ui",
-          "ui_emotion_296_00003_0_0_ui",
-          "ui_emotion_296_00004_0_0_ui",
-          "ui_emotion_296_00005_0_0_ui",
-          "ui_emotion_296_00006_0_0_ui"
+          "ui_emotion_296_00000.png",
+          "ui_emotion_296_00001.png",
+          "ui_emotion_296_00002.png",
+          "ui_emotion_296_00003.png",
+          "ui_emotion_296_00004.png",
+          "ui_emotion_296_00005.png",
+          "ui_emotion_296_00006.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_296.gif",
+        "image_sha256": "b16eca4feeaac2c056f149b1857feca7e96c70588d0e4a373cd3ac808c4faa40",
+        "preview": "art/inline_296.png",
+        "preview_sha256": "8d44f3f9dc7d6332bde8914bb8bb11a8badb76fc5a49e97988792a71d7b6c128",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "297": {
         "id": 297,
         "source_table": "chat_emotion_frame_data",
         "name": "Pet",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 6,
         "show_frame": 2,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_297_00000_0_0_ui",
-          "ui_emotion_297_00001_0_0_ui",
-          "ui_emotion_297_00002_0_0_ui",
-          "ui_emotion_297_00003_0_0_ui",
-          "ui_emotion_297_00004_0_0_ui",
-          "ui_emotion_297_00005_0_0_ui"
+          "ui_emotion_297_00000.png",
+          "ui_emotion_297_00001.png",
+          "ui_emotion_297_00002.png",
+          "ui_emotion_297_00003.png",
+          "ui_emotion_297_00004.png",
+          "ui_emotion_297_00005.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_297.gif",
+        "image_sha256": "aa131a7bd5c2b86fbcd47f8eafb04ac6387b6f4e8e3c075cb00242699735d063",
+        "preview": "art/inline_297.png",
+        "preview_sha256": "80ae1f29f4ebcdacd074746f04dcc9ee472a48bbd5b57dd1bac71bba823d32e7",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       },
       "298": {
         "id": 298,
         "source_table": "chat_emotion_frame_data",
         "name": "hopeful",
         "group_id": 1,
-        "status": "unresolved",
+        "status": "animated",
         "frame_count": 7,
         "show_frame": 0,
         "frame_duration_ms": 200,
         "resources": [
-          "ui_emotion_298_00000_0_0_ui",
-          "ui_emotion_298_00001_0_0_ui",
-          "ui_emotion_298_00002_0_0_ui",
-          "ui_emotion_298_00003_0_0_ui",
-          "ui_emotion_298_00004_0_0_ui",
-          "ui_emotion_298_00005_0_0_ui",
-          "ui_emotion_298_00006_0_0_ui"
+          "ui_emotion_298_00000.png",
+          "ui_emotion_298_00001.png",
+          "ui_emotion_298_00002.png",
+          "ui_emotion_298_00003.png",
+          "ui_emotion_298_00004.png",
+          "ui_emotion_298_00005.png",
+          "ui_emotion_298_00006.png"
         ],
-        "reason": "Missing inline animation frames; no incomplete animation assembled.",
-        "missing_frames": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6
-        ]
+        "art_source": "Cocos sprite atlas",
+        "image": "art/inline_298.gif",
+        "image_sha256": "733db15e063796f2f9939772240f70921f6126a7c95b463eea8200a2a26dbf89",
+        "preview": "art/inline_298.png",
+        "preview_sha256": "624d0fe89af824afbb88a130ea436a65dc03209b0dbd4aa660480904ebabcec1",
+        "reason": "Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha."
       }
     },
     "sources": {
@@ -493556,6 +493441,23 @@
             "frame_num",
             "tick_count"
           ]
+        },
+        {
+          "source": "hexm/client/ui/manager/cocos.lua",
+          "sha256": "597f47e664a8ab126ffc48e98728c241bcfbd38762cf0fefe4b5d08951722b0c",
+          "required_constants": [
+            "UIScript/plist/%s",
+            "addSpriteFramesWithFiles",
+            "all_png_data"
+          ]
+        },
+        {
+          "source": "hexm/client/ui/windows/chat/chat_rich_text_field.lua",
+          "sha256": "2ccd2ea5a73f30f5aef4523b45c4a9152907815dd4b9c73b085360e9c80954eb",
+          "required_constants": [
+            "[#%s]",
+            "emotion"
+          ]
         }
       ],
       "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
@@ -493580,6 +493482,95 @@
         ],
         "patch_database_present": true,
         "missing_file_ids": []
+      },
+      "inline_atlas": {
+        "table": {
+          "table": "all_png_data",
+          "archive": "index1",
+          "frame": 1926,
+          "records": 1,
+          "pages": 1,
+          "manifest_slot": 1536,
+          "record_hex": "010000000100000001008607ffffffff460f741600000000a106000000040000",
+          "manifest_sha256": "2c51e2d69202c9fbd1c20325b5c791f873f177449f094d64b7b13e62d97f5a28",
+          "index_sha256": "94945b5353fb28f8342e95c80d9dde825f685abb38276003cee8e850ca44856d"
+        },
+        "layers": {
+          "scope": "base+LT+patch",
+          "sources": [
+            {
+              "path": "Resources.mpkinfo",
+              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+            },
+            {
+              "path": "LocalData\\Patch\\LT1.mpkinfo",
+              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+            },
+            {
+              "path": "LocalData\\Patch\\Patch.mpkdb",
+              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+            }
+          ],
+          "lt_indexes": [
+            "LT1.mpkinfo"
+          ],
+          "patch_database_present": true,
+          "missing_file_ids": []
+        },
+        "atlases": {
+          "UIScript/plist/dynamic_l_talk_emotion__0_0_ui.plist": {
+            "plist_sha256": "4fe43e568859765e3350a96fe541974f4eda306c03fa1a7577093bef18278078",
+            "texture_resource": "dynamic_l_talk_emotion__0_0_ui",
+            "declared_size": "{1024,1024}",
+            "texture": {
+              "n": "dynamic_l_talk_emotion__0_0_ui",
+              "t": "Texture2D",
+              "u": "b2d531e1-0c6a-4465-b757-6e0177b3b4ed",
+              "p": "ui/dynamic_l_talk_emotion__0_0_ui",
+              "d": [],
+              "status": "EXPORTED",
+              "size": [
+                1024,
+                1024
+              ],
+              "cached": false,
+              "file": "art/b2d531e1-0c6a-4465-b757-6e0177b3b4ed.png",
+              "source_sha256": "f1c8b42d750bf9e1c46dedd5a7824f18add371edb4b1fe5152b67462bc545495",
+              "png_sha256": "52f6bce86d24aabca231f15db2a1bc6b8147aba9cde0f236c9569e71f7d0d83b",
+              "physical_file_id": "C4BC9EB862326435",
+              "source_archive": "Resources64.mpk"
+            }
+          }
+        },
+        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "physical_lookup": {
+          "scope": "base+LT+patch",
+          "sources": [
+            {
+              "path": "Resources.mpkinfo",
+              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+            },
+            {
+              "path": "LocalData\\Patch\\LT1.mpkinfo",
+              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+            },
+            {
+              "path": "LocalData\\Patch\\Patch.mpkdb",
+              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+            }
+          ],
+          "lt_indexes": [
+            "LT1.mpkinfo"
+          ],
+          "patch_database_present": true,
+          "missing_file_ids": []
+        },
+        "required_frames": 280,
+        "exported_frames": 280,
+        "errors": {},
+        "unavailable_plists": [],
+        "missing_frames": [],
+        "selection": "Current all_png_data atlas list -> exact frame filename -> plist rectangle -> exact original texture; no standalone-ID mapping."
       },
       "routing": "msg_emotion -> pic_style -> emotion_type topic (2) -> chat_emotion_icon_lib. Inline text -> chat_emotion_frame_data; never cross-resolve numeric IDs.",
       "game_version": null,

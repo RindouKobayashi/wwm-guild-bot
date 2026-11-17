@@ -7,6 +7,8 @@
     "hexm/client/ui/windows/chat/chat_window_events.lua": "2544190692fedc4ec5c8f48c69b41d0f1c63440dd95d0a59bab5841b90ca54d9",
     "hexm/client/ui/windows/chat/chat_content/msg_components/pic.lua": "c1457e30e3c328e8b1a0e80e0b862a4604e3bf42819028f11e45c1414b4f03de",
     "hexm/client/ui/controllers/richtext_component/richtext_config.lua": "2bf8533b11dfe9fe7ff411c93951aad2fb4502273286deb2189951be3c4020f3",
-    "hexm/client/ui/controllers/richtext_component/richtext_base_component.lua": "7c2db78f8fc95bfd3c88dea28e8e5354bc5458f3f0cb54ebd51d3ea16e31b86f"
+    "hexm/client/ui/controllers/richtext_component/richtext_base_component.lua": "7c2db78f8fc95bfd3c88dea28e8e5354bc5458f3f0cb54ebd51d3ea16e31b86f",
+    "hexm/client/ui/manager/cocos.lua": "597f47e664a8ab126ffc48e98728c241bcfbd38762cf0fefe4b5d08951722b0c",
+    "hexm/client/ui/windows/chat/chat_rich_text_field.lua": "2ccd2ea5a73f30f5aef4523b45c4a9152907815dd4b9c73b085360e9c80954eb"
   }
 }

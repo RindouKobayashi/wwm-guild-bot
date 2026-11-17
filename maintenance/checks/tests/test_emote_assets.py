@@ -191,6 +191,43 @@ class EmoteAssetsTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, 'no moving frames'):
             make_gif([path, path], self.root / 'stationary.gif')
 
+    def test_atlas_crop_preserves_pixels_and_alpha(self):
+        from PIL import Image
+        from emote_atlas import crop_frame
+        atlas = Image.new('RGBA', (8, 8), (0, 0, 0, 0))
+        atlas.putpixel((3, 4), (100, 150, 200, 128))
+        definition = dict(frame='{{2,3},{2,2}}', sourceColorRect='{{1,1},{2,2}}',
+            sourceSize='{4,4}', offset='{0,0}', rotated=False)
+        image = crop_frame(atlas, definition)
+        self.assertEqual(image.size, (4,4))
+        self.assertEqual(image.getpixel((2,2)), (100,150,200,128))
+        self.assertEqual(image.getpixel((0,0))[3], 0)
+
+    def test_atlas_rejects_unverified_rotation_and_invalid_geometry(self):
+        from PIL import Image
+        from emote_atlas import crop_frame
+        atlas = Image.new('RGBA', (8,8))
+        base = dict(frame='{{2,3},{2,2}}', sourceColorRect='{{1,1},{2,2}}',
+            sourceSize='{4,4}', offset='{0,0}', rotated=False)
+        for field,value in [('rotated',True),('frame','{{7,7},{2,2}}'),('sourceColorRect','{{3,3},{2,2}}'),('offset','{1,1}'),('sourceSize','{99999,99999}')]:
+            with self.assertRaises(ValueError): crop_frame(atlas, {**base,field:value})
+
+    def test_atlas_pair_parser_rejects_malformed_data(self):
+        from emote_atlas import pair, rectangle
+        self.assertEqual(pair('{0.5,-1.5}'), (0.5,-1.5))
+        for value in ('nan', '{nan,1}', '[1,2]', None):
+            with self.assertRaises(ValueError): pair(value)
+        with self.assertRaises(ValueError): rectangle('{{1,2},{-3,4}}')
+
+    def test_identical_source_frames_are_still_but_alpha_changes_are_not(self):
+        from PIL import Image
+        from extract_emotes import identical_frames
+        first = self.root / 'first.png'; second = self.root / 'second.png'
+        Image.new('RGBA',(8,8),(200,30,50,255)).save(first)
+        self.assertTrue(identical_frames([first,first]))
+        Image.new('RGBA',(8,8),(200,30,50,128)).save(second)
+        self.assertFalse(identical_frames([first,second]))
+
 
 class EmoteChatTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):

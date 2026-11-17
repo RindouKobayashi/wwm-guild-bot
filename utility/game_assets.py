@@ -43,7 +43,8 @@ def validate_release(directory):
         artwork = name.endswith('.png') and name.startswith(('activity/art/', 'abyss/art/', 'dungeons/cards/artwork/'))
         martial_file = name in ('martial/catalogue.json','martial/startup-approval.json','martial/upload-pack/contact-sheet.html','martial/upload-pack/upload-manifest.json','martial/upload-pack/UPLOAD-GUIDE.md') or (name.startswith(('martial/art/','martial/upload-pack/icons/')) and name.endswith('.png'))
         market_file = name in ('market/catalogue.json','market/contact-sheet.html') or (name.startswith('market/art/') and name.endswith('.png'))
-        emote_file = name in ('emotes/catalogue.json', 'emotes/contact-sheet.html') or (name.startswith('emotes/art/') and name.endswith(('.png', '.gif')))
+        emote_file = name in ('emotes/catalogue.json', 'emotes/contact-sheet.html', 'emotes/startup-approval.json',
+            'emotes/upload-pack/upload-manifest.json', 'emotes/upload-pack/contact-sheet.html', 'emotes/upload-pack/UPLOAD-GUIDE.md') or (name.startswith(('emotes/art/', 'emotes/upload-pack/icons/')) and name.endswith(('.png', '.gif')))
         if name not in fixed and not artwork and not martial_file and not market_file and not emote_file:
             raise ValueError('Unexpected/private file in public bundle: ' + name)
         path = inside(directory, name)
@@ -56,6 +57,14 @@ def validate_release(directory):
         validate_emotes(catalogue)
         if catalogue != tables['emotes'] or 'emotes/catalogue.json' not in manifest['files']:
             raise ValueError('Emote catalogue differs from bundle')
+        if (directory/'emotes/upload-pack/upload-manifest.json').exists() or (directory/'emotes/startup-approval.json').exists():
+            from utility.inline_emojis import validate_pack
+            for name in ('emotes/upload-pack/upload-manifest.json','emotes/startup-approval.json'):
+                if name not in manifest['files']:raise ValueError('Unsealed inline emoji approval')
+            rows=validate_pack(directory/'emotes',catalogue)
+            for row in rows:
+                name='emotes/upload-pack/'+row['file']
+                if name not in manifest['files']:raise ValueError('Inline emoji image absent from manifest')
         for namespace in ('entries', 'inline_entries'):
             for row in catalogue.get(namespace, {}).values():
                 for field in ('image', 'preview'):

@@ -62,6 +62,8 @@ def lua_evidence(toolkit, game):
         'hexm/client/ui/windows/chat/chat_content/msg_components/pic.lua': {'emotion_id', 'emotion_type', 'chat_emotion_icon_lib', 'emoji_file_name', 'vx_file_name', 'vx_loop'},
         'hexm/client/ui/controllers/richtext_component/richtext_config.lua': {'ui_emotion_%s_000%s%s.png'},
         'hexm/client/ui/controllers/richtext_component/richtext_base_component.lua': {'chat_emotion_frame_data', 'frame_num', 'tick_count', 0.2},
+        'hexm/client/ui/manager/cocos.lua': {'all_png_data', 'UIScript/plist/%s', 'addSpriteFramesWithFiles'},
+        'hexm/client/ui/windows/chat/chat_rich_text_field.lua': {'[#%s]', 'emotion'},
     }
     result = []
     def walk(t):
@@ -77,6 +79,15 @@ def lua_evidence(toolkit, game):
             raise ValueError('Chat renderer changed; reverify emote routing: ' + source)
         receipt['required_constants'] = sorted(map(str, required)); result.append(receipt)
     return result
+
+
+def identical_frames(paths):
+    from PIL import Image
+    signatures = set()
+    for path in paths:
+        with Image.open(path) as image:
+            signatures.add((image.size, hashlib.sha256(image.convert('RGBA').tobytes()).hexdigest()))
+    return len(signatures) == 1
 
 
 def make_gif(paths, destination, duration=200, max_size=None):
@@ -147,10 +158,9 @@ def extract(toolkit, game, out):
         inline_entries[str(identifier)] = dict(id=identifier, source_table='chat_emotion_frame_data',
             name=localized(row.get('desc')), group_id=row.get('group'), status='unresolved',
             frame_count=count, show_frame=preview, frame_duration_ms=200,
-            resources=[f'ui_emotion_{identifier}_000{i:02d}_0_0_ui' for i in range(count)],
+            resources=[f'ui_emotion_{identifier}_000{i:02d}.png' for i in range(count)],
             reason='Inline-only namespace; not used for standalone msg_emotion')
     resources = {r['resource'] for r in entries.values()}
-    resources.update(s for r in inline_entries.values() for s in r['resources'])
     out.mkdir(parents=True, exist_ok=True)
     art = export_art(game, out / 'source-art', {'emotes': {'art': [{'resource': s} for s in sorted(resources)]}})
     (out / 'source-art-manifest.json').write_text(json.dumps(art, indent=2), encoding='utf-8')
@@ -160,10 +170,14 @@ def extract(toolkit, game, out):
         if len(hits) > 1: raise ValueError('Ambiguous emote artwork: ' + resource)
         return out / 'source-art' / hits[0]['file'] if hits else None
     (out / 'art').mkdir(exist_ok=True)
+    from emote_atlas import extract_frames
+    inline_images, atlas_source = extract_frames(game, root, inline_entries, out, D)
     for namespace, rows in (('topic', entries), ('inline', inline_entries)):
         for identifier, row in rows.items():
-            resources = [row['resource']] if namespace == 'topic' else row['resources']
-            paths = [original(s) for s in resources]
+            paths = ([original(row['resource'])] if namespace == 'topic' else
+                     [inline_images.get(f'ui_emotion_{identifier}_000{i:02d}.png') for i in range(row['frame_count'])])
+            if namespace == 'inline':
+                row['art_source'] = 'Cocos sprite atlas'
             preview = paths[0] if namespace == 'topic' else paths[row['show_frame']]
             if preview:
                 target = out / 'art' / f'{namespace}_{identifier}.png'
@@ -175,9 +189,15 @@ def extract(toolkit, game, out):
                 else: row.pop('reason', None)
             if namespace == 'inline' and len(paths) > 1 and all(paths):
                 gif = out / 'art' / f'inline_{identifier}.gif'
-                make_gif(paths, gif)
-                row.update(image='art/' + gif.name, image_sha256=digest(gif), status='animated',
-                           reason='Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha.')
+                try:
+                    if identical_frames(paths):
+                        row.update(status='static', reason='All source frames are identical; original still image preserved.')
+                        continue
+                    make_gif(paths, gif)
+                    row.update(image='art/' + gif.name, image_sha256=digest(gif), status='animated',
+                               reason='Inline-only animation; not used for standalone msg_emotion. GIF uses binary alpha; PNG preview preserves source alpha.')
+                except (ValueError, OSError) as exc:
+                    row.update(status='static_preview' if preview else 'unresolved', reason=str(exc))
             elif namespace == 'inline' and not all(paths):
                 row['missing_frames'] = [i for i, p in enumerate(paths) if p is None]
                 row['reason'] = 'Missing inline animation frames; no incomplete animation assembled.'
@@ -192,7 +212,7 @@ def extract(toolkit, game, out):
                            match=bool(entry and entry.get('preview_sha256') == digest(path))))
     data = dict(format=1, entries=entries, inline_entries=inline_entries, sources=dict(
         topics=topic_source, inline=inline_source, description_index=description_source, groups=group_source, lua=evidence,
-        registry_sha256=art['registry_sha256'], physical_lookup=art.get('physical_lookup'),
+        registry_sha256=art['registry_sha256'], physical_lookup=art.get('physical_lookup'), inline_atlas=atlas_source,
         routing='msg_emotion -> pic_style -> emotion_type topic (2) -> chat_emotion_icon_lib. Inline text -> chat_emotion_frame_data; never cross-resolve numeric IDs.',
         game_version=None, version_note='Content identified by source checksums; no authoritative semantic game version supplied.'),
         local_comparison=manual)
@@ -217,7 +237,8 @@ def render_preview(data, out):
             cards.append('<article><h3>' + esc(r.get('name') or 'Unnamed emote') + '</h3>' + image + '<p>ID ' + identifier + ' · ' + esc(r.get('group_name') or r.get('group_id')) + '</p><strong>' + esc(r['status']) + '</strong><p>' + esc(r.get('reason')) + '</p><small>' + esc(r.get('resource') or r.get('resources')) + '</small><p>' + still + '</p></article>')
         cards.append('</main>')
     counts = Counter(r['status'] for r in data['entries'].values())
-    page = '<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width"><title>WWM emote review</title><style>body{background:#15151d;color:#eee;font:16px system-ui;padding:24px}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}article{background:#252532;padding:18px;border-radius:14px;overflow-wrap:anywhere}img{width:160px;height:160px;object-fit:contain;background:repeating-conic-gradient(#34343d 0% 25%,#292932 0% 50%) 0/20px 20px}a{color:#8ee8ee}input{padding:12px;width:min(90%,550px)}small{font-size:12px}</style><h1>Game-derived emotes</h1><p>' + esc(dict(counts)) + '</p><p>Static previews do not claim animation fidelity. Inline IDs never resolve standalone messages.</p><label>Find by ID, name, collection or status <input type=search id=q></label>' + ''.join(cards) + '<h2>Existing manual files</h2><pre>' + esc(json.dumps(data.get('local_comparison', []), indent=2)) + '</pre><script>document.getElementById("q").addEventListener("input",e=>document.querySelectorAll("article").forEach(a=>a.hidden=!a.textContent.toLowerCase().includes(e.target.value.toLowerCase())))</script>'
+    inline_counts = Counter(r['status'] for r in data.get('inline_entries', {}).values())
+    page = '<!doctype html><meta charset=utf-8><meta name=viewport content="width=device-width"><title>WWM emote review</title><style>body{background:#15151d;color:#eee;font:16px system-ui;padding:24px}main{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px}article{background:#252532;padding:18px;border-radius:14px;overflow-wrap:anywhere}img{width:160px;height:160px;object-fit:contain;background:repeating-conic-gradient(#34343d 0% 25%,#292932 0% 50%) 0/20px 20px}a{color:#8ee8ee}input{padding:12px;width:min(90%,550px)}small{font-size:12px}</style><h1>Game-derived emotes</h1><p><a href="upload-pack/contact-sheet.html">Discord inline emoji upload pack</a></p><p>' + 'Standalone: ' + esc(dict(counts)) + '</p><p>Inline: ' + esc(dict(inline_counts)) + '</p><p>Static previews do not claim animation fidelity. Inline IDs never resolve standalone messages.</p><label>Find by ID, name, collection or status <input type=search id=q></label>' + ''.join(cards) + '<h2>Existing manual files</h2><pre>' + esc(json.dumps(data.get('local_comparison', []), indent=2)) + '</pre><script>document.getElementById("q").addEventListener("input",e=>document.querySelectorAll("article").forEach(a=>a.hidden=!a.textContent.toLowerCase().includes(e.target.value.toLowerCase())))</script>'
     (out / 'contact-sheet.html').write_text(page, encoding='utf-8')
 
 
@@ -234,6 +255,10 @@ def copy_export(source, target):
                 inspect_image(path); shutil.copy2(path, inside(target, row[field]))
     for name in ('catalogue.json', 'contact-sheet.html'):
         shutil.copy2(source / name, target / name)
+    if any(row.get('image') for row in data.get('inline_entries', {}).values()):
+        from inline_emoji_pack import build
+        applications=json.loads((BOT / 'assets/discord/inline-applications.json').read_text(encoding='utf-8'))
+        build(target, data, applications)
 
 
 if __name__ == '__main__':
