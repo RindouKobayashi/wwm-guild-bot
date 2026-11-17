@@ -48,11 +48,14 @@ a still; the other 54 recovered inline entries have animated previews.
 
 ## Inline replacement and automatic upload
 
-The original chat input source serializes an inline face as a position marker
-such as `[#4]`, with its actual game ID in `ext.emotion[4]`. The bot resolves this
-metadata rather than treating 4 as an emote ID. Integer and string dictionary
-keys are supported. Unknown or malformed mappings keep the original text;
-known faces without an upload use readable labels such as `[smile]`.
+The received-message renderer uses `[#N]` as inline emote ID N directly: for
+example, `[#220]` is spit and `[#260]` is rose. `render_received()` does not
+depend on `ext.emotion`, including when that field is missing or conflicting.
+Unknown IDs remain literal; known faces without an upload use readable labels.
+The game's outgoing input uses a separate position-map format (`[#4]` with the
+ID in `ext.emotion[4]`). The legacy `render()` helper handles that format only
+and is not called by the Discord relay. Received and outgoing source evidence
+are pinned separately; numeric IDs never cross into the sticker catalogue.
 
 `emotes/upload-pack/` contains 54 animated 128×128 GIFs and one PNG, a manifest,
 an illustrated sheet and upload instructions. Each file is below 256 KiB.
@@ -76,7 +79,9 @@ Rendering uses the connected bot's application ID, not an environment guess.
 It inserts `<a:name:id>` for animations and `<:name:id>` for the heart, after
 translation so Discord emoji IDs are not sent to the translation provider.
 Original and translated text use the markers they retain; a translator-mangled
-marker is preserved rather than guessed. Each message has bounded replacements.
+marker is preserved rather than guessed. Emoji-only messages skip translation
+and appear once. Translation runs only when text remaining outside recognized
+emote markers contains Unicode letters. Each message has bounded replacements.
 Standalone image cards and Discord-to-game sending remain unchanged.
 
 For maintenance, `python maintenance/assets/upload_inline_emojis.py --environment

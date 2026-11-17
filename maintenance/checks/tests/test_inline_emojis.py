@@ -66,6 +66,36 @@ class InlineTests(unittest.TestCase):
         self.assertIn('<a:',result);self.assertIn(':800>',result);self.assertIn('[#201]',result)
         self.assertEqual(self.renderer.render('[#4]',None,'10'),'[#4]')
 
+    def test_received_ids_are_direct_and_position_decoder_remains_separate(self):
+        expected=self.renderer.resolve('201','10')
+        self.assertEqual(self.renderer.render_received('Hello [#201]','10'),'Hello '+expected)
+        self.assertEqual(self.renderer.render_received('[#4]','10'),'[#4]')
+        self.assertEqual(self.renderer.render('[#4]',{4:201},'10'),expected)
+
+    def test_received_unknown_sticker_ids_and_malformed_markers_stay_literal(self):
+        text='[#999][#0][#-1][#bad][#000201][#1.0]'
+        self.assertEqual(self.renderer.render_received(text,'10'),text)
+
+    def test_received_missing_receipts_and_other_application_use_names(self):
+        self.assertEqual(self.renderer.render_received('[#201][#261]','20'),'[smile][heart]')
+        self.assertEqual(self.renderer.render_received('[#201]',None),'[smile]')
+        self.registry['applications']['10']['inline_201']['sha256']='changed'
+        self.assertEqual(self.renderer.render_received('[#201]','10'),'[smile]')
+
+    def test_received_repeats_static_animation_and_growth_bounds(self):
+        self.assertEqual(self.renderer.render_received('[#201][#261][#201]','10'),
+            self.renderer.resolve('201','10')+self.renderer.resolve('261','10')+self.renderer.resolve('201','10'))
+        result=self.renderer.render_received('[#201]'*100,'10')
+        self.assertEqual(result.count('<a:'),64);self.assertEqual(result.count('[#201]'),36)
+        text='x'*3790+'[#201]'*3
+        self.assertEqual(self.renderer.render_received(text,'10'),text)
+
+    def test_translation_detection_removes_only_recognized_markers(self):
+        for text in ('[#201][#261]','  !! [#201] 123','[#999]',''):
+            self.assertFalse(self.renderer.has_translatable_text(text))
+        for text in ('a[#201]','你好[#201]','hello [#999]'):
+            self.assertTrue(self.renderer.has_translatable_text(text))
+
     def test_static_and_repeated_adjacent_markers(self):
         result=self.renderer.render('[#1][#2][#1]',{1:201,2:261},'10')
         self.assertEqual(result.count('<a:'),2);self.assertIn('<:wwm_i_261_',result)
@@ -206,11 +236,55 @@ class InlineUploadTests(unittest.IsolatedAsyncioTestCase):
         translator=AsyncMock(side_effect=lambda text,**kwargs:text)
         cog=SimpleNamespace(inline_emojis=renderer,bot=SimpleNamespace(application_id=10),ranks={},
             _get_discord_mention=lambda pid:'',translate_with_retry=translator)
-        message=dict(msg='Hello [#4]',ts=1700000000,nickname='Synthetic sender',ext=dict(msg_type='msg_normal',emotion={'4':201}))
+        message=dict(msg='Hello [#201]',ts=1700000000,nickname='Synthetic sender',ext=dict(msg_type='msg_normal'))
         embed=await LiveChatCog.format_message_embed(cog,message)
         self.assertEqual(embed.description.count('<a:'),2)
-        self.assertEqual(translator.call_args.args[0],'Hello [#4]')
+        self.assertEqual(translator.call_args.args[0],'Hello [#201]')
         self.assertNotIn('800',translator.call_args.args[0])
+
+    def received_renderer(self):
+        rows=validate_pack(self.directory);registry=receipts(rows)
+        renderer=InlineEmojis(self.assets,self.root,registry)
+        # Synthetic receipts for the public game IDs in the reported sequences.
+        for identifier,name in [('220','spit'),('234','dizzy'),('249','floating'),('263','lips'),('247','furious'),('260','rose')]:
+            renderer.entries[identifier]={'id':int(identifier),'name':name}
+            row=dict(rows[0],key='inline_'+identifier,source_id=int(identifier),name='wwm_i_'+identifier+'_fixture')
+            renderer.rows[identifier]=row
+            registry['applications']['10'][row['key']]=dict(id='900'+identifier,name=row['name'],sha256=row['sha256'])
+        return renderer
+
+    async def test_reported_mixed_sequence_preserves_text_repeated_ids_and_translation(self):
+        from cogs.live_chat_cog import LiveChatCog
+        renderer=self.received_renderer();text='a[#220][#234][#249][#249][#263][#261][#247]'
+        translator=AsyncMock(return_value=text)
+        cog=SimpleNamespace(inline_emojis=renderer,bot=SimpleNamespace(application_id=10),ranks={},
+            _get_discord_mention=lambda pid:'',translate_with_retry=translator)
+        embed=await LiveChatCog.format_message_embed(cog,dict(msg=text,ts=1700000000,nickname='Synthetic sender',ext={'msg_type':'msg_normal'}))
+        expected='a'+''.join(renderer.resolve(i,'10') for i in ['220','234','249','249','263','261','247'])
+        self.assertTrue(embed.description.startswith(expected+'\n\n[Translated] '+expected))
+        self.assertEqual(embed.description.count(renderer.resolve('249','10')),4)
+        self.assertEqual(translator.call_args.args[0],text)
+
+    async def test_reported_rose_and_emoji_only_sequence_ignore_ext_mapping(self):
+        from cogs.live_chat_cog import LiveChatCog
+        renderer=self.received_renderer();translator=AsyncMock()
+        cog=SimpleNamespace(inline_emojis=renderer,bot=SimpleNamespace(application_id=10),ranks={},
+            _get_discord_mention=lambda pid:'',translate_with_retry=translator)
+        for text in ('[#260]','[#220][#234][#249][#249][#263][#261][#247]'):
+            for emotion in (None,{},[],{'260':201,'249':261}):
+                embed=await LiveChatCog.format_message_embed(cog,dict(msg=text,ts=1700000000,nickname='Synthetic sender',ext={'msg_type':'msg_normal','emotion':emotion}))
+                self.assertTrue(embed.description.startswith(renderer.render_received(text,'10')))
+                self.assertNotIn('[Translated]',embed.description);self.assertNotIn('[#',embed.description)
+        translator.assert_not_called()
+
+    async def test_unicode_text_still_translates_before_replacement(self):
+        from cogs.live_chat_cog import LiveChatCog
+        renderer=self.received_renderer();translator=AsyncMock(return_value='Hello [#220]')
+        cog=SimpleNamespace(inline_emojis=renderer,bot=SimpleNamespace(application_id=10),ranks={},
+            _get_discord_mention=lambda pid:'',translate_with_retry=translator)
+        embed=await LiveChatCog.format_message_embed(cog,dict(msg='你好 [#220]',ts=1700000000,nickname='Synthetic sender',ext={'msg_type':'msg_normal'}))
+        self.assertEqual(translator.call_args.args[0],'你好 [#220]');self.assertEqual(translator.call_args.kwargs['src'],'zh-cn')
+        self.assertEqual(embed.description.count(renderer.resolve('220','10')),2)
 
 
 if __name__=='__main__':unittest.main()

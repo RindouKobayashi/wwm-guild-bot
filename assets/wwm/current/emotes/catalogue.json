@@ -6322,6 +6322,26 @@
           "[#%s]",
           "emotion"
         ]
+      },
+      {
+        "source": "hexm/common/misc/chat_misc.lua",
+        "sha256": "0679a2c06e15db45e036ab89b3f00ac3eba47eb343dfbbc7135a32e00c763b50",
+        "required_constants": [
+          "%[#(%d+)%]",
+          "chat_emotion_frame_data",
+          "contains",
+          "emotion_id",
+          "emotion_pattern_str"
+        ]
+      },
+      {
+        "source": "hexm/client/ui/windows/chat/chat_content/msg_components/normal_msg.lua",
+        "sha256": "436c36a129b6b20d9267e34bf69bcf790f74373c7034fff72c4d2ceeb048a0ed",
+        "required_constants": [
+          "msg",
+          "parse_raw_str_with_emotion",
+          "set_richtext_by_msg"
+        ]
       }
     ],
     "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
@@ -6436,7 +6456,7 @@
       "missing_frames": [],
       "selection": "Current all_png_data atlas list -> exact frame filename -> plist rectangle -> exact original texture; no standalone-ID mapping."
     },
-    "routing": "msg_emotion -> pic_style -> emotion_type topic (2) -> chat_emotion_icon_lib. Inline text -> chat_emotion_frame_data; never cross-resolve numeric IDs.",
+    "routing": "msg_emotion -> pic_style -> emotion_type topic (2) -> chat_emotion_icon_lib. Received inline [#N] -> chat_emotion_frame_data[N] directly. Outgoing input [#position] + ext.emotion[position] is a separate format; never cross-resolve namespaces.",
     "game_version": null,
     "version_note": "Content identified by source checksums; no authoritative semantic game version supplied."
   },

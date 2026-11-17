@@ -64,6 +64,8 @@ def lua_evidence(toolkit, game):
         'hexm/client/ui/controllers/richtext_component/richtext_base_component.lua': {'chat_emotion_frame_data', 'frame_num', 'tick_count', 0.2},
         'hexm/client/ui/manager/cocos.lua': {'all_png_data', 'UIScript/plist/%s', 'addSpriteFramesWithFiles'},
         'hexm/client/ui/windows/chat/chat_rich_text_field.lua': {'[#%s]', 'emotion'},
+        'hexm/common/misc/chat_misc.lua': {'emotion_pattern_str', '%[#(%d+)%]', 'chat_emotion_frame_data', 'contains', 'emotion_id'},
+        'hexm/client/ui/windows/chat/chat_content/msg_components/normal_msg.lua': {'msg', 'set_richtext_by_msg', 'parse_raw_str_with_emotion'},
     }
     result = []
     def walk(t):
@@ -213,7 +215,7 @@ def extract(toolkit, game, out):
     data = dict(format=1, entries=entries, inline_entries=inline_entries, sources=dict(
         topics=topic_source, inline=inline_source, description_index=description_source, groups=group_source, lua=evidence,
         registry_sha256=art['registry_sha256'], physical_lookup=art.get('physical_lookup'), inline_atlas=atlas_source,
-        routing='msg_emotion -> pic_style -> emotion_type topic (2) -> chat_emotion_icon_lib. Inline text -> chat_emotion_frame_data; never cross-resolve numeric IDs.',
+        routing='msg_emotion -> pic_style -> emotion_type topic (2) -> chat_emotion_icon_lib. Received inline [#N] -> chat_emotion_frame_data[N] directly. Outgoing input [#position] + ext.emotion[position] is a separate format; never cross-resolve namespaces.',
         game_version=None, version_note='Content identified by source checksums; no authoritative semantic game version supplied.'),
         local_comparison=manual)
     validate(data)
@@ -225,7 +227,7 @@ def extract(toolkit, game, out):
 def render_preview(data, out):
     esc = lambda s: html.escape(str(s or ''), quote=True)
     cards = []
-    for title, rows in (('Standalone live-chat emotes', data['entries']), ('Inline text — separate namespace, not enabled in relay', data.get('inline_entries', {}))):
+    for title, rows in (('Standalone live-chat emotes', data['entries']), ('Inline text — Discord application emojis', data.get('inline_entries', {}))):
         cards.append('<h2>' + esc(title) + '</h2><main>')
         previous_group = object()
         for identifier, r in sorted(rows.items(), key=lambda pair: (pair[1].get('group_id') or 0, int(pair[0]))):

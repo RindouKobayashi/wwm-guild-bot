@@ -29,6 +29,12 @@ def sections(tables, directory=None):
     if tables.get('market_goods'):result['market_goods']=tables['market_goods']['goods']
     for namespace in ('entries', 'inline_entries'):
         if tables.get('emotes'): result['emotes.' + namespace] = tables['emotes'].get(namespace, {})
+    if tables.get('emotes', {}).get('sources'):
+        source = tables['emotes']['sources']
+        result['emotes.protocol'] = {
+            'routing': {'description': source.get('routing')},
+            'lua': {row['source']: row for row in source.get('lua', [])},
+        }
     for mode, values in tables.get('pvp_ranks', {}).get('modes', {}).items():
         result['pvp_ranks.'+mode]=values['ranks']
     for key, value in tables.get('martial', {}).items():

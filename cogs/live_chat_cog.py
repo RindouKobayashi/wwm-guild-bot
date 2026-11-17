@@ -2831,6 +2831,7 @@ class LiveChatCog(commands.Cog):
         
         # Determine message content based on type
         message = msg.get('msg', '').strip()
+        inline = getattr(self, 'inline_emojis', None)
         picture_url = None
         video_url = None
         
@@ -2990,7 +2991,7 @@ class LiveChatCog(commands.Cog):
                     message = "[Team Invitation]"
             else:
                 message = "[Team Invitation]"
-        elif msg_type == 'msg_normal':
+        elif msg_type == 'msg_normal' and (inline.has_translatable_text(message) if inline else any(ch.isalpha() for ch in message)):
             # Translate englsih to chinese and vice versa for normal messages to make it more accessible for all users
             # Check if message contains Chinese characters
             if any('\u4e00' <= char <= '\u9fff' for char in message):
@@ -3005,11 +3006,10 @@ class LiveChatCog(commands.Cog):
                     message += f"\n\n[Translated] {translated}"
 
         
-        # Resolve position markers only after translation. Discord emoji IDs
-        # never leave the host for the translation provider.
-        inline = getattr(self, 'inline_emojis', None)
+        # Received markers contain game emote IDs. Resolve after translation
+        # so Discord emoji IDs never reach the translation provider.
         if inline:
-            message = inline.render(message, ext.get('emotion'), getattr(self.bot, 'application_id', None))
+            message = inline.render_received(message, getattr(self.bot, 'application_id', None))
         channel_type = msg.get('channel', 'club_chat')
         
         # Channel styling

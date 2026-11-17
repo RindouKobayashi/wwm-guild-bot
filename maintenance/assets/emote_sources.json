@@ -9,6 +9,8 @@
     "hexm/client/ui/controllers/richtext_component/richtext_config.lua": "2bf8533b11dfe9fe7ff411c93951aad2fb4502273286deb2189951be3c4020f3",
     "hexm/client/ui/controllers/richtext_component/richtext_base_component.lua": "7c2db78f8fc95bfd3c88dea28e8e5354bc5458f3f0cb54ebd51d3ea16e31b86f",
     "hexm/client/ui/manager/cocos.lua": "597f47e664a8ab126ffc48e98728c241bcfbd38762cf0fefe4b5d08951722b0c",
-    "hexm/client/ui/windows/chat/chat_rich_text_field.lua": "2ccd2ea5a73f30f5aef4523b45c4a9152907815dd4b9c73b085360e9c80954eb"
+    "hexm/client/ui/windows/chat/chat_rich_text_field.lua": "2ccd2ea5a73f30f5aef4523b45c4a9152907815dd4b9c73b085360e9c80954eb",
+    "hexm/common/misc/chat_misc.lua": "0679a2c06e15db45e036ab89b3f00ac3eba47eb343dfbbc7135a32e00c763b50",
+    "hexm/client/ui/windows/chat/chat_content/msg_components/normal_msg.lua": "436c36a129b6b20d9267e34bf69bcf790f74373c7034fff72c4d2ceeb048a0ed"
   }
 }

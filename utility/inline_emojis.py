@@ -58,16 +58,32 @@ class InlineEmojis:
         return '<' + ('a' if row.get('animated') else '') + ':' + name + ':' + identity + '>'
 
     def render(self, text, emotion, application_id):
-        """Only [#position] + ext.emotion[position], never a naked numeric ID."""
+        """Outgoing/legacy position format only; not the received chat protocol."""
         if not isinstance(text, str) or not isinstance(emotion, dict): return text
+        def identifier_for(match):
+            position = match.group(1)
+            if position in emotion and int(position) in emotion and key(emotion[position]) != key(emotion[int(position)]):
+                return None
+            value = emotion.get(position, emotion.get(int(position)))
+            return key(value)
+        return self._render(text, application_id, identifier_for)
+
+    def render_received(self, text, application_id):
+        """Received [#N] names inline emote N directly, independently of ext."""
+        if not isinstance(text, str): return text
+        return self._render(text, application_id,
+            lambda match: match.group(1) if match.group(1) in self.entries else None)
+
+    def has_translatable_text(self, text):
+        if not isinstance(text, str): return False
+        remainder = MARKER.sub(lambda match: '' if match.group(1) in self.entries else match.group(0), text)
+        return any(character.isalpha() for character in remainder)
+
+    def _render(self, text, application_id, identifier_for):
         growth_budget = max(0, 3800 - len(text))
         def replace(match):
             nonlocal growth_budget
-            position = match.group(1)
-            if position in emotion and int(position) in emotion and key(emotion[position]) != key(emotion[int(position)]):
-                return match.group(0)
-            value = emotion.get(position, emotion.get(int(position)))
-            identifier = key(value)
+            identifier = identifier_for(match)
             if not identifier: return match.group(0)
             emoji = self.resolve(identifier, application_id)
             if emoji:

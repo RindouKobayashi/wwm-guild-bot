@@ -1,13 +1,13 @@
 {
   "format": 1,
-  "created_utc": "2026-11-17T15:16:28.978486+00:00",
+  "created_utc": "2026-11-17T15:45:32.479789+00:00",
   "provenance": {
-    "mode": "partial_game_extraction",
+    "mode": "received_protocol_metadata_refresh",
     "sections_requested": [
       "emotes"
     ],
     "warnings": [
-      "Reviewed inline application-emoji upload pack and pinned test/production startup approval added. Other game data remains at its indexed version."
+      "Fix received [#N] as inline ID N. Source evidence and approval refreshed; all artwork, upload hashes/names and applications unchanged. Other indexed data preserved."
     ],
     "source_sha256": {},
     "unresolved_artwork": [],
@@ -1161,9 +1161,9 @@
     "emotes/art/topic_909.png": "5ec234f1b534218de9efade265865b1607b5dc4150ab5df047e4a2028a79487e",
     "emotes/art/topic_910.png": "1f527020f732df99209a7a1e9d0f14fe47db7598222cadcd70aaccc433757add",
     "emotes/art/topic_911.png": "1735c90a8184c2238c0b2bd4e3a4f08d6e3a6f4d435d80ef0989256a502beda2",
-    "emotes/catalogue.json": "83545fded552a884232bd43e5303aded99c8f0ce7ccdec27d0f11cb3bffe11fb",
-    "emotes/contact-sheet.html": "c7cfb9b8ad82697401ec86909e110866b220dc6f2972806926c253eed5837b43",
-    "emotes/startup-approval.json": "aa6fb2f8466e0a9981255ea4c46bce2ef781371036104340c8732120338a6a03",
+    "emotes/catalogue.json": "e237e8aaf5cf4dbbeae026c6c32d448a42ad75d1f13a5ae46e90a3e499c88703",
+    "emotes/contact-sheet.html": "eae180964c32196116faed173d9b8705559f02c4f5044cf67ddf09acf65a9b90",
+    "emotes/startup-approval.json": "ae63a48841fc10db570e7fc37f2ffb936db2c0b3a2e6c5dd4397cd8e5e1b29c8",
     "emotes/upload-pack/contact-sheet.html": "92ad329870df8a9aa43c4ed7d68231d4f0d7a42713ce24f12974a1dd11e8c587",
     "emotes/upload-pack/icons/inline_201.gif": "7f8214666181c9bbef78ff7bc4ead09d893c8561e0fb4845fecb4574e00a36c7",
     "emotes/upload-pack/icons/inline_202.gif": "8943f89075915ce83d63501b97cd9fd8e68cf91e90540706c8f6e9b93a8538c6",
@@ -1220,7 +1220,7 @@
     "emotes/upload-pack/icons/inline_296.gif": "2654926e3aad5797c6c391675065f8dff3fd878bdcc4fdbe0ab2aa87592e150c",
     "emotes/upload-pack/icons/inline_297.gif": "7a516f0d251587f15669e8d662e4fbf49e689ea9a1a0210a609e5993eaa738f1",
     "emotes/upload-pack/icons/inline_298.gif": "c26b6b62c6dda2d956fa8e292785de4a01b722d9370e280236caf4f2e38fba31",
-    "emotes/upload-pack/UPLOAD-GUIDE.md": "7cbb8fab96a7bfabb880b0c0102142136d0f3a3f5387c40ce5dc278fd7e26b57",
+    "emotes/upload-pack/UPLOAD-GUIDE.md": "8ab948d2cc8eada95e07206bcff084cb930c7955068284fa059f89fb4aec6f75",
     "emotes/upload-pack/upload-manifest.json": "ee4a1390520770e68f9e0fe34a1700d64441d324a29d7cb6e6a3dc1225ad3239",
     "market/art/2122001.png": "5a6afde9fd8d69a977224640f3f133e65f0927029abde070294aecec6f103ea7",
     "market/art/2122002.png": "df5c0f62d7f801eb3fe5990b348327f4994cb0b79f0c8c68f4c41a7a2c824651",
@@ -1272,8 +1272,8 @@
     "martial/upload-pack/icons/path_8.png": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
     "martial/upload-pack/UPLOAD-GUIDE.md": "cf677352f5dd1f2934ae5c9166bfa58949b17227566af1e0cbf89c52690ccb18",
     "martial/upload-pack/upload-manifest.json": "1e44eacb55508584b8ce49cda86cd2b693098574a9b8ffaa13f5eeac98c62d11",
-    "report.html": "5c577d0e7df66171aacc606edcf046924bb8156ae44624839bbc3413c68479d1",
-    "report.json": "c2292b7b0b69c84461578c3ee65be5ead582c6ed446905678d874647c50cf2e8",
-    "tables.json": "e03d27517381990cf0846bd8df5bab93d2056fab58bbfbfb3f1747f6ef4e180d"
+    "report.html": "f9bc786c20a61fcd586b8e20e63fd72379272bb26dab6a0f0d7e369de31ba16d",
+    "report.json": "4168156f74df6658e8e03ff9b2039a3aa703d688a53d1a31d87cb742a7a50d28",
+    "tables.json": "84670b142952192de37a32a4c72e18b0a158ba9b747f9b8b8d29ea73f125635d"
   }
 }
