@@ -43,12 +43,29 @@ def validate_release(directory):
         artwork = name.endswith('.png') and name.startswith(('activity/art/', 'abyss/art/', 'dungeons/cards/artwork/'))
         martial_file = name in ('martial/catalogue.json','martial/startup-approval.json','martial/upload-pack/contact-sheet.html','martial/upload-pack/upload-manifest.json','martial/upload-pack/UPLOAD-GUIDE.md') or (name.startswith(('martial/art/','martial/upload-pack/icons/')) and name.endswith('.png'))
         market_file = name in ('market/catalogue.json','market/contact-sheet.html') or (name.startswith('market/art/') and name.endswith('.png'))
-        if name not in fixed and not artwork and not martial_file and not market_file:
+        emote_file = name in ('emotes/catalogue.json', 'emotes/contact-sheet.html') or (name.startswith('emotes/art/') and name.endswith(('.png', '.gif')))
+        if name not in fixed and not artwork and not martial_file and not market_file and not emote_file:
             raise ValueError('Unexpected/private file in public bundle: ' + name)
         path = inside(directory, name)
         if not path.is_file() or digest(path) != expected:
             raise ValueError('Asset checksum mismatch: ' + name)
     tables = json.loads((directory / 'tables.json').read_text(encoding='utf-8'))
+    if 'emotes' in tables:
+        from utility.emotes import validate as validate_emotes, inspect_image
+        catalogue = json.loads((directory / 'emotes/catalogue.json').read_text(encoding='utf-8'))
+        validate_emotes(catalogue)
+        if catalogue != tables['emotes'] or 'emotes/catalogue.json' not in manifest['files']:
+            raise ValueError('Emote catalogue differs from bundle')
+        for namespace in ('entries', 'inline_entries'):
+            for row in catalogue.get(namespace, {}).values():
+                for field in ('image', 'preview'):
+                    if not row.get(field): continue
+                    name = 'emotes/' + row[field]
+                    if name not in manifest['files'] or digest(inside(directory, name)) != row[field + '_sha256']:
+                        raise ValueError('Emote artwork missing or inconsistent')
+                    animated = inspect_image(inside(directory, name))
+                    if field == 'image' and row['status'] == 'animated' and not animated:
+                        raise ValueError('Emote animation has no moving frames')
     if 'market_goods' in tables:
         from utility.market_goods import validate as validate_market
         validate_market(tables['market_goods'])

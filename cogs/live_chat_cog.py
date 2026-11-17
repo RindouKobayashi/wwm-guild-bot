@@ -1,4 +1,5 @@
 import asyncio
+from utility.emotes import EmoteResolver, key as emote_key, fallback_text as emote_fallback_text
 import io
 import json
 import os
@@ -433,22 +434,6 @@ class EmotionMessageView(LayoutView):
     emotes line up visually with regular chat messages.
     """
 
-    @staticmethod
-    def _is_animated_webp(path: str) -> bool:
-        """Check if a WebP file is actually animated by looking for VP8X chunk."""
-        if not path.lower().endswith('.webp'):
-            return False
-        try:
-            with open(path, 'rb') as f:
-                riff = f.read(4)
-                if riff != b'RIFF':
-                    return False
-                f.seek(8)
-                vp8x = f.read(4)
-                return vp8x == b'VP8X'
-        except Exception:
-            return False
-
     def __init__(
         self,
         *,
@@ -459,10 +444,11 @@ class EmotionMessageView(LayoutView):
         emotion_path: str,
         head_id = None,
         head_avatar_path: Optional[str] = None,
+        static_preview: bool = False,
     ):
         super().__init__(timeout=None)
         ext = os.path.splitext(emotion_path)[1] or ".png"
-        filename = f"{emotion_id}{ext}"
+        filename = f"emote_{emote_key(emotion_id) or 'unknown'}{ext}"
         self._files: List[discord.File] = [
             discord.File(emotion_path, filename=filename)
         ]
@@ -490,6 +476,8 @@ class EmotionMessageView(LayoutView):
             container_children.append(TextDisplay(f"**{author_name}**"))
 
         container_children.append(gallery)
+        if static_preview:
+            container_children.append(TextDisplay("Static preview · animation unavailable"))
         container_children.append(Separator(spacing=discord.SeparatorSpacing.small))
         container_children.append(TextDisplay(footer))
 
@@ -1981,7 +1969,7 @@ class UploadEmotionModal(discord.ui.Modal, title="Upload Custom Emotion"):
         )
         self.add_item(
             Label(
-                text="Upload emotion image (PNG/WEBP, max 10 MB)",
+                text="Upload emotion image (PNG/WEBP, max 4 MB)",
                 component=self.emotion_file,
             )
         )
@@ -1995,9 +1983,9 @@ class UploadEmotionModal(discord.ui.Modal, title="Upload Custom Emotion"):
             return
         attachment: discord.Attachment = attachments[0]
 
-        if attachment.size > 10 * 1024 * 1024:
+        if attachment.size > 4 * 1024 * 1024:
             await interaction.response.send_message(
-                f"❌ File too large ({attachment.size // 1024} KB; max 10 MB).",
+                f"❌ File too large ({attachment.size // 1024} KB; max 4 MB).",
                 ephemeral=True,
             )
             return
@@ -2111,6 +2099,13 @@ class AdminEmotionConfirmView(LayoutView):
 
         source_path = EMOTION_DIR / "pending" / self.pending_filename
         target_path = EMOTION_DIR / self.target_filename
+        identifier = emote_key(self.emotion_id)
+        if (not identifier or self.pending_filename not in (identifier + '.png', identifier + '.webp')
+                or self.target_filename not in (identifier + '.png', identifier + '.webp')
+                or not source_path.resolve().is_relative_to(EMOTION_PENDING_DIR.resolve())
+                or not target_path.resolve().is_relative_to(EMOTION_DIR.resolve())):
+            await interaction.edit_original_response(content='Invalid emote mapping; submit a new image.', attachments=[], view=None)
+            return
         if not source_path.exists() or not source_path.is_file():
             logger.error(f"Source emotion missing on disk: {source_path}")
             self._disable()
@@ -2129,6 +2124,8 @@ class AdminEmotionConfirmView(LayoutView):
             return
 
         try:
+            from utility.emotes import inspect_image
+            await asyncio.to_thread(inspect_image, source_path)
             shutil.copy2(str(source_path), str(target_path))
             # Remove the pending file so it doesn't get re-listed
             try:
@@ -2155,6 +2152,7 @@ class AdminEmotionConfirmView(LayoutView):
 
         # Mark as seen so we don't re-prompt
         self.cog.seen_emotion_ids.add(self.emotion_id)
+        self.cog.emotes.register_manual(self.emotion_id)
         self.cog.save_config()
 
         summary_lines = [
@@ -2578,6 +2576,7 @@ class LiveChatCog(commands.Cog):
         self._avatar_files_cache: dict = {}  # body_type -> Optional[List[str]]
         # emotion_id strings we've already prompted the user to map.
         self.seen_emotion_ids: Set[str] = set()
+        self.emotes = EmoteResolver(manual_dir=EMOTION_DIR)
 
         # Configuration
         self.CONFIG_FILE = "data/live_chat_config.json"
@@ -3372,6 +3371,8 @@ class LiveChatCog(commands.Cog):
         same `head_id` are handled independently.
         """
         ext = msg.get("ext", {}) or {}
+        if not isinstance(ext, dict):
+            ext = {}
         msg_type = ext.get("msg_type", "msg_normal")
         msg_label = (msg.get("msg", "") or "").strip()
         ts = int(msg.get("ts", 0) or 0)
@@ -3407,48 +3408,48 @@ class LiveChatCog(commands.Cog):
 
         # ── Emotion messages (custom emote PNG/WEBP) ──
         if msg_type == "msg_emotion":
-            emotion_id = ext.get("emotion_id")
-            if emotion_id:
-                emotion_path = None
-                for ext_try in (".png", ".webp"):
-                    candidate = f"data/emotion/{emotion_id}{ext_try}"
-                    if os.path.exists(candidate):
-                        emotion_path = candidate
-                        break
-                if emotion_path:
+            emotion_id = emote_key(ext.get("emotion_id"))
+            entry = self.emotes.resolve(emotion_id, ext.get('emotion_type'))
+            limit = getattr(getattr(channel, 'guild', None), 'filesize_limit', 8 * 1024 * 1024)
+            emotion_path = entry.for_limit(limit) if entry else None
+            emote_text = emote_fallback_text(emotion_id, ext.get('emotion_msg'))
+            if emotion_path:
+                try:
                     view = EmotionMessageView(
                         author_name=author_name,
                         ts=ts,
                         discord_mention=discord_mention,
                         emotion_id=emotion_id,
-                        emotion_path=emotion_path,
+                        emotion_path=str(emotion_path),
                         # Pass head_id/avatar so emotes also display the
                         # mapped avatar thumbnail in a Section, matching
                         # the ChatMessageView layout.
                         head_id=str(head_id) if head_id is not None else None,
                         head_avatar_path=head_avatar_path,
+                        static_preview=entry.status == 'static_preview' or (entry.status == 'animated' and emotion_path == entry.preview),
                     )
                     files = view._resolve_files()
-                    handled_separately = True
-                elif self._should_offer_emotion_upload(str(emotion_id)):
-                    # Unmapped emotion → offer the upload button
-                    base_view = ChatMessageView(
+                except OSError:
+                    view = None
+            if view is None:
+                view = ChatMessageView(
                         author_name=author_name,
-                        body_text=(ext.get("emotion_msg") or "").strip() or f"*[Emotion {emotion_id}]*",
+                        body_text=emote_text,
                         ts=ts,
                         discord_mention=discord_mention,
                         head_id=str(head_id) if head_id is not None else None,
                         head_avatar_path=head_avatar_path,
                         accent_color=0x9B59B6,
-                    )
+                )
+                if ext.get('emotion_type') in (None, 2, '2') and self._should_offer_emotion_upload(emotion_id):
                     view = EmotionUploadView(
-                        base_view=base_view,
+                        base_view=view,
                         emotion_id=str(emotion_id),
                         sender_nickname=nickname,
                         sender_pid=sender_pid,
                     )
-                    files = view._resolve_files()
-                    handled_separately = True
+                files = view._resolve_files()
+            handled_separately = True
 
         # ── Exhibition (dance video) messages ──
         if not handled_separately and msg_type == "msg_artwork_card" and msg_label == "[Exhibition]":
@@ -3569,6 +3570,23 @@ class LiveChatCog(commands.Cog):
                 view.message = sent_message
             if isinstance(view, EmotionUploadView):
                 view.message = sent_message
+        except discord.HTTPException as e:
+            # A definitive attachment validation rejection cannot have created
+            # the message. Never resend after a timeout, connection error or 5xx:
+            # those outcomes are ambiguous and could duplicate a posted message.
+            if msg_type == 'msg_emotion' and files and e.status in (400, 413) and (e.status == 413 or e.code in (40005, 50035)):
+                for file in files: file.close()
+                view = ChatMessageView(author_name=author_name, body_text=emote_text,
+                    ts=ts, discord_mention=discord_mention, accent_color=0x9B59B6)
+                files = []
+                try:
+                    sent_message = await channel.send(view=view, allowed_mentions=discord.AllowedMentions.none())
+                except Exception:
+                    logger.error('Failed to send emote text fallback', exc_info=True)
+                    return
+            else:
+                logger.error('Failed to send V2 message (no retry after uncertain outcome)', exc_info=True)
+                return
         except Exception as e:
             logger.error(f"Failed to send V2 message: {e}", exc_info=True)
             return
@@ -3881,23 +3899,15 @@ class LiveChatCog(commands.Cog):
         return None
 
     def _emotion_path(self, emotion_id: str) -> Optional[str]:
-        """Return absolute path to a local emotion file, or None."""
-        if not emotion_id:
-            return None
-        eid = str(emotion_id).strip()
-        if not eid:
-            return None
-        for ext in (".png", ".webp"):
-            candidate = EMOTION_DIR / f"{eid}{ext}"
-            if candidate.exists() and candidate.is_file():
-                return str(candidate)
-        return None
+        """Shared validated lookup; no image decoding during chat rendering."""
+        entry = self.emotes.resolve(emotion_id)
+        return str(entry.path) if entry else None
 
     def _should_offer_emotion_upload(self, emotion_id: str) -> bool:
         """True if this is an unmapped emotion_id worth offering the upload for."""
         if not emotion_id:
             return False
-        eid = str(emotion_id).strip()
+        eid = emote_key(emotion_id)
         if not eid:
             return False
         # Already on disk
@@ -3922,7 +3932,7 @@ class LiveChatCog(commands.Cog):
 
         Returns `(True, saved_filename)` on success or `(False, error_message)`.
         """
-        eid = str(emotion_id).strip()
+        eid = emote_key(emotion_id)
         if not eid:
             return False, "Invalid emotion_id"
 
@@ -3931,8 +3941,8 @@ class LiveChatCog(commands.Cog):
         except Exception as e:
             logger.error(f"Failed to read emotion upload: {e}", exc_info=True)
             return False, f"Failed to read file: {e}"
-        if len(data) > 10 * 1024 * 1024:
-            return False, "File too large (max 10 MB)"
+        if len(data) > 4 * 1024 * 1024:
+            return False, "File too large (max 4 MB)"
 
         ext = None
         fn_lower = attachment.filename.lower()
@@ -3952,6 +3962,11 @@ class LiveChatCog(commands.Cog):
         try:
             EMOTION_PENDING_DIR.mkdir(parents=True, exist_ok=True)
             target_path.write_bytes(data)
+            from utility.emotes import inspect_image
+            await asyncio.to_thread(inspect_image, target_path)
+        except (ValueError, OSError) as e:
+            target_path.unlink(missing_ok=True)
+            return False, 'Invalid or unreadable emote image (' + type(e).__name__ + ')'
         except Exception as e:
             logger.error(f"Failed to write emotion file {target_path}: {e}", exc_info=True)
             return False, f"Could not save file: {e}"

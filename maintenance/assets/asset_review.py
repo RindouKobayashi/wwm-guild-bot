@@ -27,6 +27,8 @@ def sections(tables, directory=None):
         if key in tables:
             result[key] = tables[key]
     if tables.get('market_goods'):result['market_goods']=tables['market_goods']['goods']
+    for namespace in ('entries', 'inline_entries'):
+        if tables.get('emotes'): result['emotes.' + namespace] = tables['emotes'].get(namespace, {})
     for mode, values in tables.get('pvp_ranks', {}).get('modes', {}).items():
         result['pvp_ranks.'+mode]=values['ranks']
     for key, value in tables.get('martial', {}).items():

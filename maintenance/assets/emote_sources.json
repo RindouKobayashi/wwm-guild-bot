@@ -1,0 +1,12 @@
+{
+  "format": 1,
+  "note": "Reviewed current chat namespace/rendering source. Reverify control flow before accepting a changed Lua hash; presence of constants alone is insufficient.",
+  "sources": {
+    "hexm/common/consts/chat_consts.lua": "7f6351ff8a14ba720acff24393a7cddf7ba21a40a3c9908965d66fea5dcc17ba",
+    "hexm/client/ui/windows/chat/chat_content/msg_style_config.lua": "bbe2a7e46bddf6b73c85d4a4433cf4cf8f22c8e00f3bfe9b7325257b9b613cac",
+    "hexm/client/ui/windows/chat/chat_window_events.lua": "2544190692fedc4ec5c8f48c69b41d0f1c63440dd95d0a59bab5841b90ca54d9",
+    "hexm/client/ui/windows/chat/chat_content/msg_components/pic.lua": "c1457e30e3c328e8b1a0e80e0b862a4604e3bf42819028f11e45c1414b4f03de",
+    "hexm/client/ui/controllers/richtext_component/richtext_config.lua": "2bf8533b11dfe9fe7ff411c93951aad2fb4502273286deb2189951be3c4020f3",
+    "hexm/client/ui/controllers/richtext_component/richtext_base_component.lua": "7c2db78f8fc95bfd3c88dea28e8e5354bc5458f3f0cb54ebd51d3ea16e31b86f"
+  }
+}

@@ -17,7 +17,7 @@ sys.path.insert(0, str(BOT))
 from utility.game_assets import GameAssets, ROOT, digest, validate_release
 from build_game_bundle import legacy_tables, apply_exports, add_rankings, finish, read, write
 
-SECTIONS = {'affixes', 'equipment', 'items', 'dungeons', 'abyss', 'constants', 'martial', 'pvp', 'market'}
+SECTIONS = {'affixes', 'equipment', 'items', 'dungeons', 'abyss', 'constants', 'martial', 'pvp', 'market', 'emotes'}
 
 
 def pointer(base):
@@ -106,7 +106,7 @@ def main():
     parser.add_argument('--from-existing', action='store_true', help='Package local reviewed exports, explicitly not a fresh game scan')
     parser.add_argument('--game-root', type=Path)
     parser.add_argument('--toolkit', type=Path, default=BOT.parent / 'WWM-Toolkit')
-    parser.add_argument('--only', help='Comma-separated: affixes,equipment,items,dungeons,abyss,constants')
+    parser.add_argument('--only', help='Comma-separated: ' + ','.join(sorted(SECTIONS)))
     parser.add_argument('--include-avatars', action='store_true', help='Also refresh Toolkit avatar exports; does not publish bot avatars or guarantee complete animation rendering')
     parser.add_argument('--force', action='store_true', help='Run extractors even when source hashes match')
     parser.add_argument('--allow-removals', action='store_true', help='Explicitly permit reviewed missing IDs')
@@ -215,6 +215,10 @@ def main():
                 from extract_market_goods import extract as extract_market
                 market_output = work / 'market'
                 tables['market_goods'] = extract_market(toolkit, game, market_output)
+            if 'emotes' in selected:
+                from extract_emotes import extract as extract_emotes
+                emotes_output = work / 'emotes'
+                tables['emotes'] = extract_emotes(toolkit, game, emotes_output)
             if 'martial' in selected:
                 from extract_martial import extract
                 martial_output = work / 'martial'
@@ -243,6 +247,14 @@ def main():
             copy_market(market_output, stage / 'market')
         elif existing.directory and (existing.directory / 'market').exists():
             shutil.copytree(existing.directory / 'market', stage / 'market', dirs_exist_ok=True)
+        if 'emotes' in selected and not args.from_existing:
+            from extract_emotes import copy_export as copy_emotes
+            copy_emotes(emotes_output, stage / 'emotes')
+        elif existing.directory and (existing.directory / 'emotes').exists():
+            shutil.copytree(existing.directory / 'emotes', stage / 'emotes', dirs_exist_ok=True)
+        if tables.get('emotes'):
+            provenance['unresolved_artwork'].extend({'section': 'emotes', 'id': k, 'reason': r.get('reason', 'Missing artwork')}
+                for k, r in tables['emotes']['entries'].items() if r['status'] in ('unresolved', 'static_preview'))
         write(work / 'changes-before-validation.json', __import__('build_game_bundle').changes(existing.tables, tables))
         # Staging records all removals; accepting them is a separate apply action.
         report = finish(stage, tables, provenance, existing.tables, True, existing.directory)
