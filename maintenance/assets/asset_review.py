@@ -26,6 +26,9 @@ def sections(tables, directory=None):
     for key in ('item_index', 'martial_names'):
         if key in tables:
             result[key] = tables[key]
+    if tables.get('market_goods'):result['market_goods']=tables['market_goods']['goods']
+    for mode, values in tables.get('pvp_ranks', {}).get('modes', {}).items():
+        result['pvp_ranks.'+mode]=values['ranks']
     for key, value in tables.get('martial', {}).items():
         if key in ('kungfu','paths'):result['martial.'+key]=value
     for key, value in tables.get('api_constants', {}).items():

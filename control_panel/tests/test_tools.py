@@ -227,6 +227,23 @@ class BridgeTests(unittest.IsolatedAsyncioTestCase):
     async def test_untrusted_bridge_request_denied(self):
         self.assertEqual((await self.client.get('/actions')).status,403)
 
+    async def test_market_images_preview_reuse_and_target_change_guard(self):
+        from cogs.market_cog import NewWeekMarketView
+        view=NewWeekMarketView(None,['2122001'],{},set(),1)
+        manifest=view.attachment_manifest();self.assertTrue(manifest)
+        self.message.attachments=[SimpleNamespace(id=777,filename=row['filename'],size=row['size_bytes']) for row in manifest]
+        self.cog.panel_prepare=AsyncMock(side_effect=lambda:dict(content=None,embeds=[],view=view,attachments=view.attachments()))
+        preview=await (await self.post(dict(mode='preview'))).json()
+        self.assertEqual(preview['content']['attachments'],manifest)
+        self.message.edit.assert_not_called()
+        self.message.attachments[0].id=778
+        self.assertEqual((await self.post(dict(mode='execute',preview_id=preview['id']))).status,409)
+        self.message.edit.assert_not_called()
+        preview=await (await self.post(dict(mode='preview'))).json()
+        result=await (await self.post(dict(mode='execute',preview_id=preview['id']))).json()
+        self.assertEqual(result['state'],'succeeded')
+        self.assertIs(self.message.edit.call_args.kwargs['attachments'][0],self.message.attachments[0])
+
 class ActionBuilderTests(unittest.IsolatedAsyncioTestCase):
     def methods(self,file,class_name,names,namespace):
         import ast
@@ -251,7 +268,7 @@ class ActionBuilderTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(await cog.panel_prepare(),{'content':'Schedule preview'})
     async def test_market_preparation_never_sends_or_saves(self):
         import datetime
-        view=SimpleNamespace();namespace=dict(datetime=datetime,NewWeekMarketView=MagicMock(return_value=view),MarketReportView=MagicMock(),logger=MagicMock())
+        view=SimpleNamespace(attachments=lambda:[]);namespace=dict(datetime=datetime,NewWeekMarketView=MagicMock(return_value=view),MarketReportView=MagicMock(),logger=MagicMock())
         cog=self.methods('market_cog.py','MarketCog',{'panel_prepare'},namespace)
         cog.market_channel=SimpleNamespace(send=AsyncMock());cog._get_market_day_number=MagicMock(return_value=1)
         cog._fetch_and_process=AsyncMock(return_value={'mode':'new_week','good_ids':[]});cog._get_next_update_ts=MagicMock(return_value=0)

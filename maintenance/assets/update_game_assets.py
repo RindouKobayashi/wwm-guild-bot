@@ -17,7 +17,7 @@ sys.path.insert(0, str(BOT))
 from utility.game_assets import GameAssets, ROOT, digest, validate_release
 from build_game_bundle import legacy_tables, apply_exports, add_rankings, finish, read, write
 
-SECTIONS = {'affixes', 'equipment', 'items', 'dungeons', 'abyss', 'constants', 'martial'}
+SECTIONS = {'affixes', 'equipment', 'items', 'dungeons', 'abyss', 'constants', 'martial', 'pvp', 'market'}
 
 
 def pointer(base):
@@ -180,7 +180,7 @@ def main():
             provenance['source_sha256'] = before
             previous = existing.manifest.get('provenance', {})
             unchanged = before == previous.get('source_sha256')
-            if unchanged and not args.force and not args.include_avatars and selected == SECTIONS:
+            if unchanged and not args.force and not args.include_avatars and selected == SECTIONS and existing.tables.get('pvp_ranks') and existing.tables.get('market_goods'):
                 print('Installed source hashes match the published release. No extraction needed.')
                 return 0
             if selected & {'affixes', 'equipment', 'items', 'dungeons'}:
@@ -207,6 +207,14 @@ def main():
                          ['--toolkit', toolkit, '--game-root', table_root, '--output', extracted], work, 'api-constants')
                 tables['api_constants'] = read(extracted)
                 tables['unmigrated_policy'] = [value for value in tables.get('unmigrated_policy', []) if value != 'sect names']
+            if 'pvp' in selected:
+                from extract_pvp_ranks import extract as extract_pvp
+                tables['pvp_ranks'] = extract_pvp(toolkit, table_root)
+                tables['player_mappings']['pvp_ranks'] = tables['pvp_ranks']
+            if 'market' in selected:
+                from extract_market_goods import extract as extract_market
+                market_output = work / 'market'
+                tables['market_goods'] = extract_market(toolkit, game, market_output)
             if 'martial' in selected:
                 from extract_martial import extract
                 martial_output = work / 'martial'
@@ -230,6 +238,11 @@ def main():
             copy_export(martial_output, stage / 'martial')
         elif existing.directory and (existing.directory / 'martial').exists():
             shutil.copytree(existing.directory / 'martial', stage / 'martial', dirs_exist_ok=True)
+        if 'market' in selected and not args.from_existing:
+            from extract_market_goods import copy_export as copy_market
+            copy_market(market_output, stage / 'market')
+        elif existing.directory and (existing.directory / 'market').exists():
+            shutil.copytree(existing.directory / 'market', stage / 'market', dirs_exist_ok=True)
         write(work / 'changes-before-validation.json', __import__('build_game_bundle').changes(existing.tables, tables))
         # Staging records all removals; accepting them is a separate apply action.
         report = finish(stage, tables, provenance, existing.tables, True, existing.directory)

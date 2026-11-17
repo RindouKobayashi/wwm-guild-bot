@@ -55,13 +55,12 @@ def detail_groups(data, names, mappings, school_ranks=None, now=None):
     cap = constants['MAX_ENERGY']
     energy = min(cap, max(0, int(value)+regen)) if value is not None else min(cap, regen) if logout and online == 0 else None
     energy_note = ('Game reading' if online == 1 else 'Offline estimate: game reading plus regeneration' if online == 0 else 'Last game reading; online state unavailable') if value is not None else 'Regeneration floor only; base energy unknown' if energy is not None else 'Not reported'
-    rank_names = constants['GRADE_NAMES']; suffixes = constants['SMALL_GRADE_SUFFIXES']
-    def rank(source):
-        grade = source.get('grade'); small = source.get('small_grade')
-        if grade is None:return None
-        label = rank_names.get(str(grade), f'Unmapped rank (ID {grade})')
-        suffix = suffixes.get(str(small), f'Division {small}' if small is not None else '')
-        return (label+' '+suffix).strip()
+    from utility.pvp_ranks import format_rank
+    def rank(source, mode='1v1'):
+        return format_rank(source.get('grade'), source.get('small_grade'), mode=mode,
+                           data=mappings.get('pvp_ranks', {}),
+                           legacy_names=constants.get('GRADE_NAMES', {}),
+                           legacy_suffixes=constants.get('SMALL_GRADE_SUFFIXES', {}))
     def rows(source, fields):
         return [{'label':label,'value':number(source.get(key))} for key,label in fields]
     one = data.get('lunjian') or {}; three = data.get('lunjian3v3_prop') or {}; group = data.get('fight_shoulder') or {}
@@ -82,7 +81,7 @@ def detail_groups(data, names, mappings, school_ranks=None, now=None):
         'Base attributes': rows(attr,[('STR','Power (STR)'),('CON','Body (CON)'),('BAS','Momentum (BAS)'),('CRI','Agility (CRI)'),('AGI','Defense (AGI)')]),
         'Martial arts & sect': [{'label':label,'value':names.get('martial',{}).get(str(kongfu.get(key)), f'Unmapped martial art (ID {kongfu[key]})' if kongfu.get(key) else None)} for key,label in [('kongfu_main','Main martial art'),('kongfu_sub','Secondary martial art')]] + [{'label':'Sect standing','value':mapped_status if mapped_status is not None else f'Unmapped standing (ID {status})' if status is not None else None}],
         'Arena summaries': [{'label':'1v1 rank','value':rank(one)},{'label':'1v1 battles','value':number(one.get('total_num'))},
-            {'label':'1v1 best win streak','value':number(one.get('max_winning_streak'))},{'label':'3v3 rank','value':rank(three)},
+            {'label':'1v1 best win streak','value':number(one.get('max_winning_streak'))},{'label':'3v3 rank','value':rank(three, '3v3')},
             {'label':'3v3 battles','value':number(three.get('total_num'))},{'label':'Group strategy score','value':number(group.get('score'))},
             {'label':'Group strategy battles','value':number(group.get('total_num'))}],
         'Fashion & social': [{'label':'Elegance','value':number((data.get('fashion') or {}).get('score'))},

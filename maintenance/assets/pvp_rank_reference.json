@@ -1,0 +1,104 @@
+{
+  "archive": "index2",
+  "fields": [
+    "2v2_first_reward",
+    "3v3_first_reward",
+    "5v5_first_reward",
+    "first_reward",
+    "grade_model_icon",
+    "id",
+    "name",
+    "rank_1",
+    "rank_1_icon",
+    "rank_1_icon_small",
+    "rank_1_name",
+    "rank_2",
+    "rank_model_icon",
+    "video",
+    "video_in",
+    "rank_2_fanti",
+    "rank_2_name",
+    "xs_award",
+    "xs_coin_cost"
+  ],
+  "evidence": [
+    "hexm/common/consts/lunjian_consts.lua: ui_lunjian_get_grade_txt and lunjian_publish_grade_txt",
+    "hexm/client/ui/windows/pvp/pvp3v3_fight_info_window.lua: combined total_grades lookup in lunjian_grade_info",
+    "Named MTable MANIFEST binding is required. fight_shoulder_grade_info, huiwu_grade_info, lunjian_wuwo_grade and zzq_grade are separate tables."
+  ],
+  "table": "lunjian_grade_info",
+  "api_fields": {
+    "1v1": "lunjian",
+    "3v3": "lunjian3v3_prop"
+  },
+  "current_lua_evidence": [
+    {
+      "source": "hexm/common/consts/lunjian_consts.lua",
+      "sha256": "d6da4987068b27f71818d8acf1bdf3c6de49bdf56e74da44c2f8bae678fe2189",
+      "prototypes": [
+        {
+          "first_line": 469,
+          "last_line": 472,
+          "constants": [
+            "lunjian_grade_info",
+            "name"
+          ]
+        },
+        {
+          "first_line": 474,
+          "last_line": 476,
+          "constants": [
+            "lunjian_grade_info",
+            "name"
+          ]
+        },
+        {
+          "first_line": 478,
+          "last_line": 481,
+          "constants": [
+            "lunjian_grade_info"
+          ]
+        },
+        {
+          "first_line": 483,
+          "last_line": 485,
+          "constants": [
+            "fight_shoulder_grade_info",
+            "name"
+          ]
+        },
+        {
+          "first_line": 487,
+          "last_line": 490,
+          "constants": [
+            "fight_shoulder_grade_info"
+          ]
+        },
+        {
+          "first_line": 506,
+          "last_line": 516,
+          "constants": [
+            "lunjian_grade_info",
+            "lunjian",
+            "grade",
+            "small_grade"
+          ]
+        }
+      ]
+    },
+    {
+      "source": "hexm/client/ui/windows/pvp/pvp3v3_fight_info_window.lua",
+      "sha256": "c1d0c812aac9eda96deda56b41d849ffb605652bd765c52e0c2bf5163388790a",
+      "prototypes": [
+        {
+          "first_line": 216,
+          "last_line": 218,
+          "constants": [
+            "lunjian_grade_info",
+            "name"
+          ]
+        }
+      ]
+    }
+  ]
+}

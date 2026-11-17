@@ -2,6 +2,7 @@
 import asyncio
 import functools
 import hashlib
+import io
 import json
 import os
 import secrets
@@ -21,13 +22,27 @@ def serialized(function):
     return call
 
 def snapshot(message):
-    value=dict(content=message.content,embeds=[e.to_dict() for e in message.embeds],components=[x.to_dict() for x in message.components])
+    value=dict(content=message.content,embeds=[e.to_dict() for e in message.embeds],components=[x.to_dict() for x in message.components],
+               attachments=[dict(id=str(a.id),filename=a.filename,size=a.size) for a in getattr(message,'attachments',[])])
     return hashlib.sha256(json.dumps(value,sort_keys=True).encode()).hexdigest()
+
+def resolve_attachments(payload, existing):
+    """Reuse unchanged report art; close discarded in-memory upload streams."""
+    view=payload.get('view')
+    if view is not None and callable(getattr(view,'edit_attachments',None)):
+        for item in payload.get('attachments',[]):
+            if hasattr(item,'fp'):
+                item.close()
+                if isinstance(item.fp,io.BytesIO):item.fp.close()
+        payload['attachments']=view.edit_attachments(existing)
+    return payload
 
 def visible_payload(payload):
     result={'content':payload.get('content'),'components':[]}
     view=payload.get('view')
     if view:result['components']=view.to_components()
+    if view is not None and callable(getattr(view,'attachment_manifest',None)):
+        result['attachments']=view.attachment_manifest()
     return result
 
 class Bridge:
@@ -77,6 +92,7 @@ class Bridge:
                     current=await message.channel.fetch_message(message.id)
                     payload=await cog.panel_prepare(inst) if inst is not None else await cog.panel_prepare()
                     if not payload:return web.json_response({'error':'No report data is available for this update.'},status=409)
+                    resolve_attachments(payload,getattr(current,'attachments',[]))
                     public=visible_payload(payload)
                     if len(json.dumps(public).encode())>65536:return web.json_response({'error':'This preview exceeds the display limit.'},status=409)
                     preview_id=uuid.uuid4().hex

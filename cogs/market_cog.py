@@ -1,4 +1,4 @@
-from control_panel.action_bridge import serialized
+from control_panel.action_bridge import serialized, resolve_attachments
 from control_panel.jobs import observe_job
 import discord
 import datetime
@@ -6,6 +6,8 @@ import aiosqlite
 import asyncio
 import json
 import logging
+import hashlib
+import io
 from collections import defaultdict
 from typing import Optional, List, Tuple, Dict, Any, Set
 from discord import app_commands
@@ -13,6 +15,7 @@ from discord.ext import commands, tasks
 from discord.ui import LayoutView, Container, TextDisplay, Separator, Section, ActionRow, Button, Modal, TextInput, Select
 
 import settings
+from utility.market_goods import name as market_name, image as market_image, goods as market_catalogue
 from settings import BASE_DIR, CLUB_ID, WWM_UID, WWM_API_URL, logger, GMT8_TZ
 from utility.wwm import get_full_guild_info, get_bulk_hoard_data, get_bulk_players_info, _wwm_api_post, get_topics_likes, get_player_info, find_people_by_nickname
 
@@ -54,6 +57,85 @@ GOOD_EMOJIS = ["🟢", "🔵", "🟣", "🟡", "🔴", "🟠", "💠", "⭐"]
 # ---------------------------------------------------------------------------
 # Helper
 # ---------------------------------------------------------------------------
+class MarketDashboardArt:
+    """Immutable original PNGs, compact item headings and fresh upload streams."""
+    def __init__(self):
+        self.images = {}
+        self.cards = []
+
+    def append(self, inner, good_id, fallback, summary, body):
+        name = market_name(good_id) or fallback or f'Good #{good_id}'
+        name = discord.utils.escape_mentions(discord.utils.escape_markdown(name))
+        header = f'### {name}\n-# Item #{good_id} · {summary}'
+        path = market_image(good_id)
+        raw = None
+        try:
+            if path and len(self.images) < 10 and path.stat().st_size <= 2*1024*1024:
+                with path.open("rb") as stream:
+                    raw = stream.read(2*1024*1024+1)
+                if len(raw)>2*1024*1024:
+                    raw = None
+                if raw is not None and sum(len(b) for b in self.images.values())+len(raw) > 4*1024*1024:
+                    raw = None
+        except OSError:
+            pass
+        if not raw or not raw.startswith(b'\x89PNG\r\n\x1a\n'):
+            inner.append(TextDisplay(header+'\n'+body))
+            return
+        filename = f'market-{good_id}-{hashlib.sha256(raw).hexdigest()}.png'
+        self.images[filename] = raw
+        section = Section(TextDisplay(header), accessory=discord.ui.Thumbnail(
+            'attachment://'+filename, description=f'Item image: {name}'))
+        text = TextDisplay(body)
+        inner.extend((section, text))
+        self.cards.append((section, text, header+'\n'+body, filename))
+
+    def finish(self, inner):
+        def count(item):
+            value = item.to_component_dict()
+            def total(c):
+                return 1+sum(total(x) for x in c.get('components', []))+(total(c['accessory']) if c.get('accessory') else 0)
+            return total(value)
+        # Preserve text when unusual reports approach Discord's 40-component cap.
+        while 1+sum(count(item) for item in inner)>40 and self.cards:
+            section, text, combined, filename = self.cards.pop()
+            index = inner.index(section)
+            inner[index:index+2] = [TextDisplay(combined)]
+            self.images.pop(filename, None)
+
+    def manifest(self):
+        return [dict(filename=name, size_bytes=len(raw), sha256=hashlib.sha256(raw).hexdigest())
+                for name, raw in self.images.items()]
+
+    def files(self):
+        return [discord.File(io.BytesIO(raw), filename=name) for name, raw in self.images.items()]
+
+    def edit_attachments(self, existing):
+        available = {item.filename:item for item in existing}
+        return [available[name] if name in available and available[name].size==len(raw)
+                else discord.File(io.BytesIO(raw), filename=name) for name, raw in self.images.items()]
+
+
+def market_item_details(good_id, fallback=''):
+    name = market_name(good_id) or fallback or f'Good #{good_id}'
+    safe_name = discord.utils.escape_mentions(discord.utils.escape_markdown(name))
+    inner = [TextDisplay(f'# {safe_name}\nItem ID: `{good_id}`')]
+    files = []
+    path = market_image(good_id)
+    if path:
+        try: files = [discord.File(path, filename='market-good.png')]
+        except OSError: pass
+    if files:
+        gallery = discord.ui.MediaGallery()
+        gallery.add_item(media='attachment://market-good.png', description=name)
+        inner.append(gallery)
+    else:
+        inner.append(TextDisplay('No verified item image is available.'))
+    view = LayoutView(timeout=180)
+    view.add_item(Container(*inner, accent_color=ACCENT_BLURPLE))
+    return view, files
+
+
 def _pct_str(original: float, current: float) -> Tuple[str, float]:
     """Return (formatted percentage string, raw percentage)."""
     if original == 0:
@@ -816,7 +898,17 @@ class MarketGoodPaginatedView(LayoutView):
 
     def _good_label(self, good_id: str) -> str:
         good_name = self.good_names_map.get(good_id, "")
+        good_name = market_name(good_id) or good_name
         return f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
+
+    def attachments(self):
+        path = market_image(self.current_good)
+        if path:
+            try: return [discord.File(path, filename='market-good.png')]
+            except OSError:
+                self._missing_icon = self.current_good
+                self._build()
+        return []
 
     def _total_pages(self) -> int:
         players = self.grouped_data.get(self.current_good, [])
@@ -825,6 +917,10 @@ class MarketGoodPaginatedView(LayoutView):
     def _build(self) -> None:
         self.clear_items()
         inner: list = []
+        if getattr(self, "_missing_icon", None) != self.current_good and market_image(self.current_good):
+            gallery = discord.ui.MediaGallery()
+            gallery.add_item(media="attachment://market-good.png", description=self._good_label(self.current_good))
+            inner.append(gallery)
 
         players = self.grouped_data.get(self.current_good, [])
         total_pages = self._total_pages()
@@ -926,7 +1022,7 @@ class MarketGoodPaginatedView(LayoutView):
             self.current_good = values[0]
             self.current_page = 0
             self._build()
-        await interaction.response.edit_message(view=self)
+        await interaction.response.edit_message(view=self, attachments=self.attachments())
 
     async def _on_prev(self, interaction: discord.Interaction):
         if self.current_page > 0:
@@ -961,6 +1057,7 @@ class MarketReportView(LayoutView):
         pending_report_pids: Set[str] = None,
     ):
         super().__init__(timeout=None)
+        self._art = MarketDashboardArt()
         self.cog = cog
         self.grouped_data = grouped_data
         self.total_players = total_players
@@ -997,9 +1094,7 @@ class MarketReportView(LayoutView):
 
         for idx, good_id in enumerate(sorted_goods):
             players = grouped_data[good_id]
-            emoji = GOOD_EMOJIS[idx % len(GOOD_EMOJIS)]
             good_name = self.good_names_map.get(good_id, "")
-            label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
 
             # Get pending report PIDs for dashboard warnings
             pending_report_pids = self.pending_report_pids or set()
@@ -1031,8 +1126,7 @@ class MarketReportView(LayoutView):
                 )
 
             body = "\n".join(lines) if lines else "*No data available*"
-            header_text = f"### {emoji} {label} — Top {min(len(players), 10)}"
-            inner_items.append(TextDisplay(f"{header_text}\n{body}"))
+            self._art.append(inner_items, good_id, good_name, f"Top {min(len(players), 10)} players", body)
 
             # Suggest Name button row for goods without a name
             if good_id not in self.known_goods:
@@ -1122,8 +1216,18 @@ class MarketReportView(LayoutView):
 
         inner_items.append(filter_row)
 
+        self._art.finish(inner_items)
         container = Container(*inner_items, accent_color=ACCENT_GREEN)
         self.add_item(container)
+
+    def attachments(self):
+        return self._art.files()
+
+    def edit_attachments(self, existing):
+        return self._art.edit_attachments(existing)
+
+    def attachment_manifest(self):
+        return self._art.manifest()
 
     async def _on_add_watchlist(self, interaction: discord.Interaction):
         modal = AddToWatchlistModal(cog=self.cog)
@@ -1151,7 +1255,7 @@ class MarketReportView(LayoutView):
             pending_report_pids=self.pending_report_pids,
             report_ts=self.report_ts,
         )
-        await interaction.followup.send(view=view, ephemeral=True)
+        await interaction.followup.send(view=view, files=view.attachments(), ephemeral=True)
 
     async def _on_filter_online(self, interaction: discord.Interaction):
         """Filter the report to show only online players, sent as an ephemeral message."""
@@ -1170,17 +1274,16 @@ class MarketReportView(LayoutView):
             await interaction.followup.send("🟢 No online players found in the current report data.", ephemeral=True)
             return
 
-        # Build a text-only ephemeral response (simpler than a full LayoutView)
-        lines = ["# 🟢 Online Players Only", f"Showing **{total_filtered}** online players across **{len(filtered)}** goods\n"]
+        # Keep the filtered snapshot in the same compact item-card format.
+        inner = [TextDisplay(f"# 🟢 Online Players Only\nShowing **{total_filtered}** online players across **{len(filtered)}** goods")]
+        art = MarketDashboardArt()
 
         sorted_goods = sorted(filtered.keys(), key=lambda gid: int(gid))
         for idx, good_id in enumerate(sorted_goods):
             players = filtered[good_id]
-            emoji = GOOD_EMOJIS[idx % len(GOOD_EMOJIS)]
             good_name = self.good_names_map.get(good_id, "")
-            label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
 
-            lines.append(f"### {emoji} {label} — {len(players)} online")
+            lines = []
             for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode, _other_search) in enumerate(players[:10], 1):
                 prefix = ["🥇", "🥈", "🥉"][rank - 1] if rank <= 3 else f"`{rank}.`"
                 sign = "+" if pct >= 0 else ""
@@ -1192,20 +1295,21 @@ class MarketReportView(LayoutView):
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                     f"{likes_text}"
                 )
-            lines.append("")
+            art.append(inner, good_id, good_name, f"{len(players)} online", "\n".join(lines))
 
-        lines.append(f"📊 Filtered from current report data.")
+
 
         # Use a simple Container with TextDisplay for the ephemeral reply
-        inner = [
-            TextDisplay("\n".join(lines)),
+        inner.extend([
+            TextDisplay("📊 Filtered from current report data."),
             Separator(spacing=discord.SeparatorSpacing.small),
             TextDisplay("_This message is only visible to you._"),
-        ]
+        ])
+        art.finish(inner)
         container = Container(*inner, accent_color=ACCENT_BLURPLE)
         result_view = LayoutView(timeout=60)
         result_view.add_item(container)
-        await interaction.followup.send(view=result_view, ephemeral=True)
+        await interaction.followup.send(view=result_view, files=art.files(), ephemeral=True)
 
     def _make_suggest_callback(self, good_id: str):
         async def callback(interaction: discord.Interaction):
@@ -1315,16 +1419,15 @@ class MarketReportView(LayoutView):
             )
             return
 
-        # Build a text-only ephemeral response
-        lines = [f"# 🏰 Guild Filter — {bound_guild_name}", f"Showing **{total_filtered}** player(s) from your guild\n"]
+        # Keep the filtered snapshot in the same compact item-card format.
+        inner = [TextDisplay(f"# 🏰 Guild Filter — {bound_guild_name}\nShowing **{total_filtered}** player(s) from your guild")]
+        art = MarketDashboardArt()
         sorted_goods = sorted(filtered.keys(), key=lambda gid: int(gid))
         for idx, good_id in enumerate(sorted_goods):
             players = filtered[good_id]
-            emoji = GOOD_EMOJIS[idx % len(GOOD_EMOJIS)]
             good_name = self.good_names_map.get(good_id, "")
-            label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
 
-            lines.append(f"### {emoji} {label} — {len(players)} player(s)")
+            lines = []
             for rank, (pid, nickname, number_id, original_price, current_price, pct, is_online, _hostnum, guild_name, mode, _other_search) in enumerate(players[:10], 1):
                 prefix = ["🥇", "🥈", "🥉"][rank - 1] if rank <= 3 else f"`{rank}.`"
                 sign = "+" if pct >= 0 else ""
@@ -1336,19 +1439,20 @@ class MarketReportView(LayoutView):
                     f"`{original_price:.0f}` → `{current_price:.0f}`  │  **{sign}{pct:.2f}%**"
                     f"{likes_text}"
                 )
-            lines.append("")
+            art.append(inner, good_id, good_name, f"{len(players)} player(s)", "\n".join(lines))
 
-        lines.append(f"📊 Filtered from current report data.")
 
-        inner = [
-            TextDisplay("\n".join(lines)),
+
+        inner.extend([
+            TextDisplay("📊 Filtered from current report data."),
             Separator(spacing=discord.SeparatorSpacing.small),
             TextDisplay("_This message is only visible to you._"),
-        ]
+        ])
+        art.finish(inner)
         container = Container(*inner, accent_color=ACCENT_BLURPLE)
         result_view = LayoutView(timeout=60)
         result_view.add_item(container)
-        await interaction.followup.send(view=result_view, ephemeral=True)
+        await interaction.followup.send(view=result_view, files=art.files(), ephemeral=True)
 
 
 # ---------------------------------------------------------------------------
@@ -1370,6 +1474,7 @@ class NewWeekMarketView(LayoutView):
         countdown_str: str = "",
     ):
         super().__init__(timeout=None)
+        self._art = MarketDashboardArt()
         self.cog = cog
         self.good_ids = good_ids
         self.good_names_map = good_names_map
@@ -1396,12 +1501,8 @@ class NewWeekMarketView(LayoutView):
 
         # Display each good
         for idx, good_id in enumerate(sorted(good_ids, key=lambda gid: int(gid))):
-            emoji = GOOD_EMOJIS[idx % len(GOOD_EMOJIS)]
             good_name = good_names_map.get(good_id, "")
-            label = f"{good_name} (#{good_id})" if good_name else f"Good #{good_id}"
-            inner_items.append(TextDisplay(
-                f"{emoji} **{label}** — Recommended to buy!"
-            ))
+            self._art.append(inner_items, good_id, good_name, "New market week", "Recommended to buy!")
 
             # Suggest Name button for goods without a name
             if good_id not in known_goods:
@@ -1441,8 +1542,18 @@ class NewWeekMarketView(LayoutView):
             f"📊 Generated: <t:{report_ts}:R>  •  🔄 Updates every 1 minute"
         ))
 
+        self._art.finish(inner_items)
         container = Container(*inner_items, accent_color=ACCENT_GREEN)
         self.add_item(container)
+
+    def attachments(self):
+        return self._art.files()
+
+    def edit_attachments(self, existing):
+        return self._art.edit_attachments(existing)
+
+    def attachment_manifest(self):
+        return self._art.manifest()
 
     async def _on_add_watchlist(self, interaction: discord.Interaction):
         modal = AddToWatchlistModal(cog=self.cog)
@@ -2529,6 +2640,12 @@ class GoodsPaginatedView(LayoutView):
         inner.append(TextDisplay("\n".join(lines)))
         inner.append(Separator(spacing=discord.SeparatorSpacing.small))
 
+        if page:
+            picker = Select(placeholder='View an item icon and details…',
+                            options=[discord.SelectOption(label=row['name'][:100], value=str(row['good_id'])) for row in page])
+            picker.callback = self._on_item_details
+            inner.append(ActionRow(picker))
+
         # Navigation
         nav_row = ActionRow()
         prev_btn = Button(
@@ -2557,6 +2674,15 @@ class GoodsPaginatedView(LayoutView):
 
         container = Container(*inner, accent_color=ACCENT_BLURPLE)
         self.add_item(container)
+
+    async def _on_item_details(self, interaction):
+        values = interaction.data.get('values', [])
+        row = next((r for r in self.rows if values and str(r['good_id']) == values[0]), None)
+        if row is None:
+            await interaction.response.send_message('That item is no longer available in this list.', ephemeral=True)
+            return
+        view, files = market_item_details(str(row['good_id']), row['name'])
+        await interaction.response.send_message(view=view, files=files, ephemeral=True)
 
     async def _on_prev(self, interaction: discord.Interaction):
         if self.current_page > 0:
@@ -2710,11 +2836,11 @@ class MarketCog(commands.Cog):
             await db.commit()
 
     async def _get_known_goods(self) -> Set[str]:
-        """Return the set of good_ids that have approved names."""
+        """Names are known through verified assets or host-approved fallbacks."""
         async with aiosqlite.connect(self.db_path) as db:
             cursor = await db.execute("SELECT good_id FROM good_names")
             rows = await cursor.fetchall()
-            return {row[0] for row in rows}
+            return {str(row[0]) for row in rows} | set(market_catalogue())
 
     async def _get_watchlist_pids(self) -> Set[str]:
         """Return the set of PIDs on the watchlist."""
@@ -2724,7 +2850,10 @@ class MarketCog(commands.Cog):
             return {row[0] for row in rows}
 
     async def _get_good_name(self, good_id: str) -> Optional[str]:
-        """Return the approved name for a good ID, or None."""
+        """Prefer the verified game name; never modify approved fallback rows."""
+        extracted = market_name(good_id)
+        if extracted:
+            return extracted
         async with aiosqlite.connect(self.db_path) as db:
             cursor = await db.execute("SELECT name FROM good_names WHERE good_id = ?", (good_id,))
             row = await cursor.fetchone()
@@ -3301,7 +3430,7 @@ class MarketCog(commands.Cog):
                 pending_report_pids=pending_report_pids,
             )
 
-        return dict(content=None, embeds=[], attachments=[], view=view)
+        return dict(content=None, embeds=[], attachments=view.attachments(), view=view)
 
     @serialized
     async def _build_and_send_report(self):
@@ -3311,11 +3440,16 @@ class MarketCog(commands.Cog):
         view = payload["view"]
         try:
             if self.last_report_message:
-                await self.last_report_message.edit(content=None, embeds=[], attachments=[], view=view)
+                resolve_attachments(payload, getattr(self.last_report_message, "attachments", []))
+                self.last_report_message = await self.last_report_message.edit(**payload)
             else:
-                self.last_report_message = await self.market_channel.send(view=view)
+                self.last_report_message = await self.market_channel.send(view=view, files=payload["attachments"])
         except Exception:
-            self.last_report_message = await self.market_channel.send(view=view)
+            self.last_report_message = await self.market_channel.send(view=view, files=view.attachments())
+        finally:
+            for item in payload.get("attachments", []):
+                if hasattr(item, "fp"):
+                    item.close()
 
         await self._save_config()
 
@@ -3561,6 +3695,10 @@ class MarketCog(commands.Cog):
                 )
                 rows = await cursor.fetchall()
 
+            merged = {str(row['good_id']): dict(row) for row in rows}
+            for good_id, item in market_catalogue().items():
+                merged[good_id] = dict(good_id=good_id, name=item['name'])
+            rows = [merged[key] for key in sorted(merged, key=int)]
             if not rows:
                 await interaction.followup.send("📦 No goods have been mapped yet.")
                 return

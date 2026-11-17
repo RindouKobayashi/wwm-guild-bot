@@ -229420,6 +229420,421 @@
         "minimum": "0.077",
         "maximum": "0.154"
       }
+    },
+    "pvp_ranks": {
+      "format": 1,
+      "modes": {
+        "1v1": {
+          "ranks": {
+            "22": {
+              "grade": 2,
+              "division": 2,
+              "name": "Novice II"
+            },
+            "11": {
+              "grade": 1,
+              "division": 1,
+              "name": "Beginner I"
+            },
+            "82": {
+              "grade": 8,
+              "division": 2,
+              "name": "Grandmaster II"
+            },
+            "91": {
+              "grade": 9,
+              "division": 1,
+              "name": "Legend I"
+            },
+            "71": {
+              "grade": 7,
+              "division": 1,
+              "name": "Master I"
+            },
+            "93": {
+              "grade": 9,
+              "division": 3,
+              "name": "Legend III"
+            },
+            "83": {
+              "grade": 8,
+              "division": 3,
+              "name": "Grandmaster III"
+            },
+            "12": {
+              "grade": 1,
+              "division": 2,
+              "name": "Beginner II"
+            },
+            "13": {
+              "grade": 1,
+              "division": 3,
+              "name": "Beginner III"
+            },
+            "33": {
+              "grade": 3,
+              "division": 3,
+              "name": "Skilled III"
+            },
+            "23": {
+              "grade": 2,
+              "division": 3,
+              "name": "Novice III"
+            },
+            "61": {
+              "grade": 6,
+              "division": 1,
+              "name": "Veteran I"
+            },
+            "62": {
+              "grade": 6,
+              "division": 2,
+              "name": "Veteran II"
+            },
+            "72": {
+              "grade": 7,
+              "division": 2,
+              "name": "Master II"
+            },
+            "63": {
+              "grade": 6,
+              "division": 3,
+              "name": "Veteran III"
+            },
+            "31": {
+              "grade": 3,
+              "division": 1,
+              "name": "Skilled I"
+            },
+            "21": {
+              "grade": 2,
+              "division": 1,
+              "name": "Novice I"
+            },
+            "43": {
+              "grade": 4,
+              "division": 3,
+              "name": "Adept III"
+            },
+            "53": {
+              "grade": 5,
+              "division": 3,
+              "name": "Expert III"
+            },
+            "73": {
+              "grade": 7,
+              "division": 3,
+              "name": "Master III"
+            },
+            "42": {
+              "grade": 4,
+              "division": 2,
+              "name": "Adept II"
+            },
+            "92": {
+              "grade": 9,
+              "division": 2,
+              "name": "Legend II"
+            },
+            "101": {
+              "grade": 10,
+              "division": 1,
+              "name": "Mythic"
+            },
+            "52": {
+              "grade": 5,
+              "division": 2,
+              "name": "Expert II"
+            },
+            "32": {
+              "grade": 3,
+              "division": 2,
+              "name": "Skilled II"
+            },
+            "41": {
+              "grade": 4,
+              "division": 1,
+              "name": "Adept I"
+            },
+            "51": {
+              "grade": 5,
+              "division": 1,
+              "name": "Expert I"
+            },
+            "81": {
+              "grade": 8,
+              "division": 1,
+              "name": "Grandmaster I"
+            }
+          },
+          "grades": {
+            "2": "Novice",
+            "1": "Beginner",
+            "9": "Legend",
+            "7": "Master",
+            "3": "Skilled",
+            "6": "Veteran",
+            "4": "Adept",
+            "5": "Expert",
+            "10": "Mythic"
+          }
+        },
+        "3v3": {
+          "ranks": {
+            "22": {
+              "grade": 2,
+              "division": 2,
+              "name": "Novice II"
+            },
+            "11": {
+              "grade": 1,
+              "division": 1,
+              "name": "Beginner I"
+            },
+            "82": {
+              "grade": 8,
+              "division": 2,
+              "name": "Grandmaster II"
+            },
+            "91": {
+              "grade": 9,
+              "division": 1,
+              "name": "Legend I"
+            },
+            "71": {
+              "grade": 7,
+              "division": 1,
+              "name": "Master I"
+            },
+            "93": {
+              "grade": 9,
+              "division": 3,
+              "name": "Legend III"
+            },
+            "83": {
+              "grade": 8,
+              "division": 3,
+              "name": "Grandmaster III"
+            },
+            "12": {
+              "grade": 1,
+              "division": 2,
+              "name": "Beginner II"
+            },
+            "13": {
+              "grade": 1,
+              "division": 3,
+              "name": "Beginner III"
+            },
+            "33": {
+              "grade": 3,
+              "division": 3,
+              "name": "Skilled III"
+            },
+            "23": {
+              "grade": 2,
+              "division": 3,
+              "name": "Novice III"
+            },
+            "61": {
+              "grade": 6,
+              "division": 1,
+              "name": "Veteran I"
+            },
+            "62": {
+              "grade": 6,
+              "division": 2,
+              "name": "Veteran II"
+            },
+            "72": {
+              "grade": 7,
+              "division": 2,
+              "name": "Master II"
+            },
+            "63": {
+              "grade": 6,
+              "division": 3,
+              "name": "Veteran III"
+            },
+            "31": {
+              "grade": 3,
+              "division": 1,
+              "name": "Skilled I"
+            },
+            "21": {
+              "grade": 2,
+              "division": 1,
+              "name": "Novice I"
+            },
+            "43": {
+              "grade": 4,
+              "division": 3,
+              "name": "Adept III"
+            },
+            "53": {
+              "grade": 5,
+              "division": 3,
+              "name": "Expert III"
+            },
+            "73": {
+              "grade": 7,
+              "division": 3,
+              "name": "Master III"
+            },
+            "42": {
+              "grade": 4,
+              "division": 2,
+              "name": "Adept II"
+            },
+            "92": {
+              "grade": 9,
+              "division": 2,
+              "name": "Legend II"
+            },
+            "101": {
+              "grade": 10,
+              "division": 1,
+              "name": "Mythic"
+            },
+            "52": {
+              "grade": 5,
+              "division": 2,
+              "name": "Expert II"
+            },
+            "32": {
+              "grade": 3,
+              "division": 2,
+              "name": "Skilled II"
+            },
+            "41": {
+              "grade": 4,
+              "division": 1,
+              "name": "Adept I"
+            },
+            "51": {
+              "grade": 5,
+              "division": 1,
+              "name": "Expert I"
+            },
+            "81": {
+              "grade": 8,
+              "division": 1,
+              "name": "Grandmaster I"
+            }
+          },
+          "grades": {
+            "2": "Novice",
+            "1": "Beginner",
+            "9": "Legend",
+            "7": "Master",
+            "3": "Skilled",
+            "6": "Veteran",
+            "4": "Adept",
+            "5": "Expert",
+            "10": "Mythic"
+          }
+        }
+      },
+      "limitations": {
+        "inconsistent_grade_only_labels": {
+          "8": [
+            "Grandmaster",
+            "Hidden Edge"
+          ]
+        },
+        "policy": "Full row name is authoritative. Conflicting grade-only labels are omitted rather than guessed."
+      },
+      "sources": {
+        "archive": "index2",
+        "frame": 1871,
+        "fields": [
+          "2v2_first_reward",
+          "3v3_first_reward",
+          "5v5_first_reward",
+          "first_reward",
+          "grade_model_icon",
+          "id",
+          "name",
+          "rank_1",
+          "rank_1_icon",
+          "rank_1_icon_small",
+          "rank_1_name",
+          "rank_2",
+          "rank_model_icon",
+          "video",
+          "video_in",
+          "rank_2_fanti",
+          "rank_2_name",
+          "xs_award",
+          "xs_coin_cost"
+        ],
+        "records": 28,
+        "index_sha256": "c2d33e0a165fb331a0cf6881d4ed6fbbe6c1fc190387d795b7b3cdff94a881df",
+        "named_binding": {
+          "table": "lunjian_grade_info",
+          "archive": "index2",
+          "frame": 1871,
+          "records": 28,
+          "manifest_slot": 82639,
+          "record_hex": "1c0000000100000002004f07ffffffffe9d7b1d600000000315e010000040000",
+          "manifest_sha256": "2c51e2d69202c9fbd1c20325b5c791f873f177449f094d64b7b13e62d97f5a28"
+        },
+        "current_lua_evidence": [
+          {
+            "source": "hexm/common/consts/lunjian_consts.lua",
+            "sha256": "d6da4987068b27f71818d8acf1bdf3c6de49bdf56e74da44c2f8bae678fe2189",
+            "prototypes": [
+              {
+                "first_line": 469,
+                "last_line": 472,
+                "constants": [
+                  "lunjian_grade_info",
+                  "name"
+                ]
+              },
+              {
+                "first_line": 474,
+                "last_line": 476,
+                "constants": [
+                  "lunjian_grade_info",
+                  "name"
+                ]
+              }
+            ]
+          },
+          {
+            "source": "hexm/client/ui/windows/pvp/pvp3v3_fight_info_window.lua",
+            "sha256": "c1d0c812aac9eda96deda56b41d849ffb605652bd765c52e0c2bf5163388790a",
+            "prototypes": [
+              {
+                "first_line": 216,
+                "last_line": 218,
+                "constants": [
+                  "lunjian_grade_info",
+                  "name"
+                ]
+              }
+            ]
+          },
+          {
+            "source": "hexm/client/data_oversea/generated_data/manifest_overlay.lua",
+            "sha256": "02c6c9739a7f2ffde66e7cab7fb2540d14d4e547c02bb44226eab6dbe06a95bf",
+            "check": "No direct lunjian_grade_info override in current overseas manifest"
+          }
+        ],
+        "api_fields": {
+          "1v1": "lunjian",
+          "3v3": "lunjian3v3_prop"
+        },
+        "mode_binding": "Only API lunjian and lunjian3v3_prop grade/division labels. Both client displays use lunjian_grade_info. Group-mode and special-mode ranks are not mapped by this export.",
+        "evidence": [
+          "hexm/common/consts/lunjian_consts.lua: ui_lunjian_get_grade_txt and lunjian_publish_grade_txt",
+          "hexm/client/ui/windows/pvp/pvp3v3_fight_info_window.lua: combined total_grades lookup in lunjian_grade_info",
+          "Named MTable MANIFEST binding is required. fight_shoulder_grade_info, huiwu_grade_info, lunjian_wuwo_grade and zzq_grade are separate tables."
+        ]
+      },
+      "display_policy": "legacy_until_client_verified",
+      "display_verification_note": "Stored English strings say Skilled; owner reports Silver in the running client. Keep established display labels until final client localization is verified."
     }
   },
   "item_index": {
@@ -485779,5 +486194,944 @@
       "20900",
       "10104"
     ]
+  },
+  "pvp_ranks": {
+    "format": 1,
+    "modes": {
+      "1v1": {
+        "ranks": {
+          "22": {
+            "grade": 2,
+            "division": 2,
+            "name": "Novice II"
+          },
+          "11": {
+            "grade": 1,
+            "division": 1,
+            "name": "Beginner I"
+          },
+          "82": {
+            "grade": 8,
+            "division": 2,
+            "name": "Grandmaster II"
+          },
+          "91": {
+            "grade": 9,
+            "division": 1,
+            "name": "Legend I"
+          },
+          "71": {
+            "grade": 7,
+            "division": 1,
+            "name": "Master I"
+          },
+          "93": {
+            "grade": 9,
+            "division": 3,
+            "name": "Legend III"
+          },
+          "83": {
+            "grade": 8,
+            "division": 3,
+            "name": "Grandmaster III"
+          },
+          "12": {
+            "grade": 1,
+            "division": 2,
+            "name": "Beginner II"
+          },
+          "13": {
+            "grade": 1,
+            "division": 3,
+            "name": "Beginner III"
+          },
+          "33": {
+            "grade": 3,
+            "division": 3,
+            "name": "Skilled III"
+          },
+          "23": {
+            "grade": 2,
+            "division": 3,
+            "name": "Novice III"
+          },
+          "61": {
+            "grade": 6,
+            "division": 1,
+            "name": "Veteran I"
+          },
+          "62": {
+            "grade": 6,
+            "division": 2,
+            "name": "Veteran II"
+          },
+          "72": {
+            "grade": 7,
+            "division": 2,
+            "name": "Master II"
+          },
+          "63": {
+            "grade": 6,
+            "division": 3,
+            "name": "Veteran III"
+          },
+          "31": {
+            "grade": 3,
+            "division": 1,
+            "name": "Skilled I"
+          },
+          "21": {
+            "grade": 2,
+            "division": 1,
+            "name": "Novice I"
+          },
+          "43": {
+            "grade": 4,
+            "division": 3,
+            "name": "Adept III"
+          },
+          "53": {
+            "grade": 5,
+            "division": 3,
+            "name": "Expert III"
+          },
+          "73": {
+            "grade": 7,
+            "division": 3,
+            "name": "Master III"
+          },
+          "42": {
+            "grade": 4,
+            "division": 2,
+            "name": "Adept II"
+          },
+          "92": {
+            "grade": 9,
+            "division": 2,
+            "name": "Legend II"
+          },
+          "101": {
+            "grade": 10,
+            "division": 1,
+            "name": "Mythic"
+          },
+          "52": {
+            "grade": 5,
+            "division": 2,
+            "name": "Expert II"
+          },
+          "32": {
+            "grade": 3,
+            "division": 2,
+            "name": "Skilled II"
+          },
+          "41": {
+            "grade": 4,
+            "division": 1,
+            "name": "Adept I"
+          },
+          "51": {
+            "grade": 5,
+            "division": 1,
+            "name": "Expert I"
+          },
+          "81": {
+            "grade": 8,
+            "division": 1,
+            "name": "Grandmaster I"
+          }
+        },
+        "grades": {
+          "2": "Novice",
+          "1": "Beginner",
+          "9": "Legend",
+          "7": "Master",
+          "3": "Skilled",
+          "6": "Veteran",
+          "4": "Adept",
+          "5": "Expert",
+          "10": "Mythic"
+        }
+      },
+      "3v3": {
+        "ranks": {
+          "22": {
+            "grade": 2,
+            "division": 2,
+            "name": "Novice II"
+          },
+          "11": {
+            "grade": 1,
+            "division": 1,
+            "name": "Beginner I"
+          },
+          "82": {
+            "grade": 8,
+            "division": 2,
+            "name": "Grandmaster II"
+          },
+          "91": {
+            "grade": 9,
+            "division": 1,
+            "name": "Legend I"
+          },
+          "71": {
+            "grade": 7,
+            "division": 1,
+            "name": "Master I"
+          },
+          "93": {
+            "grade": 9,
+            "division": 3,
+            "name": "Legend III"
+          },
+          "83": {
+            "grade": 8,
+            "division": 3,
+            "name": "Grandmaster III"
+          },
+          "12": {
+            "grade": 1,
+            "division": 2,
+            "name": "Beginner II"
+          },
+          "13": {
+            "grade": 1,
+            "division": 3,
+            "name": "Beginner III"
+          },
+          "33": {
+            "grade": 3,
+            "division": 3,
+            "name": "Skilled III"
+          },
+          "23": {
+            "grade": 2,
+            "division": 3,
+            "name": "Novice III"
+          },
+          "61": {
+            "grade": 6,
+            "division": 1,
+            "name": "Veteran I"
+          },
+          "62": {
+            "grade": 6,
+            "division": 2,
+            "name": "Veteran II"
+          },
+          "72": {
+            "grade": 7,
+            "division": 2,
+            "name": "Master II"
+          },
+          "63": {
+            "grade": 6,
+            "division": 3,
+            "name": "Veteran III"
+          },
+          "31": {
+            "grade": 3,
+            "division": 1,
+            "name": "Skilled I"
+          },
+          "21": {
+            "grade": 2,
+            "division": 1,
+            "name": "Novice I"
+          },
+          "43": {
+            "grade": 4,
+            "division": 3,
+            "name": "Adept III"
+          },
+          "53": {
+            "grade": 5,
+            "division": 3,
+            "name": "Expert III"
+          },
+          "73": {
+            "grade": 7,
+            "division": 3,
+            "name": "Master III"
+          },
+          "42": {
+            "grade": 4,
+            "division": 2,
+            "name": "Adept II"
+          },
+          "92": {
+            "grade": 9,
+            "division": 2,
+            "name": "Legend II"
+          },
+          "101": {
+            "grade": 10,
+            "division": 1,
+            "name": "Mythic"
+          },
+          "52": {
+            "grade": 5,
+            "division": 2,
+            "name": "Expert II"
+          },
+          "32": {
+            "grade": 3,
+            "division": 2,
+            "name": "Skilled II"
+          },
+          "41": {
+            "grade": 4,
+            "division": 1,
+            "name": "Adept I"
+          },
+          "51": {
+            "grade": 5,
+            "division": 1,
+            "name": "Expert I"
+          },
+          "81": {
+            "grade": 8,
+            "division": 1,
+            "name": "Grandmaster I"
+          }
+        },
+        "grades": {
+          "2": "Novice",
+          "1": "Beginner",
+          "9": "Legend",
+          "7": "Master",
+          "3": "Skilled",
+          "6": "Veteran",
+          "4": "Adept",
+          "5": "Expert",
+          "10": "Mythic"
+        }
+      }
+    },
+    "limitations": {
+      "inconsistent_grade_only_labels": {
+        "8": [
+          "Grandmaster",
+          "Hidden Edge"
+        ]
+      },
+      "policy": "Full row name is authoritative. Conflicting grade-only labels are omitted rather than guessed."
+    },
+    "sources": {
+      "archive": "index2",
+      "frame": 1871,
+      "fields": [
+        "2v2_first_reward",
+        "3v3_first_reward",
+        "5v5_first_reward",
+        "first_reward",
+        "grade_model_icon",
+        "id",
+        "name",
+        "rank_1",
+        "rank_1_icon",
+        "rank_1_icon_small",
+        "rank_1_name",
+        "rank_2",
+        "rank_model_icon",
+        "video",
+        "video_in",
+        "rank_2_fanti",
+        "rank_2_name",
+        "xs_award",
+        "xs_coin_cost"
+      ],
+      "records": 28,
+      "index_sha256": "c2d33e0a165fb331a0cf6881d4ed6fbbe6c1fc190387d795b7b3cdff94a881df",
+      "named_binding": {
+        "table": "lunjian_grade_info",
+        "archive": "index2",
+        "frame": 1871,
+        "records": 28,
+        "manifest_slot": 82639,
+        "record_hex": "1c0000000100000002004f07ffffffffe9d7b1d600000000315e010000040000",
+        "manifest_sha256": "2c51e2d69202c9fbd1c20325b5c791f873f177449f094d64b7b13e62d97f5a28"
+      },
+      "current_lua_evidence": [
+        {
+          "source": "hexm/common/consts/lunjian_consts.lua",
+          "sha256": "d6da4987068b27f71818d8acf1bdf3c6de49bdf56e74da44c2f8bae678fe2189",
+          "prototypes": [
+            {
+              "first_line": 469,
+              "last_line": 472,
+              "constants": [
+                "lunjian_grade_info",
+                "name"
+              ]
+            },
+            {
+              "first_line": 474,
+              "last_line": 476,
+              "constants": [
+                "lunjian_grade_info",
+                "name"
+              ]
+            }
+          ]
+        },
+        {
+          "source": "hexm/client/ui/windows/pvp/pvp3v3_fight_info_window.lua",
+          "sha256": "c1d0c812aac9eda96deda56b41d849ffb605652bd765c52e0c2bf5163388790a",
+          "prototypes": [
+            {
+              "first_line": 216,
+              "last_line": 218,
+              "constants": [
+                "lunjian_grade_info",
+                "name"
+              ]
+            }
+          ]
+        },
+        {
+          "source": "hexm/client/data_oversea/generated_data/manifest_overlay.lua",
+          "sha256": "02c6c9739a7f2ffde66e7cab7fb2540d14d4e547c02bb44226eab6dbe06a95bf",
+          "check": "No direct lunjian_grade_info override in current overseas manifest"
+        }
+      ],
+      "api_fields": {
+        "1v1": "lunjian",
+        "3v3": "lunjian3v3_prop"
+      },
+      "mode_binding": "Only API lunjian and lunjian3v3_prop grade/division labels. Both client displays use lunjian_grade_info. Group-mode and special-mode ranks are not mapped by this export.",
+      "evidence": [
+        "hexm/common/consts/lunjian_consts.lua: ui_lunjian_get_grade_txt and lunjian_publish_grade_txt",
+        "hexm/client/ui/windows/pvp/pvp3v3_fight_info_window.lua: combined total_grades lookup in lunjian_grade_info",
+        "Named MTable MANIFEST binding is required. fight_shoulder_grade_info, huiwu_grade_info, lunjian_wuwo_grade and zzq_grade are separate tables."
+      ]
+    },
+    "display_policy": "legacy_until_client_verified",
+    "display_verification_note": "Stored English strings say Skilled; owner reports Silver in the running client. Keep established display labels until final client localization is verified."
+  },
+  "market_goods": {
+    "format": 1,
+    "goods": {
+      "2122010": {
+        "item_id": 2122010,
+        "name": "Ramie",
+        "name_hash": 4762852013629909547,
+        "icon_resource": "2122011_0_0_ui",
+        "product_row_id": 10,
+        "image": "art/2122010.png",
+        "sha256": "d175aa24543cbce66990953243be00f2df3978b959259c6e860e84a286222bd2"
+      },
+      "2122007": {
+        "item_id": 2122007,
+        "name": "Charcoal",
+        "name_hash": 3885539891258141814,
+        "icon_resource": "2122007_0_0_ui",
+        "product_row_id": 7,
+        "image": "art/2122007.png",
+        "sha256": "fa20632c7413f30b1172780f3874f87cca163176da3fafd4672b19c852f9b260"
+      },
+      "2122002": {
+        "item_id": 2122002,
+        "name": "Jade Disc",
+        "name_hash": 6856574028580901558,
+        "icon_resource": "2122002_0_0_ui",
+        "product_row_id": 2,
+        "image": "art/2122002.png",
+        "sha256": "df5c0f62d7f801eb3fe5990b348327f4994cb0b79f0c8c68f4c41a7a2c824651"
+      },
+      "2122020": {
+        "item_id": 2122020,
+        "name": "Tixi Lacquerware",
+        "name_hash": 4562035185824254937,
+        "icon_resource": "2122020_0_0_ui",
+        "product_row_id": 20,
+        "image": "art/2122020.png",
+        "sha256": "6251ed2105a87ae6510258db8175ac11a9c8eb9b6a5227ebbb9f8fdcc14f3d9f"
+      },
+      "2122008": {
+        "item_id": 2122008,
+        "name": "Huai Salt",
+        "name_hash": 2729037859523297065,
+        "icon_resource": "2122008_0_0_ui",
+        "product_row_id": 8,
+        "image": "art/2122008.png",
+        "sha256": "5b228f255cd5afac599bfc50e7eee4d936f6db725fc7492f1e43fc25f4ca5525"
+      },
+      "2122006": {
+        "item_id": 2122006,
+        "name": "Pork",
+        "name_hash": 1374400350269790400,
+        "icon_resource": "2122006_0_0_ui",
+        "product_row_id": 6,
+        "image": "art/2122006.png",
+        "sha256": "683f650fe04c8e9c7526853a73396277a822ba0fb4bf3dff859ac20ee52d9c7b"
+      },
+      "2122009": {
+        "item_id": 2122009,
+        "name": "Porcelain Vase",
+        "name_hash": -3179467991210472651,
+        "icon_resource": "2122009_0_0_ui",
+        "product_row_id": 9,
+        "image": "art/2122009.png",
+        "sha256": "6a44f0424183fb59e0a0e0c9da00bf2c0764caf684893a77d0ea73fccc67bf4b"
+      },
+      "2122003": {
+        "item_id": 2122003,
+        "name": "Rice",
+        "name_hash": -5743281558558086281,
+        "icon_resource": "2122003_0_0_ui",
+        "product_row_id": 3,
+        "image": "art/2122003.png",
+        "sha256": "17ec894f869bbae9df5e6e276d0331c98a6c1fc328282398e7a49245814c5729"
+      },
+      "2122016": {
+        "item_id": 2122016,
+        "name": "Ginkgo",
+        "name_hash": 3252634632627079414,
+        "icon_resource": "2122016_0_0_ui",
+        "product_row_id": 16,
+        "image": "art/2122016.png",
+        "sha256": "d5cb43d1f1d50e2c91206d0d38cdcf4c7dddb9f4ae4d81b040f28cde246eab15"
+      },
+      "2122004": {
+        "item_id": 2122004,
+        "name": "Grapes",
+        "name_hash": 8177831259331521283,
+        "icon_resource": "2122004_0_0_ui",
+        "product_row_id": 4,
+        "image": "art/2122004.png",
+        "sha256": "7a6c93fb6a36fe6673bb8f864dc2e5663b9533dfa3cb335273dbfb149f4e6dad"
+      },
+      "2122011": {
+        "item_id": 2122011,
+        "name": "Safflower",
+        "name_hash": -3963959758792543288,
+        "icon_resource": "2122010_0_0_ui",
+        "product_row_id": 11,
+        "image": "art/2122011.png",
+        "sha256": "2bf6b34f5d8610f2894fddaeec5925d176bc05fe9db6b6d67627e82772f791ef"
+      },
+      "2122014": {
+        "item_id": 2122014,
+        "name": "Round Fan",
+        "name_hash": -7909887241788801973,
+        "icon_resource": "2122014_0_0_ui",
+        "product_row_id": 14,
+        "image": "art/2122014.png",
+        "sha256": "5046131c79ebbb197099e5001f621cf2e79723d4d21bf9c1bbac37c1da9f601e"
+      },
+      "2122017": {
+        "item_id": 2122017,
+        "name": "Xinyang Tea",
+        "name_hash": -6238383557504467702,
+        "icon_resource": "2122017_0_0_ui",
+        "product_row_id": 17,
+        "image": "art/2122017.png",
+        "sha256": "a106248442b40f3649e2ad57fe6925bc506edcf3755744d7bda60ced3f95b9e8"
+      },
+      "2122021": {
+        "item_id": 2122021,
+        "name": "Rice Vinegar",
+        "name_hash": 6526354069240755789,
+        "icon_resource": "2122021_0_0_ui",
+        "product_row_id": 21,
+        "image": "art/2122021.png",
+        "sha256": "16d2ee896fc61b5268f4921096cee3c074ebae6e05b4c70fa14dd8db834da500"
+      },
+      "2122018": {
+        "item_id": 2122018,
+        "name": "Antiques",
+        "name_hash": 823265068989511335,
+        "icon_resource": "2122018_0_0_ui",
+        "product_row_id": 18,
+        "image": "art/2122018.png",
+        "sha256": "eb758a922569ac48f7f8582eacaabb98d7beb3f3e338f6c339c440c0490ff216"
+      },
+      "2122005": {
+        "item_id": 2122005,
+        "name": "Watershield",
+        "name_hash": -7253266060920761824,
+        "icon_resource": "2122005_0_0_ui",
+        "product_row_id": 5,
+        "image": "art/2122005.png",
+        "sha256": "b3ad2a33a7a6b07a748e30ab69b618909d5244deaa67af0a4c3fb60e621805ca"
+      },
+      "2122015": {
+        "item_id": 2122015,
+        "name": "Storax",
+        "name_hash": 8043242284383747691,
+        "icon_resource": "2122015_0_0_ui",
+        "product_row_id": 15,
+        "image": "art/2122015.png",
+        "sha256": "da6ad674fa643e7776248cbdd6998dc39b4360c7320c6084a2ec620825ce7b5b"
+      },
+      "2122001": {
+        "item_id": 2122001,
+        "name": "Chrysanthemum",
+        "name_hash": -4927836870538420862,
+        "icon_resource": "2122001_0_0_ui",
+        "product_row_id": 1,
+        "image": "art/2122001.png",
+        "sha256": "5a6afde9fd8d69a977224640f3f133e65f0927029abde070294aecec6f103ea7"
+      },
+      "2122012": {
+        "item_id": 2122012,
+        "name": "Kesi Tapestry",
+        "name_hash": 617732298238496686,
+        "icon_resource": "2122012_0_0_ui",
+        "product_row_id": 12,
+        "image": "art/2122012.png",
+        "sha256": "be3969b18d21193d73dfacc2ed62591b231e9b85679cbe64dc3a298696cd0591"
+      },
+      "2122013": {
+        "item_id": 2122013,
+        "name": "Horseman Lantern",
+        "name_hash": 3976284957044343436,
+        "icon_resource": "2122013_0_0_ui",
+        "product_row_id": 13,
+        "image": "art/2122013.png",
+        "sha256": "74220f623e33b1ecf559a2b046fe321a9853aa0965422db4e30a9cef9d80bb25"
+      },
+      "2122019": {
+        "item_id": 2122019,
+        "name": "Bamboo Curtain",
+        "name_hash": 8949404325801899988,
+        "icon_resource": "2122019_0_0_ui",
+        "product_row_id": 19,
+        "image": "art/2122019.png",
+        "sha256": "76a3acd174094f82317f69b8f56d09eb4e39c814fa3d118fbbb4df5f60cdc17c"
+      }
+    },
+    "sources": {
+      "products": {
+        "table": "hoard_profiteer_products",
+        "archive": "index1",
+        "frame": 16480,
+        "records": 21,
+        "pages": 1,
+        "manifest_slot": 81652,
+        "record_hex": "150000000100000001006040ffffffffe2643b03000000008c55010000040000",
+        "manifest_sha256": "2c51e2d69202c9fbd1c20325b5c791f873f177449f094d64b7b13e62d97f5a28",
+        "decoded_primary_records": 21
+      },
+      "items": {
+        "table": "stuff_items",
+        "archive": "index4",
+        "frame": 11132,
+        "records": 13594,
+        "pages": 53,
+        "manifest_slot": 113755,
+        "record_hex": "1a3500003500000004007c2be90320217f41fd0900000000613e020000040000",
+        "manifest_sha256": "2c51e2d69202c9fbd1c20325b5c791f873f177449f094d64b7b13e62d97f5a28",
+        "decoded_primary_records": 13525,
+        "selected_item_count": 21
+      },
+      "product_fields": [
+        "base_price",
+        "good_item_id",
+        "id",
+        "price_down_info",
+        "price_up_info",
+        "week_limit"
+      ],
+      "item_fields": [
+        "bag_page",
+        "describe_str",
+        "icon_no",
+        "name",
+        "no",
+        "star",
+        "subtype",
+        "type",
+        "type_no_order",
+        "debate_difficulty",
+        "type_page",
+        "wraplimit",
+        "access_mode",
+        "story_describe_str",
+        "valuable_factor",
+        "item_limit",
+        "click_button_config",
+        "loot_binding",
+        "weight",
+        "icon_no_transverse",
+        "reward_star",
+        "unlock_region_function",
+        "subtype_no_order",
+        "chest_award_no",
+        "cd",
+        "if_group_share_cd",
+        "if_naturalpro_max",
+        "item_group",
+        "level_require",
+        "usechange_naturalpro",
+        "usechange_naturalpronum",
+        "resolve_reward",
+        "resolve_tip",
+        "coupon_use_limit",
+        "use_as_coupon",
+        "add_fenghua_value",
+        "icon_no_upright",
+        "money_bar_goto",
+        "sub_describe_str",
+        "sub_goto",
+        "token_color",
+        "token_icon",
+        "money_bar_goto_condition",
+        "item_use_secondary_password",
+        "event_send",
+        "quick_use",
+        "use_storyline",
+        "channel_describe_str",
+        "use_as_coupon_token",
+        "item_Expiration_end_item",
+        "item_Expiration_off",
+        "item_Expiration_on",
+        "item_Expiration_specific_time",
+        "bag_sequence",
+        "bp_lock_id",
+        "bp_exp_stuff",
+        "expire_remind_email",
+        "expire_remind_time",
+        "use_as_common_coupon_token",
+        "try_costume_transfer",
+        "try_waiguan_id",
+        "try_waiguan_ts",
+        "item_Expiration_off_button",
+        "coupon_aoto_use",
+        "belong_play",
+        "quick_use_time",
+        "access_notice",
+        "item_Expiration",
+        "t_item_Expiration",
+        "battlepass",
+        "channel_story_describe_str",
+        "icon_no_list",
+        "try_costume_id",
+        "try_costume_ts",
+        "item_Expiration_number",
+        "item_change_end_item",
+        "item_change_manual",
+        "item_change_mode",
+        "own_limit",
+        "sever_mainten_require",
+        "allow_no_bag",
+        "qishu_findback",
+        "quick_use_button",
+        "amity_value",
+        "friend_pavo",
+        "limit_per_gift",
+        "relationship_limit",
+        "product_id",
+        "xialv_pavo",
+        "shitu_pavo",
+        "popularity_pavo",
+        "learn_kongfu",
+        "learned_tips",
+        "forbidden_key",
+        "forbidden_keys",
+        "exchange_reward_id",
+        "recycletext",
+        "learn_qs",
+        "function_sign_id",
+        "owner_add_buff",
+        "equip_use_button",
+        "Equiorder",
+        "corner_icon",
+        "exchange_condition",
+        "if_resource_max",
+        "if_usable_in_fight",
+        "not_batch_recycle",
+        "sale_for_exchange",
+        "use_by_skill",
+        "tp_ignore_level",
+        "item_no_show",
+        "owner_add_life_num",
+        "owner_add_life_prop",
+        "msd_paper_score",
+        "jlm_rat_poison",
+        "use_check_client_condition",
+        "chat_gift_block",
+        "gift_type",
+        "relate_bowu_no",
+        "book_num",
+        "home_store_item_id",
+        "home_store_item_num",
+        "red_point",
+        "chest_award_show",
+        "ly_chief_vote",
+        "tip_text_no",
+        "quick_use_undecompose",
+        "sale_function_no",
+        "mission_limit",
+        "promote_enhance_exp",
+        "track",
+        "equip_level",
+        "box_no",
+        "suit",
+        "suit_icon",
+        "suit_part",
+        "promote_fumo_exp",
+        "enchant_id",
+        "disease_status_disabled",
+        "get_sick_pro",
+        "use_check_condition",
+        "consume_dish_id",
+        "in_share_bag",
+        "envelope_no",
+        "click_button_config_interact",
+        "if_toy_lossless",
+        "entity_no",
+        "click_button_tips",
+        "use_school_toy",
+        "use_bowu_no",
+        "appear_id",
+        "item_weaponid",
+        "only_use_in_idle",
+        "ray_cast_check",
+        "perform_id",
+        "add_recipe",
+        "faction_warehouse_page",
+        "score_card",
+        "use_description",
+        "not_delete",
+        "abandon_unavailable",
+        "gift_quota_convert",
+        "collection_group",
+        "nielian_unlock_no",
+        "homeland_item_level",
+        "is_resolve",
+        "shengjinou_resolve_reward",
+        "contribution_token",
+        "exp_per_provide",
+        "personal_store_item_id",
+        "personal_store_item_num",
+        "yuanqi_per_consume",
+        "chapter_home_lv_require",
+        "home_level_require",
+        "invite_tag",
+        "queue_sell_price",
+        "sell_exp_per_provide",
+        "sell_yuanqi_per_consume",
+        "single_sell_time",
+        "yuanqi_per_provide",
+        "homeland_reward_id",
+        "exp_first",
+        "exp_regular",
+        "exp_sell",
+        "expansion_id",
+        "make_exp_lv",
+        "recipe_type",
+        "sell_exp_lv",
+        "tip",
+        "goose_feather",
+        "item_Expiration_remind_mail",
+        "goose_simulation_skill_id",
+        "goose_simulation_buff_id",
+        "task_group",
+        "use_call_actionline",
+        "story_describe_str_fu",
+        "anim_action_id",
+        "region_require",
+        "tod_require",
+        "num_prop",
+        "is_display_btn",
+        "is_number_blocked",
+        "tag",
+        "brief_describe_str",
+        "yankov_vision_range",
+        "yankov_bell_vision",
+        "yankov_bell_vision_not_buff",
+        "yankov_detect_treasure",
+        "yankov_refresh_treasure",
+        "yankov_trap",
+        "yankov_disguise",
+        "yankov_stealth",
+        "yankov_repair",
+        "title_unlock_tid",
+        "medal_id",
+        "card_unlock_no",
+        "fh_value",
+        "if_icon_head",
+        "head_unlock_no",
+        "limit_num",
+        "use_again_decompose",
+        "use_again_decompose_reward",
+        "add_fenghua",
+        "head_time_abs",
+        "head_time_rlt",
+        "out_of_print",
+        "fenghua_value",
+        "runtime_Expiration",
+        "horse_skill_id",
+        "anim_action_time",
+        "school_no_change_to",
+        "compound_platform_id",
+        "time_describe_str",
+        "badge_canvas_bg_unlock_no",
+        "use_active",
+        "category",
+        "icon_long_no",
+        "invisible",
+        "mount_id",
+        "order",
+        "stuff_able",
+        "stuff_id",
+        "delivery_category",
+        "formal",
+        "season_id",
+        "tied_goods",
+        "show_start_time",
+        "convert_irreversible_text",
+        "icon_no_transverse_list",
+        "bp_level_require",
+        "pet_display_id",
+        "title_delay_ts",
+        "skill_id",
+        "title_exit_can_unlock",
+        "title_level_preview",
+        "bubble_unlock_no",
+        "auto_decompose",
+        "chuanyin_num",
+        "frame_unlock_no",
+        "frame_time_rlt",
+        "frame_time_abs",
+        "frame_vx_frame_rlt",
+        "frame_vx_unlock_no",
+        "frame_vx_abs",
+        "chest_token_no",
+        "unselected_tips",
+        "is_equip",
+        "blind_box_id",
+        "chest_use_tip",
+        "cbg_trade",
+        "gift_binding",
+        "gift_tips",
+        "yankov_chest_award_no"
+      ],
+      "lua": [
+        {
+          "source": "hexm/common/misc/hoard_profiteer_misc.lua",
+          "sha256": "73ea917154cf0d946bc01a3e6926fed514ea993f57eaa1a0b0bc8e407a49759b",
+          "required_constants": [
+            "hoard_profiteer_products",
+            "main_good",
+            "stuff_no"
+          ]
+        },
+        {
+          "source": "hexm/client/ui/windows/hoard_profiteer/bulletin_detail_controller.lua",
+          "sha256": "0839d8ec6096ed8a6f2e6aaaaab831e0be19d7e6204e80cd40bb141cc3496c1f",
+          "required_constants": [
+            "get_item_name",
+            "get_item_sys_d",
+            "icon_no"
+          ]
+        }
+      ],
+      "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+      "join": "API main_good -> product key good_item_id -> stuff_items primary key -> name/icon_no; product id is a different value"
+    }
   }
 }

@@ -1409,11 +1409,12 @@ class PlayerProfileView(LayoutView):
         self.add_item(self._build_container(detail_items=inner))
     
     @staticmethod
-    def _format_rank(grade: int, small_grade: int) -> str:
-        grade_name = PlayerProfileView.GRADE_NAMES.get(grade, f"Unknown ({grade})")
-        small_suffix = PlayerProfileView.SMALL_GRADE_SUFFIXES.get(small_grade, str(small_grade))
-        return f"{grade_name} {small_suffix}" if small_suffix else grade_name
-    
+    def _format_rank(grade: int, small_grade: int, mode: str = '1v1') -> str:
+        from utility.pvp_ranks import format_rank
+        return format_rank(grade, small_grade, mode=mode,
+                           legacy_names=PlayerProfileView.GRADE_NAMES,
+                           legacy_suffixes=PlayerProfileView.SMALL_GRADE_SUFFIXES)
+
     async def _handle_back(self, interaction: discord.Interaction):
         if not await ensure_owner(interaction, self):
             return
@@ -3447,7 +3448,7 @@ class WWMCog(commands.Cog):
             arena_1v1_total_num = lunjian.get('total_num', 0)
         lunjian3v3 = data.get('lunjian3v3_prop', {})
         if lunjian3v3 and 'grade' in lunjian3v3:
-            arena_3v3_rank = PlayerProfileView._format_rank(lunjian3v3['grade'], lunjian3v3.get('small_grade', 0))
+            arena_3v3_rank = PlayerProfileView._format_rank(lunjian3v3['grade'], lunjian3v3.get('small_grade', 0), mode='3v3')
             arena_3v3_total_num = lunjian3v3.get('total_num', 0)
         fight_shoulder = data.get('fight_shoulder', {})
         if fight_shoulder and 'score' in fight_shoulder:

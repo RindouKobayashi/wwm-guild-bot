@@ -42,12 +42,25 @@ def validate_release(directory):
                  'dungeons/latest.json', 'dungeons/cards/manifest.json', 'abyss/catalogue.json'}
         artwork = name.endswith('.png') and name.startswith(('activity/art/', 'abyss/art/', 'dungeons/cards/artwork/'))
         martial_file = name in ('martial/catalogue.json','martial/startup-approval.json','martial/upload-pack/contact-sheet.html','martial/upload-pack/upload-manifest.json','martial/upload-pack/UPLOAD-GUIDE.md') or (name.startswith(('martial/art/','martial/upload-pack/icons/')) and name.endswith('.png'))
-        if name not in fixed and not artwork and not martial_file:
+        market_file = name in ('market/catalogue.json','market/contact-sheet.html') or (name.startswith('market/art/') and name.endswith('.png'))
+        if name not in fixed and not artwork and not martial_file and not market_file:
             raise ValueError('Unexpected/private file in public bundle: ' + name)
         path = inside(directory, name)
         if not path.is_file() or digest(path) != expected:
             raise ValueError('Asset checksum mismatch: ' + name)
     tables = json.loads((directory / 'tables.json').read_text(encoding='utf-8'))
+    if 'market_goods' in tables:
+        from utility.market_goods import validate as validate_market
+        validate_market(tables['market_goods'])
+        if 'market/catalogue.json' not in manifest['files']:raise ValueError('Market catalogue absent from manifest')
+        catalogue=json.loads((directory/'market/catalogue.json').read_text(encoding='utf-8'))
+        if catalogue!=tables['market_goods']:raise ValueError('Market catalogue differs from bundle')
+        for row in catalogue['goods'].values():
+            if 'market/'+row['image'] not in manifest['files'] or digest(inside(directory,'market/'+row['image']))!=row['sha256']:raise ValueError('Market artwork missing or inconsistent')
+    if 'pvp_ranks' in tables:
+        from utility.pvp_ranks import validate as validate_pvp
+        validate_pvp(tables['pvp_ranks'])
+        if tables['player_mappings'].get('pvp_ranks') != tables['pvp_ranks']:raise ValueError('Discord/Activity PvP rank tables differ')
     if 'martial' in tables:
         from utility.martial_data import validate
         validate(tables['martial'])
