@@ -24,7 +24,7 @@
         "csb_sha256": "40c288ef682bef168bb5f7599971b967ce0bd41787eb4a0198d0dec485b5d4e7",
         "puppet": "vx_emoji_goose_hi",
         "puppet_uuid": "8c617059-3858-4374-bc25-803cc0c7bf8e",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "615e76560b268808f200ad3760d2d45b1542149d7fa6d46c7809c788560a603b",
         "texture_sha256": "8f7a8d827f31aae8f22ba2b921c9ee5414b9ca99bdfc18a3a962e8e60851e369",
         "atlas_transform": "exact",
@@ -33,15 +33,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -55,15 +55,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -130,7 +130,7 @@
         "csb_sha256": "29c1964d215d5ad8dcc92fe6751ec72a6b9c15bf13665b9ae2b942819407d2c5",
         "puppet": "vx_emoji_goose_happy",
         "puppet_uuid": "b65dfa5a-1995-4967-a944-9a37c60230ac",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "0c7bc0470b65e214620508f6834f46489e088dc8b55597dcff358874b0268965",
         "texture_sha256": "bf286c81743c160ea74a4bc012468c469ff0000aeaa7c434a956799db3626edf",
         "atlas_transform": "crop_to_logical",
@@ -139,15 +139,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -161,15 +161,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -236,7 +236,7 @@
         "csb_sha256": "7389cada742ef66d6b2eb6cacc5aaa252e4f1da4362446344eb92951ce00e9f1",
         "puppet": "vx_emoji_goose_shock",
         "puppet_uuid": "15f183db-47d3-479d-9da2-43243c34f1b5",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "b74ba33bfad9ff3bafa258f9722e02588a7b55ee602d5edf3e803b08643bcf86",
         "texture_sha256": "3b2a3a968a3a54afb383856adf0b9549f5bd18b5c97d6c09329146de26639d50",
         "atlas_transform": "crop_to_logical",
@@ -245,15 +245,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -267,15 +267,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -342,7 +342,7 @@
         "csb_sha256": "c612dc2bf9a291932f2e98edac538e065f483f63fbc7429bd9279b4cef3e1e8d",
         "puppet": "vx_emoji_goose_confuse",
         "puppet_uuid": "ccd9d084-ca29-4d2b-b95b-dbfde0689b74",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "031ea113ee8b43e93206bee236d69d20ab7d309592b3084bf71819332202248b",
         "texture_sha256": "42ebf24726532404b5feb77c6d618e53f168869e2bfe93c4cda6339db478b86c",
         "atlas_transform": "exact",
@@ -351,15 +351,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -373,15 +373,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -448,7 +448,7 @@
         "csb_sha256": "7a896f14d6da54e8a7b5f874bb372b1c7188787c8cd7455544480c04d4c678fc",
         "puppet": "vx_emoji_goose_angry",
         "puppet_uuid": "41f90854-d360-470e-927b-7d600c49edca",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "09bd8a7344f1e47fb35e35572350f3fa6f14fd1c401b6a0ac4d2b66dfa69caef",
         "texture_sha256": "6da24723781fc82d5808a0c803cbe422962a19b315b08f05267363c50c75e44e",
         "atlas_transform": "exact",
@@ -457,15 +457,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -479,15 +479,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -554,7 +554,7 @@
         "csb_sha256": "f8c26100201b87f34a59edc1ae825ff63628bdf0f3fa0dbcf1564e09cf29cd4f",
         "puppet": "vx_emoji_goose_sad",
         "puppet_uuid": "7f0fa288-3ace-45b5-8851-26fb6fe7ebd0",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "26adfdbf40b85240f391cb920181fac937bbeefc1145b9577079186185c6e8aa",
         "texture_sha256": "89366ec04f2abc40f043ef5bb6d247f037087c68eb36d9c9de6fc4fed550e238",
         "atlas_transform": "crop_to_logical",
@@ -563,15 +563,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -585,15 +585,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -660,7 +660,7 @@
         "csb_sha256": "5c503cfcc07748d11607bc2fe9482c965e6577ff058e0eff0df154f2da168629",
         "puppet": "vx_emoji_goose_fine",
         "puppet_uuid": "5217300a-90eb-491a-8636-78a4b7201e00",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "5f0bfa3151fc897b88d99dc5e8008a8fc9dadaf00d021c62a989fc356f3709f0",
         "texture_sha256": "fec20f573589a149e0f8058c0368039b3f2a2374cfab3a0d253d6360d556a9e9",
         "atlas_transform": "crop_to_logical",
@@ -669,15 +669,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -691,15 +691,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -766,7 +766,7 @@
         "csb_sha256": "b9a813a851f421261929084a8b50d90379d769b3d74e844ab53181216662425c",
         "puppet": "vx_emoji_goose_please",
         "puppet_uuid": "bdd89023-499e-409a-94f1-c69987171677",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "6c0573c88c4bcb08feafbcfa8e61dd5c43ba581b147bb6946b0768ed1fc6b814",
         "texture_sha256": "73e3986a6c50e4eab851a0c7723eac20438c60607719870bcea59c21e119826b",
         "atlas_transform": "crop_to_logical",
@@ -775,15 +775,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -797,15 +797,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -872,7 +872,7 @@
         "csb_sha256": "8e2e7380541248912f77467f57e7586cbbe9f2c98a3424021beca9a302abcd75",
         "puppet": "vx_emoji_goose_heart",
         "puppet_uuid": "b0a80d4c-acbf-4d25-a02c-51d5910ed2c9",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "8fe1146101b56a921935aed02caaf6f6393318987697d0f0fb0a7c67b9cbe78b",
         "texture_sha256": "a280ac4d121b6c71e1e79cb8374b6229aed50363a10966659a2eb51c6bfc16be",
         "atlas_transform": "exact",
@@ -881,15 +881,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -903,15 +903,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1353,7 +1353,7 @@
         "csb_sha256": "ff308bd694c8d4f5f3bbdc59b94f225571a2436e1fd3121fbe02f98b8b57f8ac",
         "puppet": "vx_talk_emotion_yanji_01",
         "puppet_uuid": "931a8084-1dd3-48f2-a83a-2c1652eb85d5",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "e7fdb13f1bac97a91aa1e33249acc95f04ec5adcbff798a83e3435d2f6df95e7",
         "texture_sha256": "39b0045f4985066f5c2d3a6a1e2efafe6ae218ac5dd54995e63e865ff20dc225",
         "atlas_transform": "normalized_rescale_to_logical",
@@ -1362,15 +1362,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1384,15 +1384,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1459,7 +1459,7 @@
         "csb_sha256": "9559352bca8a2a8b12a5866d7bff15625a38ee2e5a754b38c24642c28af56273",
         "puppet": "vx_talk_emotion_yanji_02",
         "puppet_uuid": "8f68ecf0-ca1e-45a6-ae13-26ef28cd3199",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "f69d2215f6ec976fff3f7a5a6c69d67c4f42660ad6aebc7e63ef079a17f2982c",
         "texture_sha256": "7ddce240eba8e7a54d797952c3764c5ee0de394b7deae1313777901f8050b531",
         "atlas_transform": "normalized_rescale_to_logical",
@@ -1468,15 +1468,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1490,15 +1490,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1565,7 +1565,7 @@
         "csb_sha256": "d8608af3a64a8ed1e61491ac07813b4c8fccf4acacb2d016fcaddcc7e3763793",
         "puppet": "vx_talk_emotion_yanji_03",
         "puppet_uuid": "4b3ece82-997f-4157-a5c3-a46768ad60f1",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "5fe55dcecfc06f625dfb46078cabf1a482f69dd632a4cccaa28e990459c58193",
         "texture_sha256": "b72cf035210f1f61ff039d68424c0b84b005d9b12d074a8278c5737af805da41",
         "atlas_transform": "normalized_rescale_to_logical",
@@ -1574,15 +1574,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1596,15 +1596,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1671,7 +1671,7 @@
         "csb_sha256": "3fe8fa2baabbf5c2bff5f5d846551043d13f2063f8dec0641c5350a794a729e4",
         "puppet": "vx_talk_emotion_yanji_04",
         "puppet_uuid": "ca095ffa-fa92-4a7d-b19e-8a2a0fd3f23e",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "8dd74e5acc3c39ec89006bb72e6cc6b75ca4c73f1c9a8822b39369de6fe2a9ca",
         "texture_sha256": "91123f9957a005c6f86c3a732b625d448989fe02d5c2df7e903d1f4b5dfc903d",
         "atlas_transform": "normalized_rescale_to_logical",
@@ -1680,15 +1680,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1702,15 +1702,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1777,7 +1777,7 @@
         "csb_sha256": "86428552cd252e1fc17d0915c898134751989c968c7db3d2d248ee5ad0312a29",
         "puppet": "vx_talk_emotion_yanji_05",
         "puppet_uuid": "268a8bdc-e494-4ef5-ab1a-bba4a03e4913",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "1279e593ab394770f6d7a463f06328f1b3b2e2eb5a1897da225b796035d74903",
         "texture_sha256": "14441641d2713312d2cd8c7bb4fa5a0f5792ee4c5446e5b4bb6770b91b549ebc",
         "atlas_transform": "normalized_rescale_to_logical",
@@ -1786,15 +1786,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1808,15 +1808,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1883,7 +1883,7 @@
         "csb_sha256": "fc0e937d81eb0339ad884795e58bfff724cd72e423849d16594d1d7eec231f65",
         "puppet": "vx_talk_emotion_yanji_06",
         "puppet_uuid": "48a0c1e4-9cdd-4b1c-b882-0afb8c1d8de5",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "33f65873e02ebe3b2ec475e00b0c736ebc9d3fb95e5034eaf2dd37e2dd42fa42",
         "texture_sha256": "20a57ae5868e301677d81f718e764d584eed6f0bd21bcec27cd72f07f26a722c",
         "atlas_transform": "normalized_rescale_to_logical",
@@ -1892,15 +1892,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1914,15 +1914,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -1989,7 +1989,7 @@
         "csb_sha256": "01de72780fc109975fc7d16494b5236b50dee22a1eb90725a54e1c33234000f0",
         "puppet": "vx_talk_emotion_yanji_07",
         "puppet_uuid": "84060a27-7c99-4454-9324-396fc42d4911",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "2ac0853d100f7b3e3e4a676aa44751e9d036198cdbef6704c915d938c65a08a5",
         "texture_sha256": "7240c6315430d2a86b50d2000aef365e77adc67730d61619ea162c4c42e7cdf8",
         "atlas_transform": "normalized_rescale_to_logical",
@@ -1998,15 +1998,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -2020,15 +2020,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -2095,7 +2095,7 @@
         "csb_sha256": "bd38a37ad78d36ed77c295f1fcbdca0d7f1355ed22df354fe3693d1adfe18639",
         "puppet": "vx_talk_emotion_yanji_08",
         "puppet_uuid": "08760e55-c39e-4e41-9dbb-3ee6caf9955f",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "66b95fd43bbfbf9f8ab24617ed30da115eb61ad91882d6a57ccc8183451581e2",
         "texture_sha256": "5eccfc40829772e250c154d75be0b28afc324eb6e83339602d759c041fe29c9c",
         "atlas_transform": "normalized_rescale_to_logical",
@@ -2104,15 +2104,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -2126,15 +2126,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -2201,7 +2201,7 @@
         "csb_sha256": "68dbb98df5542b3817be412664750228ad8750190cf56884e487388f7b7a6dcd",
         "puppet": "vx_talk_emotion_yanji_09",
         "puppet_uuid": "3c6df26b-5253-4c54-8a27-6b4c0b210cdb",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "57c8420f4699c596f233658e4e4e080d1cfae46f91c7c163c1304dbcbf04c706",
         "texture_sha256": "9c5275dbb5cc5f08e73509d81f15a9783e95b8f493146187ec1485aeed247794",
         "atlas_transform": "normalized_rescale_to_logical",
@@ -2210,15 +2210,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -2232,15 +2232,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -2307,7 +2307,7 @@
         "csb_sha256": "77935ff6defd04062b6ab1f34c9f5e5a2055c90ca5ead094d0d73a271ad00ef8",
         "puppet": "vx_talk_emotion_yanji_10",
         "puppet_uuid": "fbc6320f-ef4e-4c4b-a25e-a2bf8a665fdd",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "a713dad70758f1fb93a00dad5dacf0f2fe46f7402d2d72a0be38b3cb218a755a",
         "texture_sha256": "44bab16caae96ba48abc823212d480d2c089d93f2ba5ed9a59b9f07fe8b26f39",
         "atlas_transform": "normalized_rescale_to_logical",
@@ -2316,15 +2316,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -2338,15 +2338,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -2413,7 +2413,7 @@
         "csb_sha256": "57e73e4e024adfd484fd73921ccf12427a63093381973ad3f62c77a4bd259ed1",
         "puppet": "vx_talk_emotion_yanji_11",
         "puppet_uuid": "79d42cea-6b6b-4175-b840-acfd6fe65dff",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "7e703a8cc2f486b8c85cc905cb0b5d5f23b748be090f81e36d00e06fef0e6b34",
         "texture_sha256": "b8103aea53d23737c4db78278f59fbc0e112f82c7532527573f5b2221a8d272e",
         "atlas_transform": "normalized_rescale_to_logical",
@@ -2422,15 +2422,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -2444,15 +2444,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -2519,7 +2519,7 @@
         "csb_sha256": "ead1df7bdec4edd601b90287a7e47caff8d178ca45dbf13ed3dbc06c3fad0fa6",
         "puppet": "vx_talk_emotion_yanji_12",
         "puppet_uuid": "c6431415-762b-41a7-b8d2-40fe9f8984e9",
-        "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+        "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
         "puppet_sha256": "9274cf1206a6064647530962dd1eb717257d120728ecc122bc66f9414da7eeae",
         "texture_sha256": "861b0efc37afe8545180929f44c033efbaf966be627b1f5b206dc8f2b3317e15",
         "atlas_transform": "normalized_rescale_to_logical",
@@ -2528,15 +2528,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -2550,15 +2550,15 @@
           "sources": [
             {
               "path": "Resources.mpkinfo",
-              "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+              "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
             },
             {
               "path": "LocalData\\Patch\\LT1.mpkinfo",
-              "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+              "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
             },
             {
               "path": "LocalData\\Patch\\Patch.mpkdb",
-              "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+              "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
             }
           ],
           "lt_indexes": [
@@ -6190,11 +6190,11 @@
       "table": "chat_emotion_icon_lib",
       "archive": "index1",
       "frame": 8772,
-      "records": 196,
+      "records": 197,
       "pages": 1,
-      "manifest_slot": 4426,
-      "record_hex": "c40000000100000001004422ffffffff6802562100000000e217000000040000",
-      "manifest_sha256": "2c51e2d69202c9fbd1c20325b5c791f873f177449f094d64b7b13e62d97f5a28",
+      "manifest_slot": 4451,
+      "record_hex": "c50000000100000001004422e9030b056802562100000000fb17000000040000",
+      "manifest_sha256": "c344cbe35259f0b8e4d7881f6025b022653b3fd7896563ef97fd9d630ad78596",
       "decoded_primary_records": 200,
       "occupied_counts": [
         200
@@ -6208,9 +6208,9 @@
       "frame": 8765,
       "records": 55,
       "pages": 1,
-      "manifest_slot": 4422,
-      "record_hex": "370000000100000001003d22ffffffff720d7dac00000000de17000000040000",
-      "manifest_sha256": "2c51e2d69202c9fbd1c20325b5c791f873f177449f094d64b7b13e62d97f5a28",
+      "manifest_slot": 4447,
+      "record_hex": "370000000100000001003d22ffffffff720d7dac00000000f717000000040000",
+      "manifest_sha256": "c344cbe35259f0b8e4d7881f6025b022653b3fd7896563ef97fd9d630ad78596",
       "decoded_primary_records": 55,
       "occupied_counts": [
         55
@@ -6224,9 +6224,9 @@
       "frame": 8767,
       "records": 55,
       "pages": 1,
-      "manifest_slot": 4423,
-      "record_hex": "370000000100000001003f22ffffffff58c75e9a00000000df17000000040000",
-      "manifest_sha256": "2c51e2d69202c9fbd1c20325b5c791f873f177449f094d64b7b13e62d97f5a28",
+      "manifest_slot": 4448,
+      "record_hex": "370000000100000001003f22ffffffff58c75e9a00000000f817000000040000",
+      "manifest_sha256": "c344cbe35259f0b8e4d7881f6025b022653b3fd7896563ef97fd9d630ad78596",
       "decoded_primary_records": 55,
       "occupied_counts": [
         55
@@ -6240,9 +6240,9 @@
       "frame": 8769,
       "records": 15,
       "pages": 1,
-      "manifest_slot": 4424,
-      "record_hex": "0f0000000100000001004122ffffffff0fa254bc00000000e017000000040000",
-      "manifest_sha256": "2c51e2d69202c9fbd1c20325b5c791f873f177449f094d64b7b13e62d97f5a28",
+      "manifest_slot": 4449,
+      "record_hex": "0f0000000100000001004122ffffffff0fa254bc00000000f917000000040000",
+      "manifest_sha256": "c344cbe35259f0b8e4d7881f6025b022653b3fd7896563ef97fd9d630ad78596",
       "decoded_primary_records": 13,
       "occupied_counts": [
         13
@@ -6308,7 +6308,7 @@
       },
       {
         "source": "hexm/client/ui/manager/cocos.lua",
-        "sha256": "597f47e664a8ab126ffc48e98728c241bcfbd38762cf0fefe4b5d08951722b0c",
+        "sha256": "a3a1aa16ecb2a7f2a1fd28649ed03db38351b6ac0d974e1f906636ff1649d7ba",
         "required_constants": [
           "UIScript/plist/%s",
           "addSpriteFramesWithFiles",
@@ -6344,21 +6344,21 @@
         ]
       }
     ],
-    "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+    "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
     "physical_lookup": {
       "scope": "base+LT+patch",
       "sources": [
         {
           "path": "Resources.mpkinfo",
-          "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+          "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
         },
         {
           "path": "LocalData\\Patch\\LT1.mpkinfo",
-          "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+          "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
         },
         {
           "path": "LocalData\\Patch\\Patch.mpkdb",
-          "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+          "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
         }
       ],
       "lt_indexes": [
@@ -6374,9 +6374,9 @@
         "frame": 1926,
         "records": 1,
         "pages": 1,
-        "manifest_slot": 1536,
-        "record_hex": "010000000100000001008607ffffffff460f741600000000a106000000040000",
-        "manifest_sha256": "2c51e2d69202c9fbd1c20325b5c791f873f177449f094d64b7b13e62d97f5a28",
+        "manifest_slot": 1540,
+        "record_hex": "010000000100000001008607ffffffff460f741600000000a506000000040000",
+        "manifest_sha256": "c344cbe35259f0b8e4d7881f6025b022653b3fd7896563ef97fd9d630ad78596",
         "index_sha256": "94945b5353fb28f8342e95c80d9dde825f685abb38276003cee8e850ca44856d"
       },
       "layers": {
@@ -6384,15 +6384,15 @@
         "sources": [
           {
             "path": "Resources.mpkinfo",
-            "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+            "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
           },
           {
             "path": "LocalData\\Patch\\LT1.mpkinfo",
-            "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+            "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
           },
           {
             "path": "LocalData\\Patch\\Patch.mpkdb",
-            "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+            "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
           }
         ],
         "lt_indexes": [
@@ -6426,21 +6426,21 @@
           }
         }
       },
-      "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+      "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
       "physical_lookup": {
         "scope": "base+LT+patch",
         "sources": [
           {
             "path": "Resources.mpkinfo",
-            "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+            "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
           },
           {
             "path": "LocalData\\Patch\\LT1.mpkinfo",
-            "sha256": "a3e0ba166b53d134a9233e81c2345bd481f22f3fea5419797e62eba33111ca56"
+            "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
           },
           {
             "path": "LocalData\\Patch\\Patch.mpkdb",
-            "sha256": "451bd51b417eabb96d1e984edd57c27505ee520db13f6b64d1aaf4c828f86712"
+            "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
           }
         ],
         "lt_indexes": [

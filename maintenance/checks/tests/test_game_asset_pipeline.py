@@ -13,7 +13,7 @@ sys.path.insert(0, str(BOT))
 sys.path.insert(0, str(BOT / 'maintenance/assets'))
 from utility.game_assets import GameAssets, inside, validate_release
 from build_game_bundle import finish, write
-from update_game_assets import publish, prepare_review, apply_review
+from update_game_assets import publish, prepare_review, apply_review, installed_fingerprints
 from utility.game_assets import digest
 from asset_review import review, render
 from extract_api_constants import converted
@@ -36,6 +36,19 @@ def fixture(stage):
 
 
 class AssetPipelineTests(unittest.TestCase):
+    def test_patch_metadata_changes_invalidate_an_unchanged_base(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            game = Path(temporary)
+            base = game / 'Package/HD/oversea'
+            patch = game / 'LocalData/Patch/HD/oversea'
+            base.mkdir(parents=True)
+            patch.mkdir(parents=True)
+            (patch / 'MANIFEST').write_bytes(b'first patch')
+            stamps = installed_fingerprints(game, base, lambda _: {})
+            self.assertIn('LocalData/Patch/HD/oversea/MANIFEST', stamps)
+            (patch / 'MANIFEST').write_bytes(b'second patch')
+            self.assertNotEqual(installed_fingerprints(game, base, lambda _: {}), stamps)
+
     def test_lua_topic_symbols_require_direct_constant_assignments(self):
         word = 24 | (1 << 15) | (1 << 24)
         tree = {'constants': ['TOPIC_WORLD_AREA', 102], 'instructions': [word]}
@@ -88,7 +101,10 @@ class AssetPipelineTests(unittest.TestCase):
             fixture(root / 'stage')
             publish(root / 'stage', root / 'published')
             previous = (root / 'published/current/tables.json').read_bytes()
+            previous_temp = root / 'published/current.tmp'
+            previous_temp.write_bytes(b'pre-existing pointer draft')
             publish(root / 'stage', root / 'published')
+            self.assertEqual(previous_temp.read_bytes(), b'pre-existing pointer draft')
             self.assertEqual(json.loads((root / 'published/current.json').read_text())['release'], 'current')
             self.assertFalse((root / 'published/releases').exists())
             backups = list((root / '.asset-backups').glob('*-previous/tables.json'))

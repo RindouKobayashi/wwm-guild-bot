@@ -19,6 +19,19 @@ from extract_martial import pack
 
 
 class MartialTests(unittest.TestCase):
+    def test_supplemental_page_is_bound_to_named_primary_page(self):
+        from maintenance.assets.named_mtable import binding
+
+        header = struct.pack('<6I', 0x10001, 8, 1, 1, 0, 0)
+        name = struct.pack('<H', 6) + b'kongfu'
+        record = struct.pack('<8I', 1, 1, 2 | (30 << 16), 1001 | (20 << 16), 0, 0, 0, 1024)
+        pages = struct.pack('<4H', 2, 31, 1001, 21)
+        result = binding(header + name + record + pages, 'kongfu', page_links=True)
+        self.assertEqual(result['supplemental_schema'], {'archive': 'index1001', 'frame': 20})
+        self.assertEqual(result['supplemental_pages'], [{'archive': 'index1001', 'frame': 21}])
+        with self.assertRaisesRegex(ValueError, 'does not match its primary schema'):
+            binding(header + name + record + struct.pack('<4H', 2, 32, 1001, 21), 'kongfu', page_links=True)
+
     def test_bundle_roundtrip_and_integrity(self):
         from test_game_asset_pipeline import fixture
         from extract_martial import copy_export

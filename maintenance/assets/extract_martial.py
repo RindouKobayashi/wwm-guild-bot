@@ -60,6 +60,66 @@ def read_tables(root,cat,required,key,U,D,locale):
     return rows,evidence
 
 
+def supplemental_rows(root, overlay, table, key, D, locale):
+    from maintenance.assets.named_mtable import installed_binding
+
+    binding = installed_binding(overlay, table, page_links=True)
+    frame_cache = {}
+    files = {}
+
+    def installed_frames(filename):
+        if filename not in frame_cache:
+            patched = overlay / filename
+            path = patched if patched.is_file() else root / filename
+            files[filename] = {'sha256': digest(path), 'layer': 'patch' if path.parent != root else 'base'}
+            frame_cache[filename] = dict(D.U.frames(path))
+        return frame_cache[filename]
+
+    schema = D.decode_name_list(installed_frames(binding['archive'])[binding['frame']])
+    if not schema or key not in schema:
+        raise ValueError('Invalid named martial schema: ' + table)
+    extension = binding.get('supplemental_schema')
+    if extension:
+        fields = D.decode_name_list(installed_frames(extension['archive'])[extension['frame']])
+        if not fields or set(fields) & set(schema) or len(fields) != len(set(fields)):
+            raise ValueError('Invalid martial schema extension: ' + table)
+        schema = [*schema, *fields]
+
+    rows = {}
+    seen = set()
+    empty_locators = []
+    for page in binding['supplemental_pages']:
+        raw = installed_frames(page['archive'])[page['frame']]
+        entries = D.U.frame_records(raw)
+        if len(raw) < 24 or len(entries) != struct.unpack_from('<Q', raw, 8)[0]:
+            raise ValueError('Invalid named supplemental martial index: ' + table)
+        for identity, locator, *_ in entries:
+            if identity in seen:
+                raise ValueError('Duplicate named supplemental martial row')
+            seen.add(identity)
+            if locator == b'\0' * 8:
+                empty_locators.append(identity)
+                continue
+            a, f, offset, size = struct.unpack('<4H', locator)
+            data = installed_frames('data'+str(a))[f]
+            payload = data[offset*8:(offset+size)*8]
+            if len(payload) != size * 8:
+                raise ValueError('Truncated named supplemental martial row')
+            reader = D.U.Reader(payload)
+            row = decode(reader, schema)
+            if row.get(key) != identity or any(payload[reader.pos:]):
+                raise ValueError('Supplemental martial row identity or padding differs')
+            name = row.get('name')
+            row['name'] = locale.get(name, name)
+            if isinstance(row['name'], str):
+                row['name'] = row['name'].strip()
+            row['source'] = {**page, 'table': table, 'locator': locator.hex(),
+                             'kind': 'manifest_linked_supplemental_page'}
+            rows[identity] = row
+    return {str(key): row for key, row in rows.items()}, dict(binding=binding, records=len(rows), files=files,
+                                                              empty_locators=sorted(empty_locators))
+
+
 from utility.martial_data import validate
 
 
@@ -89,6 +149,20 @@ def extract(toolkit,game,out):
     root=game/'Package/HD/oversea';cat=catalogue(root,toolkit/'cache/table_schema_catalogue.json');locale=D.all_english_strings(root)
     kungfu,ks=read_tables(root,cat,{'kongfu_id','liupai_id','kongfu_icon','name'},'kongfu_id',D.U,D,locale)
     paths,ps=read_tables(root,cat,{'liupai_small_icon','liupai_id','name'},'liupai_id',D.U,D,locale)
+    overlay = game / 'LocalData/Patch/HD/oversea'
+    if not (overlay / 'MANIFEST').is_file():
+        overlay = root
+    extra_kungfu, kungfu_pages = supplemental_rows(root, overlay, 'kongfu', 'kongfu_id', D, locale)
+    extra_paths, path_pages = supplemental_rows(root, overlay, 'neigong_liupai_data', 'liupai_id', D, locale)
+    for existing, extra, fields, evidence in ((kungfu, extra_kungfu, ('name', 'liupai_id'), kungfu_pages),
+                                              (paths, extra_paths, ('name', 'liupai_small_icon'), path_pages)):
+        overlap = existing.keys() & extra.keys()
+        conflicts = [identity for identity in overlap if any(existing[identity].get(field) != extra[identity].get(field)
+                                                              for field in fields)]
+        if conflicts:
+            raise ValueError('Conflicting named martial display records: ' + ', '.join(sorted(conflicts)))
+        evidence['existing_ids_verified'] = sorted(overlap, key=int)
+        existing.update({identity: row for identity, row in extra.items() if identity not in existing})
     selected={k:r for k,r in kungfu.items() if r.get('liupai_id') is not None and isinstance(r.get('name'),str) and r['name']}
     unresolved=[k for k,r in kungfu.items() if r.get('liupai_id') is not None and (not isinstance(r.get('name'),str) or not r['name'])]
     if unresolved:raise ValueError('Unresolved localized kungfu IDs: '+str(unresolved))
@@ -110,6 +184,7 @@ def extract(toolkit,game,out):
         path=result['paths'][str(row['liupai_id'])]
         result['kungfu'][key]=dict(name=row['name'],path_id=row['liupai_id'],icon_key=path['icon_key'],icon_sha256=path['icon_sha256'],source=row['source'])
     result['sources']['artwork']=dict(registry_sha256=manifest['registry_sha256'],physical_lookup=manifest.get('physical_lookup'),selection='overseas regular UI variant; 4k excluded')
+    result['sources']['supplemental_pages'] = {'kungfu': kungfu_pages, 'paths': path_pages}
     result['sources']['game_version']=None
     result['sources']['version_note']='Installed content identified by index/registry fingerprints; no authoritative semantic version supplied.'
     pack(result,out);validate(result)

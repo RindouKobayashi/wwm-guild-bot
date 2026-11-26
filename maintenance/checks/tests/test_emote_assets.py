@@ -12,6 +12,7 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path[:0] = [str(ROOT), str(ROOT / 'maintenance/assets')]
 from utility.emotes import EmoteResolver, key, validate, inspect_image
 from utility.game_assets import digest
+from emote_animation import reuse_published_animation
 
 
 def fixture(root):
@@ -37,6 +38,29 @@ class EmoteAssetsTests(unittest.TestCase):
     def tearDown(self): self.temp.cleanup()
 
     def resolver(self): return EmoteResolver(self.assets, self.root / 'manual')
+
+    def test_animation_reuse_needs_matching_original_bytes(self):
+        from PIL import Image
+
+        published = self.root / 'emotes'
+        output = self.root / 'new'
+        (output / 'art').mkdir(parents=True)
+        entry = dict(self.data['entries']['101'], status='animated', effect='repeat')
+        gif = published / 'art/topic_101.gif'
+        frames = [Image.new('RGB', (32, 32), color) for color in ('red', 'blue')]
+        frames[0].save(gif, save_all=True, append_images=frames[1:], duration=40, loop=0)
+        inputs = dict(lua={'sha256': 'script'}, csb='layout', csb_sha256='layout-hash', puppet='puppet',
+                      puppet_uuid='identifier', puppet_sha256='skeleton', texture_sha256='image', atlas_transform={})
+        entry.update(image='art/topic_101.gif', image_sha256=digest(gif),
+                     animation={**inputs, 'registry_sha256': 'previous',
+                                'capture': {'animation': 'vx_loop', 'fps': 30, 'max_size': 384}})
+        job = {'effect': 'repeat', 'evidence': {**inputs, 'registry_sha256': 'current'}}
+        changed = {'effect': 'repeat', 'evidence': {**inputs, 'texture_sha256': 'replacement'}}
+        self.assertIsNone(reuse_published_animation(entry, published, changed, output))
+        self.assertFalse((output / entry['image']).exists())
+        reused = reuse_published_animation(entry, published, job, output)
+        self.assertEqual(digest(output / entry['image']), entry['image_sha256'])
+        self.assertEqual(reused['animation']['registry_sha256'], 'current')
 
     def test_numeric_ids_and_traversal(self):
         for value in (True, None, {}, [], '../101', '1/101', -1, '0', '9'*20): self.assertIsNone(key(value))

@@ -86,7 +86,7 @@
         "Skygrasp Rope Dart: Radiance - Execute",
         "Skygrasp Rope Dart",
         "Heavenwill Gauntlets",
-        "Heavenwill Gauntlets: EX",
+        "Heavenwill Gauntlet: EX",
         "Heavenwill Gauntlets: Radiance - Pierce",
         "Heavenwill Gauntlets: Radiance",
         "Skygrasp Rope Dart: EX",
@@ -135,6 +135,17 @@
       "kungfu": [
         "Skystrike Gauntlets",
         "Riven Twinblades"
+      ]
+    },
+    {
+      "key": "path_15",
+      "name": "wwm_path_15_feadaf13",
+      "file": "icons/path_15.png",
+      "sha256": "feadaf13bf9b29ecad00bcb212f47b125de804da6c4d9d6257698576ffc1f641",
+      "path_name": "Bellstrike - Bolt",
+      "kungfu": [
+        "Peakwane Spear",
+        "Trialedge Spear"
       ]
     },
     {

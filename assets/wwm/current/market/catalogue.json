@@ -198,20 +198,20 @@
       "frame": 16480,
       "records": 21,
       "pages": 1,
-      "manifest_slot": 81652,
-      "record_hex": "150000000100000001006040ffffffffe2643b03000000008c55010000040000",
-      "manifest_sha256": "2c51e2d69202c9fbd1c20325b5c791f873f177449f094d64b7b13e62d97f5a28",
+      "manifest_slot": 81681,
+      "record_hex": "150000000100000001006040ffffffffe2643b0300000000a955010000040000",
+      "manifest_sha256": "c344cbe35259f0b8e4d7881f6025b022653b3fd7896563ef97fd9d630ad78596",
       "decoded_primary_records": 21
     },
     "items": {
       "table": "stuff_items",
       "archive": "index4",
       "frame": 11132,
-      "records": 13594,
+      "records": 13764,
       "pages": 53,
-      "manifest_slot": 113755,
-      "record_hex": "1a3500003500000004007c2be90320217f41fd0900000000613e020000040000",
-      "manifest_sha256": "2c51e2d69202c9fbd1c20325b5c791f873f177449f094d64b7b13e62d97f5a28",
+      "manifest_slot": 113956,
+      "record_hex": "c43500003500000004007c2be903d8247f41fd0900000000473f020000040000",
+      "manifest_sha256": "c344cbe35259f0b8e4d7881f6025b022653b3fd7896563ef97fd9d630ad78596",
       "decoded_primary_records": 13525,
       "selected_item_count": 21
     },
@@ -518,7 +518,7 @@
         ]
       }
     ],
-    "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+    "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
     "join": "API main_good -> product key good_item_id -> stuff_items primary key -> name/icon_no; product id is a different value"
   }
 }

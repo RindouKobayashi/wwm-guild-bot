@@ -431,7 +431,7 @@
       }
     },
     "209015": {
-      "name": "Heavenwill Gauntlets: EX",
+      "name": "Heavenwill Gauntlet: EX",
       "path_id": 12,
       "icon_key": "path_12",
       "icon_sha256": "78e5a7e9b077f099d92c06834db031105aee794b1971af7c86f8bad3a108963d",
@@ -2970,6 +2970,32 @@
         "frame": 10951,
         "locator": "d0001708db03ed01"
       }
+    },
+    "20205": {
+      "name": "Peakwane Spear",
+      "path_id": 15,
+      "icon_key": "path_15",
+      "icon_sha256": "feadaf13bf9b29ecad00bcb212f47b125de804da6c4d9d6257698576ffc1f641",
+      "source": {
+        "archive": "index1001",
+        "frame": 4818,
+        "table": "kongfu",
+        "locator": "ee030f00fe01fd01",
+        "kind": "manifest_linked_supplemental_page"
+      }
+    },
+    "20204": {
+      "name": "Trialedge Spear",
+      "path_id": 15,
+      "icon_key": "path_15",
+      "icon_sha256": "feadaf13bf9b29ecad00bcb212f47b125de804da6c4d9d6257698576ffc1f641",
+      "source": {
+        "archive": "index1001",
+        "frame": 4818,
+        "table": "kongfu",
+        "locator": "ee030f000000fe01",
+        "kind": "manifest_linked_supplemental_page"
+      }
     }
   },
   "paths": {
@@ -3037,6 +3063,21 @@
         "locator": "08001d0826031d00"
       },
       "original_sha256": "5440afab7cc8a1a53d9d42e134018a7c97111f2ce67827cc1ac2aa26e3633324"
+    },
+    "15": {
+      "name": "Bellstrike - Bolt",
+      "icon_key": "path_15",
+      "file": "art/path_15.png",
+      "resource": "shuangqiang_small_1_oversea_0_0_ui",
+      "icon_sha256": "feadaf13bf9b29ecad00bcb212f47b125de804da6c4d9d6257698576ffc1f641",
+      "source": {
+        "archive": "index1001",
+        "frame": 6760,
+        "table": "neigong_liupai_data",
+        "locator": "ed036d0157031e00",
+        "kind": "manifest_linked_supplemental_page"
+      },
+      "original_sha256": "fa3eb4cb7cce098c6854eb9fe4098d6f68642fb257c7d3f7c7da1dcd65e1ea00"
     },
     "2": {
       "name": "Stonesplit - Strength",
@@ -3313,25 +3354,25 @@
       "index202": "8937aca7044ac84da44b53d862cb5d81f03c745eeae945e502b34812b7f2436f",
       "index203": "a03212dc68680f593f63fb04a51643817f07062e68dd5525384d3694bc83379c",
       "index204": "51ddf021fe062e29ad36102224e1b29ef33e36fc914471d9df831b58425c1e85",
-      "index1001": "1264ebf5dffd46c121cfc03fd991e11a97cb9a5bd4f2c1f394cb4e6a7b6d0a4c",
-      "index1200": "8b323da7d12d2d46024088f138370c8bebf6d7c0a1192048e3106f44d27abe4b"
+      "index1001": "b3298018587500217b02c1af03756c6a8a9e87767352fab8be71665dabf79ca2",
+      "index1200": "960dc9aadc0c1bfc8eb0049c88a4f33079a3d12ba9b84742e94b145d995c105d"
     },
     "artwork": {
-      "registry_sha256": "e5eb49c3ac6bf8219f4f4dc78bf8b1bf887a0adaa77f0bb0ddacbd0d5866fce0",
+      "registry_sha256": "d66741b7c9db471e7e483942026fbf54b40c81f2abd157592471bef3ec110eda",
       "physical_lookup": {
         "scope": "base+LT+patch",
         "sources": [
           {
             "path": "Resources.mpkinfo",
-            "sha256": "74e85b1a0e82b5f7c241bec1d2676a612ac9936a99ccc32bfe1c85390d0ee917"
+            "sha256": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74"
           },
           {
             "path": "LocalData\\Patch\\LT1.mpkinfo",
-            "sha256": "353f314a629bbcd842b024931296e2c3ceb062aeb41607b043416cc0c29afc71"
+            "sha256": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
           },
           {
             "path": "LocalData\\Patch\\Patch.mpkdb",
-            "sha256": "084d265031cf7e9dd61ea7b90b39a034aeb63d5fe5504e358a8cfd6f21c3c017"
+            "sha256": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a"
           }
         ],
         "lt_indexes": [
@@ -3341,6 +3382,133 @@
         "missing_file_ids": []
       },
       "selection": "overseas regular UI variant; 4k excluded"
+    },
+    "supplemental_pages": {
+      "kungfu": {
+        "binding": {
+          "table": "kongfu",
+          "archive": "index2",
+          "frame": 1494,
+          "records": 294,
+          "pages": 2,
+          "manifest_slot": 82468,
+          "record_hex": "26010000020000000200d605e903d012c380bc5800000000345d010000040000",
+          "supplemental_schema": {
+            "archive": "index1001",
+            "frame": 4816
+          },
+          "supplemental_pages": [
+            {
+              "archive": "index1001",
+              "frame": 4817
+            },
+            {
+              "archive": "index1001",
+              "frame": 4818
+            }
+          ],
+          "manifest_sha256": "78177b4d619b847ef725bd4ad691979312bcb785237787e486f3b55c3a55a55f"
+        },
+        "records": 33,
+        "files": {
+          "index2": {
+            "sha256": "c2d33e0a165fb331a0cf6881d4ed6fbbe6c1fc190387d795b7b3cdff94a881df",
+            "layer": "base"
+          },
+          "index1001": {
+            "sha256": "64e05c0577d31de81d4ed0a3857a3210e4aa88312163caa4b866d645c3d5b525",
+            "layer": "patch"
+          },
+          "data1001": {
+            "sha256": "0506e743fb2710f962f559eae205fb45be5024d5124922f980416c723c6c1760",
+            "layer": "base"
+          },
+          "data1002": {
+            "sha256": "102f51c907f926aa48fee532187d164d745cb09aa90a350a6f6b70ec84fb0591",
+            "layer": "base"
+          },
+          "data1003": {
+            "sha256": "a28671c4d50b71bbbfdf0322643a20660b2e952552ba3b5893943de5b54c92a1",
+            "layer": "base"
+          },
+          "data1006": {
+            "sha256": "27d7b8da37ead26f29286d44391b5c7ebd47188cc13d0c0afec84e1d44d5f445",
+            "layer": "patch"
+          }
+        },
+        "empty_locators": [
+          10113,
+          10114
+        ],
+        "existing_ids_verified": [
+          "10202",
+          "20901",
+          "20902",
+          "21001",
+          "103015",
+          "205015",
+          "207035",
+          "10301010",
+          "10301011",
+          "10301012",
+          "10301020",
+          "10301021",
+          "10301030",
+          "10301031",
+          "10301032",
+          "20501010",
+          "20501011",
+          "20501012",
+          "20501020",
+          "20501021",
+          "20501030",
+          "20501031",
+          "20501032",
+          "20703010",
+          "20703011",
+          "20703012",
+          "20703020",
+          "20703021",
+          "20703030",
+          "20703031",
+          "20703032"
+        ]
+      },
+      "paths": {
+        "binding": {
+          "table": "neigong_liupai_data",
+          "archive": "index3",
+          "frame": 787,
+          "records": 14,
+          "pages": 1,
+          "manifest_slot": 84851,
+          "record_hex": "0e0000000100000003001303ffffffff6361ae1200000000eb86010000040000",
+          "supplemental_pages": [
+            {
+              "archive": "index1001",
+              "frame": 6760
+            }
+          ],
+          "manifest_sha256": "78177b4d619b847ef725bd4ad691979312bcb785237787e486f3b55c3a55a55f"
+        },
+        "records": 1,
+        "files": {
+          "index3": {
+            "sha256": "82666901fe9377e6a1a8033a30ba42b79ad1f714b972ad5b17cfebec44aef92a",
+            "layer": "base"
+          },
+          "index1001": {
+            "sha256": "64e05c0577d31de81d4ed0a3857a3210e4aa88312163caa4b866d645c3d5b525",
+            "layer": "patch"
+          },
+          "data1005": {
+            "sha256": "929c74c67960141eba9ecc3af85fffe5d0420c9d5412d2d03ee4ab3173f9a502",
+            "layer": "patch"
+          }
+        },
+        "empty_locators": [],
+        "existing_ids_verified": []
+      }
     },
     "game_version": null,
     "version_note": "Installed content identified by index/registry fingerprints; no authoritative semantic version supplied."

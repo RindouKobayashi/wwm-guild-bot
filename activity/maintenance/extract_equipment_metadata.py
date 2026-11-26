@@ -45,8 +45,8 @@ def main():
             fields=table['fields'];row={fields[k]:v for k,v in raw.items() if isinstance(k,int) and 0<=k<len(fields)}
             if row.get('id',row.get('level',key))!=key:continue
             decoded.append(row)
-    wanted={r[k] for r in decoded for k in ['name','slot_name'] if isinstance(r.get(k),int)};strings={}
-    for name in codec.LOCALIZATION_FILES:strings.update(codec.lookup_file(args.game_root/'locale'/name,wanted)[0])
+    wanted={r[k] for r in decoded for k in ['name','slot_name'] if isinstance(r.get(k),int)}
+    strings, _, _ = codec.localize(args.game_root, [{'name_key': key} for key in wanted])
     sets={};slots={};legacy={}
     for row in decoded:
         if 'value_add_2' in row and isinstance(row.get('name'),int) and row['name'] in strings:sets[str(row['id'])]=strings[row['name']]

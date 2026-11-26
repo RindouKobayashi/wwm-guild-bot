@@ -26,6 +26,21 @@ def pointer(base):
     return path.resolve() if path.is_absolute() else (base / path).resolve()
 
 
+def installed_fingerprints(game, table_root, table_fingerprints):
+    stamps = table_fingerprints(table_root)
+    patch = game / 'LocalData/Patch'
+    patch_tables = patch / 'HD/oversea'
+    if patch_tables.is_dir():
+        stamps.update({'LocalData/Patch/HD/oversea/' + key.replace('\\', '/'): value
+                       for key, value in table_fingerprints(patch_tables).items()})
+    paths = (table_root / 'MANIFEST', game / 'Resources.mpkinfo', patch_tables / 'MANIFEST',
+             patch / 'Patch.mpkdb', patch / 'Patch.mpkdb-wal', *sorted(patch.glob('LT*.mpkinfo')))
+    for path in paths:
+        if path.is_file():
+            stamps[path.relative_to(game).as_posix()] = digest(path)
+    return stamps
+
+
 def run_step(python, script, arguments, logs, name):
     print('Updating ' + name + ' ...', flush=True)
     with (logs / (name + '.log')).open('w', encoding='utf-8') as handle:
@@ -46,7 +61,7 @@ def publish(stage, destination=ROOT):
     destination.mkdir(parents=True, exist_ok=True)
     shutil.copytree(stage, incoming)
     validate_release(incoming)
-    temp = destination / 'current.tmp'
+    temp = destination / (name + '.tmp')
     write(temp, {'release': 'current', 'manifest_sha256': digest(incoming / 'manifest.json')})
     replaced = False
     installed = False
@@ -63,6 +78,8 @@ def publish(stage, destination=ROOT):
         if replaced:
             previous.rename(target)
         raise
+    finally:
+        temp.unlink(missing_ok=True)
     return target
 
 
@@ -173,10 +190,7 @@ def main():
                 python = Path(sys.executable)
             sys.path.insert(0, str(toolkit / 'app'))
             from update_game_data import fingerprints
-            before = fingerprints(table_root)
-            registry = game / 'Resources.mpkinfo'
-            if registry.exists():
-                before['Resources.mpkinfo'] = digest(registry)
+            before = installed_fingerprints(game, table_root, fingerprints)
             provenance['source_sha256'] = before
             previous = existing.manifest.get('provenance', {})
             unchanged = before == previous.get('source_sha256')
@@ -226,9 +240,7 @@ def main():
             if args.include_avatars:
                 run_step(python, toolkit / 'app/scan_game_avatars.py', ['--game-root', game], work, 'avatars')
                 provenance['warnings'].append('Avatar source/render exports refreshed in Toolkit. Unsupported effects remain unresolved; no invented composites. Runtime avatar publishing is not yet enabled.')
-            after = fingerprints(table_root)
-            if registry.exists():
-                after['Resources.mpkinfo'] = digest(registry)
+            after = installed_fingerprints(game, table_root, fingerprints)
             if before != after:
                 raise ValueError('Game changed during update; previous release retained')
             if args.only:

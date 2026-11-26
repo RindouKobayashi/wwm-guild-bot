@@ -2,10 +2,10 @@
   "source_sha256": {
     "dungeons\\trial_rank_ids.csv": "051114e44af54b19be6eee1aaa1f210ea8e965c79062367a1ada96dced071c01",
     "dungeons\\trial_dungeons.csv": "042abecf59193bfba07f5bd113ece7a657557c9e4d434906f6fa54a5d224036c",
-    "dungeon_library\\art_manifest.json": "bfd8f2b4147f59c6a4e6f3271370430a365879f58c6261493c75714828ac6f4c",
+    "dungeon_library\\art_manifest.json": "92c3997069c924b32c159dcf1e3f03dc7a8021cd9ca9b27eb336dfd7ef5bdab0",
     "dungeon_library\\dungeon_catalogue.json": "2b2c352ee1902811ed3e49a8646b66c42b805dad5f5480ff69a25fcd69495b24",
     "bindings.json": "1d1f9fabfa69810434d6b24cb4deb336f11dccff5ee6ddb1a499dce804fc802b",
-    "art_manifest.json": "94ce3d2867d9bf31f157d62660e157a2aa6bef97ab77c12a30c7e8d6b443959a",
+    "art_manifest.json": "f2ce09d2435980ad3ad965e0259396a9de05cd8bffb9b20d4fbb3f33560dce58",
     "dungeon_card_reviews.json": "229685607b41a387a5b0d5901e477d39d8d018076019ffdfef05317788146098",
     "art_selection_policy": "readable-dungeon-artwork-paths-v10"
   },

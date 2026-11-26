@@ -1,6 +1,6 @@
 {
   "format": 1,
-  "note": "Reviewed current chat namespace/rendering source. Reverify control flow before accepting a changed Lua hash; presence of constants alone is insufficient.",
+  "note": "Reviewed current chat namespace/rendering source. November 26 2026 atlas loader rechecked: load_all_plist reads all_png_data.get(1).get('all'), formats each entry as UIScript/plist/%s, and passes the resulting list to SpriteFrameCache:addSpriteFramesWithFiles. Other source hashes were unchanged. Reverify control flow before accepting a changed Lua hash.",
   "sources": {
     "hexm/common/consts/chat_consts.lua": "7f6351ff8a14ba720acff24393a7cddf7ba21a40a3c9908965d66fea5dcc17ba",
     "hexm/client/ui/windows/chat/chat_content/msg_style_config.lua": "bbe2a7e46bddf6b73c85d4a4433cf4cf8f22c8e00f3bfe9b7325257b9b613cac",
@@ -8,7 +8,7 @@
     "hexm/client/ui/windows/chat/chat_content/msg_components/pic.lua": "c1457e30e3c328e8b1a0e80e0b862a4604e3bf42819028f11e45c1414b4f03de",
     "hexm/client/ui/controllers/richtext_component/richtext_config.lua": "2bf8533b11dfe9fe7ff411c93951aad2fb4502273286deb2189951be3c4020f3",
     "hexm/client/ui/controllers/richtext_component/richtext_base_component.lua": "7c2db78f8fc95bfd3c88dea28e8e5354bc5458f3f0cb54ebd51d3ea16e31b86f",
-    "hexm/client/ui/manager/cocos.lua": "597f47e664a8ab126ffc48e98728c241bcfbd38762cf0fefe4b5d08951722b0c",
+    "hexm/client/ui/manager/cocos.lua": "a3a1aa16ecb2a7f2a1fd28649ed03db38351b6ac0d974e1f906636ff1649d7ba",
     "hexm/client/ui/windows/chat/chat_rich_text_field.lua": "2ccd2ea5a73f30f5aef4523b45c4a9152907815dd4b9c73b085360e9c80954eb",
     "hexm/common/misc/chat_misc.lua": "0679a2c06e15db45e036ab89b3f00ac3eba47eb343dfbbc7135a32e00c763b50",
     "hexm/client/ui/windows/chat/chat_content/msg_components/normal_msg.lua": "436c36a129b6b20d9267e34bf69bcf790f74373c7034fff72c4d2ceeb048a0ed"

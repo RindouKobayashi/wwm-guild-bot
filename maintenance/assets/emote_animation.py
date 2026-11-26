@@ -2,6 +2,7 @@
 import hashlib
 import json
 from pathlib import Path
+import shutil
 import subprocess
 from unittest.mock import patch
 
@@ -89,18 +90,57 @@ def prepare(toolkit, game, entries, work):
     return jobs, failures
 
 
+def reuse_published_animation(entry, published, job, output):
+    """Reuse verified rendered bytes when the actual animation inputs match."""
+    from utility.emotes import inspect_image
+    from utility.game_assets import digest, inside
+
+    if entry.get('status') != 'animated' or entry.get('effect') != job['effect']:
+        return None
+    old = entry.get('animation', {})
+    evidence = job['evidence']
+    inputs = ('lua', 'csb', 'csb_sha256', 'puppet', 'puppet_uuid', 'puppet_sha256', 'texture_sha256', 'atlas_transform')
+    if any(key not in old or old[key] != evidence[key] for key in inputs):
+        return None
+    capture = old.get('capture', {})
+    if (capture.get('animation'), capture.get('fps'), capture.get('max_size')) != ('vx_loop', 30, 384):
+        return None
+    files = [inside(published, entry[key]) for key in ('image', 'preview')]
+    if [digest(path) for path in files] != [entry['image_sha256'], entry['preview_sha256']]:
+        return None
+    for path in files:
+        inspect_image(path)
+        shutil.copy2(path, output / 'art' / path.name)
+    animation = {**old, **evidence}
+    return dict(image=entry['image'], image_sha256=entry['image_sha256'], preview=entry['preview'],
+                preview_sha256=entry['preview_sha256'], status='animated', animation=animation)
+
+
 def render(toolkit, game, entries, output):
     """Source-derived loop, sampled at 30fps; no component-only approximations."""
     from wwm import export_spine_asset
     from PIL import Image
     from utility.emotes import inspect_image
-    from utility.game_assets import digest
+    from utility.game_assets import GameAssets, digest
     from extract_emotes import make_gif
     jobs, failures = prepare(toolkit, game, entries, output / 'effects')
+    published = GameAssets()
+    previous_entries = published.tables.get('emotes', {}).get('entries', {})
     for job in jobs:
         effect = job['effect']
         print('  emote animation ' + effect, flush=True)
         try:
+            matches = [(identifier, row) for identifier, row in entries.items() if row.get('effect') == effect]
+            if published.directory:
+                for identifier, row in matches:
+                    reused = reuse_published_animation(previous_entries.get(identifier, {}),
+                                                       published.directory / 'emotes', job, output)
+                    if reused:
+                        row.update(reused)
+                        row.pop('reason', None)
+                        row.pop('animation_failure', None)
+                if all(row['status'] == 'animated' for _, row in matches):
+                    continue
             fingerprint = hashlib.sha256(json.dumps(dict(evidence=job['evidence'], converter=1,
                 fps=30, max_size=384, animation='vx_loop'), sort_keys=True).encode()).hexdigest()
             cache = Path(__file__).resolve().parents[2] / '.asset-builds/emote-animation-cache' / fingerprint
@@ -117,7 +157,6 @@ def render(toolkit, game, entries, output):
             if cached:
                 for identifier, row in entries.items():
                     if row.get('effect') != effect: continue
-                    import shutil
                     gif = output / 'art' / f'topic_{identifier}.gif'; still = output / 'art' / f'topic_{identifier}.png'
                     shutil.copy2(cache / 'animation.gif', gif); shutil.copy2(cache / 'preview.png', still)
                     row.update(image='art/' + gif.name, image_sha256=digest(gif), preview='art/' + still.name,
@@ -158,7 +197,6 @@ def render(toolkit, game, entries, output):
                         note='Original vx_loop, sampled at 30fps; GIF binary alpha. Single unmodified Spine layout only.'))
                 row.pop('reason', None)
                 row.pop('animation_failure', None)
-                import shutil
                 cache.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(target, cache / 'animation.gif'); shutil.copy2(still, cache / 'preview.png')
                 (cache / 'receipt.json').write_text(json.dumps(dict(gif_sha256=digest(target),
