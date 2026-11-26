@@ -211,7 +211,8 @@ class PortableTests(unittest.TestCase):
         sequence = iter(statuses)
         class Client:
             def post(self, url, **kwargs):
-                calls.append({'headers': dict(kwargs['headers']), 'payload': msgpack.unpackb(kwargs['data'], raw=False)})
+                calls.append({'headers': dict(kwargs['headers']), 'payload': msgpack.unpackb(kwargs['data'], raw=False),
+                              'wire_body': kwargs['data']})
                 return Reply(next(sequence))
         scope = dict(WWM_HOST='example.invalid', WWM_UID='legacy-account', WWM_AUTH_MODE='saved_login',
                      asyncio=asyncio, aiohttp=aiohttp, msgpack=msgpack, logger=Mock(),
@@ -230,7 +231,9 @@ class PortableTests(unittest.TestCase):
         self.assertEqual(original['uid'], 'legacy-account')
         self.assertEqual(calls[0]['payload']['uid'], 'callback')
         self.assertEqual(calls[0]['headers']['h72-ms-uid'], PID + '_callback')
-        self.assertEqual(calls[1]['headers']['h72-ms-token'], replacement)
+        from wwm_auth.signing import sign_request
+        self.assertEqual(calls[0]['headers']['h72-ms-token'], sign_request(TOKEN, '/', calls[0]['wire_body']))
+        self.assertEqual(calls[1]['headers']['h72-ms-token'], sign_request(replacement, '/', calls[1]['wire_body']))
         refresh.assert_awaited_once_with(force=True, rejected_token=TOKEN)
 
     def test_explicit_api_token_is_not_replaced_after_rejection(self):

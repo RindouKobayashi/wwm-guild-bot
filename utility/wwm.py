@@ -265,6 +265,10 @@ async def _wwm_api_post(
     if token:
         headers["h72-ms-token"] = token
 
+    # Keep the upstream credential for cache/rejection handling. The v3 wire
+    # header is a different signature for each exact path/body combination.
+    managed_credential = headers['h72-ms-token'] if WWM_AUTH_MODE == 'saved_login' and not token else None
+
     session = await get_session()
     req_timeout = aiohttp.ClientTimeout(total=timeout)
 
@@ -277,6 +281,11 @@ async def _wwm_api_post(
             # Pack payload unless raw bytes are explicitly provided
             request_data = raw_payload if raw_payload is not None else msgpack.packb(payload)
             attempt_record['request_bytes'] = len(request_data)
+            if managed_credential is not None:
+                from yarl import URL
+                from wwm_auth.signing import sign_request
+                headers['h72-ms-token'] = sign_request(managed_credential, URL(url).raw_path_qs, request_data)
+                headers['h72-ts'] = str(int(request_clock.time()))
 
             async with session.post(
                 url,
@@ -309,14 +318,13 @@ async def _wwm_api_post(
                 if response.status in (401, 403):
                     if WWM_AUTH_MODE == 'saved_login' and not token and not auth_refreshed and attempt < max_retries:
                         from wwm_auth.service import get_token_async
-                        rejected = headers['h72-ms-token']
-                        headers['h72-ms-token'] = await get_token_async(force=True, rejected_token=rejected)
+                        managed_credential = await get_token_async(force=True, rejected_token=managed_credential)
                         auth_refreshed = True
                         continue
                     logger.warning(
                         "WWM API authorization rejected at %s: HTTP %s. "
                         "Check token source and expiry; the updated client uses "
-                        "ms_request_token2 rather than the legacy local signer. "
+                        "request signatures derived from ms_request_token2. "
                         "This response alone does not distinguish expiry from other authorization failures.",
                         url, response.status,
                     )

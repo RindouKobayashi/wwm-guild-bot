@@ -6,6 +6,35 @@ research-output or Windows DPAPI runtime dependency. The saved context is still
 a private TEST-account game login, not anonymous access or a locally generated
 API signature. It may replace a lingering session of that configured test account.
 
+## After the November 26 update: request signing
+
+A successful saved TEST-game recording now shows request-specific
+`digest:timestamp` API headers. The October 18 recording instead reused one
+`timestamp:hex` value. The ordinary SDK request still uses version 2.2.6, and its
+captured signature matches the existing configured signing key. Those observations
+do not prove a fresh headless Steam renewal or date backend enforcement changes.
+
+Managed requests now follow the selected original v3 helper: split the supplied
+native `ms_request_token2` credential into `timestamp:secret`, then send
+`MD5(path | secret | exact MessagePack bytes):timestamp`, with literal pipe
+separators. The request body is packed before signing. The cached native credential
+is retained for refresh comparisons; a per-request signature is never reused as
+that credential. Explicit `token=` overrides remain caller-supplied wire headers.
+This calculation requires the supplied native credential and does not generate it.
+
+The protected own-character validation uses the same signer. A received credential
+that fails API validation is reported separately from a missing credential.
+`avatar_entity` means the helper selected the character but is waiting for the
+owned avatar; `avatar_token` means that avatar was created. Failed attempts print
+only fixed progress flags and numeric counts/statuses, also retained privately in
+`failure.json`. No credential values are included.
+
+The November 26 patch passed 32 offline tests and one authorized Windows TEST
+validation: one native credential was retrieved, and one signed own-character
+lookup returned HTTP 200 / code 0 with the expected character. That validation
+reused the captured SDK login in memory, made no Steam/SDK renewal requests and
+changed no private caches. The Pi deployment and its saved login remain untested.
+
 ## After the November 13 update: connection timeout
 
 The old saved connection address can time out before any Steam/SDK login. The

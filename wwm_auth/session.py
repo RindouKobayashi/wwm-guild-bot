@@ -78,7 +78,7 @@ class Session:
             if method != 2 or [v for n, w, v in rows if (n, w) == (2, 0)] != [2 if redirect else 1]:
                 raise ValueError('Game connection rejected')
             self.redirect_target = None
-            self.stage = 'avatar_token' if redirect else 'account_entity'
+            self.stage = 'avatar_entity' if redirect else 'account_entity'
             return self
         except BaseException:
             self.close()

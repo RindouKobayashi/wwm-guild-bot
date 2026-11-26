@@ -53,6 +53,10 @@ def main():
     except Exception as exc:
         if isinstance(exc, RuntimeError):
             print('Not ready: ' + str(exc))
+            from .diagnostics import safe_details
+            detail = safe_details(getattr(exc, 'auth_diagnostic', None))
+            if detail:
+                print('Progress (no credentials): ' + json.dumps(detail, sort_keys=True))
             return 1
         print('Not ready: ' + type(exc).__name__ + '. Check private context, permissions and dependencies; see wwm_auth/README.md.')
         return 1

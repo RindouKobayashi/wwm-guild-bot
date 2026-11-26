@@ -10,7 +10,7 @@ import secrets
 import struct
 import time
 from .context import context_path, load, write_private
-from .diagnostics import STAGES, label
+from .diagnostics import STAGES, label, safe_details
 
 _mutex = threading.Lock()
 
@@ -22,6 +22,7 @@ _SAFE_REASONS = frozenset({
     'Test character selection mismatch', 'Relay outside verified game peers',
     'Unsupported transport', 'Expected encrypted SessionKeyOK',
     'No validated token within bounded session', 'Saved login session time limit reached',
+    'Received token was rejected by protected API',
 })
 
 
@@ -139,9 +140,12 @@ def get_token(force=False, rejected_token=None, renew_login=False):
                     report.update(headless_login_renewed=True, steam_calls=1, sdk_requests=1)
             except Exception as error:
                 reason = failure_reason(error)
+                detail = safe_details(getattr(error, 'auth_diagnostic', None))
                 write_private(failure, {'context_sha256': identity, 'retry_after': time.time() + 60,
-                                        'reason': reason, 'stage': label(error)})
-                raise RuntimeError(f'Saved-login token retrieval failed: {reason}. Retry in 60s.') from None
+                                        'reason': reason, 'stage': label(error), 'diagnostic': detail})
+                result = RuntimeError(f'Saved-login token retrieval failed: {reason}. Retry in 60s.')
+                result.auth_diagnostic = detail
+                raise result from None
             write_private(cache, {'context_sha256': identity, 'obtained_at': time.time(), 'token': token})
             write_private(path.parent / 'last-result.json', report)
             failure.unlink(missing_ok=True)

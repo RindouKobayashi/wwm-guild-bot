@@ -15,6 +15,7 @@ from .protocol import (TOKEN, fields, created_owner, account_rpc, incoming_calls
                        token_properties, creation_token_values, only_existing_avatar)
 from .session import Session
 from .diagnostics import stage
+from .signing import sign_request
 
 API_URL = 'https://h72naxx2gb-ms-prod.easebar.com/flk/redis_player/get_players_info'
 
@@ -33,7 +34,9 @@ def validate_token(token, context):
                          'hostnum2pids': {context['character_hostnum']: [pid]}}, use_bin_type=True)
     request = urllib.request.Request(API_URL, body, {
         'Content-Type': 'application/octet-stream', 'Accept-Encoding': 'identity',
-        'h72-ms-token': raw_token.decode('ascii'), 'h72-ms-uid': pid + '_' + callback}, method='POST')
+        'h72-ts': str(int(time.time())),
+        'h72-ms-token': sign_request(raw_token, '/flk/redis_player/get_players_info', body),
+        'h72-ms-uid': pid + '_' + callback}, method='POST')
     class NoRedirect(urllib.request.HTTPRedirectHandler):
         def redirect_request(self, *args, **kwargs):
             return None
@@ -60,11 +63,22 @@ def validate_token(token, context):
 
 
 def retrieve_token(context):
-    report = dict(steam_calls=0, sdk_requests=0, main_account_used=False, api_validation_requests=0)
+    report = dict(steam_calls=0, sdk_requests=0, main_account_used=False, api_validation_requests=0,
+                  account_identity_verified=False, character_selected=False,
+                  owned_avatar_created=False, token_candidates=0, rejected_token_candidates=0)
     with Session(context) as session:
+        def receive():
+            try:
+                return session.receive()
+            except TimeoutError as error:
+                if report['rejected_token_candidates']:
+                    error = ValueError('Received token was rejected by protected API')
+                    error.auth_stage = 'protected_api'
+                error.auth_diagnostic = report.copy()
+                raise error
         owner = None
         for _ in range(16):
-            method, body = session.receive()
+            method, body = receive()
             if method == 12:
                 candidate = created_owner(body)
                 if candidate and candidate['class'] == b'Account':
@@ -84,13 +98,15 @@ def retrieve_token(context):
         verified = selected = confirmed = redirected = False
         owners, pending, checked = set(), {}, set()
         while time.monotonic() < session.deadline:
-            method, body = session.receive()
+            method, body = receive()
             if method == 12:
                 entity = created_owner(body)
                 if entity and entity['class'] == b'PlayerAvatar':
                     if not selected or entity['id'] != context['character_id'].encode('ascii'):
                         raise ValueError('Avatar identity mismatch')
                     owners.add(entity['guid'])
+                    report['owned_avatar_created'] = True
+                    session.stage = 'avatar_token'
                     pending.setdefault(entity['guid'], set()).update(creation_token_values(body))
             if method == 10:
                 for guid, token in token_properties(body):
@@ -109,6 +125,7 @@ def retrieve_token(context):
                         verified = hmac.compare_digest(actual, context['expected_sdkuid_sha256'])
                         if not verified:
                             raise ValueError('Authenticated account mismatch')
+                        report['account_identity_verified'] = True
                     elif label == 'try_to_relay_other':
                         if not verified or confirmed:
                             raise ValueError('Unexpected session handover')
@@ -118,8 +135,9 @@ def retrieve_token(context):
                         if not verified or not confirmed or redirected:
                             raise ValueError('Unexpected avatar relay')
                         session.reconnect_avatar(args)
-                        session.stage = 'avatar_token'
+                        session.stage = 'avatar_entity'
                         selected = redirected = True
+                        report['character_selected'] = True
                         owners.clear()
                         pending.clear()
                         report['test_avatar_reconnected'] = True
@@ -127,18 +145,31 @@ def retrieve_token(context):
                         if not verified or only_existing_avatar(args) != context['character_id']:
                             raise ValueError('Test character selection mismatch')
                         session.send(account_rpc(owner, 'player_login', [context['character_id']]))
-                        session.stage = 'avatar_token'
+                        session.stage = 'avatar_entity'
                         selected = True
+                        report['character_selected'] = True
             for token in (value for guid in owners for value in pending.get(guid, ())):
                 if token in checked:
                     continue
                 checked.add(token)
+                report['token_candidates'] = len(checked)
                 if len(checked) > 2:
                     raise ValueError('Token validation budget reached')
-                accepted, detail = validate_token(token, context)
                 report['api_validation_requests'] += 1
+                try:
+                    accepted, detail = validate_token(token, context)
+                except Exception as error:
+                    error.auth_diagnostic = report.copy()
+                    raise
                 report['validation'] = detail
+                report['last_http_status'] = detail.get('http_status')
+                report['last_result_code'] = detail.get('result_code')
                 if accepted:
                     report['status'] = 'validated_test_token'
                     return token.decode('ascii'), report
-    raise TimeoutError('No validated token within bounded session')
+                report['rejected_token_candidates'] += 1
+    error = (ValueError('Received token was rejected by protected API') if report['rejected_token_candidates']
+             else TimeoutError('No validated token within bounded session'))
+    error.auth_stage = 'protected_api' if report['rejected_token_candidates'] else session.stage
+    error.auth_diagnostic = report.copy()
+    raise error
