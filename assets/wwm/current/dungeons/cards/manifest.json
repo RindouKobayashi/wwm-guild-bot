@@ -1,11 +1,11 @@
 {
   "source_sha256": {
-    "dungeons\\trial_rank_ids.csv": "051114e44af54b19be6eee1aaa1f210ea8e965c79062367a1ada96dced071c01",
+    "dungeons\\trial_rank_ids.csv": "4ec7ee85d743f619842c40403cebdd906754e8785072dbd62347d628feca0ec5",
     "dungeons\\trial_dungeons.csv": "042abecf59193bfba07f5bd113ece7a657557c9e4d434906f6fa54a5d224036c",
-    "dungeon_library\\art_manifest.json": "92c3997069c924b32c159dcf1e3f03dc7a8021cd9ca9b27eb336dfd7ef5bdab0",
+    "dungeon_library\\art_manifest.json": "ee6fbddcc53c033d3679daf86ed3792ca3008f0e39afd0762a5a02382b1d3b90",
     "dungeon_library\\dungeon_catalogue.json": "2b2c352ee1902811ed3e49a8646b66c42b805dad5f5480ff69a25fcd69495b24",
-    "bindings.json": "1d1f9fabfa69810434d6b24cb4deb336f11dccff5ee6ddb1a499dce804fc802b",
-    "art_manifest.json": "f2ce09d2435980ad3ad965e0259396a9de05cd8bffb9b20d4fbb3f33560dce58",
+    "bindings.json": "6ea79a281417a700545b17b05ea7f6fca6607e26d9e0a62941b1408a85904778",
+    "art_manifest.json": "bcf145a6bad140fe4d7a76b7cf3b1c63702442162a778c86f50ecc56b30f9944",
     "dungeon_card_reviews.json": "229685607b41a387a5b0d5901e477d39d8d018076019ffdfef05317788146098",
     "art_selection_policy": "readable-dungeon-artwork-paths-v10"
   },
@@ -20,7 +20,7 @@
           "resource": "wulinlu_tongyou_pic_xj_09",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 63,
               "locator": "0a00ac01e4003000",
               "name": "Dream Jinming Pool",
@@ -29,7 +29,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_09"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 11,
               "locator": "0a00af015c003000",
               "name": "Dream Jinming Pool",
@@ -38,9 +38,18 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_09"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32000,
               "locator": "0a00b20156023000",
+              "name": "Dream Jinming Pool",
+              "rank_id": "rank_team10_dungeon_1",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 90194314223,
+              "locator": "0900610bfe063000",
               "name": "Dream Jinming Pool",
               "rank_id": "rank_team10_dungeon_1",
               "rank_id_replace": [],
@@ -76,7 +85,7 @@
           "resource": "wulinlu_tongyou_pic_xj_08",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 60,
               "locator": "0a00ac015d002d00",
               "name": "The Void King Ye Wanshan",
@@ -85,9 +94,18 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_08"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 12,
               "locator": "0a00af018c002d00",
+              "name": "The Void King Ye Wanshan",
+              "rank_id": "rank_team_dungeon_1",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_08"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 81604379526,
+              "locator": "0900620be8022d00",
               "name": "The Void King Ye Wanshan",
               "rank_id": "rank_team_dungeon_1",
               "rank_id_replace": [],
@@ -121,7 +139,7 @@
           "resource": "wulinlu_tongyou_pic_xj_09",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 64,
               "locator": "0a00ac0114012f00",
               "name": "Dream Jinming Pool",
@@ -130,7 +148,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_09"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32001,
               "locator": "0a00b20186022f00",
               "name": "Dream Jinming Pool",
@@ -139,9 +157,18 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_09"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 15,
               "locator": "0a00af0113012f00",
+              "name": "Dream Jinming Pool",
+              "rank_id": "rank_team10_dungeon_2",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 90194314242,
+              "locator": "0900620b36002f00",
               "name": "Dream Jinming Pool",
               "rank_id": "rank_team10_dungeon_2",
               "rank_id_replace": [],
@@ -177,7 +204,7 @@
           "resource": "wulinlu_tongyou_pic_xj_07",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 61,
               "locator": "0a00ac018a002d00",
               "name": "Ye Wanshan Lucky Seventeen",
@@ -186,9 +213,18 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_07"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 13,
               "locator": "0a00af01b9002d00",
+              "name": "Ye Wanshan Lucky Seventeen",
+              "rank_id": "rank_team_dungeon_2",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_07"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 81604379661,
+              "locator": "0900620bc1032d00",
               "name": "Ye Wanshan Lucky Seventeen",
               "rank_id": "rank_team_dungeon_2",
               "rank_id_replace": [],
@@ -227,7 +263,7 @@
           "resource": "wulinlu_tongyou_pic_xj_11",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 67,
               "locator": "0a00ac0166012f00",
               "name": "Blazing Gale Dance",
@@ -236,7 +272,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_11"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32002,
               "locator": "0a00b201b5022f00",
               "name": "Blazing Gale Dance",
@@ -245,9 +281,18 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_11"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 26,
               "locator": "0a00af010f022f00",
+              "name": "Blazing Gale Dance",
+              "rank_id": "rank_team10_dungeon_3",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_11"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 90194314263,
+              "locator": "0900620b49012f00",
               "name": "Blazing Gale Dance",
               "rank_id": "rank_team10_dungeon_3",
               "rank_id_replace": [],
@@ -283,7 +328,7 @@
           "resource": "wulinlu_tongyou_pic_xj_01",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 62,
               "locator": "0a00ac01b7002d00",
               "name": "The Void King Ye Wanshan Lucky Seventeen",
@@ -292,9 +337,18 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_01"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 14,
               "locator": "0a00af01e6002d00",
+              "name": "The Void King Ye Wanshan Lucky Seventeen",
+              "rank_id": "rank_team_dungeon_3",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_01"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 81604379670,
+              "locator": "0900620bd3042d00",
               "name": "The Void King Ye Wanshan Lucky Seventeen",
               "rank_id": "rank_team_dungeon_3",
               "rank_id_replace": [],
@@ -333,7 +387,7 @@
           "resource": "wulinlu_tongyou_pic_xj_10",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 71,
               "locator": "0a00ac01ff012f00",
               "name": "Sorrow of Mortalbound",
@@ -342,7 +396,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_10"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 302,
               "locator": "0a00af012f052f00",
               "name": "Sorrow of Mortalbound",
@@ -351,9 +405,18 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_10"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32003,
               "locator": "0a00b201e4022f00",
+              "name": "Sorrow of Mortalbound",
+              "rank_id": "rank_team10_dungeon_4",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_10"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 90194314258,
+              "locator": "0900620b25022f00",
               "name": "Sorrow of Mortalbound",
               "rank_id": "rank_team10_dungeon_4",
               "rank_id_replace": [],
@@ -389,7 +452,7 @@
           "resource": "wulinlu_tongyou_pic_xj_09",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 70,
               "locator": "0a00ac01d2012d00",
               "name": "Dream Jinming Pool",
@@ -398,9 +461,18 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_09"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 23,
               "locator": "0a00af01c7012d00",
+              "name": "Dream Jinming Pool",
+              "rank_id": "rank_team_dungeon_4",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 81604379622,
+              "locator": "0900620bab052d00",
               "name": "Dream Jinming Pool",
               "rank_id": "rank_team_dungeon_4",
               "rank_id_replace": [],
@@ -439,7 +511,7 @@
           "resource": "wulinlu_tongyou_pic_xj_09",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 72,
               "locator": "0a00ac012e022d00",
               "name": "Crimson Dream - Supreme",
@@ -448,9 +520,18 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_09"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 19,
               "locator": "0a00af0142012d00",
+              "name": "Crimson Dream - Supreme",
+              "rank_id": "rank_team_dungeon_5",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_09"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 81604379533,
+              "locator": "0900620bd8052d00",
               "name": "Crimson Dream - Supreme",
               "rank_id": "rank_team_dungeon_5",
               "rank_id_replace": [],
@@ -486,7 +567,7 @@
           "resource": "wulinlu_tongyou_pic_xj_10",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 77,
               "locator": "0a00ac01e3023600",
               "name": "Sorrow of Mortalbound - Supreme",
@@ -497,7 +578,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_10"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 304,
               "locator": "0a00af0196053600",
               "name": "Sorrow of Mortalbound - Supreme",
@@ -508,9 +589,20 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_10"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32004,
               "locator": "0a00b20113033600",
+              "name": "Sorrow of Mortalbound - Supreme",
+              "rank_id": "rank_team10_dungeon_6",
+              "rank_id_replace": [
+                "rank_team10_dungeon_60003"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_10"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 90194314113,
+              "locator": "0900620b54023600",
               "name": "Sorrow of Mortalbound - Supreme",
               "rank_id": "rank_team10_dungeon_6",
               "rank_id_replace": [
@@ -546,7 +638,7 @@
           "resource": "wulinlu_tongyou_pic_xj_13",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 75,
               "locator": "0a00ac01b4022f00",
               "name": "Yama's Seal",
@@ -555,7 +647,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_13"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 87,
               "locator": "0a00af0162042f00",
               "name": "Yama's Seal",
@@ -564,9 +656,18 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_13"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32005,
               "locator": "0a00b20149032f00",
+              "name": "Yama's Seal",
+              "rank_id": "rank_team10_dungeon_7",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_13"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 90194314266,
+              "locator": "0900620b8a022f00",
               "name": "Yama's Seal",
               "rank_id": "rank_team10_dungeon_7",
               "rank_id_replace": [],
@@ -602,7 +703,7 @@
           "resource": "wulinlu_tongyou_pic_xj_13",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 91,
               "locator": "0a00ac0160052f00",
               "name": "Yama's Seal - Supreme",
@@ -611,7 +712,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_13"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 331,
               "locator": "0a00b001e8002f00",
               "name": "Yama's Seal - Supreme",
@@ -620,9 +721,18 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_13"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32007,
               "locator": "0a00b201a7032f00",
+              "name": "Yama's Seal - Supreme",
+              "rank_id": "rank_team10_dungeon_8",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_13"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 90194314247,
+              "locator": "0900620bb9022f00",
               "name": "Yama's Seal - Supreme",
               "rank_id": "rank_team10_dungeon_8",
               "rank_id_replace": [],
@@ -658,7 +768,7 @@
           "resource": "wulinlu_tongyou_pic_xj_12",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 73,
               "locator": "0a00ac015b023800",
               "name": "Drunken Verse",
@@ -670,9 +780,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_12"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 303,
               "locator": "0a00af015e053800",
+              "name": "Drunken Verse",
+              "rank_id": "rank_team_dungeon_8",
+              "rank_id_replace": [
+                "rank_team_dungeon_60001",
+                "rank_team_dungeon_60002"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_12"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 81604379638,
+              "locator": "0900620b05063800",
               "name": "Drunken Verse",
               "rank_id": "rank_team_dungeon_8",
               "rank_id_replace": [
@@ -709,7 +831,7 @@
           "resource": "wulinlu_tongyou_pic_xj_16",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 89,
               "locator": "0a00ac01f8042f00",
               "name": "Bloodstained Sands",
@@ -718,7 +840,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_16"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 311,
               "locator": "0a00af01cb062f00",
               "name": "Bloodstained Sands",
@@ -727,9 +849,18 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_16"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32006,
               "locator": "0a00b20178032f00",
+              "name": "Bloodstained Sands",
+              "rank_id": "rank_team10_dungeon_10",
+              "rank_id_replace": [],
+              "game_list_image": "wulinlu_tongyou_pic_xj_16"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281513,
+              "locator": "0900610b2e072f00",
               "name": "Bloodstained Sands",
               "rank_id": "rank_team10_dungeon_10",
               "rank_id_replace": [],
@@ -765,7 +896,7 @@
           "resource": "wulinlu_tongyou_pic_xj_16",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 100,
               "locator": "0a00ac010a073600",
               "name": "Bloodstained Sands - Supreme",
@@ -776,7 +907,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_16"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 348,
               "locator": "0a00b0016b023600",
               "name": "Bloodstained Sands - Supreme",
@@ -787,9 +918,20 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_16"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32008,
               "locator": "0a00b201d6033600",
+              "name": "Bloodstained Sands - Supreme",
+              "rank_id": "rank_team10_dungeon_11",
+              "rank_id_replace": [
+                "rank_team10_dungeon_12"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_16"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281573,
+              "locator": "0900610b5d073600",
               "name": "Bloodstained Sands - Supreme",
               "rank_id": "rank_team10_dungeon_11",
               "rank_id_replace": [
@@ -827,7 +969,7 @@
           "resource": "wulinlu_tongyou_pic_xj_15",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 90,
               "locator": "0a00ac0127053900",
               "name": "Abyssal Lament",
@@ -839,9 +981,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_15"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 305,
               "locator": "0a00af01cc053900",
+              "name": "Abyssal Lament",
+              "rank_id": "rank_team_dungeon_11",
+              "rank_id_replace": [
+                "rank_team_dungeon_12",
+                "rank_team_dungeon_60004"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_15"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346837,
+              "locator": "0900620b15033900",
               "name": "Abyssal Lament",
               "rank_id": "rank_team_dungeon_11",
               "rank_id_replace": [
@@ -882,7 +1036,7 @@
           "resource": "wulinlu_tongyou_pic_xj_16",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 100,
               "locator": "0a00ac010a073600",
               "name": "Bloodstained Sands - Supreme",
@@ -893,7 +1047,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_16"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 348,
               "locator": "0a00b0016b023600",
               "name": "Bloodstained Sands - Supreme",
@@ -904,9 +1058,20 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_16"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32008,
               "locator": "0a00b201d6033600",
+              "name": "Bloodstained Sands - Supreme",
+              "rank_id": "rank_team10_dungeon_11",
+              "rank_id_replace": [
+                "rank_team10_dungeon_12"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_16"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281573,
+              "locator": "0900610b5d073600",
               "name": "Bloodstained Sands - Supreme",
               "rank_id": "rank_team10_dungeon_11",
               "rank_id_replace": [
@@ -944,7 +1109,7 @@
           "resource": "wulinlu_tongyou_pic_xj_15",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 90,
               "locator": "0a00ac0127053900",
               "name": "Abyssal Lament",
@@ -956,9 +1121,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_15"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 305,
               "locator": "0a00af01cc053900",
+              "name": "Abyssal Lament",
+              "rank_id": "rank_team_dungeon_11",
+              "rank_id_replace": [
+                "rank_team_dungeon_12",
+                "rank_team_dungeon_60004"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_15"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346837,
+              "locator": "0900620b15033900",
               "name": "Abyssal Lament",
               "rank_id": "rank_team_dungeon_11",
               "rank_id_replace": [
@@ -999,7 +1176,7 @@
           "resource": "wulinlu_tongyou_pic_xj_18",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 92,
               "locator": "0a00ac018f053600",
               "name": "Resounding Majesty",
@@ -1010,7 +1187,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_18"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 336,
               "locator": "0a00b00117013600",
               "name": "Resounding Majesty",
@@ -1021,9 +1198,20 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_18"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32009,
               "locator": "0a00b2010c043600",
+              "name": "Resounding Majesty",
+              "rank_id": "rank_team10_dungeon_13",
+              "rank_id_replace": [
+                "rank_team10_dungeon_14"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_18"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281513,
+              "locator": "0900610b93073600",
               "name": "Resounding Majesty",
               "rank_id": "rank_team10_dungeon_13",
               "rank_id_replace": [
@@ -1061,7 +1249,7 @@
           "resource": "wulinlu_tongyou_pic_xj_17",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 93,
               "locator": "0a00ac01c5053800",
               "name": "Serpent's Fang",
@@ -1073,9 +1261,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_17"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 338,
               "locator": "0a00b0014d013800",
+              "name": "Serpent's Fang",
+              "rank_id": "rank_team_dungeon_13",
+              "rank_id_replace": [
+                "rank_team_dungeon_14",
+                "rank_team_dungeon_15"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_17"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346816,
+              "locator": "0900620b4e033800",
               "name": "Serpent's Fang",
               "rank_id": "rank_team_dungeon_13",
               "rank_id_replace": [
@@ -1116,7 +1316,7 @@
           "resource": "wulinlu_tongyou_pic_xj_18",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 92,
               "locator": "0a00ac018f053600",
               "name": "Resounding Majesty",
@@ -1127,7 +1327,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_18"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 336,
               "locator": "0a00b00117013600",
               "name": "Resounding Majesty",
@@ -1138,9 +1338,20 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_18"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32009,
               "locator": "0a00b2010c043600",
+              "name": "Resounding Majesty",
+              "rank_id": "rank_team10_dungeon_13",
+              "rank_id_replace": [
+                "rank_team10_dungeon_14"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_18"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281513,
+              "locator": "0900610b93073600",
               "name": "Resounding Majesty",
               "rank_id": "rank_team10_dungeon_13",
               "rank_id_replace": [
@@ -1178,7 +1389,7 @@
           "resource": "wulinlu_tongyou_pic_xj_17",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 93,
               "locator": "0a00ac01c5053800",
               "name": "Serpent's Fang",
@@ -1190,9 +1401,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_17"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 338,
               "locator": "0a00b0014d013800",
+              "name": "Serpent's Fang",
+              "rank_id": "rank_team_dungeon_13",
+              "rank_id_replace": [
+                "rank_team_dungeon_14",
+                "rank_team_dungeon_15"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_17"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346816,
+              "locator": "0900620b4e033800",
               "name": "Serpent's Fang",
               "rank_id": "rank_team_dungeon_13",
               "rank_id_replace": [
@@ -1233,7 +1456,7 @@
           "resource": "wulinlu_tongyou_pic_xj_17",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 93,
               "locator": "0a00ac01c5053800",
               "name": "Serpent's Fang",
@@ -1245,9 +1468,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_17"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 338,
               "locator": "0a00b0014d013800",
+              "name": "Serpent's Fang",
+              "rank_id": "rank_team_dungeon_13",
+              "rank_id_replace": [
+                "rank_team_dungeon_14",
+                "rank_team_dungeon_15"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_17"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346816,
+              "locator": "0900620b4e033800",
               "name": "Serpent's Fang",
               "rank_id": "rank_team_dungeon_13",
               "rank_id_replace": [
@@ -1288,7 +1523,7 @@
           "resource": "wulinlu_tongyou_pic_xj_20",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 132,
               "locator": "0a00ad01b6013600",
               "name": "Ravening Banes",
@@ -1299,7 +1534,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_20"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 351,
               "locator": "0a00b001fb023600",
               "name": "Ravening Banes",
@@ -1310,9 +1545,20 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_20"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32010,
               "locator": "0a00b20142043600",
+              "name": "Ravening Banes",
+              "rank_id": "rank_team10_dungeon_17",
+              "rank_id_replace": [
+                "rank_team10_dungeon_18"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281423,
+              "locator": "0900620b00003600",
               "name": "Ravening Banes",
               "rank_id": "rank_team10_dungeon_17",
               "rank_id_replace": [
@@ -1350,7 +1596,7 @@
           "resource": "wulinlu_tongyou_pic_xj_19",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 144,
               "locator": "0a00ad0170023b00",
               "name": "Landscourge Thunder",
@@ -1362,9 +1608,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_19"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 352,
               "locator": "0a00b00131033b00",
+              "name": "Landscourge Thunder",
+              "rank_id": "rank_team_dungeon_17",
+              "rank_id_replace": [
+                "rank_team_dungeon_18",
+                "rank_team_dungeon_19"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346829,
+              "locator": "0900620b86033b00",
               "name": "Landscourge Thunder",
               "rank_id": "rank_team_dungeon_17",
               "rank_id_replace": [
@@ -1405,7 +1663,7 @@
           "resource": "wulinlu_tongyou_pic_xj_20",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 132,
               "locator": "0a00ad01b6013600",
               "name": "Ravening Banes",
@@ -1416,7 +1674,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_20"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 351,
               "locator": "0a00b001fb023600",
               "name": "Ravening Banes",
@@ -1427,9 +1685,20 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_20"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32010,
               "locator": "0a00b20142043600",
+              "name": "Ravening Banes",
+              "rank_id": "rank_team10_dungeon_17",
+              "rank_id_replace": [
+                "rank_team10_dungeon_18"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281423,
+              "locator": "0900620b00003600",
               "name": "Ravening Banes",
               "rank_id": "rank_team10_dungeon_17",
               "rank_id_replace": [
@@ -1467,7 +1736,7 @@
           "resource": "wulinlu_tongyou_pic_xj_19",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 144,
               "locator": "0a00ad0170023b00",
               "name": "Landscourge Thunder",
@@ -1479,9 +1748,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_19"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 352,
               "locator": "0a00b00131033b00",
+              "name": "Landscourge Thunder",
+              "rank_id": "rank_team_dungeon_17",
+              "rank_id_replace": [
+                "rank_team_dungeon_18",
+                "rank_team_dungeon_19"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346829,
+              "locator": "0900620b86033b00",
               "name": "Landscourge Thunder",
               "rank_id": "rank_team_dungeon_17",
               "rank_id_replace": [
@@ -1522,7 +1803,7 @@
           "resource": "wulinlu_tongyou_pic_xj_19",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 144,
               "locator": "0a00ad0170023b00",
               "name": "Landscourge Thunder",
@@ -1534,9 +1815,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_19"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 352,
               "locator": "0a00b00131033b00",
+              "name": "Landscourge Thunder",
+              "rank_id": "rank_team_dungeon_17",
+              "rank_id_replace": [
+                "rank_team_dungeon_18",
+                "rank_team_dungeon_19"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346829,
+              "locator": "0900620b86033b00",
               "name": "Landscourge Thunder",
               "rank_id": "rank_team_dungeon_17",
               "rank_id_replace": [
@@ -1577,7 +1870,7 @@
           "resource": "wulinlu_tongyou_pic_xj_20",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 149,
               "locator": "0a00ad017c033200",
               "name": "Ravening Banes: Challenge",
@@ -1588,9 +1881,20 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_20"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 369,
               "locator": "0a00b00165043200",
+              "name": "Ravening Banes: Challenge",
+              "rank_id": "rank_team10_dungeon_20",
+              "rank_id_replace": [
+                "rank_team10_dungeon_21"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281528,
+              "locator": "0900620b65003200",
               "name": "Ravening Banes: Challenge",
               "rank_id": "rank_team10_dungeon_20",
               "rank_id_replace": [
@@ -1628,7 +1932,7 @@
           "resource": "wulinlu_tongyou_pic_xj_19",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 147,
               "locator": "0a00ad010a033a00",
               "name": "Landscourge Thunder: Challenge",
@@ -1640,9 +1944,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_19"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 367,
               "locator": "0a00b0012b043a00",
+              "name": "Landscourge Thunder: Challenge",
+              "rank_id": "rank_team_dungeon_20",
+              "rank_id_replace": [
+                "rank_team_dungeon_21",
+                "rank_team_dungeon_60039"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346953,
+              "locator": "0900620bee033a00",
               "name": "Landscourge Thunder: Challenge",
               "rank_id": "rank_team_dungeon_20",
               "rank_id_replace": [
@@ -1681,7 +1997,7 @@
           "resource": "wulinlu_tongyou_pic_xj_20",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 149,
               "locator": "0a00ad017c033200",
               "name": "Ravening Banes: Challenge",
@@ -1692,9 +2008,20 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_20"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 369,
               "locator": "0a00b00165043200",
+              "name": "Ravening Banes: Challenge",
+              "rank_id": "rank_team10_dungeon_20",
+              "rank_id_replace": [
+                "rank_team10_dungeon_21"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_20"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281528,
+              "locator": "0900620b65003200",
               "name": "Ravening Banes: Challenge",
               "rank_id": "rank_team10_dungeon_20",
               "rank_id_replace": [
@@ -1732,7 +2059,7 @@
           "resource": "wulinlu_tongyou_pic_xj_19",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 147,
               "locator": "0a00ad010a033a00",
               "name": "Landscourge Thunder: Challenge",
@@ -1744,9 +2071,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_19"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 367,
               "locator": "0a00b0012b043a00",
+              "name": "Landscourge Thunder: Challenge",
+              "rank_id": "rank_team_dungeon_20",
+              "rank_id_replace": [
+                "rank_team_dungeon_21",
+                "rank_team_dungeon_60039"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346953,
+              "locator": "0900620bee033a00",
               "name": "Landscourge Thunder: Challenge",
               "rank_id": "rank_team_dungeon_20",
               "rank_id_replace": [
@@ -1785,7 +2124,7 @@
           "resource": "wulinlu_tongyou_pic_xj_22",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 146,
               "locator": "0a00ad01cf023b00",
               "name": "Carnival Voyage",
@@ -1797,7 +2136,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_22"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32011,
               "locator": "0a00b20178043b00",
               "name": "Carnival Voyage",
@@ -1809,9 +2148,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_22"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 363,
               "locator": "0a00b001cc033b00",
+              "name": "Carnival Voyage",
+              "rank_id": "rank_team10_dungeon_22",
+              "rank_id_replace": [
+                "rank_team10_dungeon_23",
+                "rank_team10_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281412,
+              "locator": "0900620b97003b00",
               "name": "Carnival Voyage",
               "rank_id": "rank_team10_dungeon_22",
               "rank_id_replace": [
@@ -1850,7 +2201,7 @@
           "resource": "wulinlu_tongyou_pic_xj_21",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 148,
               "locator": "0a00ad0144033800",
               "name": "Dragonscale Tamer",
@@ -1862,9 +2213,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_21"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 370,
               "locator": "0a00b00197043800",
+              "name": "Dragonscale Tamer",
+              "rank_id": "rank_team_dungeon_22",
+              "rank_id_replace": [
+                "rank_team_dungeon_27",
+                "rank_team_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346825,
+              "locator": "0900620b28043800",
               "name": "Dragonscale Tamer",
               "rank_id": "rank_team_dungeon_22",
               "rank_id_replace": [
@@ -1904,7 +2267,7 @@
           "resource": "wulinlu_tongyou_pic_xj_22",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 146,
               "locator": "0a00ad01cf023b00",
               "name": "Carnival Voyage",
@@ -1916,7 +2279,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_22"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32011,
               "locator": "0a00b20178043b00",
               "name": "Carnival Voyage",
@@ -1928,9 +2291,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_22"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 363,
               "locator": "0a00b001cc033b00",
+              "name": "Carnival Voyage",
+              "rank_id": "rank_team10_dungeon_22",
+              "rank_id_replace": [
+                "rank_team10_dungeon_23",
+                "rank_team10_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281412,
+              "locator": "0900620b97003b00",
               "name": "Carnival Voyage",
               "rank_id": "rank_team10_dungeon_22",
               "rank_id_replace": [
@@ -1969,7 +2344,7 @@
           "resource": "wulinlu_tongyou_pic_xj_21",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 148,
               "locator": "0a00ad0144033800",
               "name": "Dragonscale Tamer",
@@ -1981,9 +2356,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_21"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 370,
               "locator": "0a00b00197043800",
+              "name": "Dragonscale Tamer",
+              "rank_id": "rank_team_dungeon_22",
+              "rank_id_replace": [
+                "rank_team_dungeon_27",
+                "rank_team_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346825,
+              "locator": "0900620b28043800",
               "name": "Dragonscale Tamer",
               "rank_id": "rank_team_dungeon_22",
               "rank_id_replace": [
@@ -2023,7 +2410,7 @@
           "resource": "wulinlu_tongyou_pic_xj_22",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 146,
               "locator": "0a00ad01cf023b00",
               "name": "Carnival Voyage",
@@ -2035,7 +2422,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_22"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32011,
               "locator": "0a00b20178043b00",
               "name": "Carnival Voyage",
@@ -2047,9 +2434,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_22"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 363,
               "locator": "0a00b001cc033b00",
+              "name": "Carnival Voyage",
+              "rank_id": "rank_team10_dungeon_22",
+              "rank_id_replace": [
+                "rank_team10_dungeon_23",
+                "rank_team10_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281412,
+              "locator": "0900620b97003b00",
               "name": "Carnival Voyage",
               "rank_id": "rank_team10_dungeon_22",
               "rank_id_replace": [
@@ -2088,7 +2487,7 @@
           "resource": "wulinlu_tongyou_pic_xj_21",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 148,
               "locator": "0a00ad0144033800",
               "name": "Dragonscale Tamer",
@@ -2100,9 +2499,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_21"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 370,
               "locator": "0a00b00197043800",
+              "name": "Dragonscale Tamer",
+              "rank_id": "rank_team_dungeon_22",
+              "rank_id_replace": [
+                "rank_team_dungeon_27",
+                "rank_team_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346825,
+              "locator": "0900620b28043800",
               "name": "Dragonscale Tamer",
               "rank_id": "rank_team_dungeon_22",
               "rank_id_replace": [
@@ -2142,7 +2553,7 @@
           "resource": "wulinlu_tongyou_pic_xj_22",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 168,
               "locator": "0a00ad0172053900",
               "name": "Carnival Voyage: Challenge",
@@ -2154,9 +2565,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_22"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 386,
               "locator": "0a00b00151063900",
+              "name": "Carnival Voyage: Challenge",
+              "rank_id": "rank_team10_dungeon_25",
+              "rank_id_replace": [
+                "rank_team10_dungeon_26",
+                "rank_team10_dungeon_27"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281519,
+              "locator": "0900620bd2003900",
               "name": "Carnival Voyage: Challenge",
               "rank_id": "rank_team10_dungeon_25",
               "rank_id_replace": [
@@ -2195,7 +2618,7 @@
           "resource": "wulinlu_tongyou_pic_xj_21",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 169,
               "locator": "0a00ad01ab053800",
               "name": "Dragonscale Tamer - Challenge",
@@ -2207,9 +2630,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_21"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 385,
               "locator": "0a00b00119063800",
+              "name": "Dragonscale Tamer - Challenge",
+              "rank_id": "rank_team_dungeon_25",
+              "rank_id_replace": [
+                "rank_team_dungeon_26",
+                "rank_team_dungeon_28"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346942,
+              "locator": "0900620b60043800",
               "name": "Dragonscale Tamer - Challenge",
               "rank_id": "rank_team_dungeon_25",
               "rank_id_replace": [
@@ -2248,7 +2683,7 @@
           "resource": "wulinlu_tongyou_pic_xj_22",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 168,
               "locator": "0a00ad0172053900",
               "name": "Carnival Voyage: Challenge",
@@ -2260,9 +2695,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_22"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 386,
               "locator": "0a00b00151063900",
+              "name": "Carnival Voyage: Challenge",
+              "rank_id": "rank_team10_dungeon_25",
+              "rank_id_replace": [
+                "rank_team10_dungeon_26",
+                "rank_team10_dungeon_27"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281519,
+              "locator": "0900620bd2003900",
               "name": "Carnival Voyage: Challenge",
               "rank_id": "rank_team10_dungeon_25",
               "rank_id_replace": [
@@ -2301,7 +2748,7 @@
           "resource": "wulinlu_tongyou_pic_xj_21",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 169,
               "locator": "0a00ad01ab053800",
               "name": "Dragonscale Tamer - Challenge",
@@ -2313,9 +2760,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_21"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 385,
               "locator": "0a00b00119063800",
+              "name": "Dragonscale Tamer - Challenge",
+              "rank_id": "rank_team_dungeon_25",
+              "rank_id_replace": [
+                "rank_team_dungeon_26",
+                "rank_team_dungeon_28"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346942,
+              "locator": "0900620b60043800",
               "name": "Dragonscale Tamer - Challenge",
               "rank_id": "rank_team_dungeon_25",
               "rank_id_replace": [
@@ -2354,7 +2813,7 @@
           "resource": "wulinlu_tongyou_pic_xj_22",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 168,
               "locator": "0a00ad0172053900",
               "name": "Carnival Voyage: Challenge",
@@ -2366,9 +2825,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_22"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 386,
               "locator": "0a00b00151063900",
+              "name": "Carnival Voyage: Challenge",
+              "rank_id": "rank_team10_dungeon_25",
+              "rank_id_replace": [
+                "rank_team10_dungeon_26",
+                "rank_team10_dungeon_27"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_22"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281519,
+              "locator": "0900620bd2003900",
               "name": "Carnival Voyage: Challenge",
               "rank_id": "rank_team10_dungeon_25",
               "rank_id_replace": [
@@ -2407,7 +2878,7 @@
           "resource": "wulinlu_tongyou_pic_xj_21",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 148,
               "locator": "0a00ad0144033800",
               "name": "Dragonscale Tamer",
@@ -2419,9 +2890,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_21"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 370,
               "locator": "0a00b00197043800",
+              "name": "Dragonscale Tamer",
+              "rank_id": "rank_team_dungeon_22",
+              "rank_id_replace": [
+                "rank_team_dungeon_27",
+                "rank_team_dungeon_24"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346825,
+              "locator": "0900620b28043800",
               "name": "Dragonscale Tamer",
               "rank_id": "rank_team_dungeon_22",
               "rank_id_replace": [
@@ -2461,7 +2944,7 @@
           "resource": "wulinlu_tongyou_pic_xj_24",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 170,
               "locator": "0a00ad01e3053e00",
               "name": "Snowfall's Reckoning",
@@ -2473,7 +2956,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_24"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 388,
               "locator": "0a00b001c5063e00",
               "name": "Snowfall's Reckoning",
@@ -2485,9 +2968,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_24"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32012,
               "locator": "0a00b201b3043e00",
+              "name": "Snowfall's Reckoning",
+              "rank_id": "rank_team10_dungeon_28",
+              "rank_id_replace": [
+                "rank_team10_dungeon_29",
+                "rank_team10_dungeon_30"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281548,
+              "locator": "0900620b0b013e00",
               "name": "Snowfall's Reckoning",
               "rank_id": "rank_team10_dungeon_28",
               "rank_id_replace": [
@@ -2526,7 +3021,7 @@
           "resource": "wulinlu_tongyou_pic_xj_21",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 169,
               "locator": "0a00ad01ab053800",
               "name": "Dragonscale Tamer - Challenge",
@@ -2538,9 +3033,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_21"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 385,
               "locator": "0a00b00119063800",
+              "name": "Dragonscale Tamer - Challenge",
+              "rank_id": "rank_team_dungeon_25",
+              "rank_id_replace": [
+                "rank_team_dungeon_26",
+                "rank_team_dungeon_28"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_21"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346942,
+              "locator": "0900620b60043800",
               "name": "Dragonscale Tamer - Challenge",
               "rank_id": "rank_team_dungeon_25",
               "rank_id_replace": [
@@ -2579,7 +3086,7 @@
           "resource": "wulinlu_tongyou_pic_xj_24",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 170,
               "locator": "0a00ad01e3053e00",
               "name": "Snowfall's Reckoning",
@@ -2591,7 +3098,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_24"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 388,
               "locator": "0a00b001c5063e00",
               "name": "Snowfall's Reckoning",
@@ -2603,9 +3110,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_24"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32012,
               "locator": "0a00b201b3043e00",
+              "name": "Snowfall's Reckoning",
+              "rank_id": "rank_team10_dungeon_28",
+              "rank_id_replace": [
+                "rank_team10_dungeon_29",
+                "rank_team10_dungeon_30"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281548,
+              "locator": "0900620b0b013e00",
               "name": "Snowfall's Reckoning",
               "rank_id": "rank_team10_dungeon_28",
               "rank_id_replace": [
@@ -2644,7 +3163,7 @@
           "resource": "wulinlu_tongyou_pic_xj_23",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 171,
               "locator": "0a00ad0121063b00",
               "name": "Segmented Puppets",
@@ -2656,9 +3175,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_23"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 387,
               "locator": "0a00b0018a063b00",
+              "name": "Segmented Puppets",
+              "rank_id": "rank_team_dungeon_29",
+              "rank_id_replace": [
+                "rank_team_dungeon_30",
+                "rank_team_dungeon_31"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346987,
+              "locator": "0900620b98043b00",
               "name": "Segmented Puppets",
               "rank_id": "rank_team_dungeon_29",
               "rank_id_replace": [
@@ -2697,7 +3228,7 @@
           "resource": "wulinlu_tongyou_pic_xj_24",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 170,
               "locator": "0a00ad01e3053e00",
               "name": "Snowfall's Reckoning",
@@ -2709,7 +3240,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_24"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 388,
               "locator": "0a00b001c5063e00",
               "name": "Snowfall's Reckoning",
@@ -2721,9 +3252,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_24"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32012,
               "locator": "0a00b201b3043e00",
+              "name": "Snowfall's Reckoning",
+              "rank_id": "rank_team10_dungeon_28",
+              "rank_id_replace": [
+                "rank_team10_dungeon_29",
+                "rank_team10_dungeon_30"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281548,
+              "locator": "0900620b0b013e00",
               "name": "Snowfall's Reckoning",
               "rank_id": "rank_team10_dungeon_28",
               "rank_id_replace": [
@@ -2762,7 +3305,7 @@
           "resource": "wulinlu_tongyou_pic_xj_23",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 171,
               "locator": "0a00ad0121063b00",
               "name": "Segmented Puppets",
@@ -2774,9 +3317,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_23"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 387,
               "locator": "0a00b0018a063b00",
+              "name": "Segmented Puppets",
+              "rank_id": "rank_team_dungeon_29",
+              "rank_id_replace": [
+                "rank_team_dungeon_30",
+                "rank_team_dungeon_31"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346987,
+              "locator": "0900620b98043b00",
               "name": "Segmented Puppets",
               "rank_id": "rank_team_dungeon_29",
               "rank_id_replace": [
@@ -2815,7 +3370,7 @@
           "resource": "wulinlu_tongyou_pic_xj_24",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 172,
               "locator": "0a00ad015c063a00",
               "name": "Snowfall's Reckoning - Challenge",
@@ -2827,9 +3382,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_24"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 403,
               "locator": "0a00b10100003a00",
+              "name": "Snowfall's Reckoning - Challenge",
+              "rank_id": "rank_team10_dungeon_31",
+              "rank_id_replace": [
+                "rank_team10_dungeon_32",
+                "rank_team10_dungeon_33"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281520,
+              "locator": "0900620b78013a00",
               "name": "Snowfall's Reckoning - Challenge",
               "rank_id": "rank_team10_dungeon_31",
               "rank_id_replace": [
@@ -2868,7 +3435,7 @@
           "resource": "wulinlu_tongyou_pic_xj_23",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 171,
               "locator": "0a00ad0121063b00",
               "name": "Segmented Puppets",
@@ -2880,9 +3447,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_23"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 387,
               "locator": "0a00b0018a063b00",
+              "name": "Segmented Puppets",
+              "rank_id": "rank_team_dungeon_29",
+              "rank_id_replace": [
+                "rank_team_dungeon_30",
+                "rank_team_dungeon_31"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346987,
+              "locator": "0900620b98043b00",
               "name": "Segmented Puppets",
               "rank_id": "rank_team_dungeon_29",
               "rank_id_replace": [
@@ -2921,7 +3500,7 @@
           "resource": "wulinlu_tongyou_pic_xj_24",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 172,
               "locator": "0a00ad015c063a00",
               "name": "Snowfall's Reckoning - Challenge",
@@ -2933,9 +3512,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_24"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 403,
               "locator": "0a00b10100003a00",
+              "name": "Snowfall's Reckoning - Challenge",
+              "rank_id": "rank_team10_dungeon_31",
+              "rank_id_replace": [
+                "rank_team10_dungeon_32",
+                "rank_team10_dungeon_33"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281520,
+              "locator": "0900620b78013a00",
               "name": "Snowfall's Reckoning - Challenge",
               "rank_id": "rank_team10_dungeon_31",
               "rank_id_replace": [
@@ -2974,7 +3565,7 @@
           "resource": "wulinlu_tongyou_pic_xj_23",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 173,
               "locator": "0a00ad0196063a00",
               "name": "Segmented Puppets - Challenge",
@@ -2986,9 +3577,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_23"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 402,
               "locator": "0a00b0019f073a00",
+              "name": "Segmented Puppets - Challenge",
+              "rank_id": "rank_team_dungeon_32",
+              "rank_id_replace": [
+                "rank_team_dungeon_33",
+                "rank_team_dungeon_34"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346951,
+              "locator": "0900620b00053a00",
               "name": "Segmented Puppets - Challenge",
               "rank_id": "rank_team_dungeon_32",
               "rank_id_replace": [
@@ -3027,7 +3630,7 @@
           "resource": "wulinlu_tongyou_pic_xj_24",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 172,
               "locator": "0a00ad015c063a00",
               "name": "Snowfall's Reckoning - Challenge",
@@ -3039,9 +3642,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_24"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 403,
               "locator": "0a00b10100003a00",
+              "name": "Snowfall's Reckoning - Challenge",
+              "rank_id": "rank_team10_dungeon_31",
+              "rank_id_replace": [
+                "rank_team10_dungeon_32",
+                "rank_team10_dungeon_33"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_24"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281520,
+              "locator": "0900620b78013a00",
               "name": "Snowfall's Reckoning - Challenge",
               "rank_id": "rank_team10_dungeon_31",
               "rank_id_replace": [
@@ -3080,7 +3695,7 @@
           "resource": "wulinlu_tongyou_pic_xj_23",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 173,
               "locator": "0a00ad0196063a00",
               "name": "Segmented Puppets - Challenge",
@@ -3092,9 +3707,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_23"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 402,
               "locator": "0a00b0019f073a00",
+              "name": "Segmented Puppets - Challenge",
+              "rank_id": "rank_team_dungeon_32",
+              "rank_id_replace": [
+                "rank_team_dungeon_33",
+                "rank_team_dungeon_34"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346951,
+              "locator": "0900620b00053a00",
               "name": "Segmented Puppets - Challenge",
               "rank_id": "rank_team_dungeon_32",
               "rank_id_replace": [
@@ -3133,7 +3760,7 @@
           "resource": "wulinlu_tongyou_pic_xj_25",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 175,
               "locator": "0a00ad0109073c00",
               "name": "Liminal Ascension",
@@ -3145,7 +3772,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_25"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32013,
               "locator": "0a00b201f1043c00",
               "name": "Liminal Ascension",
@@ -3157,9 +3784,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_25"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 405,
               "locator": "0a00b10173003c00",
+              "name": "Liminal Ascension",
+              "rank_id": "rank_team10_dungeon_34",
+              "rank_id_replace": [
+                "rank_team10_dungeon_35",
+                "rank_team10_dungeon_36"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281552,
+              "locator": "0900620bb2013c00",
               "name": "Liminal Ascension",
               "rank_id": "rank_team10_dungeon_34",
               "rank_id_replace": [
@@ -3198,7 +3837,7 @@
           "resource": "wulinlu_tongyou_pic_xj_23",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 173,
               "locator": "0a00ad0196063a00",
               "name": "Segmented Puppets - Challenge",
@@ -3210,9 +3849,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_23"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 402,
               "locator": "0a00b0019f073a00",
+              "name": "Segmented Puppets - Challenge",
+              "rank_id": "rank_team_dungeon_32",
+              "rank_id_replace": [
+                "rank_team_dungeon_33",
+                "rank_team_dungeon_34"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_23"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346951,
+              "locator": "0900620b00053a00",
               "name": "Segmented Puppets - Challenge",
               "rank_id": "rank_team_dungeon_32",
               "rank_id_replace": [
@@ -3251,7 +3902,7 @@
           "resource": "wulinlu_tongyou_pic_xj_25",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 175,
               "locator": "0a00ad0109073c00",
               "name": "Liminal Ascension",
@@ -3263,7 +3914,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_25"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32013,
               "locator": "0a00b201f1043c00",
               "name": "Liminal Ascension",
@@ -3275,9 +3926,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_25"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 405,
               "locator": "0a00b10173003c00",
+              "name": "Liminal Ascension",
+              "rank_id": "rank_team10_dungeon_34",
+              "rank_id_replace": [
+                "rank_team10_dungeon_35",
+                "rank_team10_dungeon_36"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281552,
+              "locator": "0900620bb2013c00",
               "name": "Liminal Ascension",
               "rank_id": "rank_team10_dungeon_34",
               "rank_id_replace": [
@@ -3316,7 +3979,7 @@
           "resource": "wulinlu_tongyou_pic_xj_26",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 174,
               "locator": "0a00ad01d0063900",
               "name": "Compass & Chime",
@@ -3328,9 +3991,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_26"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 404,
               "locator": "0a00b1013a003900",
+              "name": "Compass & Chime",
+              "rank_id": "rank_team_dungeon_35",
+              "rank_id_replace": [
+                "rank_team_dungeon_36",
+                "rank_team_dungeon_37"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346841,
+              "locator": "0900620b3a053900",
               "name": "Compass & Chime",
               "rank_id": "rank_team_dungeon_35",
               "rank_id_replace": [
@@ -3370,7 +4045,7 @@
           "resource": "wulinlu_tongyou_pic_xj_25",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 175,
               "locator": "0a00ad0109073c00",
               "name": "Liminal Ascension",
@@ -3382,7 +4057,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_25"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32013,
               "locator": "0a00b201f1043c00",
               "name": "Liminal Ascension",
@@ -3394,9 +4069,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_25"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 405,
               "locator": "0a00b10173003c00",
+              "name": "Liminal Ascension",
+              "rank_id": "rank_team10_dungeon_34",
+              "rank_id_replace": [
+                "rank_team10_dungeon_35",
+                "rank_team10_dungeon_36"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281552,
+              "locator": "0900620bb2013c00",
               "name": "Liminal Ascension",
               "rank_id": "rank_team10_dungeon_34",
               "rank_id_replace": [
@@ -3435,7 +4122,7 @@
           "resource": "wulinlu_tongyou_pic_xj_26",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 174,
               "locator": "0a00ad01d0063900",
               "name": "Compass & Chime",
@@ -3447,9 +4134,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_26"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 404,
               "locator": "0a00b1013a003900",
+              "name": "Compass & Chime",
+              "rank_id": "rank_team_dungeon_35",
+              "rank_id_replace": [
+                "rank_team_dungeon_36",
+                "rank_team_dungeon_37"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346841,
+              "locator": "0900620b3a053900",
               "name": "Compass & Chime",
               "rank_id": "rank_team_dungeon_35",
               "rank_id_replace": [
@@ -3489,7 +4188,7 @@
           "resource": "wulinlu_tongyou_pic_xj_25",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 176,
               "locator": "0a00ad0145073700",
               "name": "Liminal Ascension - Challenge",
@@ -3501,9 +4200,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_25"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 409,
               "locator": "0a00b101e6003700",
+              "name": "Liminal Ascension - Challenge",
+              "rank_id": "rank_team10_dungeon_37",
+              "rank_id_replace": [
+                "rank_team10_dungeon_38",
+                "rank_team10_dungeon_39"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281567,
+              "locator": "0900620bee013700",
               "name": "Liminal Ascension - Challenge",
               "rank_id": "rank_team10_dungeon_37",
               "rank_id_replace": [
@@ -3540,7 +4251,7 @@
           "resource": "wulinlu_tongyou_pic_xj_26",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 174,
               "locator": "0a00ad01d0063900",
               "name": "Compass & Chime",
@@ -3552,9 +4263,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_26"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 404,
               "locator": "0a00b1013a003900",
+              "name": "Compass & Chime",
+              "rank_id": "rank_team_dungeon_35",
+              "rank_id_replace": [
+                "rank_team_dungeon_36",
+                "rank_team_dungeon_37"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346841,
+              "locator": "0900620b3a053900",
               "name": "Compass & Chime",
               "rank_id": "rank_team_dungeon_35",
               "rank_id_replace": [
@@ -3594,7 +4317,7 @@
           "resource": "wulinlu_tongyou_pic_xj_25",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 176,
               "locator": "0a00ad0145073700",
               "name": "Liminal Ascension - Challenge",
@@ -3606,9 +4329,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_25"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 409,
               "locator": "0a00b101e6003700",
+              "name": "Liminal Ascension - Challenge",
+              "rank_id": "rank_team10_dungeon_37",
+              "rank_id_replace": [
+                "rank_team10_dungeon_38",
+                "rank_team10_dungeon_39"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281567,
+              "locator": "0900620bee013700",
               "name": "Liminal Ascension - Challenge",
               "rank_id": "rank_team10_dungeon_37",
               "rank_id_replace": [
@@ -3645,7 +4380,7 @@
           "resource": "wulinlu_tongyou_pic_xj_26",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 177,
               "locator": "0a00ad017c073800",
               "name": "Compass & Chime - Challenge",
@@ -3657,9 +4392,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_26"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 410,
               "locator": "0a00b1011d013800",
+              "name": "Compass & Chime - Challenge",
+              "rank_id": "rank_team_dungeon_38",
+              "rank_id_replace": [
+                "rank_team_dungeon_39",
+                "rank_team_dungeon_40"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346930,
+              "locator": "0900620b73053800",
               "name": "Compass & Chime - Challenge",
               "rank_id": "rank_team_dungeon_38",
               "rank_id_replace": [
@@ -3698,7 +4445,7 @@
           "resource": "wulinlu_tongyou_pic_xj_25",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 176,
               "locator": "0a00ad0145073700",
               "name": "Liminal Ascension - Challenge",
@@ -3710,9 +4457,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_25"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 409,
               "locator": "0a00b101e6003700",
+              "name": "Liminal Ascension - Challenge",
+              "rank_id": "rank_team10_dungeon_37",
+              "rank_id_replace": [
+                "rank_team10_dungeon_38",
+                "rank_team10_dungeon_39"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_25"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 94489281567,
+              "locator": "0900620bee013700",
               "name": "Liminal Ascension - Challenge",
               "rank_id": "rank_team10_dungeon_37",
               "rank_id_replace": [
@@ -3749,7 +4508,7 @@
           "resource": "wulinlu_tongyou_pic_xj_26",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 177,
               "locator": "0a00ad017c073800",
               "name": "Compass & Chime - Challenge",
@@ -3761,9 +4520,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_26"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 410,
               "locator": "0a00b1011d013800",
+              "name": "Compass & Chime - Challenge",
+              "rank_id": "rank_team_dungeon_38",
+              "rank_id_replace": [
+                "rank_team_dungeon_39",
+                "rank_team_dungeon_40"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346930,
+              "locator": "0900620b73053800",
               "name": "Compass & Chime - Challenge",
               "rank_id": "rank_team_dungeon_38",
               "rank_id_replace": [
@@ -3789,6 +4560,83 @@
       ],
       "resource": "wulinlu_tongyou_pic_xj_26",
       "sha256": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:40": {
+      "rank_name": "rank_team10_dungeon_40",
+      "title": "Horizon's Chart - Top 500 - Phase 1",
+      "file": "artwork/hero-realm/horizons-chart.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_28",
+          "evidence_by_difficulty": [
+            {
+              "source": "patch:index1001:9394",
+              "key": 218,
+              "locator": "ea03ce01e2014000",
+              "name": "Horizon's Chart",
+              "rank_id": "rank_team10_dungeon_40",
+              "rank_id_replace": [
+                "rank_team10_dungeon_41",
+                "rank_team10_dungeon_42"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 435,
+              "locator": "ea03ce01fc044000",
+              "name": "Horizon's Chart",
+              "rank_id": "rank_team10_dungeon_40",
+              "rank_id_replace": [
+                "rank_team10_dungeon_41",
+                "rank_team10_dungeon_42"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 32014,
+              "locator": "ea03ce01ee064000",
+              "name": "Horizon's Chart",
+              "rank_id": "rank_team10_dungeon_40",
+              "rank_id_replace": [
+                "rank_team10_dungeon_41",
+                "rank_team10_dungeon_42"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:8167",
+              "key": 94489280639,
+              "locator": "ea03b801b4014000",
+              "name": "Horizon's Chart",
+              "rank_id": "rank_team10_dungeon_40",
+              "rank_id_replace": [
+                "rank_team10_dungeon_41",
+                "rank_team10_dungeon_42"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            }
+          ],
+          "file": "artwork/hero-realm/horizons-chart.png",
+          "sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+          "bytes": 292215
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "horizon s chart",
+      "mode": "normal",
+      "dungeon_rows": [
+        "80"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_28",
+      "sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
       "art_scope": "whole_dungeon_activity_card",
       "shared_by_boards": 3
     },
@@ -3802,7 +4650,7 @@
           "resource": "wulinlu_tongyou_pic_xj_26",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 177,
               "locator": "0a00ad017c073800",
               "name": "Compass & Chime - Challenge",
@@ -3814,9 +4662,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_26"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 410,
               "locator": "0a00b1011d013800",
+              "name": "Compass & Chime - Challenge",
+              "rank_id": "rank_team_dungeon_38",
+              "rank_id_replace": [
+                "rank_team_dungeon_39",
+                "rank_team_dungeon_40"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_26"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346930,
+              "locator": "0900620b73053800",
               "name": "Compass & Chime - Challenge",
               "rank_id": "rank_team_dungeon_38",
               "rank_id_replace": [
@@ -3845,6 +4705,742 @@
       "art_scope": "whole_dungeon_activity_card",
       "shared_by_boards": 3
     },
+    "hr:41": {
+      "rank_name": "rank_team10_dungeon_41",
+      "title": "Horizon's Chart - Top 500 - Phase 2",
+      "file": "artwork/hero-realm/horizons-chart.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_28",
+          "evidence_by_difficulty": [
+            {
+              "source": "patch:index1001:9394",
+              "key": 218,
+              "locator": "ea03ce01e2014000",
+              "name": "Horizon's Chart",
+              "rank_id": "rank_team10_dungeon_40",
+              "rank_id_replace": [
+                "rank_team10_dungeon_41",
+                "rank_team10_dungeon_42"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 435,
+              "locator": "ea03ce01fc044000",
+              "name": "Horizon's Chart",
+              "rank_id": "rank_team10_dungeon_40",
+              "rank_id_replace": [
+                "rank_team10_dungeon_41",
+                "rank_team10_dungeon_42"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 32014,
+              "locator": "ea03ce01ee064000",
+              "name": "Horizon's Chart",
+              "rank_id": "rank_team10_dungeon_40",
+              "rank_id_replace": [
+                "rank_team10_dungeon_41",
+                "rank_team10_dungeon_42"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:8167",
+              "key": 94489280639,
+              "locator": "ea03b801b4014000",
+              "name": "Horizon's Chart",
+              "rank_id": "rank_team10_dungeon_40",
+              "rank_id_replace": [
+                "rank_team10_dungeon_41",
+                "rank_team10_dungeon_42"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            }
+          ],
+          "file": "artwork/hero-realm/horizons-chart.png",
+          "sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+          "bytes": 292215
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "horizon s chart",
+      "mode": "normal",
+      "dungeon_rows": [
+        "80"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_28",
+      "sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:41": {
+      "rank_name": "rank_team_dungeon_41",
+      "title": "Rouge & Rite - Top 750 - Phase 1",
+      "file": "artwork/sword-trial/rouge-and-rite.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_27",
+          "evidence_by_difficulty": [
+            {
+              "source": "patch:index1001:9394",
+              "key": 215,
+              "locator": "ea03ce01a5013d00",
+              "name": "Rouge & Rite",
+              "rank_id": "rank_team_dungeon_41",
+              "rank_id_replace": [
+                "rank_team_dungeon_42",
+                "rank_team_dungeon_43"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 433,
+              "locator": "ea03ce01bf043d00",
+              "name": "Rouge & Rite",
+              "rank_id": "rank_team_dungeon_41",
+              "rank_id_replace": [
+                "rank_team_dungeon_42",
+                "rank_team_dungeon_43"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            },
+            {
+              "source": "patch:index1001:8167",
+              "key": 85899346038,
+              "locator": "ea03b80130023d00",
+              "name": "Rouge & Rite",
+              "rank_id": "rank_team_dungeon_41",
+              "rank_id_replace": [
+                "rank_team_dungeon_42",
+                "rank_team_dungeon_43"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            }
+          ],
+          "file": "artwork/sword-trial/rouge-and-rite.png",
+          "sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+          "bytes": 314202
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "rouge rite",
+      "mode": "normal",
+      "dungeon_rows": [
+        "75",
+        "86"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_27",
+      "sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:42": {
+      "rank_name": "rank_team10_dungeon_42",
+      "title": "Horizon's Chart - Top 500 - Phase 3",
+      "file": "artwork/hero-realm/horizons-chart.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_28",
+          "evidence_by_difficulty": [
+            {
+              "source": "patch:index1001:9394",
+              "key": 218,
+              "locator": "ea03ce01e2014000",
+              "name": "Horizon's Chart",
+              "rank_id": "rank_team10_dungeon_40",
+              "rank_id_replace": [
+                "rank_team10_dungeon_41",
+                "rank_team10_dungeon_42"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 435,
+              "locator": "ea03ce01fc044000",
+              "name": "Horizon's Chart",
+              "rank_id": "rank_team10_dungeon_40",
+              "rank_id_replace": [
+                "rank_team10_dungeon_41",
+                "rank_team10_dungeon_42"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 32014,
+              "locator": "ea03ce01ee064000",
+              "name": "Horizon's Chart",
+              "rank_id": "rank_team10_dungeon_40",
+              "rank_id_replace": [
+                "rank_team10_dungeon_41",
+                "rank_team10_dungeon_42"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:8167",
+              "key": 94489280639,
+              "locator": "ea03b801b4014000",
+              "name": "Horizon's Chart",
+              "rank_id": "rank_team10_dungeon_40",
+              "rank_id_replace": [
+                "rank_team10_dungeon_41",
+                "rank_team10_dungeon_42"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            }
+          ],
+          "file": "artwork/hero-realm/horizons-chart.png",
+          "sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+          "bytes": 292215
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "horizon s chart",
+      "mode": "normal",
+      "dungeon_rows": [
+        "80"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_28",
+      "sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:42": {
+      "rank_name": "rank_team_dungeon_42",
+      "title": "Rouge & Rite - Top 750 - Phase 2",
+      "file": "artwork/sword-trial/rouge-and-rite.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_27",
+          "evidence_by_difficulty": [
+            {
+              "source": "patch:index1001:9394",
+              "key": 215,
+              "locator": "ea03ce01a5013d00",
+              "name": "Rouge & Rite",
+              "rank_id": "rank_team_dungeon_41",
+              "rank_id_replace": [
+                "rank_team_dungeon_42",
+                "rank_team_dungeon_43"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 433,
+              "locator": "ea03ce01bf043d00",
+              "name": "Rouge & Rite",
+              "rank_id": "rank_team_dungeon_41",
+              "rank_id_replace": [
+                "rank_team_dungeon_42",
+                "rank_team_dungeon_43"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            },
+            {
+              "source": "patch:index1001:8167",
+              "key": 85899346038,
+              "locator": "ea03b80130023d00",
+              "name": "Rouge & Rite",
+              "rank_id": "rank_team_dungeon_41",
+              "rank_id_replace": [
+                "rank_team_dungeon_42",
+                "rank_team_dungeon_43"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            }
+          ],
+          "file": "artwork/sword-trial/rouge-and-rite.png",
+          "sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+          "bytes": 314202
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "rouge rite",
+      "mode": "normal",
+      "dungeon_rows": [
+        "75",
+        "86"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_27",
+      "sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:43": {
+      "rank_name": "rank_team10_dungeon_43",
+      "title": "Horizon's Chart Challenge - Top 500 - Phase 1",
+      "file": "artwork/hero-realm/horizons-chart-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_28",
+          "evidence_by_difficulty": [
+            {
+              "source": "patch:index1001:9394",
+              "key": 219,
+              "locator": "ea03ce0122023c00",
+              "name": "Horizon's Chart - Challenge",
+              "rank_id": "rank_team10_dungeon_43",
+              "rank_id_replace": [
+                "rank_team10_dungeon_44",
+                "rank_team10_dungeon_45"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 437,
+              "locator": "ea03ce0178053c00",
+              "name": "Horizon's Chart - Challenge",
+              "rank_id": "rank_team10_dungeon_43",
+              "rank_id_replace": [
+                "rank_team10_dungeon_44",
+                "rank_team10_dungeon_45"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:8167",
+              "key": 94489280624,
+              "locator": "ea03b801f4013c00",
+              "name": "Horizon's Chart - Challenge",
+              "rank_id": "rank_team10_dungeon_43",
+              "rank_id_replace": [
+                "rank_team10_dungeon_44",
+                "rank_team10_dungeon_45"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            }
+          ],
+          "file": "artwork/hero-realm/horizons-chart-challenge.png",
+          "sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+          "bytes": 292215
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "horizon s chart",
+      "mode": "challenge",
+      "dungeon_rows": [],
+      "resource": "wulinlu_tongyou_pic_xj_28",
+      "sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:43": {
+      "rank_name": "rank_team_dungeon_43",
+      "title": "Rouge & Rite - Top 750 - Phase 3",
+      "file": "artwork/sword-trial/rouge-and-rite.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_27",
+          "evidence_by_difficulty": [
+            {
+              "source": "patch:index1001:9394",
+              "key": 215,
+              "locator": "ea03ce01a5013d00",
+              "name": "Rouge & Rite",
+              "rank_id": "rank_team_dungeon_41",
+              "rank_id_replace": [
+                "rank_team_dungeon_42",
+                "rank_team_dungeon_43"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 433,
+              "locator": "ea03ce01bf043d00",
+              "name": "Rouge & Rite",
+              "rank_id": "rank_team_dungeon_41",
+              "rank_id_replace": [
+                "rank_team_dungeon_42",
+                "rank_team_dungeon_43"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            },
+            {
+              "source": "patch:index1001:8167",
+              "key": 85899346038,
+              "locator": "ea03b80130023d00",
+              "name": "Rouge & Rite",
+              "rank_id": "rank_team_dungeon_41",
+              "rank_id_replace": [
+                "rank_team_dungeon_42",
+                "rank_team_dungeon_43"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            }
+          ],
+          "file": "artwork/sword-trial/rouge-and-rite.png",
+          "sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+          "bytes": 314202
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "rouge rite",
+      "mode": "normal",
+      "dungeon_rows": [
+        "75",
+        "86"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_27",
+      "sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:44": {
+      "rank_name": "rank_team10_dungeon_44",
+      "title": "Horizon's Chart Challenge - Top 500 - Phase 2",
+      "file": "artwork/hero-realm/horizons-chart-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_28",
+          "evidence_by_difficulty": [
+            {
+              "source": "patch:index1001:9394",
+              "key": 219,
+              "locator": "ea03ce0122023c00",
+              "name": "Horizon's Chart - Challenge",
+              "rank_id": "rank_team10_dungeon_43",
+              "rank_id_replace": [
+                "rank_team10_dungeon_44",
+                "rank_team10_dungeon_45"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 437,
+              "locator": "ea03ce0178053c00",
+              "name": "Horizon's Chart - Challenge",
+              "rank_id": "rank_team10_dungeon_43",
+              "rank_id_replace": [
+                "rank_team10_dungeon_44",
+                "rank_team10_dungeon_45"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:8167",
+              "key": 94489280624,
+              "locator": "ea03b801f4013c00",
+              "name": "Horizon's Chart - Challenge",
+              "rank_id": "rank_team10_dungeon_43",
+              "rank_id_replace": [
+                "rank_team10_dungeon_44",
+                "rank_team10_dungeon_45"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            }
+          ],
+          "file": "artwork/hero-realm/horizons-chart-challenge.png",
+          "sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+          "bytes": 292215
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "horizon s chart",
+      "mode": "challenge",
+      "dungeon_rows": [],
+      "resource": "wulinlu_tongyou_pic_xj_28",
+      "sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:44": {
+      "rank_name": "rank_team_dungeon_44",
+      "title": "Rouge & Rite Challenge - Top 750 - Phase 1",
+      "file": "artwork/sword-trial/rouge-and-rite-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_27",
+          "evidence_by_difficulty": [
+            {
+              "source": "patch:index1001:9394",
+              "key": 220,
+              "locator": "ea03ce015e023c00",
+              "name": "Rouge & Rite - Challenge",
+              "rank_id": "rank_team_dungeon_44",
+              "rank_id_replace": [
+                "rank_team_dungeon_45",
+                "rank_team_dungeon_46"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 436,
+              "locator": "ea03ce013c053c00",
+              "name": "Rouge & Rite - Challenge",
+              "rank_id": "rank_team_dungeon_44",
+              "rank_id_replace": [
+                "rank_team_dungeon_45",
+                "rank_team_dungeon_46"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            },
+            {
+              "source": "patch:index1001:8167",
+              "key": 85899346042,
+              "locator": "ea03b8016d023c00",
+              "name": "Rouge & Rite - Challenge",
+              "rank_id": "rank_team_dungeon_44",
+              "rank_id_replace": [
+                "rank_team_dungeon_45",
+                "rank_team_dungeon_46"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            }
+          ],
+          "file": "artwork/sword-trial/rouge-and-rite-challenge.png",
+          "sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+          "bytes": 314202
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "rouge rite",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "79"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_27",
+      "sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "hr:45": {
+      "rank_name": "rank_team10_dungeon_45",
+      "title": "Horizon's Chart Challenge - Top 500 - Phase 3",
+      "file": "artwork/hero-realm/horizons-chart-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_28",
+          "evidence_by_difficulty": [
+            {
+              "source": "patch:index1001:9394",
+              "key": 219,
+              "locator": "ea03ce0122023c00",
+              "name": "Horizon's Chart - Challenge",
+              "rank_id": "rank_team10_dungeon_43",
+              "rank_id_replace": [
+                "rank_team10_dungeon_44",
+                "rank_team10_dungeon_45"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 437,
+              "locator": "ea03ce0178053c00",
+              "name": "Horizon's Chart - Challenge",
+              "rank_id": "rank_team10_dungeon_43",
+              "rank_id_replace": [
+                "rank_team10_dungeon_44",
+                "rank_team10_dungeon_45"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            },
+            {
+              "source": "patch:index1001:8167",
+              "key": 94489280624,
+              "locator": "ea03b801f4013c00",
+              "name": "Horizon's Chart - Challenge",
+              "rank_id": "rank_team10_dungeon_43",
+              "rank_id_replace": [
+                "rank_team10_dungeon_44",
+                "rank_team10_dungeon_45"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_28"
+            }
+          ],
+          "file": "artwork/hero-realm/horizons-chart-challenge.png",
+          "sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+          "bytes": 292215
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "horizon s chart",
+      "mode": "challenge",
+      "dungeon_rows": [],
+      "resource": "wulinlu_tongyou_pic_xj_28",
+      "sha256": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:45": {
+      "rank_name": "rank_team_dungeon_45",
+      "title": "Rouge & Rite Challenge - Top 750 - Phase 2",
+      "file": "artwork/sword-trial/rouge-and-rite-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_27",
+          "evidence_by_difficulty": [
+            {
+              "source": "patch:index1001:9394",
+              "key": 220,
+              "locator": "ea03ce015e023c00",
+              "name": "Rouge & Rite - Challenge",
+              "rank_id": "rank_team_dungeon_44",
+              "rank_id_replace": [
+                "rank_team_dungeon_45",
+                "rank_team_dungeon_46"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 436,
+              "locator": "ea03ce013c053c00",
+              "name": "Rouge & Rite - Challenge",
+              "rank_id": "rank_team_dungeon_44",
+              "rank_id_replace": [
+                "rank_team_dungeon_45",
+                "rank_team_dungeon_46"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            },
+            {
+              "source": "patch:index1001:8167",
+              "key": 85899346042,
+              "locator": "ea03b8016d023c00",
+              "name": "Rouge & Rite - Challenge",
+              "rank_id": "rank_team_dungeon_44",
+              "rank_id_replace": [
+                "rank_team_dungeon_45",
+                "rank_team_dungeon_46"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            }
+          ],
+          "file": "artwork/sword-trial/rouge-and-rite-challenge.png",
+          "sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+          "bytes": 314202
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "rouge rite",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "79"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_27",
+      "sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
+    "st:46": {
+      "rank_name": "rank_team_dungeon_46",
+      "title": "Rouge & Rite Challenge - Top 750 - Phase 3",
+      "file": "artwork/sword-trial/rouge-and-rite-challenge.png",
+      "images": [
+        {
+          "boss_name": "Dungeon selection card",
+          "resource": "wulinlu_tongyou_pic_xj_27",
+          "evidence_by_difficulty": [
+            {
+              "source": "patch:index1001:9394",
+              "key": 220,
+              "locator": "ea03ce015e023c00",
+              "name": "Rouge & Rite - Challenge",
+              "rank_id": "rank_team_dungeon_44",
+              "rank_id_replace": [
+                "rank_team_dungeon_45",
+                "rank_team_dungeon_46"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            },
+            {
+              "source": "patch:index1001:9396",
+              "key": 436,
+              "locator": "ea03ce013c053c00",
+              "name": "Rouge & Rite - Challenge",
+              "rank_id": "rank_team_dungeon_44",
+              "rank_id_replace": [
+                "rank_team_dungeon_45",
+                "rank_team_dungeon_46"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            },
+            {
+              "source": "patch:index1001:8167",
+              "key": 85899346042,
+              "locator": "ea03b8016d023c00",
+              "name": "Rouge & Rite - Challenge",
+              "rank_id": "rank_team_dungeon_44",
+              "rank_id_replace": [
+                "rank_team_dungeon_45",
+                "rank_team_dungeon_46"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_27"
+            }
+          ],
+          "file": "artwork/sword-trial/rouge-and-rite-challenge.png",
+          "sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+          "bytes": 314202
+        }
+      ],
+      "art_status": "verified_dungeon_card",
+      "art_reason": "Original dungeon activity card; explicit activity-card rank_id/rank_id_replace",
+      "join": "explicit activity-card rank_id/rank_id_replace",
+      "alias_used": false,
+      "dungeon_family": "rouge rite",
+      "mode": "challenge",
+      "dungeon_rows": [
+        "79"
+      ],
+      "resource": "wulinlu_tongyou_pic_xj_27",
+      "sha256": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+      "art_scope": "whole_dungeon_activity_card",
+      "shared_by_boards": 3
+    },
     "st:60001": {
       "rank_name": "rank_team_dungeon_60001",
       "title": "Drunken Verse 02 - Top 500",
@@ -3855,7 +5451,7 @@
           "resource": "wulinlu_tongyou_pic_xj_12",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 73,
               "locator": "0a00ac015b023800",
               "name": "Drunken Verse",
@@ -3867,9 +5463,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_12"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 303,
               "locator": "0a00af015e053800",
+              "name": "Drunken Verse",
+              "rank_id": "rank_team_dungeon_8",
+              "rank_id_replace": [
+                "rank_team_dungeon_60001",
+                "rank_team_dungeon_60002"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_12"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 81604379638,
+              "locator": "0900620b05063800",
               "name": "Drunken Verse",
               "rank_id": "rank_team_dungeon_8",
               "rank_id_replace": [
@@ -3906,7 +5514,7 @@
           "resource": "wulinlu_tongyou_pic_xj_12",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 73,
               "locator": "0a00ac015b023800",
               "name": "Drunken Verse",
@@ -3918,9 +5526,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_12"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 303,
               "locator": "0a00af015e053800",
+              "name": "Drunken Verse",
+              "rank_id": "rank_team_dungeon_8",
+              "rank_id_replace": [
+                "rank_team_dungeon_60001",
+                "rank_team_dungeon_60002"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_12"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 81604379638,
+              "locator": "0900620b05063800",
               "name": "Drunken Verse",
               "rank_id": "rank_team_dungeon_8",
               "rank_id_replace": [
@@ -3957,7 +5577,7 @@
           "resource": "wulinlu_tongyou_pic_xj_10",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 77,
               "locator": "0a00ac01e3023600",
               "name": "Sorrow of Mortalbound - Supreme",
@@ -3968,7 +5588,7 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_10"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 304,
               "locator": "0a00af0196053600",
               "name": "Sorrow of Mortalbound - Supreme",
@@ -3979,9 +5599,20 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_10"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 32004,
               "locator": "0a00b20113033600",
+              "name": "Sorrow of Mortalbound - Supreme",
+              "rank_id": "rank_team10_dungeon_6",
+              "rank_id_replace": [
+                "rank_team10_dungeon_60003"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_10"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 90194314113,
+              "locator": "0900620b54023600",
               "name": "Sorrow of Mortalbound - Supreme",
               "rank_id": "rank_team10_dungeon_6",
               "rank_id_replace": [
@@ -4017,7 +5648,7 @@
           "resource": "wulinlu_tongyou_pic_xj_15",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 90,
               "locator": "0a00ac0127053900",
               "name": "Abyssal Lament",
@@ -4029,9 +5660,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_15"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 305,
               "locator": "0a00af01cc053900",
+              "name": "Abyssal Lament",
+              "rank_id": "rank_team_dungeon_11",
+              "rank_id_replace": [
+                "rank_team_dungeon_12",
+                "rank_team_dungeon_60004"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_15"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346837,
+              "locator": "0900620b15033900",
               "name": "Abyssal Lament",
               "rank_id": "rank_team_dungeon_11",
               "rank_id_replace": [
@@ -4072,7 +5715,7 @@
           "resource": "wulinlu_tongyou_pic_xj_19",
           "evidence_by_difficulty": [
             {
-              "source": "index4:9897",
+              "source": "base:index4:9897",
               "key": 147,
               "locator": "0a00ad010a033a00",
               "name": "Landscourge Thunder: Challenge",
@@ -4084,9 +5727,21 @@
               "game_list_image": "wulinlu_tongyou_pic_xj_19"
             },
             {
-              "source": "index4:9901",
+              "source": "base:index4:9901",
               "key": 367,
               "locator": "0a00b0012b043a00",
+              "name": "Landscourge Thunder: Challenge",
+              "rank_id": "rank_team_dungeon_20",
+              "rank_id_replace": [
+                "rank_team_dungeon_21",
+                "rank_team_dungeon_60039"
+              ],
+              "game_list_image": "wulinlu_tongyou_pic_xj_19"
+            },
+            {
+              "source": "base:index4:7262",
+              "key": 85899346953,
+              "locator": "0900620bee033a00",
               "name": "Landscourge Thunder: Challenge",
               "rank_id": "rank_team_dungeon_20",
               "rank_id_replace": [

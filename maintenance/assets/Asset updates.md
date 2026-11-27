@@ -7,7 +7,7 @@ The launcher extracts affixes, equipment names and metadata (sets, slots and rel
 ## Normal update
 
 1. Run `Update WWM Assets.cmd` after a game patch. It stages a candidate and opens the HTML review; **it does not change active assets**. Use `--game-root "C:\path\to\Where Winds Meet"` if the Toolkit configuration points elsewhere.
-2. Read the printed `report.html`. It lists additions, changes, removals, unresolved artwork and remaining manual policies. Source hashes are checked before and after extraction. Unchanged sources skip extraction unless `--force` is passed.
+2. Read the printed `report.html`. It lists additions, changes, removals, unresolved artwork and remaining manual policies. The updater checks installed input hashes and extractor files before and after extraction. The full update skips extraction only when both match the published release and its ranking coverage check is current. Use `--force` to repeat the scan.
 
    The review includes a section summary, search by ID/name/field, status and section filters, before/after records, and field-level differences. It covers all mapping dictionaries, scoped item names, equipment sets/relay limits, ranking boards and original artwork content hashes. Results load 100 at a time. “Removed” means absent from the new export; it does not establish that the game deleted the content. The JSON report contains the same detailed review for other tools. An initial bootstrap is explicitly identified as having no comparison baseline.
 3. When satisfied, stop the bot/Activity and run `Apply WWM Asset Update.cmd <run-id>` using the exact run ID printed by the update command. Double-clicking the Apply CMD selects the latest successfully staged review. If the report contains removals, explicitly add `--allow-removals` **to the apply command**, after confirming they are intended. Applying does not repeat extraction. It validates the exact staged checksums and refuses a candidate if the active baseline changed since the review. Regenerate the review if either the candidate or baseline changed. Extraction/validation failures leave the active pointer untouched and retain logs in ignored `.asset-builds/<run>/`.
@@ -28,11 +28,14 @@ The shared data folder is named `current`, not `production`, because both enviro
 ## Other options
 
 - `--check`: validate the published bundle offline; works on Windows and Linux.
+- `--only dungeons`: refresh the Hero Realm and Sword Trial speedrun lists and activity cards used by Discord `/ranking view` and the Activity. The review's `ranking_boards` filter shows added, changed and missing boards. Use `--only dungeons,abyss` to also refresh Abyss trials.
 - `--only affixes,equipment`: update selected sections after a complete bundle exists. Unselected sections retain their previous data and the report identifies this as a mixed-source update.
 - `--from-existing`: bootstrap reviewed local exports without scanning the installed game. This is explicitly marked as older exports, not a fresh extraction.
 - `--include-avatars`: additionally refresh Toolkit avatar exports. It does **not** publish bot avatar files or establish complete animation coverage. Original-engine effects remain a separate rendering task.
 
 ## What is still manual
+
+Ranking extraction follows both `rank_data` and `rank_name_to_config` in the installed manifest, including linked patch pages. It checks declared row counts and requires both tables to agree on board identity, title and key fields. The review lists unmatched English Speedrun titles and activity cards that refer to board IDs absent from both definitions. If a decoder fails or a table disagrees, the update points to the failing step’s log and keeps the published bundle. Installed rows establish board identity and title. Activations and server-only boards need separate evidence.
 
 Energy rules, PvP grade labels, quality labels, martial role classifications and UI slot labels remain compatibility policy until their game-table sources and joins are verified. Market/Kitty/Pet like labels remain explicitly attributed fallbacks because the extracted profile UI table does not include their server topics. Abyss loadout names currently reuse the existing reviewed `loadout_name_tables.json`; they are not freshly extracted by this pipeline. These limitations appear in the report. No new name is invented to fill missing data.
 

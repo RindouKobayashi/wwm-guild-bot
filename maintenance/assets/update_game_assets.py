@@ -18,6 +18,7 @@ from utility.game_assets import GameAssets, ROOT, digest, validate_release
 from build_game_bundle import legacy_tables, apply_exports, add_rankings, finish, read, write
 
 SECTIONS = {'affixes', 'equipment', 'items', 'dungeons', 'abyss', 'constants', 'martial', 'pvp', 'market', 'emotes'}
+RANKING_SOURCE = 'installed_named_rank_data_and_activity_cards_v2'
 
 
 def pointer(base):
@@ -41,11 +42,48 @@ def installed_fingerprints(game, table_root, table_fingerprints):
     return stamps
 
 
+def extractor_fingerprints(toolkit):
+    """Invalidate the unchanged shortcut when an extractor or its rules change."""
+    paths = {path for folder in (toolkit / 'app', toolkit / 'app/lib', HERE)
+             for pattern in ('*.py', '*.json') for path in folder.glob(pattern)}
+    paths.update((toolkit / 'tools/extract_abyss_trials.py',
+                  BOT / 'activity/maintenance/extract_equipment_metadata.py',
+                  BOT / 'utility/api_constants.py'))
+    return {f'{label}/{path.relative_to(root).as_posix()}': digest(path)
+            for label, root in (('toolkit', toolkit), ('bot', BOT))
+            for path in sorted(paths) if path.is_relative_to(root)}
+
+
+def input_changes(before, current):
+    if not before:
+        return {'baseline_available': False}
+    return {'baseline_available': True,
+            'added': sorted(current.keys() - before.keys()),
+            'removed': sorted(before.keys() - current.keys()),
+            'changed': sorted(k for k in current.keys() & before.keys() if current[k] != before[k])}
+
+
+def missing_card_boards(cards, boards):
+    known = {row['rank_name'] for row in boards.values()}
+    missing = {}
+    for record in cards:
+        raw = record['raw']
+        replacements = raw.get('rank_id_replace', [])
+        for name in [raw.get('rank_id'), *(replacements if isinstance(replacements, list) else [])]:
+            if (isinstance(name, str) and re.fullmatch(r'rank_team(?:10)?_dungeon_\d+', name)
+                    and name not in known):
+                missing.setdefault(name, set()).add(record['name'])
+    return {name: sorted(titles) for name, titles in sorted(missing.items())}
+
+
 def run_step(python, script, arguments, logs, name):
     print('Updating ' + name + ' ...', flush=True)
-    with (logs / (name + '.log')).open('w', encoding='utf-8') as handle:
-        subprocess.run([str(python), '-u', str(script), *map(str, arguments)],
-                       cwd=BOT, stdout=handle, stderr=subprocess.STDOUT, check=True)
+    log = logs / (name + '.log')
+    with log.open('w', encoding='utf-8') as handle:
+        result = subprocess.run([str(python), '-u', str(script), *map(str, arguments)],
+                                cwd=BOT, stdout=handle, stderr=subprocess.STDOUT)
+    if result.returncode:
+        raise RuntimeError(f'{name} exited with status {result.returncode}. See {log}')
 
 
 def publish(stage, destination=ROOT):
@@ -176,6 +214,7 @@ def main():
         tables = json.loads(json.dumps(existing.tables)) if existing.directory else legacy_tables()
         provenance = {'mode': 'existing_reviewed_exports' if args.from_existing else 'fresh_game_extraction',
                       'sections_requested': sorted(selected),
+                      'sections_retained': sorted(SECTIONS - selected),
                       'warnings': ['Manual compatibility labels remain explicit policy until verified game table sources are recovered.',
                                    'Abyss loadout display names reuse the existing reviewed loadout_name_tables.json; this updater does not yet regenerate those auxiliary names.']}
         dungeons = existing.directory / 'dungeons' if existing.directory else BOT / 'data/ranking_assets'
@@ -191,26 +230,58 @@ def main():
             sys.path.insert(0, str(toolkit / 'app'))
             from update_game_data import fingerprints
             before = installed_fingerprints(game, table_root, fingerprints)
+            extractor_before = extractor_fingerprints(toolkit)
             provenance['source_sha256'] = before
+            provenance['extractor_sha256'] = extractor_before
             previous = existing.manifest.get('provenance', {})
+            provenance['input_changes'] = {
+                'game_files': input_changes(previous.get('source_sha256'), before),
+                'extractor_files': input_changes(previous.get('extractor_sha256'), extractor_before),
+            }
             unchanged = before == previous.get('source_sha256')
-            if unchanged and not args.force and not args.include_avatars and selected == SECTIONS and existing.tables.get('pvp_ranks') and existing.tables.get('market_goods'):
-                print('Installed source hashes match the published release. No extraction needed.')
+            if (unchanged and not args.force and not args.include_avatars and selected == SECTIONS
+                    and extractor_before == previous.get('extractor_sha256')
+                    and previous.get('ranking_coverage', {}).get('method') == RANKING_SOURCE
+                    and existing.tables.get('pvp_ranks') and existing.tables.get('market_goods')):
+                report_path = existing.directory / 'report.html'
+                print('Installed sources and extractor files match the published release.')
+                print(f'Last verified review: {report_path}')
+                if args.open_report and hasattr(os, 'startfile'):
+                    try:
+                        os.startfile(str(report_path))
+                    except OSError as exc:
+                        print('Could not open the review: ' + str(exc))
                 return 0
             if selected & {'affixes', 'equipment', 'items', 'dungeons'}:
                 run_step(python, toolkit / 'app/update_game_data.py', ['--game-root', game], work, 'game-data')
                 run = pointer(toolkit / 'output/game_data')
-                provenance['warnings'].extend(read(run / 'coverage.json').get('warnings', []))
+                coverage = read(run / 'coverage.json')
+                provenance['warnings'].extend(coverage.get('warnings', []))
                 metadata = work / 'equipment_metadata.json'
                 if 'equipment' in selected:
                     run_step(python, BOT / 'activity/maintenance/extract_equipment_metadata.py',
                              ['--game-root', table_root, '--details', run / 'equipment/all_equipment_item_details.csv', '--output', metadata], work, 'equipment-metadata')
                 apply_exports(tables, run, metadata, selected)
                 if 'dungeons' in selected:
+                    ranks = coverage['dungeon_table_coverage']['rank']
+                    board_count = coverage['counts']['leaderboards']
+                    if (ranks['binding']['table'] != 'rank_data' or ranks['exported_trial_boards'] != board_count
+                            or ranks['name_index_crosscheck']['matching_board_count'] != board_count):
+                        raise ValueError('Toolkit did not provide a complete named ranking export')
                     cards = work / 'cards'
-                    run_step(python, HERE / 'refresh_dungeon_cards.py', ['--game-root', game, '--output', cards], work, 'dungeon-cards')
+                    run_step(python, HERE / 'refresh_dungeon_cards.py',
+                             ['--toolkit', toolkit, '--game-root', game, '--output', cards], work, 'dungeon-cards')
                     dungeons = work / 'dungeons'
                     run_step(python, HERE / 'import_dungeon_assets.py', ['--game-data-run', run, '--destination', dungeons, '--cards-root', cards], work, 'dungeon-import')
+                    card_export = read(cards / 'bindings.json')
+                    imported = read(pointer(dungeons) / 'manifest.json')['boards']
+                    if len(imported) != board_count:
+                        raise ValueError('Imported board count differs from verified ranking tables')
+                    provenance['ranking_coverage'] = {
+                        'method': RANKING_SOURCE, 'boards': ranks,
+                        'activity_card_sources': card_export['sources'],
+                        'card_references_without_board': missing_card_boards(card_export['rows'], imported),
+                    }
             if 'abyss' in selected:
                 run_step(python, toolkit / 'tools/extract_abyss_trials.py', ['--game-root', table_root, '--artwork'], work, 'abyss-extract')
                 abyss = work / 'abyss'
@@ -243,6 +314,8 @@ def main():
             after = installed_fingerprints(game, table_root, fingerprints)
             if before != after:
                 raise ValueError('Game changed during update; previous release retained')
+            if extractor_before != extractor_fingerprints(toolkit):
+                raise ValueError('Extractor files changed during the update; run it again')
             if args.only:
                 provenance['warnings'].append('Partial update: unselected sections retain their previous release data.')
                 provenance['source_sha256'] = {}  # Never call mixed-source data wholly current.

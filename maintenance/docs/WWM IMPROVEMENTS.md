@@ -4,7 +4,7 @@ The changes are in this Discord bot project. The LLM code, settings, existing da
 
 ## Extracted ranking names and artwork audit
 
-`/ranking view`, its autocomplete and the dungeon picker use the **98 extracted leaderboard records**. Names come directly from `trial_rank_ids.csv`'s localized leaderboard titles, keyed by literal `rank_name` and HR/ST namespace. Only the trailing `Top N` display suffix is removed for the short name. Challenge, phase, season, punctuation and other title distinctions are preserved. The full extracted title is also searchable.
+`/ranking view`, its autocomplete and the dungeon picker use the released leaderboard catalogue. Names come from `trial_rank_ids.csv`, keyed by literal `rank_name` and HR/ST namespace. The extractor reads the installed `rank_data` manifest, including its linked patch pages. Only the trailing `Top N` display suffix is removed for the short name. Challenge, phase, season, punctuation and other title distinctions are preserved. The full extracted title is also searchable.
 
 Examples: `hr:1` / `Dream Jinming Pool` with type HR; `st:1` / `Formless Pass` with type ST. A bare ID shared by both types prompts a choice. Unknown numeric IDs remain usable with an explicit type. Community names and aliases are excluded from view lookup, labels and autocomplete. The legacy registry and management commands are preserved for existing data, but editing them does not change `/ranking view`.
 

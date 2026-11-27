@@ -13,7 +13,7 @@ sys.path.insert(0, str(BOT))
 sys.path.insert(0, str(BOT / 'maintenance/assets'))
 from utility.game_assets import GameAssets, inside, validate_release
 from build_game_bundle import finish, write
-from update_game_assets import publish, prepare_review, apply_review, installed_fingerprints
+from update_game_assets import publish, prepare_review, apply_review, installed_fingerprints, missing_card_boards
 from utility.game_assets import digest
 from asset_review import review, render
 from extract_api_constants import converted
@@ -36,6 +36,17 @@ def fixture(stage):
 
 
 class AssetPipelineTests(unittest.TestCase):
+    def test_card_coverage_reports_unbound_phase_ids_without_confusing_namespaces(self):
+        available = {'hr:41': {'rank_name': 'rank_team10_dungeon_41'}}
+        cards = [
+            {'name': 'Horizon', 'raw': {'rank_id': 'rank_team10_dungeon_41',
+                                      'rank_id_replace': ['rank_team10_dungeon_42', 'other_board']}},
+            {'name': 'Sword', 'raw': {'rank_id': 'rank_team_dungeon_41'}},
+        ]
+        self.assertEqual(missing_card_boards(cards, available), {
+            'rank_team10_dungeon_42': ['Horizon'], 'rank_team_dungeon_41': ['Sword'],
+        })
+
     def test_patch_metadata_changes_invalidate_an_unchanged_base(self):
         with tempfile.TemporaryDirectory() as temporary:
             game = Path(temporary)

@@ -104,11 +104,36 @@ def render(report):
 <title>WWM asset review</title><style>
 body{font:15px system-ui;background:#101b20;color:#e2e9e7;margin:0;padding:30px;max-width:1400px;margin:auto}h1{color:#e8cd8e}p{line-height:1.6;color:#b6c8c8}select,input,button{padding:10px;background:#1c3037;color:inherit;border:1px solid #45616a;border-radius:5px}nav{display:flex;gap:12px;flex-wrap:wrap;position:sticky;top:0;background:#101b20;padding:15px 0}table{width:100%;border-collapse:collapse;margin:20px 0}td,th{text-align:left;padding:9px;border-bottom:1px solid #30434b}article{border:1px solid #38515a;border-radius:7px;padding:16px;margin:14px 0}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:13px ui-monospace,monospace;background:#17282e;padding:12px}small{color:#b6c8c8}.added{color:#78d6af}.removed{color:#f49a99}.changed{color:#e8cd8e}.pair{display:grid;grid-template-columns:1fr 1fr;gap:15px}@media(max-width:650px){.pair{grid-template-columns:1fr}body{padding:14px}}summary{cursor:pointer}</style>
 <h1>WWM asset review</h1><p>Comparison against the currently published bundle. “Removed” means absent from this export, not proof that the game deleted it. Names and category-scoped item identities are preserved. Artwork changes compare SHA-256 content hashes. No baseline means additions are an inventory, not confirmed patch additions.</p>
-<div id="context"></div><div id="totals"></div><nav><input id="search" placeholder="Search ID, name or changed field"><select id="section"><option value="">All sections</option></select><select id="status"><option value="">All changes</option><option>added</option><option>changed</option><option>removed</option></select></nav><p id="count"></p><div id="records"></div><button id="more">Show next 100</button><details><summary>Source provenance and remaining limitations</summary><pre id="provenance"></pre></details>
+<div id="context"></div><section id="coverage" hidden><h2>What this run checked</h2><div id="inputs"></div><div id="ranking-coverage"></div></section><div id="totals"></div><nav><input id="search" placeholder="Search ID, name or changed field"><select id="section"><option value="">All sections</option></select><select id="status"><option value="">All changes</option><option>added</option><option>changed</option><option>removed</option></select></nav><p id="count"></p><div id="records"></div><button id="more">Show next 100</button><details><summary>Source provenance and remaining limitations</summary><pre id="provenance"></pre></details>
 <script type="application/json" id="data">''' + payload + '''</script><script>
 const data=JSON.parse(document.getElementById('data').textContent),r=data.review;let limit=100;
 const el=id=>document.getElementById(id),escape=s=>String(s??'—').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 el('context').textContent=r.baseline_available?'Baseline: previous published assets. Candidate has not necessarily been published.':'No previous bundle available.';
+const provenance=data.provenance??{}, inputs=provenance.input_changes, coverage=provenance.ranking_coverage;
+if(inputs||coverage){
+  el('coverage').hidden=false;
+  if(inputs){
+    const counts=delta=>!delta.baseline_available?'No comparable baseline':delta.added.length+' added, '+delta.changed.length+' changed, '+delta.removed.length+' removed';
+    const retained=provenance.sections_retained??[];
+    el('inputs').innerHTML='<p>Refreshed: '+escape(provenance.sections_requested.join(', '))+
+      (retained.length?'. Carried forward: '+escape(retained.join(', ')):'')+'.</p>'+
+      '<p>Installed source files: '+counts(inputs.game_files)+'. Extractor files: '+counts(inputs.extractor_files)+'.</p>';
+  }
+  if(coverage){
+    const boards=coverage.boards,binding=boards.binding,mirror=boards.name_index_crosscheck;
+    const titles=boards.localized_speedrun_titles_without_board??[];
+    const refs=Object.entries(coverage.card_references_without_board??{});
+    const gaps=(label,rows)=>'<details><summary>'+escape(label)+' ('+rows.length+')</summary><ul>'+
+      rows.map(row=>'<li>'+escape(row)+'</li>').join('')+'</ul></details>';
+    el('ranking-coverage').innerHTML='<h3>Hero Realm and Sword Trial</h3><p>'+
+      boards.exported_trial_boards+' boards. Decoded '+boards.decoded_primary_rows+' primary and '+
+      boards.decoded_supplemental_rows+' linked ranking rows ('+binding.records+' declared). '+
+      (mirror?mirror.matching_board_count+' boards match the separate name index.':'')+'</p>'+
+      gaps('Speedrun titles without a verified board ID',titles)+
+      gaps('Activity-card IDs without a board definition',refs.map(([id,names])=>id+' · '+names.join(', ')))+
+      '<p>Server-only boards and activation dates need separate evidence.</p>';
+  }
+}
 el('totals').innerHTML='<table><tr><th>Section</th><th>New</th><th>Changed</th><th>Removed</th><th>Unchanged</th></tr>'+Object.entries(r.summary).map(([k,v])=>'<tr><td>'+escape(k)+'</td>'+['added','changed','removed','unchanged'].map(s=>'<td>'+v[s]+'</td>').join('')+'</tr>').join('')+'</table>';
 for(const s of Object.keys(r.summary)){const o=document.createElement('option');o.value=s;o.textContent=s;el('section').append(o)}
 el('provenance').textContent=JSON.stringify({provenance:data.provenance,manual_policy:data.manual_policy_still_used,unresolved_artwork:data.unresolved_artwork},null,2);

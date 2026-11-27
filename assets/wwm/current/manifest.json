@@ -1,13 +1,15 @@
 {
   "format": 1,
-  "created_utc": "2026-11-26T12:08:47.129723+00:00",
+  "created_utc": "2026-11-27T18:40:57.116824+00:00",
   "provenance": {
     "mode": "fresh_game_extraction",
     "sections_requested": [
+      "dungeons"
+    ],
+    "sections_retained": [
       "abyss",
       "affixes",
       "constants",
-      "dungeons",
       "emotes",
       "equipment",
       "items",
@@ -30,65 +32,955 @@
       "Dungeons: leaderboard_titles_unmatched = 26.",
       "Expanded dungeon catalogue: {'boss_challenges': 30, 'boss_profiles': 138, 'instances': 218, 'replay_encounters': 120, 'world_bosses': 39, 'tower_stages': 11, 'combat_trials': 6, 'strongholds': 33, 'trial_displays': 69}. Counts include related encounters and level/mode variants.",
       "Dungeon artwork: 11 referenced resource names were not resolved in the installed registry; see dungeon_library/coverage.json.",
-      "Dungeon artwork: 20 registered textures have no installed base/LT/patch physical source. They are explicitly missing, with no placeholder or previous-version substitution; see dungeon_library/art_manifest.json."
+      "Dungeon artwork: 20 registered textures have no installed base/LT/patch physical source. They are explicitly missing, with no placeholder or previous-version substitution; see dungeon_library/art_manifest.json.",
+      "Partial update: unselected sections retain their previous release data."
     ],
-    "source_sha256": {
-      "data1": "7d0d15dfcc6d7d9000071ec29a6125b934a955519b3b23fb8221a95c263bea3d",
-      "data10": "2cf77ecc0565dfe15cc3e952c121c91964dba4f7ee9d2f466b2ee9d9f90e3d76",
-      "data1001": "0506e743fb2710f962f559eae205fb45be5024d5124922f980416c723c6c1760",
-      "data1002": "102f51c907f926aa48fee532187d164d745cb09aa90a350a6f6b70ec84fb0591",
-      "data1003": "a28671c4d50b71bbbfdf0322643a20660b2e952552ba3b5893943de5b54c92a1",
-      "data1004": "9a30379f3e5ec2c552867d4c05eafe63b1255a15ef538b72f19147ff632f1e79",
-      "data1005": "c9f99fcdcd48d75fb839cb68337f726b9e15fd1b9c5cbc702dd120eb22c08044",
-      "data11": "18bea14b2602fbd6fbe97683e841c2cc070bb9886106497e3d15fdcb6dc54e70",
-      "data1200": "1ec8f8c79e44f91ce76145cd62a085f4d834be03aadc586e709e71c6bc46adf9",
-      "data1201": "e6757a5feeff7c62bc847848429713db49ee8c5c6af7d1e2a554bd464a93d73e",
-      "data2": "d78d4c2957245575c78d483ded9a6be040e36f9c6a0e101e194e8bfbe4be22de",
-      "data200": "be92bfb47f8145d8023faa3cd11dd1f4744182aa853e54def01a6b6a3d19d2fc",
-      "data201": "1528c972573e296aaf1cf6d9fc4ae9cef581e9f709009e661e9f49983906db53",
-      "data202": "ce95526d22a581210e55489bb4098d53f24f72bde6d3ebffaa7997507955629d",
-      "data203": "96aa3b7c6a9c894a20f07bc560b9253ea91129919e7c56472bc7083d485f1791",
-      "data204": "516b2c3492df38ee2977f2362521492b5a5bcd107eba8a60c678313f59feaa72",
-      "data205": "23ea65f2644b11132f35d8ce8736d2ef2d0ce402638c1b48e92c92560968229b",
-      "data206": "9542ecb458262b0f9e6600ef84d1e05294fc0151133641f2f1b3b67f342aa0fd",
-      "data207": "d924f5133e47cb1d5ae73f46ef24926ebef27dbf887cef96ff8f75f53b5a0528",
-      "data208": "6819052910da3931faf4ec669995cade11b77aeaae45c931022a4e3a691caec4",
-      "data209": "a9e628220640166feb1e50d978e3790f1524361ae505ba91a9b8c7dfa43d7e2c",
-      "data210": "59ad416595ffb05a1dca91ce1de2c1f8b6125a04bc7efd72105543cf7e6481d3",
-      "data211": "700450aaaf26412ff2b488116708a19dfcc5d88b0fbe33c4da7771fc7f10f42f",
-      "data212": "3d3ec5809f690cfada1bad28e29aa74e8770662ab28fd460b90770a7628ff67c",
-      "data3": "3ed779e7da5db975ccef897b1e800db6799a6e393157cce8c289b19bb1319c4a",
-      "data4": "c11dae04d4cbe87d01ee617faa46c903319cb6e606d378529545b0d306cb9d41",
-      "data5": "17f9121fc60ada9af7717b30ae1c22d1631be6a91cccf03b59734809384365cd",
-      "data6": "214bd64adadd3aed9fb23c0aa9ff90bd4880876821dbf232435babf9a3e3cb3b",
-      "data7": "ab3d0f49f2037e0aea49d9d00094ddc605b23e9e80bc81f40e4588be81e91f2b",
-      "data8": "545d300a0ee78f0a1e14571842e16cbfc722012dd49378a5fe18977a619100a5",
-      "data9": "68055d97b41f2301e1bdf0321b5ad0e9b20f8350a107165a7f384f6ac6aeedd5",
-      "index1": "94945b5353fb28f8342e95c80d9dde825f685abb38276003cee8e850ca44856d",
-      "index1001": "b3298018587500217b02c1af03756c6a8a9e87767352fab8be71665dabf79ca2",
-      "index1200": "960dc9aadc0c1bfc8eb0049c88a4f33079a3d12ba9b84742e94b145d995c105d",
-      "index2": "c2d33e0a165fb331a0cf6881d4ed6fbbe6c1fc190387d795b7b3cdff94a881df",
-      "index200": "14c48d7a0b3965df9d1be62ca178f276e334b81158c4fb88bb9960edfedd42c3",
-      "index201": "fd7fccfb642af004d8c7d621ea5babde702b7f52edee60b303e3af0181fa5323",
-      "index202": "8937aca7044ac84da44b53d862cb5d81f03c745eeae945e502b34812b7f2436f",
-      "index203": "a03212dc68680f593f63fb04a51643817f07062e68dd5525384d3694bc83379c",
-      "index204": "51ddf021fe062e29ad36102224e1b29ef33e36fc914471d9df831b58425c1e85",
-      "index3": "82666901fe9377e6a1a8033a30ba42b79ad1f714b972ad5b17cfebec44aef92a",
-      "index4": "d4be1a69f409bed2137cba2632468bb2d651554a4df1e07e94499b5e0bbfd75f",
-      "locale\\translate_words_map_en": "9a2bb446dc2dcc1e2bb4b1bb3207e2990ef7533341a9035ef376c545c3bbdbef",
-      "locale\\translate_words_map_en_diff": "e977542786233b28b857f2cd1e53a94bfe474031335a93e4ed7570dbff0e3067",
-      "LocalData/Patch/HD/oversea/data1005": "929c74c67960141eba9ecc3af85fffe5d0420c9d5412d2d03ee4ab3173f9a502",
-      "LocalData/Patch/HD/oversea/data1006": "27d7b8da37ead26f29286d44391b5c7ebd47188cc13d0c0afec84e1d44d5f445",
-      "LocalData/Patch/HD/oversea/data1201": "53cc45f7e3e9d5e00020488ac895f3541e47871f0e8ef582c61bf5129d742805",
-      "LocalData/Patch/HD/oversea/index1001": "64e05c0577d31de81d4ed0a3857a3210e4aa88312163caa4b866d645c3d5b525",
-      "LocalData/Patch/HD/oversea/index1200": "95070845a21ee5158830371fe3a9b013f8d8c2153f6b92de1f1a2f2ae3ce6332",
-      "LocalData/Patch/HD/oversea/locale/translate_words_map_en_diff": "5056946e516964483cdaf86981d41e6615d05298d1adb072e9d3341f7d78dcd9",
-      "Package/HD/oversea/MANIFEST": "c344cbe35259f0b8e4d7881f6025b022653b3fd7896563ef97fd9d630ad78596",
-      "Resources.mpkinfo": "90f2602c866345104f252c05e3c0a8b91a64bde0a522853fc0c3bb0fbfa3dd74",
-      "LocalData/Patch/HD/oversea/MANIFEST": "78177b4d619b847ef725bd4ad691979312bcb785237787e486f3b55c3a55a55f",
-      "LocalData/Patch/Patch.mpkdb": "402dae0fb08ce5fef7fcfb10eb6167e967126c3faafec102ef3d3fb0e7fe089a",
-      "LocalData/Patch/Patch.mpkdb-wal": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "LocalData/Patch/LT1.mpkinfo": "8af1b27bb98a17ca7dbcdeee3b8b2a027f7688dd30ef138227b58c88b991b70b"
+    "source_sha256": {},
+    "extractor_sha256": {
+      "toolkit/app/audit_avatar_catalogue.py": "d89af437cdd8a4ed92b8853d1b14ef1137a9dbe74b7539091aa3e9cc8f265f81",
+      "toolkit/app/audit_playeravatar_blocks.py": "1142fb9a51d01a03ad73763eae00384fcad8b88e600b9a959947678941371e31",
+      "toolkit/app/audit_runtime_index.py": "7fc31dae73379cdcad660a6bdd2b5d783aa13a2ee132d0c886788b9805d7d40e",
+      "toolkit/app/audit_runtime_properties.py": "db39137e0a58537f5f83185942ebebd1419ed6a8ed8afeb58970edccf9fcb6ca",
+      "toolkit/app/avatar_batch_render.py": "1200933fbdd73f96103823126c7441851a7c7ac62ed376a2adab2403d76e1cdc",
+      "toolkit/app/avatar_cocos.py": "a7ef06793e6ca5ca0b59e6b32d2c55c0b3c0aae4887453bf1674d68d929ae88e",
+      "toolkit/app/avatar_dxbc_render.py": "188418818e6ba25f35724d0ea149642c31d9c0ef843f0769dc3e55b27cdcad84",
+      "toolkit/app/avatar_gallery.py": "bc17d5ebe60d9b02033a275f8d862e77b759db17a68219118b791e1e9b345bf8",
+      "toolkit/app/avatar_installed_sources.py": "cbc8d36725e79723fcded7d9633ac4a4fd7be47666220b8e080e4a29fd772fc2",
+      "toolkit/app/avatar_layout_background.py": "0460e6031716e0440fa243546744b1f1dc6072528196dcc42451e149eda08c96",
+      "toolkit/app/avatar_layout_export.py": "7ee41c28e85eb88744d0304eb569d791c4d45fe85ace81875db079042eaceadc",
+      "toolkit/app/avatar_particle_render.py": "e489827537b8ad5267cfd0a58fa3cef28400fbb6907781f1e218ab475c5d61ce",
+      "toolkit/app/avatar_portraits.py": "d5d2441b1f7c543d0334b4f80f9efbbd407ad82ef26f6b50dfe7508bd30e9048",
+      "toolkit/app/avatar_spine_export.py": "4d4e7aa8f2bb35d72b570422851bd72ea4799e0a4f7d98e2c32dbb12a2256414",
+      "toolkit/app/avatar_state.py": "51700645896b6c7a17a9c43c8f61c6fb329a7093a483b5103d38d19ab88dc975",
+      "toolkit/app/avatar_ui_render.py": "fc7146b642851d72fef0af472221a5bc96b96c8dcea29a0c7bc5b469155dfa51",
+      "toolkit/app/bounded_msgpack.py": "587536db3745875a4d1f99a83c3198328f6e90fe63b26ef9dc504df76979b111",
+      "toolkit/app/build_live_labels.py": "7e8a3028a47d58d4492a2b4fa605ff3b0866b5412ad9f3d9ce7c6b3a36904ba0",
+      "toolkit/app/capture_property_neighborhood.py": "188b80b390e703961a7bb18120f0771cd0078e503b685e9a9b41d73817dce81d",
+      "toolkit/app/capture_runtime_registry.py": "74f2fbb586f6948d60f49e61dec3276b3edaf9d73afcc9e834e8b47dc811dfdb",
+      "toolkit/app/cocos_affine.py": "d05a46355f83936ded72dd07ec9d232cbb2ed6019770da508bfa8dc58feda1d8",
+      "toolkit/app/cocos_animation_verify.py": "9f5302215c0db8d9cf6e35d2edce995d84ed95ff88945f7289340f655c48ff78",
+      "toolkit/app/cocos_atlas.py": "6ec3451d3dcad9adaa116333b036e4f58dc4633ef04e91076abea1774f58322d",
+      "toolkit/app/cocos_atlas_frame_geometry.py": "5bb6920d6e345dc9829dacdcac09b0b848965b9e180fe5df18652bea1c515881",
+      "toolkit/app/cocos_authored_shader_pair.py": "119561287e97c0518f3a09d472b05e666199444a932765abacc73fe6f76730a2",
+      "toolkit/app/cocos_avatar_attachment.py": "5bf11b06294975f69eb7edf28c54fb1fdff569b58651d4655eb2e4915f7f4755",
+      "toolkit/app/cocos_avatar_component_scope.py": "d21ed2a6a60339ba9c6c147b7187b517c5cd0a5e6d000d1e599e265d5bb24391",
+      "toolkit/app/cocos_binary.py": "f1f46b53d07d2bde7c8ed4d991aea1ecd6bc070ab795d6403cd42a37b13c0ed0",
+      "toolkit/app/cocos_draw_stream.py": "57341ec2c9bbd6a4db0f635197c0150e6cf884a90c049dd1fbcaf92ea685f761",
+      "toolkit/app/cocos_font_replace.py": "719f1ed7b640d92b2abeffc3e2135edf2e5986ebc46b24704fb81a787c0fdc1e",
+      "toolkit/app/cocos_font_sdf_cache.py": "e02afbe5b4aea307d34a0958b992d4818104fe4bd3cd1a1d1611f182156311d9",
+      "toolkit/app/cocos_forward_timeline.py": "ab4b37483d70f3d7ab42bf9dc6be5e68e0fa2a531ee073206daf04dc9f343061",
+      "toolkit/app/cocos_frame_carousel.py": "0a9896d8b43e19f5248ec472ea266e77d1c70c14acede43e5b00688f926c3771",
+      "toolkit/app/cocos_frame_composition.py": "cfe6d3d02651a0ea61a8fcd1c32908950cfed41e397299bf209f15d0f2d23d5c",
+      "toolkit/app/cocos_frame_table.py": "dda37cc0b181554c26d79b00840137ff6526a3a0aebfb0f9e9fd9e7956393051",
+      "toolkit/app/cocos_glyph_geometry.py": "29058f8ef65f377330697da248133cb633a5f95b6e7a3ef7393b856aea8e6979",
+      "toolkit/app/cocos_glyph_material.py": "1bde2e66df192110f83f17d5622be7cd71ca0d5346aa1a41e0486c83cfba2130",
+      "toolkit/app/cocos_glyph_sdf_writer.py": "d894a367c751e0f7dc9d823a6509a57c4ee32707b02acf5fdfbadcffd31c19d8",
+      "toolkit/app/cocos_glyph_surface.py": "3ca88a3695ea65a55374d1f08fc225579f395eaee29fec620a11c35584a0e8a6",
+      "toolkit/app/cocos_gpu_stream.py": "83d939b1128ef50c0fa7f6d08f0dc461414c3c0a8eb745db59665b79707d2855",
+      "toolkit/app/cocos_head_background.py": "9cb6014c8648ffd993ffff32115b45c56347a1e710b442d4ab82f53891c56d0d",
+      "toolkit/app/cocos_head_frame.py": "f900fb3da5cd9c493f393f22ae9b66df24d312713df5df59fcbb5c521e7a3fb4",
+      "toolkit/app/cocos_image_color.py": "91dd984667e08ff143f27b98e25b3e3d5291368d8408fe09b4435aea550a1075",
+      "toolkit/app/cocos_image_geometry.py": "a22a2aa88013a8441079c982e70a53ae09adcaab096b0b1cb59033daee7779f2",
+      "toolkit/app/cocos_image_material.py": "39aa76ab89cd44e18820a0f564f0c94ad781fc066592930aef8e6b5d70cb7b4a",
+      "toolkit/app/cocos_image_replay.py": "bd423c743f4182c7d0011608f4e90d59eac952fb84decdf3a70888ab59b26830",
+      "toolkit/app/cocos_image_size.py": "70a35ecd2fdb1218f64b758553006d6ad1d99ab11ac7d7b21b59266be6c668b8",
+      "toolkit/app/cocos_image_sizing.py": "d58367335398e3a2067c94f99d833653c8b228fa2b7d3f7b2b9914cb1776dbce",
+      "toolkit/app/cocos_layer_color.py": "898fbc0ce0dd172955c685860d1faac6416c364408ef38901fd3ec640eca9e5e",
+      "toolkit/app/cocos_material_keys.py": "4e5038b8998af5a728d061e3b768f9664e125b9ae27b5959c5269bae9a0e2089",
+      "toolkit/app/cocos_minigif_fallback.py": "7728207b46093f8d38967130d4f26161a8eda88b967d3fc2ec392ab974dd43fc",
+      "toolkit/app/cocos_particle.py": "94a150cf94ba9d4b63a73e6469906211f681ec1fb860ffa6e49140cee9efa3ad",
+      "toolkit/app/cocos_particle_context.py": "260eb1c6e5d7cfe89d54a6cec1a168f151876b7853e1ab474e5c05809f36c2e9",
+      "toolkit/app/cocos_particle_draw.py": "bdc649a51ad9b367391b3f04387f6e882ff037e6a732152d45446556690e4ced",
+      "toolkit/app/cocos_particle_events.py": "ad36e9ec02b5296a947d3e4f209c929be65fa31ca8b3ce8b7e7faff749593d5a",
+      "toolkit/app/cocos_particle_scene_context.py": "436e88b7112446c90490dc41fe1db22a989585406c1228299e64177e539546ab",
+      "toolkit/app/cocos_particle_texture.py": "419f31b8fe964e66afba76ed8960b3b207f23f5facab9a13c235be60a041cf42",
+      "toolkit/app/cocos_particle_timeline_scope.py": "482d4d77443224eb6cb403022b87acb71676851d65797197ca341af8e2dfc039",
+      "toolkit/app/cocos_particle_uv_state.py": "7a5f5a6d69520973e483f6d11d62be7c5ca25f85dfbce23207f881b2637922bb",
+      "toolkit/app/cocos_replay_source_equivalence.py": "4a63ca865ff70beefd30eaedbe86702d95c4212de1f299a38cfe452aaf2bcc31",
+      "toolkit/app/cocos_sampler_atlas_uv.py": "e7697efdcc69b21562e46d98c6c52ea64ebfcb4fb4a07b2c950524011450759d",
+      "toolkit/app/cocos_scene_depth.py": "ac131b7a059a71ac6de757db944108e886a511c13bb9e2e676c473cdbc11470a",
+      "toolkit/app/cocos_scene_order.py": "142ad7a44e826d0165887b211905b8365266704f72db949467b5f691c8669313",
+      "toolkit/app/cocos_shader_cache.py": "1d2cdab34cd6798728c0c8bd390fea05164870e008a246e68c5801c000274483",
+      "toolkit/app/cocos_shader_replay.py": "890a153937725de7a9574e8b0bce5406770ac82a30bd2a635da746b28b0abe8f",
+      "toolkit/app/cocos_shader_selection.py": "1324c735ad9a7a98a167341a927b6bb5c741b9f89ac0cc458dfa67de7030f66c",
+      "toolkit/app/cocos_snapshot_compatibility.py": "48a0745f1ad5882c384e0308a6ad68ebe7a8839cbb8e588d21a4f4d9a5821a43",
+      "toolkit/app/cocos_spine_replay.py": "b3c158faf99a1dcff16f5e4a0c2beb93072b6b35e369d83a39691537ca280c53",
+      "toolkit/app/cocos_spine_state.py": "6e2cedd22995d4c0a4223756a7a6a4655a79a53f7e61e13f8f68b85a823fc869",
+      "toolkit/app/cocos_spine_timeline.py": "94755d77612a62ecb4cd0d43a217eb75ef73f9ee3793261268c68829cd4535b1",
+      "toolkit/app/cocos_splendor.py": "6c9cd490187cef8e0c752c73cd246ec1864bba51c44ca7e8133e619b4dd0b687",
+      "toolkit/app/cocos_sprite_geometry.py": "e33f394be93d8fbc71ca536e79886404b2ae8f1920296ba1697eaff7285ccce8",
+      "toolkit/app/cocos_sprite_uv.py": "c9659787a20e2c4059ed62f90a8a44ae7faf71c39b74d2591d6ef005dc9e4e0c",
+      "toolkit/app/cocos_standalone_image_geometry.py": "492467f05c09fdf801dc18fac5499824637d7a66fa77cc43cb54477bda9a80df",
+      "toolkit/app/cocos_text_units.py": "338cf9305eae5b5aa0ae5eb839d7414fe76359d5528e65ae5387668b632b5f54",
+      "toolkit/app/cocos_texture_formats.py": "42c3b3fb4e6481463de5374e744af6d08bc5d09a357e28331cd4c41d23350573",
+      "toolkit/app/cocos_texture_info.py": "5d803990e08c33ccf3dd51379e7bd69d4d2f604e89187db0576afded404b88e2",
+      "toolkit/app/cocos_texture_route.py": "e5c1d3a273f08c968b9a02b24aa2082dcab62f51caa2168df117f14925d05c16",
+      "toolkit/app/cocos_texture_upload.py": "5e09dcb464919931e628765f8d06a3fa93c988dc3ec00889371c33271f1c949a",
+      "toolkit/app/cocos_timeline.py": "eacb70619f7faa83c6f63537849c27e14cf221ecd14b52c78f24898700b505c8",
+      "toolkit/app/cocos_timer.py": "c87be4da588ec0b37e7b0ad153f487c9ca42245609331eb09e866a2b6874f740",
+      "toolkit/app/cocos_widget_position.py": "544667b71d6be04211984dfad160a3c8dec0ef958e1677cf1a011228627e9be7",
+      "toolkit/app/companion_research.py": "417dcfae88911b490870fdb7c8d91fe3187a7f341712e1a68bacb633e514ac49",
+      "toolkit/app/companion_snapshots.py": "bfa1eef23e5a14b570151592b2274057be7f06bb2beef8b30743cedc755f40c1",
+      "toolkit/app/compare_playeravatar_candidates.py": "3ce6fe67a48d38184084acd5298f01343e7e06fc72dbf13b49cb7797abf0a277",
+      "toolkit/app/discover_adventure_status.py": "e4245c245c952547d7fe43245b6ef8328b0db4dac00c462a7dbb37707d516d20",
+      "toolkit/app/discover_rank_pages.py": "c3fa9973ab4016b0e82b5b1acdb4ae0b010471d89e0fa744d60c363abe452d26",
+      "toolkit/app/dungeon_library.py": "02a4dddee940b7912b2b6d22e96dbc4580bc9d1a089a73ba49ce7ab1dd13a3ca",
+      "toolkit/app/find_hexrepo.py": "31594d1d4caab751efbee3111a018cab8b033e2ad98dcd236fb78f64642f03c8",
+      "toolkit/app/ghidra_survey.py": "ab77add0fcf2371a514946786aabbeb10784662057a3b1b87e8e373d644726dd",
+      "toolkit/app/installed_cocos_atlases.py": "bd80e742c8906476ba13408f4b6b7554594d02aec058d342c2eee25e1ae2321a",
+      "toolkit/app/installed_texture_records.py": "9c9cb503c177dc965eea1d9e6b3b24039caf93b7a7a28b281c5a073b13d7dbbd",
+      "toolkit/app/item_supplemental_references.json": "54cf73219eb38bee4a40a3b7c565b05ae165f300e06dd83b2ccb6915a3863a4d",
+      "toolkit/app/lib/find_schema_lists.py": "3b6915ede3b627cdddc4f75ff45e56c544822372911ef950fff36aac46a8a799",
+      "toolkit/app/lib/item_codec.py": "b0c274bbef14bb809458707ae7fbce235bf739c0e49394056380b1aea03490b4",
+      "toolkit/app/lib/lookup_localization.py": "bbe1ba75462fbb894fdff257ec394ca57e94a07a2e87ad1bdbd19c9e06ed4f1a",
+      "toolkit/app/lib/mtable_codec.py": "587cb83fec24327be1090a5101e2bf153932b4219e8c2f86080c491bf4b3c538",
+      "toolkit/app/lib/resolve_schema_fields.py": "8462499903a69cf6e9aac316de10fabf0c8a6c0dcee92bbfe0af492a52ac16d7",
+      "toolkit/app/lib/wwm.py": "4b68a876b0a66d9b8c28d7b1502e8c6f10968f9d66ef1ea354e2971c32ac4199",
+      "toolkit/app/lib/xlsx_writer.py": "6b77f1b344354bf46f604f3beb642de2f3fb3db0b44746704abf2ec2ebd3b09b",
+      "toolkit/app/live_adventure_status.py": "f326edca9df3229a1bd7aed922e10c172d4ecd0e8fd4a6a17cb77e692b5fca42",
+      "toolkit/app/live_combat_reports.py": "b02259a0853e85615b707ccb50069e225bf8b55823a11912c7da6fabae300123",
+      "toolkit/app/live_match_details.py": "5af2a27b353c18b8a3b16b1c6e6b9ca286d2d1daceab12f75bfb85fe243ad032",
+      "toolkit/app/live_memory_probe.py": "874298714cc4a0d64ba26b7bbf4a46aa1940366fd4f94877249b46882234ab67",
+      "toolkit/app/live_status.py": "49dead67994555f4261c9ed39035b6ea36a852bd9a0df38fd2439a43e6138c95",
+      "toolkit/app/named_mtable.py": "9827a7cb4a31e24a0ea1885b1563f80bfcdd1ca52d0d65911a493e4804f4ff69",
+      "toolkit/app/native_default_texture_pixels.py": "7be5cabf3a48a52f36fdc914d7dc025d41db3c0070d8b3c434fc7b03bed88be2",
+      "toolkit/app/native_sampler_state.py": "cbb9c62fdf65f0641a811a6635887674f095405980bd59acf8c2bd642ebfbd6e",
+      "toolkit/app/playeravatar_wire.py": "4d6b961abcaa5078bdb234cac4a339a3467e2df2a3d65d55b4d477a4bcf5a6c4",
+      "toolkit/app/prepare_combat_scan.py": "401a6c0d05c940712c1c7af21fc25bbccaf95913808455f283981843f8dfbdb3",
+      "toolkit/app/rea_local.py": "4b6324058bf4398fcd5cfacab53f2ec71406986cb1545466c0d52b751e239eb3",
+      "toolkit/app/registry_metadata.py": "c44e83d9e504fd11a6836044a943049b630eabf9a6ab0016f47e7bd9e5a7d6c8",
+      "toolkit/app/research_api_inventory.py": "5909a038e56602dd69b4f942f0e8bfba58289eeda22ac08783afe9216da6f311",
+      "toolkit/app/research_avatar_effects.py": "d1fc35dbc6cf3b9ef49fc666d1759b9100eb55444d885e1763a1e31e6199c68f",
+      "toolkit/app/research_playeravatar_fields.py": "0057c5e7096fb3e18e2f6fc5308812493077201e96996541f056895d0cff5ccd",
+      "toolkit/app/runtime_property_codec.py": "c976fe779c33aeb51b7735e13cc836c58fc4e650719ffb437f477c4b5a642f22",
+      "toolkit/app/scan_game_avatars.py": "b09f9697eeef0f48791aac80c49b16e00ca302ed4c5e583033bd5e6f014ebedc",
+      "toolkit/app/table_discovery.py": "35e30bd847c8edcdd9da9cb56d415b34a27918e8f8615ce7426d1707669bd7b9",
+      "toolkit/app/table_references.json": "d53092b18a05b9b534b9284644dd6ecab4f108fd9d4243527dfce6937bb22ae7",
+      "toolkit/app/toolkit.py": "76ac00138f31479ef8b394d9cbaa293ebddaf09fd6139ff1c62de12aed56e779",
+      "toolkit/app/toolkit_paths.py": "e0c193b32441bf76ac0fe905f10b06a4a00a6bba61c32275923164c6b06b04f4",
+      "toolkit/app/update_all_affixes.py": "ed330283d5c1cf3126dd5d549190d2701c990ee49e5023867cb6479cfc6512f6",
+      "toolkit/app/update_avatars_all.py": "969c4e90004368b7e57441a22e60af425c3ab774c4e658c18f870e0a362bad2a",
+      "toolkit/app/update_equipment_names.py": "9c3dfcf293625d19b2502ec3cd78148a857c366d1a3c78dcb4412d5e41928faa",
+      "toolkit/app/update_game_data.py": "6fd855a0ad6aa6e69a2f4e4a0b907e08e86c2128b8698537b30f437cdbba74c6",
+      "toolkit/app/update_item_names.py": "1e227253eef140d81af569c38015670ed15a526db720393b864fa9171b49564f",
+      "toolkit/app/update_trial_dungeons.py": "16f0d34d62440f4a0a9eb2cb3f3b11813ba2656acefe5afddb6650e752dbf59a",
+      "toolkit/tools/extract_abyss_trials.py": "4b290be19edd322720cd8575b46dda4efdafa40c17d9083aba8600ef658bf2e8",
+      "bot/activity/maintenance/extract_equipment_metadata.py": "0351eb0f27ed1b6a3768d0d5856bd18fd3fc4406a7a347511294e9a4a1c5124b",
+      "bot/maintenance/assets/api_constant_references.json": "31a65516694cfbed3c4fa641faf32e826ffe568f20ffe7712131be5144bd137e",
+      "bot/maintenance/assets/asset_review.py": "f9ad89784775495cfe482d90c2b34c2246cb69b80e0b1be524b7ec17040c33e7",
+      "bot/maintenance/assets/audit_asset_coverage.py": "c7c26c0c1b3c5b958b201aa85ddb14cd97e53d197a6489f70cc4b8fb51da8232",
+      "bot/maintenance/assets/audit_item_rejections.py": "775fbbf5349d982873e6a8c2ae130a8945b0239824f1e85022fc34fa7a785726",
+      "bot/maintenance/assets/audit_manual_mappings.py": "9bcab5612e30736d350f7296992d5605fa9198548cbc8ea7b7a398d631a086b2",
+      "bot/maintenance/assets/audit_orphan_equipment.py": "a6cf2ed0d5c956aafc6b6fc49cbb063cea8e38c1b2448fc6462c21370dbefda7",
+      "bot/maintenance/assets/audit_orphan_shards.py": "b501f78af9d658be9298e38bb4e928381d32be2588913a12a760336ab5f7f05f",
+      "bot/maintenance/assets/audit_schema_variants.py": "83d4461376bf647e1920e67d985e69c5d9b575d3af3f0e0f80e93019a7b712f5",
+      "bot/maintenance/assets/build_game_bundle.py": "9ec75d351a3e1e35905538cf82d4eb2a95034d3713440b37baa009eaa0d2854b",
+      "bot/maintenance/assets/classify_item_index_values.py": "9a5a1be06a9d3acf012703af721a4f4817ab5e63e6f41d36d2c417768f966766",
+      "bot/maintenance/assets/dungeon_card_reviews.json": "229685607b41a387a5b0d5901e477d39d8d018076019ffdfef05317788146098",
+      "bot/maintenance/assets/emote_animation.py": "17bc0ee68364d0d246791e3214a616569841cf08353daaf1d0e06fa223c7aa61",
+      "bot/maintenance/assets/emote_atlas.py": "e6bc37ac9fbf5ee87683a711b9a1471840e918eb48ffce509321c96e6dce41a4",
+      "bot/maintenance/assets/emote_sources.json": "8a4e1749c7b1a5dbe85382fe7bb83f2ffb5118ca4e9362f8c33d358204edb20d",
+      "bot/maintenance/assets/extract_api_constants.py": "562cd00a7255272e0aa834e949a71ba4dcb26125d4146cb09bab3449980aa2d1",
+      "bot/maintenance/assets/extract_emotes.py": "c617f84e10c805299432a2e175cf481542912232b07d682bceb474779d9b7f76",
+      "bot/maintenance/assets/extract_like_topics.py": "9b17ef6e2c79ff650bddd74f1e8870b40b9be7b2a9a136140e74a445ed03f6f1",
+      "bot/maintenance/assets/extract_market_goods.py": "0a13eb24de5bb0f2bc724e0a148d6370ff339aa0f7d96ff4c1a98d5d33faaf9a",
+      "bot/maintenance/assets/extract_martial.py": "621c324c0e8bfee2996520529b34b5a8c98e46edb7dd632ab3548ceaca60ca41",
+      "bot/maintenance/assets/extract_pvp_ranks.py": "50f34b3aea7c14f3a7cc839d400055e4c63997709f10b15c7553651a821f550a",
+      "bot/maintenance/assets/import_abyss_assets.py": "dc86247757fd96b0050c85587894a996e2a212e4070881d15f74a16444572998",
+      "bot/maintenance/assets/import_dungeon_assets.py": "2d70c09e5a17bc9846f7b1d745470a448b63e72bbffd8081f7532e73b22e82ce",
+      "bot/maintenance/assets/inline_emoji_pack.py": "9bb37558c40c671be24af3b54d13dbd441a1b0e391812dab8358d8cf82556f09",
+      "bot/maintenance/assets/lua_symbols.py": "fc1c62cab5490885776822f700394508d4dd79bdb0b023be59881f30659d764d",
+      "bot/maintenance/assets/martial-mapping-inventory.json": "06e59ec32b3df6df58452b21fe187e9d955ac80d1d1a3b701495fd24eb3ab75c",
+      "bot/maintenance/assets/named_mtable.py": "a2972a85819fe2ec19177e80c4735ad77bccd87664ffedd5d870fc265dee7b51",
+      "bot/maintenance/assets/original_lua.py": "974911fd69ce6818fc582398663a5e60f06953389f811e7db5daa0231739bbd8",
+      "bot/maintenance/assets/probe_unmapped_affixes.py": "8ffec2628ff25b2512530c486612c283bacbc50c71fdf1b595a7416c0245f393",
+      "bot/maintenance/assets/pvp_rank_reference.json": "d79dbe003104202039000b1363d2f2f2c8c1017be5cb62f4ba11a5108fc03d2e",
+      "bot/maintenance/assets/refresh_dungeon_cards.py": "e40b006d641d67fd70778baa29b3a05051ebef993bdf9af19c8006821e1ae26c",
+      "bot/maintenance/assets/update_game_assets.py": "99fd4e799e5b5b3c3086a4e9714b4252f9d07be2fffdb0a03c1d42b8cc3cfb81",
+      "bot/maintenance/assets/upload_inline_emojis.py": "58e866cd1e168b068e6976eb4d6e91937afbc7d17ffbf665e309daaa28c8e007",
+      "bot/maintenance/assets/upload_martial_emojis.py": "a78fe5f77ca5c1b9f7e41bab01321370b9da0ba1aee0bb1f5fd5c01536594360",
+      "bot/utility/api_constants.py": "9705d0208249b6f879cda1b83b9a71c053d40d19981d85a3d478f9a433120f38"
+    },
+    "input_changes": {
+      "game_files": {
+        "baseline_available": false
+      },
+      "extractor_files": {
+        "baseline_available": false
+      }
+    },
+    "ranking_coverage": {
+      "method": "installed_named_rank_data_and_activity_cards_v2",
+      "boards": {
+        "binding": {
+          "table": "rank_data",
+          "archive": "index4",
+          "frame": 7247,
+          "records": 313,
+          "pages": 2,
+          "manifest_slot": 89057,
+          "record_hex": "390100000200000004004f1cffffffff6bb18910000000006db4010000040000",
+          "supplemental_pages": [
+            {
+              "archive": "index1001",
+              "frame": 8157
+            },
+            {
+              "archive": "index1001",
+              "frame": 8158
+            }
+          ],
+          "manifest_sha256": "78177b4d619b847ef725bd4ad691979312bcb785237787e486f3b55c3a55a55f"
+        },
+        "fields": [
+          "component_list",
+          "group_id",
+          "has_friend_rank",
+          "has_region_rank",
+          "inform_id_list",
+          "is_season_inquire",
+          "name",
+          "no",
+          "num",
+          "rank_name",
+          "sort_id",
+          "zero_rank_hide",
+          "NPC_mail_no",
+          "game_desc_id",
+          "reward_lock_time",
+          "reward_mode",
+          "reward_snapshot",
+          "reward_type",
+          "ui_title",
+          "reset_mode",
+          "reward_by_weekly",
+          "sub_name",
+          "bg_pic_name",
+          "bottom_time",
+          "data_type",
+          "rank_type",
+          "reward_time_node",
+          "ui_icon",
+          "is_frequent",
+          "is_record_level",
+          "rank_NPC_mail_no",
+          "rank_reward_mode",
+          "rank_reward_time",
+          "extra_group_id",
+          "is_hide",
+          "first_season",
+          "old_server_lock",
+          "snapshot_save_num",
+          "snapshot_time"
+        ],
+        "files": {
+          "index4": {
+            "layer": "base",
+            "sha256": "d4be1a69f409bed2137cba2632468bb2d651554a4df1e07e94499b5e0bbfd75f"
+          },
+          "index1001": {
+            "layer": "patch",
+            "sha256": "64e05c0577d31de81d4ed0a3857a3210e4aa88312163caa4b866d645c3d5b525"
+          },
+          "data9": {
+            "layer": "base",
+            "sha256": "68055d97b41f2301e1bdf0321b5ad0e9b20f8350a107165a7f384f6ac6aeedd5"
+          },
+          "data1001": {
+            "layer": "base",
+            "sha256": "0506e743fb2710f962f559eae205fb45be5024d5124922f980416c723c6c1760"
+          },
+          "data1002": {
+            "layer": "base",
+            "sha256": "102f51c907f926aa48fee532187d164d745cb09aa90a350a6f6b70ec84fb0591"
+          },
+          "data1005": {
+            "layer": "patch",
+            "sha256": "929c74c67960141eba9ecc3af85fffe5d0420c9d5412d2d03ee4ab3173f9a502"
+          }
+        },
+        "pages": [
+          {
+            "page": 7248,
+            "archive": "index4",
+            "occupied": 134,
+            "capacity": 255,
+            "unused_controls": {
+              "0x80": 121
+            },
+            "sha256": "492a48ff2d4916e437aefc958b378297b0aac3a58e750e89cfcf74c1dda5faf5"
+          },
+          {
+            "page": 7249,
+            "archive": "index4",
+            "occupied": 141,
+            "capacity": 255,
+            "unused_controls": {
+              "0x80": 114
+            },
+            "sha256": "a1a2215a3d87a363aa6f21cbc3edb87f3fe8932cf7afd61f32c0b612f9576855"
+          },
+          {
+            "page": 8157,
+            "archive": "index1001",
+            "occupied": 25,
+            "capacity": 31,
+            "unused_controls": {
+              "0x80": 6
+            },
+            "sha256": "5a80c593aa7c7649c5b5bc471c2c7a388ef9b17a309d523d3b66b05586c265df"
+          },
+          {
+            "page": 8158,
+            "archive": "index1001",
+            "occupied": 13,
+            "capacity": 15,
+            "unused_controls": {
+              "0x80": 2
+            },
+            "sha256": "fb5fa8bf69e1abb72c70f65ae58e33dc620051e510961ea9221d959dd544b4aa"
+          }
+        ],
+        "decoded_primary_rows": 275,
+        "decoded_supplemental_rows": 38,
+        "declared_minus_occupied": 38,
+        "name_index_crosscheck": {
+          "source": {
+            "binding": {
+              "table": "rank_name_to_config",
+              "archive": "index4",
+              "frame": 7254,
+              "records": 313,
+              "pages": 2,
+              "manifest_slot": 89061,
+              "record_hex": "39010000020000000400561cffffffff1824b3b90000000072b4010000080000",
+              "supplemental_pages": [
+                {
+                  "archive": "index1001",
+                  "frame": 8162
+                },
+                {
+                  "archive": "index1001",
+                  "frame": 8163
+                }
+              ],
+              "manifest_sha256": "78177b4d619b847ef725bd4ad691979312bcb785237787e486f3b55c3a55a55f"
+            },
+            "fields": [
+              "bg_pic_name",
+              "bottom_time",
+              "component_list",
+              "data_type",
+              "extra_group_id",
+              "game_desc_id",
+              "is_record_level",
+              "name",
+              "no",
+              "num",
+              "rank_name",
+              "rank_reward_time",
+              "rank_type",
+              "reward_lock_time",
+              "reward_time_node",
+              "reward_type",
+              "sort_id",
+              "ui_title",
+              "group_id",
+              "NPC_mail_no",
+              "ui_icon",
+              "zero_rank_hide",
+              "is_season_inquire",
+              "reset_mode",
+              "reward_snapshot",
+              "has_friend_rank",
+              "has_region_rank",
+              "old_server_lock",
+              "snapshot_save_num",
+              "snapshot_time",
+              "sub_name",
+              "inform_id_list",
+              "first_season",
+              "reward_mode",
+              "is_frequent",
+              "reward_by_weekly",
+              "rank_NPC_mail_no",
+              "rank_reward_mode",
+              "is_hide"
+            ],
+            "files": {
+              "index4": {
+                "layer": "base",
+                "sha256": "d4be1a69f409bed2137cba2632468bb2d651554a4df1e07e94499b5e0bbfd75f"
+              },
+              "index1001": {
+                "layer": "patch",
+                "sha256": "64e05c0577d31de81d4ed0a3857a3210e4aa88312163caa4b866d645c3d5b525"
+              },
+              "data9": {
+                "layer": "base",
+                "sha256": "68055d97b41f2301e1bdf0321b5ad0e9b20f8350a107165a7f384f6ac6aeedd5"
+              },
+              "data1001": {
+                "layer": "base",
+                "sha256": "0506e743fb2710f962f559eae205fb45be5024d5124922f980416c723c6c1760"
+              },
+              "data1002": {
+                "layer": "base",
+                "sha256": "102f51c907f926aa48fee532187d164d745cb09aa90a350a6f6b70ec84fb0591"
+              },
+              "data1005": {
+                "layer": "patch",
+                "sha256": "929c74c67960141eba9ecc3af85fffe5d0420c9d5412d2d03ee4ab3173f9a502"
+              }
+            },
+            "pages": [
+              {
+                "page": 7255,
+                "archive": "index4",
+                "occupied": 139,
+                "capacity": 255,
+                "unused_controls": {
+                  "0x80": 116
+                },
+                "sha256": "9daa3e2253a5e8c79caa5cb5dd313445692753553aa0bed449d2fe737a075d8b"
+              },
+              {
+                "page": 7256,
+                "archive": "index4",
+                "occupied": 136,
+                "capacity": 255,
+                "unused_controls": {
+                  "0x80": 119
+                },
+                "sha256": "786c039462706604cc4debf264d888a90e0ba8f24b28605776a3390c8cdf1e93"
+              },
+              {
+                "page": 8162,
+                "archive": "index1001",
+                "occupied": 19,
+                "capacity": 31,
+                "unused_controls": {
+                  "0x80": 12
+                },
+                "sha256": "7d4b0cb19d049a4754ad63a99a516d235148f6c0250d743451111ba440630cc7"
+              },
+              {
+                "page": 8163,
+                "archive": "index1001",
+                "occupied": 19,
+                "capacity": 31,
+                "unused_controls": {
+                  "0x80": 12
+                },
+                "sha256": "7efd9856d09116053c7561afbfd973c790f2cc6ce5d6a6f79ea24526ca6d47ee"
+              }
+            ],
+            "decoded_primary_rows": 275,
+            "decoded_supplemental_rows": 38,
+            "declared_minus_occupied": 38
+          },
+          "matching_board_count": 86,
+          "fields_checked": [
+            "no",
+            "name",
+            "ui_title",
+            "num",
+            "group_id",
+            "rank_type"
+          ]
+        },
+        "exported_trial_boards": 86,
+        "localized_speedrun_titles_without_board": [
+          "Frostplume Skim Challenge Speedrun: Top 500 - Season 2",
+          "Frostplume Skim Normal Speedrun: Top 500 - Season 1",
+          "Tide of Vipers Challenge Speedrun: Top 750 - Season 2",
+          "Tide of Vipers Normal Speedrun: Top 750 - Season 1",
+          "Tide of Vipers Normal Speedrun: Top 750 - Season 3",
+          "Torrent Serpent Challenge Speedrun: Top 750 - Season 3",
+          "Windfeather Skims the Cold River - Challenge Speedrun - Top 500 - Season 1",
+          "Windfeather over the Cold River Challenge Speedrun: Top 500 - Season 3"
+        ]
+      },
+      "activity_card_sources": {
+        "social_game_config": {
+          "binding": {
+            "table": "social_game_config",
+            "archive": "index4",
+            "frame": 9897,
+            "records": 264,
+            "pages": 1,
+            "manifest_slot": 89895,
+            "record_hex": "08010000010000000400a926e903b1241ca97b8900000000ebbd010000040000",
+            "supplemental_pages": [
+              {
+                "archive": "index1001",
+                "frame": 9394
+              }
+            ],
+            "supplemental_schema": {
+              "archive": "index1001",
+              "frame": 9393
+            },
+            "manifest_sha256": "78177b4d619b847ef725bd4ad691979312bcb785237787e486f3b55c3a55a55f"
+          },
+          "fields": [
+            "ad_image",
+            "award_id",
+            "classification_tag",
+            "completed_reward",
+            "first_reward_id",
+            "game",
+            "game_desc",
+            "game_desc_id",
+            "game_icon",
+            "game_list_image",
+            "goto_button_text",
+            "goto_point_id",
+            "goto_remind_id",
+            "image",
+            "image_color",
+            "mate_info_id",
+            "show_in_recommend",
+            "sort",
+            "tag",
+            "team_game_id",
+            "team_tag",
+            "xuanshang_type_2_id",
+            "card_tag",
+            "card_tag_icon",
+            "combine_mode_back",
+            "from_game_id",
+            "game_type_icon",
+            "game_type_icon_color",
+            "goto_talent",
+            "loading_text",
+            "lock_detail_text",
+            "lock_text_id",
+            "recommend_capability",
+            "talent_season",
+            "team_tag_ai",
+            "team_tag_icon",
+            "guild_team_content",
+            "guild_team_id",
+            "guild_team_title",
+            "loading_desc",
+            "rank_id",
+            "rank_id_replace",
+            "rank_id_replace_time",
+            "categorize",
+            "forbidden_key",
+            "limit_game_id",
+            "limit_tag",
+            "per_award",
+            "per_time",
+            "match_goto",
+            "condition_id",
+            "game_desc_2_id",
+            "guide_id",
+            "time_tag",
+            "time_tag2",
+            "xianqu_tag",
+            "bubble_delay_time",
+            "doing_bubble_text",
+            "doing_goto_id",
+            "hide_cross_match",
+            "is_hide_team",
+            "is_special_time_limit",
+            "notice_mode",
+            "loading_image",
+            "goto_id",
+            "category_name",
+            "notice_bubble_text",
+            "notice_goto_id",
+            "notice_time",
+            "wanfa_time_length",
+            "is_return_ui",
+            "fake_award_id",
+            "not_categorize",
+            "lock_entrance",
+            "jingsu_index",
+            "play_index",
+            "is_show_camp_tag",
+            "is_invisible",
+            "win_award",
+            "lock_goto",
+            "team_tag2",
+            "can_select_match_mode",
+            "goto_button_text_extra",
+            "team_tag3",
+            "is_not_show_identity",
+            "goto_close_win",
+            "limit_time_invisible",
+            "video",
+            "extra_golist",
+            "extra_title",
+            "goto_button_extra",
+            "open_start_game_btn_red"
+          ],
+          "files": {
+            "index4": {
+              "layer": "base",
+              "sha256": "d4be1a69f409bed2137cba2632468bb2d651554a4df1e07e94499b5e0bbfd75f"
+            },
+            "index1001": {
+              "layer": "patch",
+              "sha256": "64e05c0577d31de81d4ed0a3857a3210e4aa88312163caa4b866d645c3d5b525"
+            },
+            "data10": {
+              "layer": "base",
+              "sha256": "2cf77ecc0565dfe15cc3e952c121c91964dba4f7ee9d2f466b2ee9d9f90e3d76"
+            },
+            "data1002": {
+              "layer": "base",
+              "sha256": "102f51c907f926aa48fee532187d164d745cb09aa90a350a6f6b70ec84fb0591"
+            },
+            "data1001": {
+              "layer": "base",
+              "sha256": "0506e743fb2710f962f559eae205fb45be5024d5124922f980416c723c6c1760"
+            },
+            "data1005": {
+              "layer": "patch",
+              "sha256": "929c74c67960141eba9ecc3af85fffe5d0420c9d5412d2d03ee4ab3173f9a502"
+            },
+            "data1003": {
+              "layer": "base",
+              "sha256": "a28671c4d50b71bbbfdf0322643a20660b2e952552ba3b5893943de5b54c92a1"
+            }
+          },
+          "pages": [
+            {
+              "page": 9898,
+              "archive": "index4",
+              "occupied": 253,
+              "capacity": 511,
+              "unused_controls": {
+                "0x80": 258
+              },
+              "sha256": "5262e21e4bfe449e0e7d83b6dd54a881597dbda8fedc2c996be7746de93788b3"
+            },
+            {
+              "page": 9394,
+              "archive": "index1001",
+              "occupied": 27,
+              "capacity": 31,
+              "unused_controls": {
+                "0x80": 4
+              },
+              "sha256": "71c008c6b1816b2b7fda99cbdd306208cdf8af1fa7315a85494c9b752b36c336"
+            }
+          ],
+          "decoded_primary_rows": 253,
+          "decoded_supplemental_rows": 27,
+          "declared_minus_occupied": 11
+        },
+        "social_game_data": {
+          "binding": {
+            "table": "social_game_data",
+            "archive": "index4",
+            "frame": 9901,
+            "records": 248,
+            "pages": 1,
+            "manifest_slot": 89897,
+            "record_hex": "f8000000010000000400ad26e903b324f70997e200000000edbd010000040000",
+            "supplemental_pages": [
+              {
+                "archive": "index1001",
+                "frame": 9396
+              }
+            ],
+            "supplemental_schema": {
+              "archive": "index1001",
+              "frame": 9395
+            },
+            "manifest_sha256": "78177b4d619b847ef725bd4ad691979312bcb785237787e486f3b55c3a55a55f"
+          },
+          "fields": [
+            "classification_tag",
+            "condition_id",
+            "fake_award_id",
+            "forbidden_key",
+            "game",
+            "game_desc",
+            "game_desc_id",
+            "game_icon",
+            "game_list_image",
+            "game_type_icon",
+            "game_type_icon_color",
+            "goto_point_id",
+            "guide_id",
+            "image",
+            "lock_detail_text",
+            "lock_text_id",
+            "mate_info_id",
+            "per_award",
+            "per_time",
+            "show_in_recommend",
+            "sort",
+            "tag",
+            "team_game_id",
+            "team_tag",
+            "team_tag_icon",
+            "time_tag",
+            "win_award",
+            "xianqu_tag",
+            "ad_image",
+            "card_tag",
+            "card_tag_icon",
+            "combine_mode_back",
+            "completed_reward",
+            "from_game_id",
+            "goto_talent",
+            "guild_team_content",
+            "guild_team_id",
+            "guild_team_title",
+            "image_color",
+            "loading_desc",
+            "loading_text",
+            "rank_id",
+            "recommend_capability",
+            "talent_season",
+            "team_tag_ai",
+            "award_id",
+            "first_reward_id",
+            "goto_button_text",
+            "goto_remind_id",
+            "xuanshang_type_2_id",
+            "goto_close_win",
+            "goto_id",
+            "rank_id_replace",
+            "rank_id_replace_time",
+            "lock_entrance",
+            "is_special_time_limit",
+            "limit_tag",
+            "loading_image",
+            "time_tag2",
+            "jingsu_index",
+            "categorize",
+            "is_not_show_identity",
+            "play_index",
+            "bubble_delay_time",
+            "doing_bubble_text",
+            "doing_goto_id",
+            "notice_bubble_text",
+            "notice_goto_id",
+            "notice_mode",
+            "notice_time",
+            "wanfa_time_length",
+            "is_return_ui",
+            "match_goto",
+            "is_show_camp_tag",
+            "lock_goto",
+            "hide_cross_match",
+            "limit_game_id",
+            "not_categorize",
+            "category_name",
+            "game_desc_2_id",
+            "team_tag2",
+            "team_tag3",
+            "video",
+            "can_select_match_mode",
+            "goto_button_text_extra"
+          ],
+          "files": {
+            "index4": {
+              "layer": "base",
+              "sha256": "d4be1a69f409bed2137cba2632468bb2d651554a4df1e07e94499b5e0bbfd75f"
+            },
+            "index1001": {
+              "layer": "patch",
+              "sha256": "64e05c0577d31de81d4ed0a3857a3210e4aa88312163caa4b866d645c3d5b525"
+            },
+            "data10": {
+              "layer": "base",
+              "sha256": "2cf77ecc0565dfe15cc3e952c121c91964dba4f7ee9d2f466b2ee9d9f90e3d76"
+            },
+            "data1002": {
+              "layer": "base",
+              "sha256": "102f51c907f926aa48fee532187d164d745cb09aa90a350a6f6b70ec84fb0591"
+            },
+            "data1001": {
+              "layer": "base",
+              "sha256": "0506e743fb2710f962f559eae205fb45be5024d5124922f980416c723c6c1760"
+            },
+            "data1005": {
+              "layer": "patch",
+              "sha256": "929c74c67960141eba9ecc3af85fffe5d0420c9d5412d2d03ee4ab3173f9a502"
+            }
+          },
+          "pages": [
+            {
+              "page": 9902,
+              "archive": "index4",
+              "occupied": 237,
+              "capacity": 511,
+              "unused_controls": {
+                "0x80": 274
+              },
+              "sha256": "ed3a2792d656d6c4801e7abc48d025f8c83c75ddb8c6704f93dc37d8ec6d1a43"
+            },
+            {
+              "page": 9396,
+              "archive": "index1001",
+              "occupied": 26,
+              "capacity": 31,
+              "unused_controls": {
+                "0x80": 5
+              },
+              "sha256": "55bf4a7a49cfd68d97f5b414182095d49d24834d05a41202f90d41788e50ce72"
+            }
+          ],
+          "decoded_primary_rows": 237,
+          "decoded_supplemental_rows": 26,
+          "declared_minus_occupied": 11
+        },
+        "rank_social_game_data": {
+          "binding": {
+            "table": "rank_social_game_data",
+            "archive": "index4",
+            "frame": 7262,
+            "records": 52,
+            "pages": 1,
+            "manifest_slot": 89065,
+            "record_hex": "340000000100000004005e1ce903e61f58fbce9c0000000077b4010000080000",
+            "supplemental_pages": [
+              {
+                "archive": "index1001",
+                "frame": 8167
+              }
+            ],
+            "supplemental_schema": {
+              "archive": "index1001",
+              "frame": 8166
+            },
+            "manifest_sha256": "78177b4d619b847ef725bd4ad691979312bcb785237787e486f3b55c3a55a55f"
+          },
+          "fields": [
+            "ad_image",
+            "categorize",
+            "classification_tag",
+            "combine_mode_back",
+            "condition_id",
+            "fake_award_id",
+            "from_game_id",
+            "game",
+            "game_desc",
+            "game_icon",
+            "game_list_image",
+            "hide_cross_match",
+            "image",
+            "image_color",
+            "is_return_ui",
+            "limit_game_id",
+            "limit_tag",
+            "lock_detail_text",
+            "lock_text_id",
+            "mate_info_id",
+            "not_categorize",
+            "rank_id",
+            "show_in_recommend",
+            "sort",
+            "tag",
+            "team_game_id",
+            "team_tag",
+            "team_tag_icon",
+            "time_tag",
+            "forbidden_key",
+            "goto_talent",
+            "game_desc_id",
+            "loading_desc",
+            "loading_image",
+            "loading_text",
+            "per_award",
+            "per_time",
+            "team_tag2",
+            "team_tag3",
+            "video",
+            "bubble_delay_time",
+            "doing_bubble_text",
+            "doing_goto_id",
+            "notice_bubble_text",
+            "notice_goto_id",
+            "notice_mode",
+            "notice_time",
+            "wanfa_time_length",
+            "play_index",
+            "first_reward_id",
+            "goto_point_id",
+            "xuanshang_type_2_id",
+            "card_tag",
+            "card_tag_icon",
+            "completed_reward",
+            "game_type_icon",
+            "game_type_icon_color",
+            "guild_team_content",
+            "guild_team_id",
+            "guild_team_title",
+            "recommend_capability",
+            "talent_season",
+            "team_tag_ai",
+            "rank_id_replace",
+            "rank_id_replace_time",
+            "jingsu_index",
+            "lock_entrance",
+            "xianqu_tag"
+          ],
+          "files": {
+            "index4": {
+              "layer": "base",
+              "sha256": "d4be1a69f409bed2137cba2632468bb2d651554a4df1e07e94499b5e0bbfd75f"
+            },
+            "index1001": {
+              "layer": "patch",
+              "sha256": "64e05c0577d31de81d4ed0a3857a3210e4aa88312163caa4b866d645c3d5b525"
+            },
+            "data9": {
+              "layer": "base",
+              "sha256": "68055d97b41f2301e1bdf0321b5ad0e9b20f8350a107165a7f384f6ac6aeedd5"
+            },
+            "data1002": {
+              "layer": "base",
+              "sha256": "102f51c907f926aa48fee532187d164d745cb09aa90a350a6f6b70ec84fb0591"
+            },
+            "data1005": {
+              "layer": "patch",
+              "sha256": "929c74c67960141eba9ecc3af85fffe5d0420c9d5412d2d03ee4ab3173f9a502"
+            }
+          },
+          "pages": [
+            {
+              "page": 7263,
+              "archive": "index4",
+              "occupied": 47,
+              "capacity": 63,
+              "unused_controls": {
+                "0x80": 16
+              },
+              "sha256": "f7a9a1b52b41a255458b9d08b6147c9bcb08a7d20ebb0be15df96161ae147cf6"
+            },
+            {
+              "page": 8167,
+              "archive": "index1001",
+              "occupied": 6,
+              "capacity": 7,
+              "unused_controls": {
+                "0x80": 1
+              },
+              "sha256": "ed53bcc14e70bfe324f42fd6d780578c2ed5d6f4d236741a4878103684b623e8"
+            }
+          ],
+          "decoded_primary_rows": 47,
+          "decoded_supplemental_rows": 6,
+          "declared_minus_occupied": 5
+        }
+      },
+      "card_references_without_board": {
+        "rank_team_dungeon_10": [
+          "Drunken Verse - Supreme"
+        ],
+        "rank_team_dungeon_9": [
+          "Drunken Verse - Supreme"
+        ]
+      }
     },
     "unresolved_artwork": [],
     "api_mapping_sources": {
@@ -408,6 +1300,12 @@
     "activity/art/hr-38.png": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
     "activity/art/hr-39.png": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
     "activity/art/hr-4.png": "eb56aeac42851e3b550d382f4754cda7e022883e10a237862070b8adc2f2659d",
+    "activity/art/hr-40.png": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+    "activity/art/hr-41.png": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+    "activity/art/hr-42.png": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+    "activity/art/hr-43.png": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+    "activity/art/hr-44.png": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+    "activity/art/hr-45.png": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
     "activity/art/hr-6.png": "eb56aeac42851e3b550d382f4754cda7e022883e10a237862070b8adc2f2659d",
     "activity/art/hr-60003.png": "eb56aeac42851e3b550d382f4754cda7e022883e10a237862070b8adc2f2659d",
     "activity/art/hr-7.png": "ff36ef127ef41763a40edff75a6a48eb32d975ea77bf276a44d43e43728d9ca4",
@@ -445,13 +1343,19 @@
     "activity/art/st-39.png": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
     "activity/art/st-4.png": "67c93dc6ca38244c57052bd7d3001430b80f1f7a0f4b20c8ed53fc2f205cdd2d",
     "activity/art/st-40.png": "709e6c986e3378629348cec87962d7a0a1a2591a0ab0fbd27d8c3a6c60830c91",
+    "activity/art/st-41.png": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+    "activity/art/st-42.png": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+    "activity/art/st-43.png": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+    "activity/art/st-44.png": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+    "activity/art/st-45.png": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+    "activity/art/st-46.png": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
     "activity/art/st-5.png": "67c93dc6ca38244c57052bd7d3001430b80f1f7a0f4b20c8ed53fc2f205cdd2d",
     "activity/art/st-60001.png": "efc470eb3d4f86666f7e24fe8a68b9f072b62dfc07559bcfa794f49d0e378284",
     "activity/art/st-60002.png": "efc470eb3d4f86666f7e24fe8a68b9f072b62dfc07559bcfa794f49d0e378284",
     "activity/art/st-60004.png": "9c2fd0135d14bc2c76138de720c76cd3f5485da7f3e3046370a0d91229d0aedd",
     "activity/art/st-60039.png": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
     "activity/art/st-8.png": "efc470eb3d4f86666f7e24fe8a68b9f072b62dfc07559bcfa794f49d0e378284",
-    "activity/catalogue.json": "d4a1f18cca60d5824e71ab00eb4827557176fbeac22bcc79d00913de09c20305",
+    "activity/catalogue.json": "4cfca2d685bb469c85d73937f69ca5ce67e974d071822bb14071bbf8c8dc7e48",
     "dungeons/cards/artwork/hero-realm/blazing-gale-dance.png": "9e38992b6e307631026895e8ce028ec24dbbdb16f99969934e8167bf4bfd050b",
     "dungeons/cards/artwork/hero-realm/bloodstained-sands-supreme.png": "430e00540d1363a41172fa46ab05fa6cc87136d4f4126ea6abde15166f79afd8",
     "dungeons/cards/artwork/hero-realm/bloodstained-sands.png": "430e00540d1363a41172fa46ab05fa6cc87136d4f4126ea6abde15166f79afd8",
@@ -459,6 +1363,8 @@
     "dungeons/cards/artwork/hero-realm/carnival-voyage.png": "64049fc65e1896f2becefc82101c76e634c60b930215c3f7f0b204a11e94502a",
     "dungeons/cards/artwork/hero-realm/dream-jinming-pool-supreme.png": "67c93dc6ca38244c57052bd7d3001430b80f1f7a0f4b20c8ed53fc2f205cdd2d",
     "dungeons/cards/artwork/hero-realm/dream-jinming-pool.png": "67c93dc6ca38244c57052bd7d3001430b80f1f7a0f4b20c8ed53fc2f205cdd2d",
+    "dungeons/cards/artwork/hero-realm/horizons-chart-challenge.png": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
+    "dungeons/cards/artwork/hero-realm/horizons-chart.png": "f16a7574efb48c86360c46ed63aa42113ac563b0cd348753521b2fd4603e26da",
     "dungeons/cards/artwork/hero-realm/liminal-ascension-challenge.png": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
     "dungeons/cards/artwork/hero-realm/liminal-ascension.png": "f6b6dd68882458993ad084e024598c2df19a10f0ca0e0180083ad6446de4f287",
     "dungeons/cards/artwork/hero-realm/ravening-banes-challenge.png": "5e53edc3104f4f8684c102505897b5c624e22bbd50163498c177dbbe4c4ce56d",
@@ -485,10 +1391,12 @@
     "dungeons/cards/artwork/sword-trial/landscourge-thunder-challenge.png": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
     "dungeons/cards/artwork/sword-trial/landscourge-thunder.png": "412dbf6ea66f6d54f8bdc3e5c6f89c7df2fe3a3ed1a88fa405c1da49b5bfe3d6",
     "dungeons/cards/artwork/sword-trial/ocean-of-vengeance.png": "fc1550ec9bcf6a6bf4783f22658de2732a71137154aab032d32a06a92aa0e128",
+    "dungeons/cards/artwork/sword-trial/rouge-and-rite-challenge.png": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
+    "dungeons/cards/artwork/sword-trial/rouge-and-rite.png": "07eeae998a7c5049c115c4c0db4bc8ac7a1785ab8e5fdb8c91364b0964003605",
     "dungeons/cards/artwork/sword-trial/segmented-puppets-challenge.png": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
     "dungeons/cards/artwork/sword-trial/segmented-puppets.png": "9bd97111c8b9d8ffef56f793464154021171f9d79b2f8e600e72f82a9755f967",
     "dungeons/cards/artwork/sword-trial/serpents-fang.png": "4d82a85d196468ceb24d1a616d8e0eca27134507323d2137de7dc7b6a6ed8a40",
-    "dungeons/cards/manifest.json": "411f16f1a6163b65b68217a92a87775f58739a6567c479ffdf48a0dbd073b7df",
+    "dungeons/cards/manifest.json": "729e374d4ef5a7cae9c32fd34f3a77f130a8439fc61668b037d53bdf0ea226ad",
     "dungeons/latest.json": "7a7899d74466f912f11543da446b2b6e014057fec0d7a2a31341432e738b90b5",
     "emotes/art/inline_201.gif": "7fbfbba0b2e442ce10afd10aca104adb84d0df7ba6c8c492fa64fb3a7a57c114",
     "emotes/art/inline_201.png": "354306a1f0eaf50d33026e3ba2d5f71357fbeb7e7006fb187996794f5f11b218",
@@ -933,8 +1841,8 @@
     "martial/upload-pack/icons/path_8.png": "f2c4853180d990fa3c3aeb246f7c518f90afb408fbf517368d63999cc2d151e3",
     "martial/upload-pack/UPLOAD-GUIDE.md": "cf677352f5dd1f2934ae5c9166bfa58949b17227566af1e0cbf89c52690ccb18",
     "martial/upload-pack/upload-manifest.json": "093dc428105536cb831121a49d1d45c0f50fe3b47c6b7e723f671d0635b1118f",
-    "report.html": "3558d7ad8ffd457a9413119339351b7cedfcc1ce7230f5401de329ba8cccd4b6",
-    "report.json": "ae0529e8720f512b7f3c2714eba0d0f29c6ea9412511baae94cc2234767e442e",
+    "report.html": "333b96fbcc53ef28c9c91f61a5fe2856277c8f7de413a51166aaa3756a9860b1",
+    "report.json": "96513b35c3de12980b09aeb028528b99873d67ffaf1e5b156acf4194c2422753",
     "tables.json": "b20bb592d7ae7e8dc6fbb653032bbe16c05d23569b4ddd1f98d2a185d3312295"
   }
 }

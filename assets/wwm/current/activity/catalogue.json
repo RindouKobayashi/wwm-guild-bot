@@ -477,11 +477,95 @@
       "image": "/art/st-39.png"
     },
     {
+      "key": "hr:40",
+      "family": "hr",
+      "title": "Horizon's Chart - Top 500 - Phase 1",
+      "rank_name": "rank_team10_dungeon_40",
+      "image": "/art/hr-40.png"
+    },
+    {
       "key": "st:40",
       "family": "st",
       "title": "Compass & Chime - Challenge Top 750 - Phase 3",
       "rank_name": "rank_team_dungeon_40",
       "image": "/art/st-40.png"
+    },
+    {
+      "key": "hr:41",
+      "family": "hr",
+      "title": "Horizon's Chart - Top 500 - Phase 2",
+      "rank_name": "rank_team10_dungeon_41",
+      "image": "/art/hr-41.png"
+    },
+    {
+      "key": "st:41",
+      "family": "st",
+      "title": "Rouge & Rite - Top 750 - Phase 1",
+      "rank_name": "rank_team_dungeon_41",
+      "image": "/art/st-41.png"
+    },
+    {
+      "key": "hr:42",
+      "family": "hr",
+      "title": "Horizon's Chart - Top 500 - Phase 3",
+      "rank_name": "rank_team10_dungeon_42",
+      "image": "/art/hr-42.png"
+    },
+    {
+      "key": "st:42",
+      "family": "st",
+      "title": "Rouge & Rite - Top 750 - Phase 2",
+      "rank_name": "rank_team_dungeon_42",
+      "image": "/art/st-42.png"
+    },
+    {
+      "key": "hr:43",
+      "family": "hr",
+      "title": "Horizon's Chart Challenge - Top 500 - Phase 1",
+      "rank_name": "rank_team10_dungeon_43",
+      "image": "/art/hr-43.png"
+    },
+    {
+      "key": "st:43",
+      "family": "st",
+      "title": "Rouge & Rite - Top 750 - Phase 3",
+      "rank_name": "rank_team_dungeon_43",
+      "image": "/art/st-43.png"
+    },
+    {
+      "key": "hr:44",
+      "family": "hr",
+      "title": "Horizon's Chart Challenge - Top 500 - Phase 2",
+      "rank_name": "rank_team10_dungeon_44",
+      "image": "/art/hr-44.png"
+    },
+    {
+      "key": "st:44",
+      "family": "st",
+      "title": "Rouge & Rite Challenge - Top 750 - Phase 1",
+      "rank_name": "rank_team_dungeon_44",
+      "image": "/art/st-44.png"
+    },
+    {
+      "key": "hr:45",
+      "family": "hr",
+      "title": "Horizon's Chart Challenge - Top 500 - Phase 3",
+      "rank_name": "rank_team10_dungeon_45",
+      "image": "/art/hr-45.png"
+    },
+    {
+      "key": "st:45",
+      "family": "st",
+      "title": "Rouge & Rite Challenge - Top 750 - Phase 2",
+      "rank_name": "rank_team_dungeon_45",
+      "image": "/art/st-45.png"
+    },
+    {
+      "key": "st:46",
+      "family": "st",
+      "title": "Rouge & Rite Challenge - Top 750 - Phase 3",
+      "rank_name": "rank_team_dungeon_46",
+      "image": "/art/st-46.png"
     },
     {
       "key": "st:60001",
